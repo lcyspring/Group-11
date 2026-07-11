@@ -4,6 +4,8 @@ This directory is independent from `docker-compose/`. It starts the project
 directly on the real host with one rootless Podman Pod and Podman's default
 Pasta network.
 
+中文完整流程请阅读：[Podman 全流程操作指南](DEPLOY_GUIDE_ZH.md)。
+
 ## Layout
 
 - `up.sh`: creates the Pod and starts all services.
