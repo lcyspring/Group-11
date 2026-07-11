@@ -147,6 +147,10 @@ bash ./build-assets.sh --web-only
 `Could not resolve "./build/vite"`，说明代码检出不完整；先更新仓库再重试，
 重新安装 pnpm 依赖无法补回缺失源码。
 
+`Web/.env` 和 `Web/pnpm-lock.yaml` 同样是必须提交的构建输入。脚本使用
+`--frozen-lockfile` 安装依赖，确保全新 clone 不会静默升级 Rollup、Vite 插件等依赖并生成
+不同产物。所有 `VITE_` 变量都会进入浏览器代码，不应放置服务端密钥。
+
 脚本会在 Vite 构建前删除旧的 `Web/dist-prod/`，并在构建/打包前校验 `index.html`
 引用的每个哈希资源都存在。若 Vite 失败，`up.sh` 将因缺少或不完整的前端产物而拒绝部署，
 不会再把旧入口页与新资源混合打进镜像。

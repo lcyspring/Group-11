@@ -37,6 +37,10 @@ unpackage/
 .env.local
 application-my.yaml
 
+# The management Web build requires this shared Vite configuration. VITE_
+# values are shipped to browsers and must not contain server-side secrets.
+!Web/.env
+
 # Logs
 *.log
 
@@ -61,3 +65,7 @@ podman/images/*.tar
 yarn.lock
 pnpm-lock.yaml
 package-lock.json
+
+# Pin the management Web dependency graph so a fresh clone builds the same
+# assets on every machine.
+!Web/pnpm-lock.yaml

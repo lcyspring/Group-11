@@ -22,7 +22,11 @@ MISSING=()
 MALL_BUILD_SCRIPT="${SCRIPT_DIR}/build-mall-h5.sh"
 WEB_BUILD_DIR=""
 WEB_BUILD_STAGING_DIR=""
-WEB_VITE_CONFIG_FILES=(
+WEB_BUILD_INPUT_FILES=(
+    '.env'
+    '.env.prod'
+    'package.json'
+    'pnpm-lock.yaml'
     'vite.config.ts'
     'build/vite/index.ts'
     'build/vite/optimize.ts'
@@ -114,7 +118,7 @@ pnpm_major() {
 }
 
 check_prerequisites() {
-    local web_config_file
+    local web_build_input
 
     if [[ "$WEB_ONLY" == false ]]; then
         if ! find_java_17; then
@@ -142,9 +146,9 @@ check_prerequisites() {
         add_missing 'tar (required to stage the Web build on filesystems without symbolic-link support)'
     fi
 
-    for web_config_file in "${WEB_VITE_CONFIG_FILES[@]}"; do
-        if [[ ! -f "$PROJECT_ROOT/Web/$web_config_file" ]]; then
-            add_missing "Web Vite configuration: Web/$web_config_file (the repository checkout is incomplete; update it before building)"
+    for web_build_input in "${WEB_BUILD_INPUT_FILES[@]}"; do
+        if [[ ! -f "$PROJECT_ROOT/Web/$web_build_input" ]]; then
+            add_missing "Web build input: Web/$web_build_input (the repository checkout is incomplete; update it before building)"
         fi
     done
 
@@ -397,7 +401,7 @@ fi
 printf 'Installing Web dependencies and building the production frontend.\n'
 prepare_web_build_dir
 clear_web_build_output
-run_host_command pnpm --dir "$WEB_BUILD_DIR" install --no-frozen-lockfile
+run_host_command pnpm --dir "$WEB_BUILD_DIR" install --frozen-lockfile
 # Podman publishes the Web frontend for remote browsers, so its production API
 # endpoint must remain same-origin (/admin-api). Do not let an exported local
 # development VITE_BASE_URL override the empty value in .env.prod.

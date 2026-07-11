@@ -78,6 +78,12 @@ tracked in Git. If a checkout reports that `./build/vite` cannot be resolved,
 update the repository before retrying; reinstalling pnpm dependencies cannot
 restore missing source files.
 
+`Web/.env` and `Web/pnpm-lock.yaml` are also required tracked build inputs.
+The asset script installs with `--frozen-lockfile`, so a fresh clone uses the
+same dependency graph as the known-good build instead of silently upgrading
+Vite plugins and other packages. All `VITE_` values are visible in the browser
+bundle and must not contain server-side secrets.
+
 Before invoking Vite, `build-assets.sh` removes the previous `Web/dist-prod/`.
 If the build fails, there is therefore no stale frontend output for `up.sh` to
 package. Both scripts also verify that every hashed asset directly referenced
