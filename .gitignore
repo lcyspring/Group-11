@@ -7,14 +7,10 @@
 .vscode/
 
 # Build
-target/
+
 build/
 .gradle/
-dist/
-dist-*
 *.class
-*.jar
-*.war
 
 # Dependencies
 node_modules/
@@ -32,8 +28,6 @@ application-my.yaml
 .DS_Store
 Thumbs.db
 
-# Docker
-docker-images/*.tar
 
 # Config
 *.keystore
