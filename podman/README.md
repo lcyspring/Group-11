@@ -21,6 +21,30 @@ works when the project itself is stored on a network drive.
 
 ## Start
 
+On Ubuntu, install the build and rootless-Podman prerequisites once:
+
+```bash
+cd podman
+bash ./install-build-deps-ubuntu.sh
+```
+
+Build the application assets before starting the Pod. The check command only
+reports missing tools or artifacts; it never builds anything.
+
+```bash
+cd podman
+bash ./build-assets.sh --check
+bash ./build-assets.sh
+```
+
+`build-assets.sh` builds the Server, InitService, and management Web frontend.
+The Mall H5 frontend must first be issued with HBuilderX to
+`MallFrontend/unpackage/dist/build/web/`; the script reports that prerequisite
+explicitly. To build only the automated assets before that manual step, use
+`bash ./build-assets.sh --skip-mall-check`.
+
+After the assets are ready, start the Pod:
+
 ```bash
 cd podman
 bash ./up.sh
@@ -32,6 +56,12 @@ The required artifacts are:
 - `InitService/target/mitedtsm-init-service.jar`
 - `Web/dist-prod/`
 - `MallFrontend/unpackage/dist/build/web/`
+
+The management frontend is built with the production configuration. Its API
+base URL is intentionally relative (`/admin-api`), so browsers outside the
+Linux host use the Pod's published web port and Nginx proxies the request to
+the backend. Do not set it to `http://localhost:8080`, because `localhost`
+would then mean the visitor's own computer.
 
 The script first imports a missing base image from `../docker-images/`. When
 that archive is absent, its default `IMAGE_SOURCE=auto` mode pulls the image

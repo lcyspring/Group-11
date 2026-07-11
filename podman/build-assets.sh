@@ -1,0 +1,184 @@
+#!/usr/bin/env bash
+# Build the application artifacts consumed by podman/Containerfile.
+# Use --check to report every missing prerequisite without building anything.
+
+set -Eeuo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+
+CHECK_ONLY=false
+SKIP_MALL_CHECK=false
+JAVA_17_HOME=""
+MISSING=()
+
+usage() {
+    cat <<'EOF'
+Usage: bash ./build-assets.sh [--check] [--skip-mall-check]
+
+Builds the artifacts consumed by podman/Containerfile:
+  - Server/mitedtsm-server/target/mitedtsm-server.jar
+  - InitService/target/mitedtsm-init-service.jar
+  - Web/dist-prod/
+
+Before building, all missing tools and required Mall H5 output are reported
+together. --check only performs this preflight and never builds anything.
+
+Options:
+  --check             Report prerequisites only; do not install or build.
+  --skip-mall-check   Do not require the manually issued Mall H5 artifact.
+                       Podman up.sh still requires it before deployment.
+
+The Mall frontend has no supported headless build entrypoint in this project.
+Use HBuilderX to issue it to MallFrontend/unpackage/dist/build/web/ first.
+EOF
+}
+
+add_missing() {
+    MISSING+=("$1")
+}
+
+java_major() {
+    "$1" -version 2>&1 | awk -F'"' '/version/ { split($2, parts, "."); print parts[1] == "1" ? parts[2] : parts[1]; exit }'
+}
+
+find_java_17() {
+    local candidate java_binary candidate_major
+    local candidates=()
+
+    if [[ -n "${JAVA_HOME:-}" ]]; then
+        candidates+=("$JAVA_HOME")
+    fi
+    if command -v java >/dev/null 2>&1; then
+        java_binary="$(readlink -f "$(command -v java)")"
+        candidates+=("$(dirname "$(dirname "$java_binary")")")
+    fi
+    candidates+=(/usr/lib/jvm/java-17-openjdk-* /usr/lib/jvm/java-17-*)
+
+    for candidate in "${candidates[@]}"; do
+        [[ -x "$candidate/bin/java" && -x "$candidate/bin/javac" ]] || continue
+        candidate_major="$(java_major "$candidate/bin/java")"
+        if [[ "$candidate_major" == "17" ]]; then
+            JAVA_17_HOME="$candidate"
+            return 0
+        fi
+    done
+    return 1
+}
+
+node_major() {
+    node --version 2>/dev/null | sed -E 's/^v([0-9]+).*/\1/'
+}
+
+pnpm_major() {
+    pnpm --version 2>/dev/null | sed -E 's/^([0-9]+).*/\1/'
+}
+
+check_prerequisites() {
+    if ! find_java_17; then
+        add_missing 'OpenJDK 17 (install openjdk-17-jdk; set JAVA_HOME if it is installed outside /usr/lib/jvm)'
+    fi
+
+    if ! command -v mvn >/dev/null 2>&1; then
+        add_missing 'Maven (install maven)'
+    fi
+
+    if ! command -v node >/dev/null 2>&1; then
+        add_missing 'Node.js 18 or later (Node.js 20 is recommended)'
+    elif [[ "$(node_major)" -lt 18 ]]; then
+        add_missing "Node.js 18 or later (found $(node --version))"
+    fi
+
+    if ! command -v pnpm >/dev/null 2>&1; then
+        add_missing 'pnpm 9 or later (install pnpm)'
+    elif [[ "$(pnpm_major)" -lt 9 ]]; then
+        add_missing "pnpm 9 or later (found $(pnpm --version))"
+    fi
+
+    if ! command -v podman >/dev/null 2>&1; then
+        add_missing 'Podman (install podman for the deployment step)'
+    fi
+
+    if [[ "$SKIP_MALL_CHECK" == false ]] && [[ ! -f "$PROJECT_ROOT/MallFrontend/unpackage/dist/build/web/index.html" ]]; then
+        add_missing 'Mall H5 artifact: use HBuilderX to issue MallFrontend/unpackage/dist/build/web/index.html, or pass --skip-mall-check for an automated-assets-only build'
+    fi
+}
+
+report_missing() {
+    printf 'Cannot prepare Podman deployment assets. Missing prerequisites:\n' >&2
+    local item
+    for item in "${MISSING[@]}"; do
+        printf '  - %s\n' "$item" >&2
+    done
+    printf '\nOn Ubuntu, install the automated prerequisites with:\n' >&2
+    printf '  bash %s/install-build-deps-ubuntu.sh\n' "$SCRIPT_DIR" >&2
+}
+
+require_file() {
+    local path="$1"
+    [[ -s "$path" ]] || {
+        printf 'Expected build output is missing or empty: %s\n' "$path" >&2
+        exit 1
+    }
+}
+
+require_dir() {
+    local path="$1"
+    [[ -d "$path" ]] || {
+        printf 'Expected build output directory is missing: %s\n' "$path" >&2
+        exit 1
+    }
+}
+
+mvn_with_java_17() {
+    env JAVA_HOME="$JAVA_17_HOME" PATH="$JAVA_17_HOME/bin:$PATH" mvn "$@"
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --check)
+            CHECK_ONLY=true
+            ;;
+        --skip-mall-check)
+            SKIP_MALL_CHECK=true
+            ;;
+        --help|-h)
+            usage
+            exit 0
+            ;;
+        *)
+            printf 'Unknown option: %s\n' "$1" >&2
+            usage >&2
+            exit 2
+            ;;
+    esac
+    shift
+done
+
+check_prerequisites
+if ((${#MISSING[@]})); then
+    report_missing
+    exit 1
+fi
+
+if [[ "$CHECK_ONLY" == true ]]; then
+    printf 'All Podman build prerequisites are available. No build was run.\n'
+    exit 0
+fi
+
+printf 'Building Server with OpenJDK 17.\n'
+mvn_with_java_17 -f "$PROJECT_ROOT/Server/pom.xml" clean package -DskipTests
+require_file "$PROJECT_ROOT/Server/mitedtsm-server/target/mitedtsm-server.jar"
+
+printf 'Building InitService with OpenJDK 17.\n'
+mvn_with_java_17 -f "$PROJECT_ROOT/InitService/pom.xml" clean package -DskipTests
+require_file "$PROJECT_ROOT/InitService/target/mitedtsm-init-service.jar"
+
+printf 'Installing Web dependencies and building the production frontend.\n'
+pnpm --dir "$PROJECT_ROOT/Web" install --no-frozen-lockfile
+pnpm --dir "$PROJECT_ROOT/Web" run build:prod
+require_dir "$PROJECT_ROOT/Web/dist-prod"
+require_file "$PROJECT_ROOT/Web/dist-prod/index.html"
+
+printf '\nApplication assets are ready. Start the Pod with:\n'
+printf '  cd %s && bash ./up.sh\n' "$SCRIPT_DIR"
