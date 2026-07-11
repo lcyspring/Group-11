@@ -1,6 +1,8 @@
 # Podman 全流程操作指南
 
-本指南适用于团队成员在 Ubuntu 上构建并运行项目，以及在 Windows、虚拟机宿主机或局域网内访问系统。
+本指南适用于团队成员在 Ubuntu 上构建并运行项目，以及在 Windows、虚拟机宿主机或局域网内访问系统。整个流程只使用 rootless Podman；不需要 Docker Engine、`docker` 命令、Docker Socket 或 Compose。
+
+默认基础镜像名称中的 `docker.io` 只是 OCI 镜像仓库地址，并不表示需要安装或运行 Docker。镜像由 Podman 直接拉取；离线时也由 Podman 自己生成并加载 OCI 镜像归档。
 
 ## 1. 先明确谁需要做什么
 
@@ -130,8 +132,28 @@ bash ./build-assets.sh
 
 ```bash
 cd podman
+bash ./up.sh --check
 bash ./up.sh
 ```
+
+`--check` 只检查 rootless Podman、端口参数和应用产物，绝不会拉取/加载镜像、构建镜像、创建容器或启动服务。首次部署建议先执行一次。
+
+### 5.1 无变更时的快速启动
+
+`bash ./up.sh` 仍用于部署新的 JAR、前端产物或 SQL。应用产物没有变化时，可以跳过
+镜像打包，缩短日常启动时间：
+
+```bash
+# 已执行 down.sh，Pod 已删除但本地运行镜像仍在
+bash ./up.sh --no-build
+
+# Pod 还保留、只是被 podman pod stop 或主机重启停止
+bash ./up.sh --fast
+```
+
+`--fast` 不重建或替换任何容器，只启动并检查原有 Pod；`--no-build` 用现有本地镜像
+重新创建完整 Pod。两者都保留命名卷中的数据。需要发布新的构建产物时，使用不带参数的
+`bash ./up.sh`。
 
 默认端口如下：
 
@@ -147,7 +169,7 @@ bash ./up.sh
 SERVER_PORT=18080 WEB_PORT=18081 MALL_PORT=18082 bash ./up.sh
 ```
 
-`up.sh` 会构建运行镜像、创建 rootless Podman Pod、初始化数据库，并等待各服务健康后输出访问地址。
+`up.sh` 会构建运行镜像、创建 rootless Podman Pod、初始化数据库，并等待各服务健康后输出访问地址。基础设施健康检查、TDengine 初始化和前端启动会尽可能并行执行；Spring Boot 本身的初始化时间仍取决于应用和数据库数据量。
 
 如果输出已经出现 `Spring Boot server is ready.`，但随后中断，且
 `podman ps --pod` 中没有 `mitedtsm-rootless-web` 或
@@ -195,18 +217,32 @@ USE_HOST_PROXY=true bash ./build-assets.sh --build-mall
 USE_HOST_PROXY=true bash ./up.sh
 ```
 
-镜像来源由 `IMAGE_SOURCE` 控制：
+镜像来源由 `IMAGE_SOURCE` 控制，所有离线归档均由 Podman 生成：
 
 ```bash
-# 默认：有本地 docker-images/*.tar 时导入，否则拉取
+# 默认：有本地 podman/images/*.tar 时导入，否则由 Podman 拉取
 IMAGE_SOURCE=auto bash ./up.sh
 
-# 完全离线：必须准备好 docker-images/*.tar
+# 在有网络的 Podman 主机上创建可携带的 OCI 归档
+bash ./image-archives.sh --pull
+
+# 完全离线：复制 podman/images/*.tar 后加载，绝不访问镜像仓库
 IMAGE_SOURCE=archive bash ./up.sh
 
-# 始终从镜像仓库拉取
+# 始终由 Podman 从镜像仓库拉取
 IMAGE_SOURCE=pull bash ./up.sh
 ```
+
+若部署介质放在仓库外，可在两个命令上使用同一个绝对目录：
+
+```bash
+IMAGE_ARCHIVE_DIR=/mnt/deployment-images bash ./image-archives.sh --pull
+IMAGE_ARCHIVE_DIR=/mnt/deployment-images IMAGE_SOURCE=archive bash ./up.sh
+```
+
+已有部署介质若仍使用仓库根目录的旧 `docker-images/`，可显式指定
+`IMAGE_ARCHIVE_DIR=../docker-images`。Podman 可以直接加载其中的镜像归档，整个
+过程仍不需要安装 Docker。
 
 ## 8. 日常更新流程
 
@@ -222,7 +258,7 @@ HBUILDERX_CLI=/opt/HBuilderX/cli bash ./build-assets.sh --build-mall
 bash ./up.sh
 ```
 
-`down.sh` 默认只停止 Pod，不会删除数据库等持久化卷。
+`down.sh` 默认停止并移除 Pod，但不会删除数据库等持久化卷。
 
 ## 9. 查看状态、日志和停止服务
 
@@ -257,13 +293,13 @@ cd podman && bash ./down.sh --volumes
 | `StopSignal SIGTERM failed ... resorting to SIGKILL` | 使用新版 `down.sh`；它默认等待 120 秒。仍超时时，查看后端日志并用 `STOP_TIMEOUT=300 bash ./down.sh` 增加优雅退出时间。 |
 | 已显示 `Spring Boot server is ready.`，但没有 Web/Mall 容器 | 执行 `bash ./up.sh --frontends-only`；它只补启动前端，不重新构建或重启后端。 |
 | 访问页面正常但登录报错 | 使用 Ubuntu/虚拟机 IP 加 `:8081`，确认请求地址是 `/admin-api/...` 而不是 Windows 的 `localhost:8080`；重新构建 Web。 |
-| 拉取镜像失败 | 检查网络；需要代理时显式设置 `USE_HOST_PROXY=true`；离线环境准备 `docker-images/*.tar` 并使用 `IMAGE_SOURCE=archive`。 |
+| 拉取镜像失败 | 检查网络；需要代理时显式设置 `USE_HOST_PROXY=true`；离线环境在联网机器执行 `bash ./image-archives.sh --pull`，复制 `podman/images/*.tar` 后使用 `IMAGE_SOURCE=archive`。 |
 
 ## 11. Git 与凭据规则
 
 不要提交以下内容：
 
-- `target/`、`Web/dist-prod/`、`MallFrontend/unpackage/`、`docker-images/*.tar` 等构建产物；
+- `target/`、`Web/dist-prod/`、`MallFrontend/unpackage/`、`podman/images/*.tar` 等构建产物；
 - 云厂商 AccessKey、API Key、短信密钥、真实密码；
 - 本地环境文件或部署机私有配置。
 
@@ -277,5 +313,6 @@ cd podman
 bash ./install-build-deps-ubuntu.sh
 HBUILDERX_CLI=/opt/HBuilderX/cli bash ./build-assets.sh --check --build-mall
 HBUILDERX_CLI=/opt/HBuilderX/cli bash ./build-assets.sh --build-mall
+bash ./up.sh --check
 bash ./up.sh
 ```

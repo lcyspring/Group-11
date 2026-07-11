@@ -1,15 +1,21 @@
 # Rootless Podman deployment
 
-This directory is independent from `docker-compose/`. It starts the project
-directly on the real host with one rootless Podman Pod and Podman's default
-Pasta network.
+This is a Podman-only deployment. It starts the project directly on the real
+host with one rootless Podman Pod and Podman's default Pasta network; it never
+uses Docker Engine, the Docker CLI, a Docker socket, or Compose.
+
+The default `docker.io` image references are OCI registry addresses, not a
+runtime dependency on Docker. Podman pulls them directly, or it can load OCI
+archives created by Podman itself for an offline deployment.
 
 中文完整流程请阅读：[Podman 全流程操作指南](DEPLOY_GUIDE_ZH.md)。
 
 ## Layout
 
 - `up.sh`: creates the Pod and starts all services.
-- `down.sh`: stops the Pod; `--volumes` also removes its persistent data.
+- `down.sh`: stops and removes the Pod; `--volumes` also removes its persistent data.
+- `image-archives.sh`: creates portable OCI base-image archives with Podman.
+- `images/`: default location for those ignored offline archives.
 - `Containerfile`: one multi-target Containerfile for MySQL, the server,
   InitService, Web, and Mall images.
 - `nginx/`: Pod-specific frontend configuration. Services in a shared Pod
@@ -66,8 +72,31 @@ After the assets are ready, start the Pod:
 
 ```bash
 cd podman
+bash ./up.sh --check
 bash ./up.sh
 ```
+
+`--check` is safe to run on a new host: it validates the rootless Podman
+environment and application artifacts, but does not load, pull, build, create,
+or start anything.
+
+## Fast restart paths
+
+The normal no-argument command remains the deployment path after application
+assets or SQL have changed. For an unchanged deployment, avoid its image
+packaging work:
+
+```bash
+# `down.sh` removed the Pod, but the existing local runtime images are valid.
+bash ./up.sh --no-build
+
+# The Pod still exists but was stopped, for example after `podman pod stop`.
+bash ./up.sh --fast
+```
+
+`--fast` starts/checks the existing containers without rebuilding or replacing
+them. `--no-build` recreates the Pod from the current local images. Both modes
+keep all named volumes intact; run plain `up.sh` to deploy changed artifacts.
 
 If a previous start reached `Spring Boot server is ready.` but stopped before
 the two Nginx frontends were created, start just those missing containers
@@ -94,14 +123,28 @@ Linux host use the Pod's published web port and Nginx proxies the request to
 the backend. Do not set it to `http://localhost:8080`, because `localhost`
 would then mean the visitor's own computer.
 
-The script first imports a missing base image from `../docker-images/`. When
-that archive is absent, its default `IMAGE_SOURCE=auto` mode pulls the image
-from its registry instead. It then builds all runtime images from this
+The script first imports a missing base image from `podman/images/`. When that
+OCI archive is absent, its default `IMAGE_SOURCE=auto` mode pulls the image
+directly through Podman. It then builds all runtime images from this
 directory's `Containerfile`.
 
-For a fully offline, reproducible deployment, copy `docker-images/` with the
-project and run `IMAGE_SOURCE=archive bash ./up.sh`. To always fetch current
-registry images, use `IMAGE_SOURCE=pull bash ./up.sh`.
+For a fully offline deployment, run the following on a connected machine with
+Podman, copy `podman/images/` with the project, and then deploy with
+`IMAGE_SOURCE=archive`:
+
+```bash
+cd podman
+bash ./image-archives.sh --pull
+IMAGE_SOURCE=archive bash ./up.sh
+```
+
+To keep archives outside the repository, point both commands at the same
+directory with `IMAGE_ARCHIVE_DIR=/absolute/path/to/archives`. To always fetch
+current registry images, use `IMAGE_SOURCE=pull bash ./up.sh`.
+
+For a transition from the old project archive directory, set
+`IMAGE_ARCHIVE_DIR=../docker-images` explicitly. Podman can load those image
+archives directly; this still does not require Docker to be installed.
 
 ## Network-drive projects
 

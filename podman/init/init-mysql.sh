@@ -15,8 +15,8 @@ done
 echo "MySQL is ready, executing SQL files..."
 
 # SQL 文件目录
-SQL_BASE_DIR="/docker-init-sql/base"
-SQL_NEW_DIR="/docker-init-sql/new"
+SQL_BASE_DIR="/podman-init-sql/base"
+SQL_NEW_DIR="/podman-init-sql/new"
 
 # 1. 先执行 quartz.sql
 echo "Executing: quartz.sql"
