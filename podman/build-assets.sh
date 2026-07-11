@@ -7,17 +7,25 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 USE_HOST_PROXY="${USE_HOST_PROXY:-false}"
+# A VMware shared folder (and some network filesystems) cannot create the
+# symlinks used by pnpm's default node_modules layout. Leave this empty to
+# detect that case automatically; set it to a native, writable directory to
+# force staging there.
+WEB_BUILD_WORKDIR="${WEB_BUILD_WORKDIR:-}"
 
 CHECK_ONLY=false
 SKIP_MALL_CHECK=false
 BUILD_MALL=false
+WEB_ONLY=false
 JAVA_17_HOME=""
 MISSING=()
 MALL_BUILD_SCRIPT="${SCRIPT_DIR}/build-mall-h5.sh"
+WEB_BUILD_DIR=""
+WEB_BUILD_STAGING_DIR=""
 
 usage() {
     cat <<'EOF'
-Usage: bash ./build-assets.sh [--check] [--build-mall] [--skip-mall-check]
+Usage: bash ./build-assets.sh [--check] [--web-only] [--build-mall] [--skip-mall-check]
 
 Builds the artifacts consumed by podman/Containerfile:
   - Server/mitedtsm-server/target/mitedtsm-server.jar
@@ -29,6 +37,7 @@ together. --check only performs this preflight and never builds anything.
 
 Options:
   --check             Report prerequisites only; do not install or build.
+  --web-only          Build only Web/dist-prod/. Reuses existing Java artifacts.
   --build-mall        Build Mall H5 through build-mall-h5.sh and HBuilderX CLI.
   --skip-mall-check   Do not require the manually issued Mall H5 artifact.
                        Podman up.sh still requires it before deployment.
@@ -39,6 +48,11 @@ official HBuilderX CLI; set HBUILDERX_CLI when `cli` is not on PATH.
 
 Proxy settings are disabled by default. Set USE_HOST_PROXY=true to allow Maven
 and pnpm to use the host's proxy environment while building.
+
+On filesystems without symbolic-link support (for example VMware hgfs), the
+Web source is staged automatically on a native filesystem and only dist-prod
+is copied back. Set WEB_BUILD_WORKDIR=/native/writable/path to choose that
+staging location explicitly.
 EOF
 }
 
@@ -94,12 +108,14 @@ pnpm_major() {
 }
 
 check_prerequisites() {
-    if ! find_java_17; then
-        add_missing 'OpenJDK 17 (Ubuntu: openjdk-17-jdk; CachyOS/Arch: jdk17-openjdk; set JAVA_HOME if installed elsewhere)'
-    fi
+    if [[ "$WEB_ONLY" == false ]]; then
+        if ! find_java_17; then
+            add_missing 'OpenJDK 17 (Ubuntu: openjdk-17-jdk; CachyOS/Arch: jdk17-openjdk; set JAVA_HOME if installed elsewhere)'
+        fi
 
-    if ! command -v mvn >/dev/null 2>&1; then
-        add_missing 'Maven (install maven)'
+        if ! command -v mvn >/dev/null 2>&1; then
+            add_missing 'Maven (install maven)'
+        fi
     fi
 
     if ! command -v node >/dev/null 2>&1; then
@@ -114,14 +130,20 @@ check_prerequisites() {
         add_missing "pnpm 9 or later (found $(pnpm --version))"
     fi
 
-    if ! command -v podman >/dev/null 2>&1; then
+    if ! command -v tar >/dev/null 2>&1; then
+        add_missing 'tar (required to stage the Web build on filesystems without symbolic-link support)'
+    fi
+
+    if [[ "$WEB_ONLY" == false ]] && ! command -v podman >/dev/null 2>&1; then
         add_missing 'Podman (install podman for the deployment step)'
     fi
 
-    if [[ "$BUILD_MALL" == true ]] && ! "$MALL_BUILD_SCRIPT" --check >/dev/null 2>&1; then
-        add_missing 'HBuilderX CLI for Mall H5 (run build-mall-h5.sh --check for details)'
-    elif [[ "$SKIP_MALL_CHECK" == false ]] && [[ ! -f "$PROJECT_ROOT/MallFrontend/unpackage/dist/build/web/index.html" ]]; then
-        add_missing 'Mall H5 artifact: use HBuilderX to issue MallFrontend/unpackage/dist/build/web/index.html, or pass --skip-mall-check for an automated-assets-only build'
+    if [[ "$WEB_ONLY" == false ]]; then
+        if [[ "$BUILD_MALL" == true ]] && ! "$MALL_BUILD_SCRIPT" --check >/dev/null 2>&1; then
+            add_missing 'HBuilderX CLI for Mall H5 (run build-mall-h5.sh --check for details)'
+        elif [[ "$SKIP_MALL_CHECK" == false ]] && [[ ! -f "$PROJECT_ROOT/MallFrontend/unpackage/dist/build/web/index.html" ]]; then
+            add_missing 'Mall H5 artifact: use HBuilderX to issue MallFrontend/unpackage/dist/build/web/index.html, or pass --skip-mall-check for an automated-assets-only build'
+        fi
     fi
 }
 
@@ -170,6 +192,89 @@ mvn_with_java_17() {
     run_host_command env JAVA_HOME="$JAVA_17_HOME" PATH="$JAVA_17_HOME/bin:$PATH" mvn "$@"
 }
 
+supports_symlinks() {
+    local directory="$1"
+    local probe_dir
+
+    [[ -d "$directory" && -w "$directory" ]] || return 1
+    probe_dir="$(mktemp -d "${directory%/}/.podman-symlink-probe.XXXXXX" 2>/dev/null)" || return 1
+
+    if ln -s target "${probe_dir}/link" 2>/dev/null; then
+        rm -rf -- "$probe_dir" || true
+        return 0
+    fi
+
+    rm -rf -- "$probe_dir" || true
+    return 1
+}
+
+cleanup_web_build_staging_dir() {
+    if [[ -n "$WEB_BUILD_STAGING_DIR" && -d "$WEB_BUILD_STAGING_DIR" ]]; then
+        rm -rf -- "$WEB_BUILD_STAGING_DIR" || true
+    fi
+}
+
+create_web_build_staging_dir() {
+    local base
+    local -a candidates=()
+
+    if [[ -n "$WEB_BUILD_WORKDIR" ]]; then
+        candidates+=("$WEB_BUILD_WORKDIR")
+    fi
+    if [[ -n "${TMPDIR:-}" && "${TMPDIR:-}" != "$WEB_BUILD_WORKDIR" ]]; then
+        candidates+=("$TMPDIR")
+    fi
+    if [[ "/tmp" != "$WEB_BUILD_WORKDIR" && "/tmp" != "${TMPDIR:-}" ]]; then
+        candidates+=(/tmp)
+    fi
+
+    for base in "${candidates[@]}"; do
+        [[ -d "$base" && -w "$base" ]] || continue
+        supports_symlinks "$base" || continue
+        mktemp -d "${base%/}/mitedtsm-web-build.XXXXXX" && return 0
+    done
+    return 1
+}
+
+prepare_web_build_dir() {
+    local web_source="$PROJECT_ROOT/Web"
+    local source_supports_symlinks=false
+
+    if supports_symlinks "$web_source"; then
+        source_supports_symlinks=true
+    fi
+
+    if [[ -z "$WEB_BUILD_WORKDIR" && "$source_supports_symlinks" == true ]]; then
+        WEB_BUILD_DIR="$web_source"
+        return
+    fi
+
+    WEB_BUILD_STAGING_DIR="$(create_web_build_staging_dir)" || {
+        printf '%s\n' 'Web source does not support pnpm symlinks, and no native writable staging directory is available.' >&2
+        printf '%s\n' 'Set WEB_BUILD_WORKDIR to a writable local filesystem, for example WEB_BUILD_WORKDIR=/tmp.' >&2
+        exit 1
+    }
+    WEB_BUILD_DIR="$WEB_BUILD_STAGING_DIR"
+    trap cleanup_web_build_staging_dir EXIT
+
+    if [[ "$source_supports_symlinks" == true ]]; then
+        printf 'Building Web in requested native workspace %s.\n' "$WEB_BUILD_DIR"
+    else
+        printf 'Web source does not support pnpm symlinks; building in native workspace %s.\n' "$WEB_BUILD_DIR"
+    fi
+    tar --exclude='./node_modules' --exclude='./dist-prod' \
+        -C "$web_source" -cf - . | tar -C "$WEB_BUILD_DIR" -xf -
+}
+
+publish_web_build_output() {
+    local web_source="$PROJECT_ROOT/Web"
+
+    [[ "$WEB_BUILD_DIR" == "$web_source" ]] && return
+
+    rm -rf -- "$web_source/dist-prod"
+    cp -a "$WEB_BUILD_DIR/dist-prod" "$web_source/dist-prod"
+}
+
 case "$USE_HOST_PROXY" in
     true|TRUE|1|yes|YES)
         USE_HOST_PROXY=true
@@ -187,6 +292,9 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --check)
             CHECK_ONLY=true
+            ;;
+        --web-only)
+            WEB_ONLY=true
             ;;
         --skip-mall-check)
             SKIP_MALL_CHECK=true
@@ -212,6 +320,11 @@ if [[ "$BUILD_MALL" == true && "$SKIP_MALL_CHECK" == true ]]; then
     exit 2
 fi
 
+if [[ "$WEB_ONLY" == true && ( "$BUILD_MALL" == true || "$SKIP_MALL_CHECK" == true ) ]]; then
+    printf '%s\n' '--web-only cannot be combined with --build-mall or --skip-mall-check.' >&2
+    exit 2
+fi
+
 check_prerequisites
 if ((${#MISSING[@]})); then
     report_missing
@@ -223,26 +336,36 @@ if [[ "$CHECK_ONLY" == true ]]; then
     exit 0
 fi
 
-printf 'Building Server with OpenJDK 17.\n'
-mvn_with_java_17 -f "$PROJECT_ROOT/Server/pom.xml" clean package -DskipTests
-require_file "$PROJECT_ROOT/Server/mitedtsm-server/target/mitedtsm-server.jar"
+if [[ "$WEB_ONLY" == false ]]; then
+    printf 'Building Server with OpenJDK 17.\n'
+    mvn_with_java_17 -f "$PROJECT_ROOT/Server/pom.xml" clean package -DskipTests
+    require_file "$PROJECT_ROOT/Server/mitedtsm-server/target/mitedtsm-server.jar"
 
-printf 'Building InitService with OpenJDK 17.\n'
-mvn_with_java_17 -f "$PROJECT_ROOT/InitService/pom.xml" clean package -DskipTests
-require_file "$PROJECT_ROOT/InitService/target/mitedtsm-init-service.jar"
+    printf 'Building InitService with OpenJDK 17.\n'
+    mvn_with_java_17 -f "$PROJECT_ROOT/InitService/pom.xml" clean package -DskipTests
+    require_file "$PROJECT_ROOT/InitService/target/mitedtsm-init-service.jar"
+fi
 
 printf 'Installing Web dependencies and building the production frontend.\n'
-run_host_command pnpm --dir "$PROJECT_ROOT/Web" install --no-frozen-lockfile
-run_host_command pnpm --dir "$PROJECT_ROOT/Web" run build:prod
+prepare_web_build_dir
+run_host_command pnpm --dir "$WEB_BUILD_DIR" install --no-frozen-lockfile
+run_host_command pnpm --dir "$WEB_BUILD_DIR" run build:prod
+publish_web_build_output
 require_dir "$PROJECT_ROOT/Web/dist-prod"
 require_file "$PROJECT_ROOT/Web/dist-prod/index.html"
 
-if [[ "$BUILD_MALL" == true ]]; then
-    printf 'Building Mall H5 with HBuilderX CLI.\n'
-    USE_HOST_PROXY="$USE_HOST_PROXY" "$MALL_BUILD_SCRIPT"
+if [[ "$WEB_ONLY" == false ]]; then
+    if [[ "$BUILD_MALL" == true ]]; then
+        printf 'Building Mall H5 with HBuilderX CLI.\n'
+        USE_HOST_PROXY="$USE_HOST_PROXY" "$MALL_BUILD_SCRIPT"
+    fi
+    require_dir "$PROJECT_ROOT/MallFrontend/unpackage/dist/build/web"
+    require_file "$PROJECT_ROOT/MallFrontend/unpackage/dist/build/web/index.html"
 fi
-require_dir "$PROJECT_ROOT/MallFrontend/unpackage/dist/build/web"
-require_file "$PROJECT_ROOT/MallFrontend/unpackage/dist/build/web/index.html"
 
-printf '\nApplication assets are ready. Start the Pod with:\n'
-printf '  cd %s && bash ./up.sh\n' "$SCRIPT_DIR"
+if [[ "$WEB_ONLY" == true ]]; then
+    printf '\nWeb production assets are ready. Existing Java artifacts were not rebuilt.\n'
+else
+    printf '\nApplication assets are ready. Start the Pod with:\n'
+    printf '  cd %s && bash ./up.sh\n' "$SCRIPT_DIR"
+fi

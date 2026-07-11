@@ -63,6 +63,16 @@ build every artifact in one command with
 available with HBuilderX 4.67-alpha+ via `HBUILDERX_PLATFORM=web`; the default
 `h5` platform works with HBuilderX 3.1.5+.
 
+When the repository is on a filesystem without symbolic-link support, such as
+a VMware shared folder mounted at `/mnt/hgfs`, `build-assets.sh` automatically
+stages the Web build on a native local filesystem and copies `Web/dist-prod/`
+back after it succeeds. To choose a staging parent explicitly, use
+`WEB_BUILD_WORKDIR=/tmp bash ./build-assets.sh`.
+
+If the Java artifacts already succeeded and only the management-Web build
+failed, rerun just that stage with `bash ./build-assets.sh --web-only`; it does
+not invoke Maven or rebuild either JAR.
+
 The current Mall H5 output is versioned in Git so deployment members can pull
 and use it directly. HBuilderX is only needed when publishing a new Mall H5
 revision; generated Server JARs, management-Web output, and image archives
