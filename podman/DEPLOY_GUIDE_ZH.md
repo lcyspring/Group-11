@@ -147,6 +147,10 @@ bash ./build-assets.sh --web-only
 `Could not resolve "./build/vite"`，说明代码检出不完整；先更新仓库再重试，
 重新安装 pnpm 依赖无法补回缺失源码。
 
+脚本会在 Vite 构建前删除旧的 `Web/dist-prod/`，并在构建/打包前校验 `index.html`
+引用的每个哈希资源都存在。若 Vite 失败，`up.sh` 将因缺少或不完整的前端产物而拒绝部署，
+不会再把旧入口页与新资源混合打进镜像。
+
 ## 5. 启动 Podman 服务
 
 ```bash
@@ -203,7 +207,7 @@ bash ./up.sh --frontends-only
 
 ### 5.2 只更新管理端 Web（不重启 Spring Boot）
 
-管理端前端修改后，先只生成 `Web/dist-prod/`，再仅重打包和替换 Web Nginx 容器：
+仅当确认当前运行中的 Server 和 InitService JAR 与待部署版本完全一致时，管理端前端修改后可只生成 `Web/dist-prod/`，再仅重打包和替换 Web Nginx 容器：
 
 ```bash
 bash ./build-assets.sh --web-only
@@ -211,8 +215,12 @@ bash ./up.sh --rebuild-web
 ```
 
 该路径不会执行 Maven，也不会重启 Spring Boot、MySQL、Redis、RabbitMQ、TDengine、
-商城前端或删除数据卷。生产构建会固定使用同源 `/admin-api`，因此 Windows 等远程浏览器的
-请求会发往 `http://<Ubuntu-IP>:8081/admin-api/...`，而不是其自身的 `localhost:8080`。
+商城前端或删除数据卷。只要执行过 `git pull`、修改过后端，或无法确认 JAR 是否最新，就必须改用完整流程
+`bash ./build-assets.sh && bash ./up.sh`。生产构建会固定使用同源 `/admin-api`，因此 Windows
+等远程浏览器的请求会发往 `http://<Ubuntu-IP>:8081/admin-api/...`，而不是其自身的 `localhost:8080`。
+
+Web Nginx 不缓存 `index.html`（其中记录本次构建的哈希 JS/CSS 文件名），但仍长期缓存带哈希的
+静态资源，避免前端发布后浏览器把旧入口页和新 `assets/` 目录混用而出现 JS/CSS 404。
 
 ## 6. Windows 或虚拟机外部访问
 
@@ -324,6 +332,7 @@ cd podman && bash ./down.sh --volumes
 | `ERR_PNPM_ENOTSUP ... symlink` | 仓库在 VMware 共享目录等不支持软链接的文件系统上。更新后用 `bash ./build-assets.sh --web-only` 重试即可；脚本会自动暂存 Web 构建，或用 `WEB_BUILD_WORKDIR=/tmp` 明确指定暂存目录。 |
 | `Could not resolve "./build/vite"` | `Web/build/vite/` 配置源码未随代码检出。更新仓库后重试；不要仅删除或重新安装 `node_modules`。 |
 | 页面能打开但请求发往 `http://localhost:8080` | 运行的是旧 Web 镜像或构建未成功。执行 `bash ./build-assets.sh --web-only && bash ./up.sh --rebuild-web`，然后在浏览器强制刷新。 |
+| 页面 HTML 能打开但多个 `/assets/*.js` 为 404 / MIME `text/html` | 浏览器缓存了旧 `index.html`，其哈希文件已不在新镜像中。更新后的 Nginx 会避免复发；执行 `bash ./up.sh --rebuild-web` 后强制刷新一次。 |
 | `Run this script as the normal rootless Podman user` | 不要用 sudo 运行 `up.sh`；用安装 Podman 的普通用户运行。 |
 | `StopSignal SIGTERM failed ... resorting to SIGKILL` | 使用新版 `down.sh`；它默认等待 120 秒。仍超时时，查看后端日志并用 `STOP_TIMEOUT=300 bash ./down.sh` 增加优雅退出时间。 |
 | 已显示 `Spring Boot server is ready.`，但没有 Web/Mall 容器 | 执行 `bash ./up.sh --frontends-only`；它只补启动前端，不重新构建或重启后端。 |

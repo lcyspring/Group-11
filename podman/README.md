@@ -78,6 +78,11 @@ tracked in Git. If a checkout reports that `./build/vite` cannot be resolved,
 update the repository before retrying; reinstalling pnpm dependencies cannot
 restore missing source files.
 
+Before invoking Vite, `build-assets.sh` removes the previous `Web/dist-prod/`.
+If the build fails, there is therefore no stale frontend output for `up.sh` to
+package. Both scripts also verify that every hashed asset directly referenced
+by `index.html` exists before an image is built.
+
 The current Mall H5 output is versioned in Git so deployment members can pull
 and use it directly. HBuilderX is only needed when publishing a new Mall H5
 revision; generated Server JARs, management-Web output, and image archives
@@ -125,8 +130,9 @@ This recovery mode is also useful after an interrupted terminal session. If it
 cannot start a frontend or reach its port, it prints the last health-check
 error instead of hiding it during retries.
 
-After changing only the management Web output, avoid a full Pod replacement
-and the Spring Boot startup wait:
+Only when the deployed Server and InitService JARs are confirmed unchanged,
+update a management-Web-only change without a full Pod replacement or the
+Spring Boot startup wait:
 
 ```bash
 bash ./build-assets.sh --web-only
@@ -135,7 +141,12 @@ bash ./up.sh --rebuild-web
 
 `--rebuild-web` packages `Web/dist-prod/` and replaces only the Web Nginx
 container. It leaves the Java server, databases, Redis, RabbitMQ, TDengine,
-and Mall container running.
+and Mall container running. After `git pull`, a backend change, or any doubt
+about JAR freshness, use the complete `build-assets.sh` followed by `up.sh`.
+
+The Web Nginx configuration never caches `index.html`, while hashed JS and CSS
+assets remain cacheable. This prevents a browser from combining an old index
+page with a newer `assets/` directory after a frontend deployment.
 
 The required artifacts are:
 

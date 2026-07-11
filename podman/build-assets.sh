@@ -42,7 +42,8 @@ together. --check only performs this preflight and never builds anything.
 
 Options:
   --check             Report prerequisites only; do not install or build.
-  --web-only          Build only Web/dist-prod/. Reuses existing Java artifacts.
+  --web-only          Build only Web/dist-prod/. Use only when the deployed
+                      Server and InitService JARs are confirmed unchanged.
   --build-mall        Build Mall H5 through build-mall-h5.sh and HBuilderX CLI.
   --skip-mall-check   Do not require the manually issued Mall H5 artifact.
                        Podman up.sh still requires it before deployment.
@@ -288,6 +289,40 @@ publish_web_build_output() {
     cp -a "$WEB_BUILD_DIR/dist-prod" "$web_source/dist-prod"
 }
 
+clear_web_build_output() {
+    local web_output="$PROJECT_ROOT/Web/dist-prod"
+
+    # A failed Vite run must not leave a previous build available for up.sh to
+    # package. Otherwise index.html and assets/ from different builds can be
+    # deployed together.
+    rm -rf -- "$web_output"
+    if [[ "$WEB_BUILD_DIR" != "$PROJECT_ROOT/Web" ]]; then
+        rm -rf -- "$WEB_BUILD_DIR/dist-prod"
+    fi
+}
+
+verify_web_entry_assets() {
+    local web_output="$1"
+    local entry_html="${web_output}/index.html"
+    local asset_path
+    local found_asset=false
+
+    while IFS= read -r asset_path; do
+        [[ -n "$asset_path" ]] || continue
+        found_asset=true
+        if [[ ! -s "${web_output}${asset_path}" ]]; then
+            printf 'Web entry references a missing asset: %s%s\n' "$web_output" "$asset_path" >&2
+            printf '%s\n' 'Rebuild Web successfully before running up.sh; do not deploy this output.' >&2
+            exit 1
+        fi
+    done < <(sed -nE 's/.*(src|href)="(\/assets\/[^"?]+)(\?[^" ]*)?".*/\2/p' "$entry_html" | sort -u)
+
+    if [[ "$found_asset" == false ]]; then
+        printf 'Web entry does not reference any hashed assets: %s\n' "$entry_html" >&2
+        exit 1
+    fi
+}
+
 case "$USE_HOST_PROXY" in
     true|TRUE|1|yes|YES)
         USE_HOST_PROXY=true
@@ -361,6 +396,7 @@ fi
 
 printf 'Installing Web dependencies and building the production frontend.\n'
 prepare_web_build_dir
+clear_web_build_output
 run_host_command pnpm --dir "$WEB_BUILD_DIR" install --no-frozen-lockfile
 # Podman publishes the Web frontend for remote browsers, so its production API
 # endpoint must remain same-origin (/admin-api). Do not let an exported local
@@ -369,6 +405,7 @@ run_host_command env -u VITE_BASE_URL pnpm --dir "$WEB_BUILD_DIR" run build:prod
 publish_web_build_output
 require_dir "$PROJECT_ROOT/Web/dist-prod"
 require_file "$PROJECT_ROOT/Web/dist-prod/index.html"
+verify_web_entry_assets "$PROJECT_ROOT/Web/dist-prod"
 
 if [[ "$WEB_ONLY" == false ]]; then
     if [[ "$BUILD_MALL" == true ]]; then

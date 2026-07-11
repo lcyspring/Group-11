@@ -84,6 +84,7 @@ Without arguments, build runtime images and start the complete rootless Pod.
 --rebuild-web packages the current Web/dist-prod/ into the Web Nginx image and
         replaces only that container in an existing running Pod. It does not
         rebuild Java artifacts or restart Spring Boot, databases, or Mall.
+        Use it only after confirming the deployed Java artifacts are current.
 
 Optional environment variables:
   IMAGE_SOURCE=auto|archive|pull
@@ -509,8 +510,7 @@ require_project_assets() {
     require_file "${PROJECT_ROOT}/Server/mitedtsm-server/target/mitedtsm-server.jar"
     require_file "${SCRIPT_DIR}/init/init-mysql.sh"
     require_dir "${PROJECT_ROOT}/database"
-    require_dir "${PROJECT_ROOT}/Web/dist-prod"
-    require_file "${PROJECT_ROOT}/Web/dist-prod/index.html"
+    require_web_assets
     require_dir "${PROJECT_ROOT}/MallFrontend/unpackage/dist/build/web"
     require_file "${PROJECT_ROOT}/MallFrontend/unpackage/dist/build/web/index.html"
 }
@@ -519,6 +519,29 @@ require_web_assets() {
     require_file "${SCRIPT_DIR}/Containerfile"
     require_dir "${PROJECT_ROOT}/Web/dist-prod"
     require_file "${PROJECT_ROOT}/Web/dist-prod/index.html"
+    verify_web_entry_assets "${PROJECT_ROOT}/Web/dist-prod"
+}
+
+verify_web_entry_assets() {
+    local web_output="$1"
+    local entry_html="${web_output}/index.html"
+    local asset_path
+    local found_asset=false
+
+    while IFS= read -r asset_path; do
+        [[ -n "$asset_path" ]] || continue
+        found_asset=true
+        if [[ ! -s "${web_output}${asset_path}" ]]; then
+            printf 'Web entry references a missing asset: %s%s\n' "$web_output" "$asset_path" >&2
+            printf '%s\n' 'Rebuild Web successfully before running up.sh; do not deploy this output.' >&2
+            exit 1
+        fi
+    done < <(sed -nE 's/.*(src|href)="(\/assets\/[^"?]+)(\?[^" ]*)?".*/\2/p' "$entry_html" | sort -u)
+
+    if [[ "$found_asset" == false ]]; then
+        printf 'Web entry does not reference any hashed assets: %s\n' "$entry_html" >&2
+        exit 1
+    fi
 }
 
 check_archive_mode_prerequisites() {
