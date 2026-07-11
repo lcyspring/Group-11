@@ -125,6 +125,18 @@ This recovery mode is also useful after an interrupted terminal session. If it
 cannot start a frontend or reach its port, it prints the last health-check
 error instead of hiding it during retries.
 
+After changing only the management Web output, avoid a full Pod replacement
+and the Spring Boot startup wait:
+
+```bash
+bash ./build-assets.sh --web-only
+bash ./up.sh --rebuild-web
+```
+
+`--rebuild-web` packages `Web/dist-prod/` and replaces only the Web Nginx
+container. It leaves the Java server, databases, Redis, RabbitMQ, TDengine,
+and Mall container running.
+
 The required artifacts are:
 
 - `Server/mitedtsm-server/target/mitedtsm-server.jar`

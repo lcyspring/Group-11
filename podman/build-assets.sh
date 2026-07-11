@@ -362,7 +362,10 @@ fi
 printf 'Installing Web dependencies and building the production frontend.\n'
 prepare_web_build_dir
 run_host_command pnpm --dir "$WEB_BUILD_DIR" install --no-frozen-lockfile
-run_host_command pnpm --dir "$WEB_BUILD_DIR" run build:prod
+# Podman publishes the Web frontend for remote browsers, so its production API
+# endpoint must remain same-origin (/admin-api). Do not let an exported local
+# development VITE_BASE_URL override the empty value in .env.prod.
+run_host_command env -u VITE_BASE_URL pnpm --dir "$WEB_BUILD_DIR" run build:prod
 publish_web_build_output
 require_dir "$PROJECT_ROOT/Web/dist-prod"
 require_file "$PROJECT_ROOT/Web/dist-prod/index.html"

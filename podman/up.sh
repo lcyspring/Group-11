@@ -69,7 +69,7 @@ PROXY_ENV=()
 
 usage() {
     cat <<'EOF'
-Usage: bash ./up.sh [--check|--fast|--no-build|--frontends-only]
+Usage: bash ./up.sh [--check|--fast|--no-build|--frontends-only|--rebuild-web]
 
 Without arguments, build runtime images and start the complete rootless Pod.
 --check verifies the Podman deployment prerequisites only. It never loads,
@@ -81,6 +81,9 @@ Without arguments, build runtime images and start the complete rootless Pod.
 --frontends-only starts or replaces only the Web and Mall Nginx containers in
         an existing running Pod. It does not build images, recreate the Pod,
         or alter persistent data.
+--rebuild-web packages the current Web/dist-prod/ into the Web Nginx image and
+        replaces only that container in an existing running Pod. It does not
+        rebuild Java artifacts or restart Spring Boot, databases, or Mall.
 
 Optional environment variables:
   IMAGE_SOURCE=auto|archive|pull
@@ -105,6 +108,9 @@ case "$#" in
                 ;;
             --frontends-only)
                 START_MODE=frontends-only
+                ;;
+            --rebuild-web)
+                START_MODE=rebuild-web
                 ;;
             -h|--help)
                 usage
@@ -307,6 +313,12 @@ start_frontends() {
         "$MALL_IMAGE"
 }
 
+start_web_frontend() {
+    printf 'Starting Web frontend container.\n'
+    podman_cmd run -d --replace --name "$WEB_CONTAINER" --pod "$POD_NAME" --pull=never \
+        "$WEB_IMAGE"
+}
+
 wait_for_frontends() {
     wait_for 'Web frontend' 30 host_curl --fail --silent --show-error "http://127.0.0.1:${WEB_PORT}/"
     wait_for 'Mall frontend' 30 host_curl --fail --silent --show-error "http://127.0.0.1:${MALL_PORT}/"
@@ -503,6 +515,12 @@ require_project_assets() {
     require_file "${PROJECT_ROOT}/MallFrontend/unpackage/dist/build/web/index.html"
 }
 
+require_web_assets() {
+    require_file "${SCRIPT_DIR}/Containerfile"
+    require_dir "${PROJECT_ROOT}/Web/dist-prod"
+    require_file "${PROJECT_ROOT}/Web/dist-prod/index.html"
+}
+
 check_archive_mode_prerequisites() {
     [[ "$IMAGE_SOURCE" == "archive" ]] || return 0
 
@@ -546,6 +564,33 @@ build_runtime_images() {
     podman_cmd build --pull=never "${build_args[@]}" --target mall --tag "$MALL_IMAGE" --file "${SCRIPT_DIR}/Containerfile" "$PROJECT_ROOT"
 }
 
+build_web_image() {
+    local -a build_args=(
+        --build-arg "MYSQL_BASE_IMAGE=${MYSQL_BASE_IMAGE}"
+        --build-arg "RUNTIME_BASE_IMAGE=${RUNTIME_BASE_IMAGE}"
+        --build-arg "NGINX_BASE_IMAGE=${NGINX_BASE_IMAGE}"
+    )
+
+    printf 'Packaging current Web assets without rebuilding Java artifacts.\n'
+    podman_cmd build --pull=never "${build_args[@]}" --target web --tag "$WEB_IMAGE" --file "${SCRIPT_DIR}/Containerfile" "$PROJECT_ROOT"
+}
+
+rebuild_web_only() {
+    podman_cmd pod inspect "$POD_NAME" >/dev/null 2>&1 || {
+        printf 'Pod does not exist: %s. Run bash ./up.sh first.\n' "$POD_NAME" >&2
+        return 1
+    }
+    [[ "$(podman_cmd pod inspect --format '{{.State}}' "$POD_NAME")" == "Running" ]] || {
+        printf 'Pod is not running: %s. Run bash ./up.sh --fast or bash ./up.sh.\n' "$POD_NAME" >&2
+        return 1
+    }
+
+    ensure_image "$NGINX_BASE_IMAGE" "$(image_archive_path nginx-stable-alpine.tar)"
+    build_web_image
+    start_web_frontend
+    wait_for 'Web frontend' 30 host_curl --fail --silent --show-error "http://127.0.0.1:${WEB_PORT}/"
+}
+
 validate_configuration
 verify_rootless_podman
 configure_proxy
@@ -555,6 +600,8 @@ if [[ "$START_MODE" == "full" || "$START_MODE" == "check" ]]; then
     check_archive_mode_prerequisites
 elif [[ "$START_MODE" == "no-build" ]]; then
     require_runtime_images
+elif [[ "$START_MODE" == "rebuild-web" ]]; then
+    require_web_assets
 fi
 
 if [[ "$START_MODE" == "check" ]]; then
@@ -590,6 +637,12 @@ if [[ "$START_MODE" == "frontends-only" ]]; then
 
     start_frontends
     wait_for_frontends
+    show_access_urls
+    exit 0
+fi
+
+if [[ "$START_MODE" == "rebuild-web" ]]; then
+    rebuild_web_only
     show_access_urls
     exit 0
 fi

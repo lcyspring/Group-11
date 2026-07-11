@@ -201,6 +201,19 @@ bash ./up.sh --frontends-only
 该恢复模式只启动（或替换）两个 Nginx 前端容器；它不会打包镜像、重建 Pod、
 重置数据库或删除任何卷。若仍失败，脚本会输出最后一次健康检查的实际错误。
 
+### 5.2 只更新管理端 Web（不重启 Spring Boot）
+
+管理端前端修改后，先只生成 `Web/dist-prod/`，再仅重打包和替换 Web Nginx 容器：
+
+```bash
+bash ./build-assets.sh --web-only
+bash ./up.sh --rebuild-web
+```
+
+该路径不会执行 Maven，也不会重启 Spring Boot、MySQL、Redis、RabbitMQ、TDengine、
+商城前端或删除数据卷。生产构建会固定使用同源 `/admin-api`，因此 Windows 等远程浏览器的
+请求会发往 `http://<Ubuntu-IP>:8081/admin-api/...`，而不是其自身的 `localhost:8080`。
+
 ## 6. Windows 或虚拟机外部访问
 
 先在 Ubuntu 上查看局域网 IP：
@@ -310,6 +323,7 @@ cd podman && bash ./down.sh --volumes
 | 缺少 Java、Maven、pnpm、Podman | 运行 `bash ./install-build-deps-ubuntu.sh`，再运行 `build-assets.sh --check --build-mall`。 |
 | `ERR_PNPM_ENOTSUP ... symlink` | 仓库在 VMware 共享目录等不支持软链接的文件系统上。更新后用 `bash ./build-assets.sh --web-only` 重试即可；脚本会自动暂存 Web 构建，或用 `WEB_BUILD_WORKDIR=/tmp` 明确指定暂存目录。 |
 | `Could not resolve "./build/vite"` | `Web/build/vite/` 配置源码未随代码检出。更新仓库后重试；不要仅删除或重新安装 `node_modules`。 |
+| 页面能打开但请求发往 `http://localhost:8080` | 运行的是旧 Web 镜像或构建未成功。执行 `bash ./build-assets.sh --web-only && bash ./up.sh --rebuild-web`，然后在浏览器强制刷新。 |
 | `Run this script as the normal rootless Podman user` | 不要用 sudo 运行 `up.sh`；用安装 Podman 的普通用户运行。 |
 | `StopSignal SIGTERM failed ... resorting to SIGKILL` | 使用新版 `down.sh`；它默认等待 120 秒。仍超时时，查看后端日志并用 `STOP_TIMEOUT=300 bash ./down.sh` 增加优雅退出时间。 |
 | 已显示 `Spring Boot server is ready.`，但没有 Web/Mall 容器 | 执行 `bash ./up.sh --frontends-only`；它只补启动前端，不重新构建或重启后端。 |
