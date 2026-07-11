@@ -143,6 +143,10 @@ Maven。直接执行以下命令即可只重试 Web：
 bash ./build-assets.sh --web-only
 ```
 
+`Web/build/vite/` 是 Vite 配置源码，必须随 Git 仓库提供。如果构建提示
+`Could not resolve "./build/vite"`，说明代码检出不完整；先更新仓库再重试，
+重新安装 pnpm 依赖无法补回缺失源码。
+
 ## 5. 启动 Podman 服务
 
 ```bash
@@ -305,6 +309,7 @@ cd podman && bash ./down.sh --volumes
 | `HBuilderX completed without the expected H5 output` | 检查 CLI 输出；确认项目能被 HBuilderX 打开，并检查 `MallFrontend/unpackage/dist/build/`。 |
 | 缺少 Java、Maven、pnpm、Podman | 运行 `bash ./install-build-deps-ubuntu.sh`，再运行 `build-assets.sh --check --build-mall`。 |
 | `ERR_PNPM_ENOTSUP ... symlink` | 仓库在 VMware 共享目录等不支持软链接的文件系统上。更新后用 `bash ./build-assets.sh --web-only` 重试即可；脚本会自动暂存 Web 构建，或用 `WEB_BUILD_WORKDIR=/tmp` 明确指定暂存目录。 |
+| `Could not resolve "./build/vite"` | `Web/build/vite/` 配置源码未随代码检出。更新仓库后重试；不要仅删除或重新安装 `node_modules`。 |
 | `Run this script as the normal rootless Podman user` | 不要用 sudo 运行 `up.sh`；用安装 Podman 的普通用户运行。 |
 | `StopSignal SIGTERM failed ... resorting to SIGKILL` | 使用新版 `down.sh`；它默认等待 120 秒。仍超时时，查看后端日志并用 `STOP_TIMEOUT=300 bash ./down.sh` 增加优雅退出时间。 |
 | 已显示 `Spring Boot server is ready.`，但没有 Web/Mall 容器 | 执行 `bash ./up.sh --frontends-only`；它只补启动前端，不重新构建或重启后端。 |

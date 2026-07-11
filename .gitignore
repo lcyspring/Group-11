@@ -17,6 +17,10 @@ dist-*
 *.jar
 *.war
 
+# Web/build contains Vite configuration source, not generated output.
+!Web/build/
+!Web/build/**
+
 # Dependencies
 node_modules/
 unpackage/

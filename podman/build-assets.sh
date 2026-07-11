@@ -22,6 +22,11 @@ MISSING=()
 MALL_BUILD_SCRIPT="${SCRIPT_DIR}/build-mall-h5.sh"
 WEB_BUILD_DIR=""
 WEB_BUILD_STAGING_DIR=""
+WEB_VITE_CONFIG_FILES=(
+    'vite.config.ts'
+    'build/vite/index.ts'
+    'build/vite/optimize.ts'
+)
 
 usage() {
     cat <<'EOF'
@@ -108,6 +113,8 @@ pnpm_major() {
 }
 
 check_prerequisites() {
+    local web_config_file
+
     if [[ "$WEB_ONLY" == false ]]; then
         if ! find_java_17; then
             add_missing 'OpenJDK 17 (Ubuntu: openjdk-17-jdk; CachyOS/Arch: jdk17-openjdk; set JAVA_HOME if installed elsewhere)'
@@ -133,6 +140,12 @@ check_prerequisites() {
     if ! command -v tar >/dev/null 2>&1; then
         add_missing 'tar (required to stage the Web build on filesystems without symbolic-link support)'
     fi
+
+    for web_config_file in "${WEB_VITE_CONFIG_FILES[@]}"; do
+        if [[ ! -f "$PROJECT_ROOT/Web/$web_config_file" ]]; then
+            add_missing "Web Vite configuration: Web/$web_config_file (the repository checkout is incomplete; update it before building)"
+        fi
+    done
 
     if [[ "$WEB_ONLY" == false ]] && ! command -v podman >/dev/null 2>&1; then
         add_missing 'Podman (install podman for the deployment step)'

@@ -73,6 +73,11 @@ If the Java artifacts already succeeded and only the management-Web build
 failed, rerun just that stage with `bash ./build-assets.sh --web-only`; it does
 not invoke Maven or rebuild either JAR.
 
+The `Web/build/vite/` directory is Vite configuration source and must be
+tracked in Git. If a checkout reports that `./build/vite` cannot be resolved,
+update the repository before retrying; reinstalling pnpm dependencies cannot
+restore missing source files.
+
 The current Mall H5 output is versioned in Git so deployment members can pull
 and use it directly. HBuilderX is only needed when publishing a new Mall H5
 revision; generated Server JARs, management-Web output, and image archives
