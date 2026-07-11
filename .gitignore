@@ -1,0 +1,47 @@
+﻿# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.history/
+.vscode/
+
+# Build
+target/
+build/
+.gradle/
+dist/
+dist-*
+*.class
+*.jar
+*.war
+
+# Dependencies
+node_modules/
+unpackage/
+
+# Environment
+.env
+.env.local
+application-my.yaml
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-images/*.tar
+
+# Config
+*.keystore
+.flattened-pom.xml
+
+# Others
+*.swp
+*.xml.versionsBackup
+yarn.lock
+pnpm-lock.yaml
+package-lock.json
