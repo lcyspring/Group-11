@@ -34,14 +34,18 @@ reports missing tools or artifacts; it never builds anything.
 ```bash
 cd podman
 bash ./build-assets.sh --check
+# Requires HBuilderX CLI 3.1.5+; set HBUILDERX_CLI if cli is not on PATH.
+bash ./build-mall-h5.sh
 bash ./build-assets.sh
 ```
 
 `build-assets.sh` builds the Server, InitService, and management Web frontend.
-The Mall H5 frontend must first be issued with HBuilderX to
-`MallFrontend/unpackage/dist/build/web/`; the script reports that prerequisite
-explicitly. To build only the automated assets before that manual step, use
-`bash ./build-assets.sh --skip-mall-check`.
+`build-mall-h5.sh` uses HBuilderX CLI to build the Mall H5 frontend and
+normalizes its output to `MallFrontend/unpackage/dist/build/web/`. Alternatively,
+build every artifact in one command with
+`bash ./build-assets.sh --build-mall`. The `web` HBuilderX CLI platform is also
+available with HBuilderX 4.67-alpha+ via `HBUILDERX_PLATFORM=web`; the default
+`h5` platform works with HBuilderX 3.1.5+.
 
 After the assets are ready, start the Pod:
 
@@ -91,13 +95,14 @@ SERVER_PORT=18080 WEB_PORT=18081 MALL_PORT=18082 bash ./up.sh
 No `--network=pasta` is necessary: it is the rootless Podman default. The
 Pod publishes 8080, 8081, and 8082 to the real host.
 
-Proxy use is disabled by default. `up.sh`, `build-assets.sh`, and
-`install-build-deps-ubuntu.sh` clear the standard proxy environment variables;
+Proxy use is disabled by default. `up.sh`, `build-assets.sh`,
+`build-mall-h5.sh`, and `install-build-deps-ubuntu.sh` clear the standard proxy environment variables;
 Podman builds and containers also receive `--http-proxy=false`. To opt in to
 the host proxy deliberately, set `USE_HOST_PROXY=true` for the command:
 
 ```bash
 USE_HOST_PROXY=true bash ./install-build-deps-ubuntu.sh
+USE_HOST_PROXY=true bash ./build-mall-h5.sh
 USE_HOST_PROXY=true bash ./build-assets.sh
 USE_HOST_PROXY=true bash ./up.sh
 ```

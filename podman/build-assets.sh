@@ -10,12 +10,14 @@ USE_HOST_PROXY="${USE_HOST_PROXY:-false}"
 
 CHECK_ONLY=false
 SKIP_MALL_CHECK=false
+BUILD_MALL=false
 JAVA_17_HOME=""
 MISSING=()
+MALL_BUILD_SCRIPT="${SCRIPT_DIR}/build-mall-h5.sh"
 
 usage() {
     cat <<'EOF'
-Usage: bash ./build-assets.sh [--check] [--skip-mall-check]
+Usage: bash ./build-assets.sh [--check] [--build-mall] [--skip-mall-check]
 
 Builds the artifacts consumed by podman/Containerfile:
   - Server/mitedtsm-server/target/mitedtsm-server.jar
@@ -27,11 +29,13 @@ together. --check only performs this preflight and never builds anything.
 
 Options:
   --check             Report prerequisites only; do not install or build.
+  --build-mall        Build Mall H5 through build-mall-h5.sh and HBuilderX CLI.
   --skip-mall-check   Do not require the manually issued Mall H5 artifact.
                        Podman up.sh still requires it before deployment.
 
-The Mall frontend has no supported headless build entrypoint in this project.
-Use HBuilderX to issue it to MallFrontend/unpackage/dist/build/web/ first.
+Without --build-mall, the existing Mall output at
+MallFrontend/unpackage/dist/build/web/ is required. --build-mall requires the
+official HBuilderX CLI; set HBUILDERX_CLI when `cli` is not on PATH.
 
 Proxy settings are disabled by default. Set USE_HOST_PROXY=true to allow Maven
 and pnpm to use the host's proxy environment while building.
@@ -112,7 +116,9 @@ check_prerequisites() {
         add_missing 'Podman (install podman for the deployment step)'
     fi
 
-    if [[ "$SKIP_MALL_CHECK" == false ]] && [[ ! -f "$PROJECT_ROOT/MallFrontend/unpackage/dist/build/web/index.html" ]]; then
+    if [[ "$BUILD_MALL" == true ]] && ! "$MALL_BUILD_SCRIPT" --check >/dev/null 2>&1; then
+        add_missing 'HBuilderX CLI for Mall H5 (run build-mall-h5.sh --check for details)'
+    elif [[ "$SKIP_MALL_CHECK" == false ]] && [[ ! -f "$PROJECT_ROOT/MallFrontend/unpackage/dist/build/web/index.html" ]]; then
         add_missing 'Mall H5 artifact: use HBuilderX to issue MallFrontend/unpackage/dist/build/web/index.html, or pass --skip-mall-check for an automated-assets-only build'
     fi
 }
@@ -168,6 +174,9 @@ while [[ $# -gt 0 ]]; do
         --skip-mall-check)
             SKIP_MALL_CHECK=true
             ;;
+        --build-mall)
+            BUILD_MALL=true
+            ;;
         --help|-h)
             usage
             exit 0
@@ -180,6 +189,11 @@ while [[ $# -gt 0 ]]; do
     esac
     shift
 done
+
+if [[ "$BUILD_MALL" == true && "$SKIP_MALL_CHECK" == true ]]; then
+    printf '%s\n' '--build-mall and --skip-mall-check cannot be used together.' >&2
+    exit 2
+fi
 
 check_prerequisites
 if ((${#MISSING[@]})); then
@@ -205,6 +219,13 @@ run_host_command pnpm --dir "$PROJECT_ROOT/Web" install --no-frozen-lockfile
 run_host_command pnpm --dir "$PROJECT_ROOT/Web" run build:prod
 require_dir "$PROJECT_ROOT/Web/dist-prod"
 require_file "$PROJECT_ROOT/Web/dist-prod/index.html"
+
+if [[ "$BUILD_MALL" == true ]]; then
+    printf 'Building Mall H5 with HBuilderX CLI.\n'
+    USE_HOST_PROXY="$USE_HOST_PROXY" "$MALL_BUILD_SCRIPT"
+fi
+require_dir "$PROJECT_ROOT/MallFrontend/unpackage/dist/build/web"
+require_file "$PROJECT_ROOT/MallFrontend/unpackage/dist/build/web/index.html"
 
 printf '\nApplication assets are ready. Start the Pod with:\n'
 printf '  cd %s && bash ./up.sh\n' "$SCRIPT_DIR"

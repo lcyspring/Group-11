@@ -143,7 +143,6 @@ podman --version
 
 cat <<'EOF'
 
-HBuilderX is not installed by this script. It is required only to issue the
-Mall H5 artifact at MallFrontend/unpackage/dist/build/web/. Once that exists,
-run: bash ./build-assets.sh --check
+HBuilderX CLI is not installed by this script. Install HBuilderX CLI 3.1.5+
+separately, then run: bash ./build-mall-h5.sh --check
 EOF
