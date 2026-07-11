@@ -1,4 +1,10 @@
 unpackage/*
+!unpackage/dist/
+unpackage/dist/*
+!unpackage/dist/build/
+unpackage/dist/build/*
+!unpackage/dist/build/web/
+!unpackage/dist/build/web/**
 node_modules/*
 .idea/*
 deploy.sh

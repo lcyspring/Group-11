@@ -1,0 +1,1 @@
+import{a1 as s,o as a,g as e,w as n,j as o,k as t,l,co as r}from"./index-DwKTrnCB.js";const u={__name:"webview",setup(u){const c=s("");return a((s=>{c.value=decodeURIComponent(s.url)})),(s,a)=>{const u=r,d=o;return t(),e(d,null,{default:n((()=>[l(u,{src:c.value},null,8,["src"])])),_:1})}}};export{u as default};

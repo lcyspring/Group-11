@@ -20,6 +20,13 @@ dist-*
 # Dependencies
 node_modules/
 unpackage/
+# The current Mall H5 release is distributed through Git so deployment
+# members do not need HBuilderX. Other unpackage outputs remain ignored.
+!MallFrontend/unpackage/
+!MallFrontend/unpackage/dist/
+!MallFrontend/unpackage/dist/build/
+!MallFrontend/unpackage/dist/build/web/
+!MallFrontend/unpackage/dist/build/web/**
 
 # Environment
 .env
