@@ -215,6 +215,9 @@ podman logs --tail 200 mitedtsm-rootless-web
 # 停止服务，保留数据库卷
 cd podman && bash ./down.sh
 
+# 默认最多等待 120 秒让 Java/Quartz 优雅退出；需要更久时自行调整
+cd podman && STOP_TIMEOUT=300 bash ./down.sh
+
 # 停止服务并删除数据库、Redis、RabbitMQ、TDengine 数据卷（不可恢复）
 cd podman && bash ./down.sh --volumes
 ```
@@ -227,6 +230,7 @@ cd podman && bash ./down.sh --volumes
 | `HBuilderX completed without the expected H5 output` | 检查 CLI 输出；确认项目能被 HBuilderX 打开，并检查 `MallFrontend/unpackage/dist/build/`。 |
 | 缺少 Java、Maven、pnpm、Podman | 运行 `bash ./install-build-deps-ubuntu.sh`，再运行 `build-assets.sh --check --build-mall`。 |
 | `Run this script as the normal rootless Podman user` | 不要用 sudo 运行 `up.sh`；用安装 Podman 的普通用户运行。 |
+| `StopSignal SIGTERM failed ... resorting to SIGKILL` | 使用新版 `down.sh`；它默认等待 120 秒。仍超时时，查看后端日志并用 `STOP_TIMEOUT=300 bash ./down.sh` 增加优雅退出时间。 |
 | 访问页面正常但登录报错 | 使用 Ubuntu/虚拟机 IP 加 `:8081`，确认请求地址是 `/admin-api/...` 而不是 Windows 的 `localhost:8080`；重新构建 Web。 |
 | 拉取镜像失败 | 检查网络；需要代理时显式设置 `USE_HOST_PROXY=true`；离线环境准备 `docker-images/*.tar` 并使用 `IMAGE_SOURCE=archive`。 |
 

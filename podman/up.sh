@@ -12,6 +12,9 @@ POD_NAME="${POD_NAME:-mitedtsm-rootless}"
 SERVER_PORT="${SERVER_PORT:-8080}"
 WEB_PORT="${WEB_PORT:-8081}"
 MALL_PORT="${MALL_PORT:-8082}"
+# Used when replacing an already-running Pod. The Java server may wait for
+# Quartz jobs during shutdown, so this intentionally exceeds Podman's 10s default.
+STOP_TIMEOUT="${STOP_TIMEOUT:-120}"
 # auto: load a local archive when present, otherwise pull from its registry.
 # archive: never use registries; pull: always pull from registries.
 IMAGE_SOURCE="${IMAGE_SOURCE:-auto}"
@@ -201,6 +204,11 @@ case "$IMAGE_SOURCE" in
         ;;
 esac
 
+[[ "$STOP_TIMEOUT" =~ ^[1-9][0-9]*$ ]] || {
+    printf 'STOP_TIMEOUT must be a positive number of seconds; got: %s\n' "$STOP_TIMEOUT" >&2
+    exit 1
+}
+
 PROXY_ENV=()
 if [[ "$USE_HOST_PROXY" == "true" ]]; then
     # In this shared Pod, 127.0.0.1 is the Pod itself, not the real host.
@@ -249,7 +257,13 @@ ensure_volume "$RABBITMQ_VOLUME"
 ensure_volume "$TDENGINE_VOLUME"
 
 if run pod inspect "$POD_NAME" >/dev/null 2>&1; then
-    run pod rm --force "$POD_NAME"
+    printf 'Replacing existing Pod %s gracefully (timeout: %ss).\n' "$POD_NAME" "$STOP_TIMEOUT"
+    if ! run pod stop --time "$STOP_TIMEOUT" "$POD_NAME"; then
+        printf 'Graceful stop failed; forcibly removing Pod %s.\n' "$POD_NAME" >&2
+        run pod rm --force "$POD_NAME"
+    else
+        run pod rm "$POD_NAME"
+    fi
 fi
 
 printf 'Creating rootless Pasta Pod %s.\n' "$POD_NAME"
