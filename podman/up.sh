@@ -15,8 +15,10 @@ MALL_PORT="${MALL_PORT:-8082}"
 # auto: load a local archive when present, otherwise pull from its registry.
 # archive: never use registries; pull: always pull from registries.
 IMAGE_SOURCE="${IMAGE_SOURCE:-auto}"
+# Proxy use is opt-in. Set USE_HOST_PROXY=true to reuse host proxy settings.
+USE_HOST_PROXY="${USE_HOST_PROXY:-false}"
 # Podman/Pasta creates this dedicated host mapping in each container's
-# /etc/hosts.  Use it for a proxy listening on the real host's loopback.
+# /etc/hosts. Use it for a proxy listening on the real host's loopback.
 HOST_PROXY_NAME="host.containers.internal"
 
 MYSQL_CONTAINER="${POD_NAME}-mysql"
@@ -38,9 +40,35 @@ INIT_IMAGE="${POD_NAME}-init-service:latest"
 SERVER_IMAGE="${POD_NAME}-server:latest"
 WEB_IMAGE="${POD_NAME}-web:latest"
 MALL_IMAGE="${POD_NAME}-mall:latest"
+PODMAN_PROXY_ARGS=(--http-proxy=false)
 
 run() {
-    "${PODMAN[@]}" "$@"
+    local subcommand="$1"
+    shift
+    local command=("${PODMAN[@]}" "$subcommand")
+
+    case "$subcommand" in
+        build|run)
+            command+=("${PODMAN_PROXY_ARGS[@]}")
+            ;;
+    esac
+    command+=("$@")
+
+    if [[ "$USE_HOST_PROXY" == "true" ]]; then
+        "${command[@]}"
+    else
+        env -u http_proxy -u HTTP_PROXY -u https_proxy -u HTTPS_PROXY \
+            -u all_proxy -u ALL_PROXY -u no_proxy -u NO_PROXY "${command[@]}"
+    fi
+}
+
+host_curl() {
+    if [[ "$USE_HOST_PROXY" == "true" ]]; then
+        curl "$@"
+    else
+        env -u http_proxy -u HTTP_PROXY -u https_proxy -u HTTPS_PROXY \
+            -u all_proxy -u ALL_PROXY -u no_proxy -u NO_PROXY curl "$@"
+    fi
 }
 
 require_file() {
@@ -146,6 +174,20 @@ command -v podman >/dev/null || {
     exit 1
 }
 
+case "$USE_HOST_PROXY" in
+    true|TRUE|1|yes|YES)
+        USE_HOST_PROXY=true
+        PODMAN_PROXY_ARGS=()
+        ;;
+    false|FALSE|0|no|NO|'')
+        USE_HOST_PROXY=false
+        ;;
+    *)
+        printf 'USE_HOST_PROXY must be true or false; got: %s\n' "$USE_HOST_PROXY" >&2
+        exit 1
+        ;;
+esac
+
 if [[ "$(run info --format '{{.Host.Security.Rootless}}')" != "true" ]]; then
     printf 'Run this script as the normal rootless Podman user.\n' >&2
     exit 1
@@ -159,24 +201,25 @@ case "$IMAGE_SOURCE" in
         ;;
 esac
 
-# Image builds run on the real host and retain its normal proxy environment.
-# In this shared Pod, 127.0.0.1 is the Pod itself, not the real host.  Pasta's
-# host.containers.internal mapping reaches the real host's loopback instead.
-CONTAINER_HTTP_PROXY="${CONTAINER_HTTP_PROXY:-$(container_proxy_url "${http_proxy:-${HTTP_PROXY:-}}")}"
-CONTAINER_HTTPS_PROXY="${CONTAINER_HTTPS_PROXY:-$(container_proxy_url "${https_proxy:-${HTTPS_PROXY:-}}")}"
-CONTAINER_ALL_PROXY="${CONTAINER_ALL_PROXY:-$(container_proxy_url "${all_proxy:-${ALL_PROXY:-}}")}"
 PROXY_ENV=()
-if [[ -n "$CONTAINER_HTTP_PROXY" ]]; then
-    PROXY_ENV+=(--env "http_proxy=${CONTAINER_HTTP_PROXY}" --env "HTTP_PROXY=${CONTAINER_HTTP_PROXY}")
-fi
-if [[ -n "$CONTAINER_HTTPS_PROXY" ]]; then
-    PROXY_ENV+=(--env "https_proxy=${CONTAINER_HTTPS_PROXY}" --env "HTTPS_PROXY=${CONTAINER_HTTPS_PROXY}")
-fi
-if [[ -n "$CONTAINER_ALL_PROXY" ]]; then
-    PROXY_ENV+=(--env "all_proxy=${CONTAINER_ALL_PROXY}" --env "ALL_PROXY=${CONTAINER_ALL_PROXY}")
-fi
-if ((${#PROXY_ENV[@]})); then
-    PROXY_ENV+=(--env "no_proxy=127.0.0.1,localhost,${HOST_PROXY_NAME}" --env "NO_PROXY=127.0.0.1,localhost,${HOST_PROXY_NAME}")
+if [[ "$USE_HOST_PROXY" == "true" ]]; then
+    # In this shared Pod, 127.0.0.1 is the Pod itself, not the real host.
+    # Pasta's host.containers.internal mapping reaches the host loopback.
+    CONTAINER_HTTP_PROXY="${CONTAINER_HTTP_PROXY:-$(container_proxy_url "${http_proxy:-${HTTP_PROXY:-}}")}"
+    CONTAINER_HTTPS_PROXY="${CONTAINER_HTTPS_PROXY:-$(container_proxy_url "${https_proxy:-${HTTPS_PROXY:-}}")}"
+    CONTAINER_ALL_PROXY="${CONTAINER_ALL_PROXY:-$(container_proxy_url "${all_proxy:-${ALL_PROXY:-}}")}"
+    if [[ -n "$CONTAINER_HTTP_PROXY" ]]; then
+        PROXY_ENV+=(--env "http_proxy=${CONTAINER_HTTP_PROXY}" --env "HTTP_PROXY=${CONTAINER_HTTP_PROXY}")
+    fi
+    if [[ -n "$CONTAINER_HTTPS_PROXY" ]]; then
+        PROXY_ENV+=(--env "https_proxy=${CONTAINER_HTTPS_PROXY}" --env "HTTPS_PROXY=${CONTAINER_HTTPS_PROXY}")
+    fi
+    if [[ -n "$CONTAINER_ALL_PROXY" ]]; then
+        PROXY_ENV+=(--env "all_proxy=${CONTAINER_ALL_PROXY}" --env "ALL_PROXY=${CONTAINER_ALL_PROXY}")
+    fi
+    if ((${#PROXY_ENV[@]})); then
+        PROXY_ENV+=(--env "no_proxy=127.0.0.1,localhost,${HOST_PROXY_NAME}" --env "NO_PROXY=127.0.0.1,localhost,${HOST_PROXY_NAME}")
+    fi
 fi
 
 require_file "${PROJECT_ROOT}/InitService/target/mitedtsm-init-service.jar"
@@ -260,7 +303,7 @@ run run -d --replace --name "$SERVER_CONTAINER" --pod "$POD_NAME" --pull=never \
     --env SPRING_PROFILES_ACTIVE=local \
     "$SERVER_IMAGE"
 
-wait_for 'Spring Boot server' 180 curl --fail --silent --show-error "http://127.0.0.1:${SERVER_PORT}/actuator/health"
+wait_for 'Spring Boot server' 180 host_curl --fail --silent --show-error "http://127.0.0.1:${SERVER_PORT}/actuator/health"
 
 run run -d --replace --name "$WEB_CONTAINER" --pod "$POD_NAME" --pull=never \
     "$WEB_IMAGE"
@@ -268,8 +311,8 @@ run run -d --replace --name "$WEB_CONTAINER" --pod "$POD_NAME" --pull=never \
 run run -d --replace --name "$MALL_CONTAINER" --pod "$POD_NAME" --pull=never \
     "$MALL_IMAGE"
 
-wait_for 'Web frontend' 30 curl --fail --silent --show-error "http://127.0.0.1:${WEB_PORT}/"
-wait_for 'Mall frontend' 30 curl --fail --silent --show-error "http://127.0.0.1:${MALL_PORT}/"
+wait_for 'Web frontend' 30 host_curl --fail --silent --show-error "http://127.0.0.1:${WEB_PORT}/"
+wait_for 'Mall frontend' 30 host_curl --fail --silent --show-error "http://127.0.0.1:${MALL_PORT}/"
 
 trap - EXIT
 printf '\nRootless Pasta Pod is running on the real host.\n'

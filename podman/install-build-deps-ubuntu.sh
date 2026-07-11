@@ -6,6 +6,7 @@ set -Eeuo pipefail
 
 NODE_MAJOR="${NODE_MAJOR:-20}"
 PNPM_VERSION="${PNPM_VERSION:-9.15.4}"
+USE_HOST_PROXY="${USE_HOST_PROXY:-false}"
 
 usage() {
     cat <<'EOF'
@@ -20,9 +21,11 @@ Installs the Ubuntu host-side requirements for podman/build-assets.sh:
 Optional environment variables:
   NODE_MAJOR=20    NodeSource major version to install (default: 20)
   PNPM_VERSION=9.15.4
+  USE_HOST_PROXY=true  Allow apt, curl, and npm to use host proxy settings.
 
 This script needs sudo when it is not run as root. It does not install
-HBuilderX: build the Mall H5 artifact with HBuilderX separately.
+HBuilderX: build the Mall H5 artifact with HBuilderX separately. Proxy
+settings are disabled by default.
 EOF
 }
 
@@ -57,8 +60,35 @@ else
     exit 1
 fi
 
+case "$USE_HOST_PROXY" in
+    true|TRUE|1|yes|YES)
+        USE_HOST_PROXY=true
+        ;;
+    false|FALSE|0|no|NO|'')
+        USE_HOST_PROXY=false
+        ;;
+    *)
+        printf 'USE_HOST_PROXY must be true or false; got: %s\n' "$USE_HOST_PROXY" >&2
+        exit 2
+        ;;
+esac
+
 run_root() {
-    "${SUDO[@]}" "$@"
+    if [[ "$USE_HOST_PROXY" == "true" ]]; then
+        "${SUDO[@]}" "$@"
+    else
+        "${SUDO[@]}" env -u http_proxy -u HTTP_PROXY -u https_proxy -u HTTPS_PROXY \
+            -u all_proxy -u ALL_PROXY -u no_proxy -u NO_PROXY "$@"
+    fi
+}
+
+run_host_command() {
+    if [[ "$USE_HOST_PROXY" == "true" ]]; then
+        "$@"
+    else
+        env -u http_proxy -u HTTP_PROXY -u https_proxy -u HTTPS_PROXY \
+            -u all_proxy -u ALL_PROXY -u no_proxy -u NO_PROXY "$@"
+    fi
 }
 
 node_major() {
@@ -90,7 +120,7 @@ if ! command -v node >/dev/null 2>&1 || [[ "$(node_major)" -lt "$NODE_MAJOR" ]];
 
     printf 'Installing Node.js %s from NodeSource.\n' "$NODE_MAJOR"
     run_root install -d -m 0755 /etc/apt/keyrings
-    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+    run_host_command curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
         | run_root gpg --dearmor --yes --output "$keyring"
     printf 'deb [signed-by=%s] https://deb.nodesource.com/node_%s.x nodistro main\n' \
         "$keyring" "$NODE_MAJOR" \

@@ -6,6 +6,7 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+USE_HOST_PROXY="${USE_HOST_PROXY:-false}"
 
 CHECK_ONLY=false
 SKIP_MALL_CHECK=false
@@ -31,7 +32,19 @@ Options:
 
 The Mall frontend has no supported headless build entrypoint in this project.
 Use HBuilderX to issue it to MallFrontend/unpackage/dist/build/web/ first.
+
+Proxy settings are disabled by default. Set USE_HOST_PROXY=true to allow Maven
+and pnpm to use the host's proxy environment while building.
 EOF
+}
+
+run_host_command() {
+    if [[ "$USE_HOST_PROXY" == "true" ]]; then
+        "$@"
+    else
+        env -u http_proxy -u HTTP_PROXY -u https_proxy -u HTTPS_PROXY \
+            -u all_proxy -u ALL_PROXY -u no_proxy -u NO_PROXY "$@"
+    fi
 }
 
 add_missing() {
@@ -131,8 +144,21 @@ require_dir() {
 }
 
 mvn_with_java_17() {
-    env JAVA_HOME="$JAVA_17_HOME" PATH="$JAVA_17_HOME/bin:$PATH" mvn "$@"
+    run_host_command env JAVA_HOME="$JAVA_17_HOME" PATH="$JAVA_17_HOME/bin:$PATH" mvn "$@"
 }
+
+case "$USE_HOST_PROXY" in
+    true|TRUE|1|yes|YES)
+        USE_HOST_PROXY=true
+        ;;
+    false|FALSE|0|no|NO|'')
+        USE_HOST_PROXY=false
+        ;;
+    *)
+        printf 'USE_HOST_PROXY must be true or false; got: %s\n' "$USE_HOST_PROXY" >&2
+        exit 2
+        ;;
+esac
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -175,8 +201,8 @@ mvn_with_java_17 -f "$PROJECT_ROOT/InitService/pom.xml" clean package -DskipTest
 require_file "$PROJECT_ROOT/InitService/target/mitedtsm-init-service.jar"
 
 printf 'Installing Web dependencies and building the production frontend.\n'
-pnpm --dir "$PROJECT_ROOT/Web" install --no-frozen-lockfile
-pnpm --dir "$PROJECT_ROOT/Web" run build:prod
+run_host_command pnpm --dir "$PROJECT_ROOT/Web" install --no-frozen-lockfile
+run_host_command pnpm --dir "$PROJECT_ROOT/Web" run build:prod
 require_dir "$PROJECT_ROOT/Web/dist-prod"
 require_file "$PROJECT_ROOT/Web/dist-prod/index.html"
 

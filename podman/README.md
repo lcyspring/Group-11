@@ -89,8 +89,19 @@ SERVER_PORT=18080 WEB_PORT=18081 MALL_PORT=18082 bash ./up.sh
 ## Network and proxy
 
 No `--network=pasta` is necessary: it is the rootless Podman default. The
-Pod publishes 8080, 8081, and 8082 to the real host. A host proxy listening
-on `127.0.0.1` or `localhost` is rewritten to
-`host.containers.internal`, Pasta's dedicated host mapping inside the Pod.
-No host network, nested Podman, systemd, Compose, or `--http-proxy=false` is
-used.
+Pod publishes 8080, 8081, and 8082 to the real host.
+
+Proxy use is disabled by default. `up.sh`, `build-assets.sh`, and
+`install-build-deps-ubuntu.sh` clear the standard proxy environment variables;
+Podman builds and containers also receive `--http-proxy=false`. To opt in to
+the host proxy deliberately, set `USE_HOST_PROXY=true` for the command:
+
+```bash
+USE_HOST_PROXY=true bash ./install-build-deps-ubuntu.sh
+USE_HOST_PROXY=true bash ./build-assets.sh
+USE_HOST_PROXY=true bash ./up.sh
+```
+
+When proxy use is enabled, a proxy listening on `127.0.0.1` or `localhost` is
+rewritten to `host.containers.internal`, Pasta's dedicated host mapping inside
+the Pod. No host network, nested Podman, systemd, or Compose is used.
