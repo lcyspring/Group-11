@@ -15,7 +15,7 @@ Usage: bash ./install-build-deps-ubuntu.sh
 Installs the Ubuntu host-side requirements for podman/build-assets.sh:
   - OpenJDK 17 and Maven
   - Node.js 20 and pnpm 9
-  - Podman and rootless-networking helpers
+  - Podman, Pasta (`passt`), and rootless-storage helpers
   - native build prerequisites used by JavaScript dependencies
 
 Optional environment variables:
@@ -108,7 +108,7 @@ run_root env DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-r
     openjdk-17-jdk \
     maven \
     podman \
-    slirp4netns \
+    passt \
     uidmap \
     fuse-overlayfs \
     build-essential \

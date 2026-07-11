@@ -30,6 +30,14 @@ cd podman
 bash ./install-build-deps-ubuntu.sh
 ```
 
+On CachyOS/Arch, use the matching installer instead. It uses Pasta through
+`passt`; `slirp4netns` is not required.
+
+```bash
+cd podman
+bash ./install-build-deps-cachyos.sh
+```
+
 Build the application assets before starting the Pod. The check command only
 reports missing tools or artifacts; it never builds anything.
 
@@ -48,6 +56,11 @@ build every artifact in one command with
 `bash ./build-assets.sh --build-mall`. The `web` HBuilderX CLI platform is also
 available with HBuilderX 4.67-alpha+ via `HBUILDERX_PLATFORM=web`; the default
 `h5` platform works with HBuilderX 3.1.5+.
+
+The current Mall H5 output is versioned in Git so deployment members can pull
+and use it directly. HBuilderX is only needed when publishing a new Mall H5
+revision; generated Server JARs, management-Web output, and image archives
+remain unversioned.
 
 After the assets are ready, start the Pod:
 

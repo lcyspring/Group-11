@@ -10,7 +10,9 @@
 | HBuilderX CLI 使用者 | 通过脚本生成商城 H5 静态资源；可与 Ubuntu 部署人员是同一人 |
 | Windows 使用者 | 通过 Ubuntu/虚拟机 IP 和前端端口访问系统，不需要安装 Podman |
 
-构建产物（JAR、`Web/dist-prod`、商城 H5 目录、镜像 tar）均不会提交到 Git。每个部署环境都要自行构建，或从可信构建机复制产物。
+后端 JAR、`Web/dist-prod` 和镜像 tar 不会提交到 Git。当前商城 H5 的
+`MallFrontend/unpackage/dist/build/web/` 已提交，成员拉取代码即可使用；只有
+更新商城 H5 时才需要在有 HBuilderX 的机器上重新生成并提交该目录。
 
 ## 2. 首次部署：Ubuntu 主机
 
@@ -42,6 +44,17 @@ bash ./install-build-deps-ubuntu.sh
 ```bash
 USE_HOST_PROXY=true bash ./install-build-deps-ubuntu.sh
 ```
+
+如果部署主机是 CachyOS（或 Arch 系），使用对应脚本：
+
+```bash
+cd podman
+bash ./install-build-deps-cachyos.sh
+```
+
+它会安装 `jdk17-openjdk`、`maven`、`pnpm` 等缺失依赖，并使用已安装的
+Pasta/`passt` 进行 rootless Podman 网络；不要求 `slirp4netns`。先仅查看缺失
+依赖而不安装时可执行 `bash ./install-build-deps-cachyos.sh --check`。
 
 ## 3. 安装并配置 HBuilderX CLI
 
@@ -80,7 +93,7 @@ HBUILDERX_CLI=/opt/HBuilderX/cli HBUILDERX_PLATFORM=web \
   bash ./build-mall-h5.sh
 ```
 
-如果 HBuilderX CLI 在 Windows 构建机上执行，请将生成的 `MallFrontend/unpackage/dist/build/web/` 整个目录复制到 Ubuntu 仓库的相同位置，再继续下面步骤。
+如果 HBuilderX CLI 在 Windows 构建机上执行，请将生成的 `MallFrontend/unpackage/dist/build/web/` 整个目录复制到仓库相同位置，然后只提交并推送该目录；Ubuntu 部署机拉取后无需安装 HBuilderX。
 
 ## 4. 一次构建全部应用产物
 

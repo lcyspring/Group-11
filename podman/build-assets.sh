@@ -70,7 +70,9 @@ find_java_17() {
         java_binary="$(readlink -f "$(command -v java)")"
         candidates+=("$(dirname "$(dirname "$java_binary")")")
     fi
-    candidates+=(/usr/lib/jvm/java-17-openjdk-* /usr/lib/jvm/java-17-*)
+    # Ubuntu uses java-17-openjdk-amd64; Arch/CachyOS uses the exact directory
+    # /usr/lib/jvm/java-17-openjdk.
+    candidates+=(/usr/lib/jvm/java-17-openjdk /usr/lib/jvm/java-17-openjdk-* /usr/lib/jvm/java-17-*)
 
     for candidate in "${candidates[@]}"; do
         [[ -x "$candidate/bin/java" && -x "$candidate/bin/javac" ]] || continue
@@ -93,7 +95,7 @@ pnpm_major() {
 
 check_prerequisites() {
     if ! find_java_17; then
-        add_missing 'OpenJDK 17 (install openjdk-17-jdk; set JAVA_HOME if it is installed outside /usr/lib/jvm)'
+        add_missing 'OpenJDK 17 (Ubuntu: openjdk-17-jdk; CachyOS/Arch: jdk17-openjdk; set JAVA_HOME if installed elsewhere)'
     fi
 
     if ! command -v mvn >/dev/null 2>&1; then
@@ -129,8 +131,23 @@ report_missing() {
     for item in "${MISSING[@]}"; do
         printf '  - %s\n' "$item" >&2
     done
-    printf '\nOn Ubuntu, install the automated prerequisites with:\n' >&2
-    printf '  bash %s/install-build-deps-ubuntu.sh\n' "$SCRIPT_DIR" >&2
+    if [[ -r /etc/os-release ]]; then
+        # shellcheck disable=SC1091
+        source /etc/os-release
+        case "${ID:-}" in
+            cachyos|arch)
+                printf '\nOn CachyOS/Arch, install the automated prerequisites with:\n' >&2
+                printf '  bash %s/install-build-deps-cachyos.sh\n' "$SCRIPT_DIR" >&2
+                return
+                ;;
+            ubuntu)
+                printf '\nOn Ubuntu, install the automated prerequisites with:\n' >&2
+                printf '  bash %s/install-build-deps-ubuntu.sh\n' "$SCRIPT_DIR" >&2
+                return
+                ;;
+        esac
+    fi
+    printf '\nInstall the missing prerequisites listed above, then rerun --check.\n' >&2
 }
 
 require_file() {
