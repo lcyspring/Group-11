@@ -136,6 +136,17 @@ SERVER_PORT=18080 WEB_PORT=18081 MALL_PORT=18082 bash ./up.sh
 
 `up.sh` 会构建运行镜像、创建 rootless Podman Pod、初始化数据库，并等待各服务健康后输出访问地址。
 
+如果输出已经出现 `Spring Boot server is ready.`，但随后中断，且
+`podman ps --pod` 中没有 `mitedtsm-rootless-web` 或
+`mitedtsm-rootless-mall`，不需要重新构建、重启后端或删除数据。直接执行：
+
+```bash
+bash ./up.sh --frontends-only
+```
+
+该恢复模式只启动（或替换）两个 Nginx 前端容器；它不会打包镜像、重建 Pod、
+重置数据库或删除任何卷。若仍失败，脚本会输出最后一次健康检查的实际错误。
+
 ## 6. Windows 或虚拟机外部访问
 
 先在 Ubuntu 上查看局域网 IP：
@@ -231,6 +242,7 @@ cd podman && bash ./down.sh --volumes
 | 缺少 Java、Maven、pnpm、Podman | 运行 `bash ./install-build-deps-ubuntu.sh`，再运行 `build-assets.sh --check --build-mall`。 |
 | `Run this script as the normal rootless Podman user` | 不要用 sudo 运行 `up.sh`；用安装 Podman 的普通用户运行。 |
 | `StopSignal SIGTERM failed ... resorting to SIGKILL` | 使用新版 `down.sh`；它默认等待 120 秒。仍超时时，查看后端日志并用 `STOP_TIMEOUT=300 bash ./down.sh` 增加优雅退出时间。 |
+| 已显示 `Spring Boot server is ready.`，但没有 Web/Mall 容器 | 执行 `bash ./up.sh --frontends-only`；它只补启动前端，不重新构建或重启后端。 |
 | 访问页面正常但登录报错 | 使用 Ubuntu/虚拟机 IP 加 `:8081`，确认请求地址是 `/admin-api/...` 而不是 Windows 的 `localhost:8080`；重新构建 Web。 |
 | 拉取镜像失败 | 检查网络；需要代理时显式设置 `USE_HOST_PROXY=true`；离线环境准备 `docker-images/*.tar` 并使用 `IMAGE_SOURCE=archive`。 |
 

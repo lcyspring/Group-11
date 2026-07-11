@@ -56,6 +56,18 @@ cd podman
 bash ./up.sh
 ```
 
+If a previous start reached `Spring Boot server is ready.` but stopped before
+the two Nginx frontends were created, start just those missing containers
+without rebuilding images or restarting the Pod:
+
+```bash
+bash ./up.sh --frontends-only
+```
+
+This recovery mode is also useful after an interrupted terminal session. If it
+cannot start a frontend or reach its port, it prints the last health-check
+error instead of hiding it during retries.
+
 The required artifacts are:
 
 - `Server/mitedtsm-server/target/mitedtsm-server.jar`
