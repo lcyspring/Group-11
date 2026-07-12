@@ -3,15 +3,7 @@ import { staticUrl } from '@/sheep/config';
 
 const cdn = (url = '', cdnurl = '') => {
   if (!url) return '';
-  // 如果 staticUrl 是 local，从完整 URL 中提取本地路径
-  if (staticUrl === 'local' && url.indexOf('http') === 0) {
-    try {
-      const urlObj = new URL(url);
-      return urlObj.pathname;
-    } catch (e) {
-      return url;
-    }
-  }
+  // 完整的远程资源地址必须保留源站；local 仅用于项目内的相对静态路径。
   if (url.indexOf('http') === 0) {
     return url;
   }

@@ -40,6 +40,7 @@ application-my.yaml
 # The management Web build requires this shared Vite configuration. VITE_
 # values are shipped to browsers and must not contain server-side secrets.
 !Web/.env
+!MallFrontend/.env
 
 # Logs
 *.log
