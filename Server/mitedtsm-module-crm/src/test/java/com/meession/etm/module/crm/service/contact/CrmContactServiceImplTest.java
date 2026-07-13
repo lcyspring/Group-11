@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.meession.etm.framework.test.core.util.AssertUtils.assertServiceException;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTACT_CONCURRENT_CHANGE;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTACT_MOBILE_EXISTS;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTACT_PRIMARY_DELETE_FAIL;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTACT_PRIMARY_MOVE_FAIL;
@@ -57,6 +58,10 @@ class CrmContactServiceImplTest {
         CrmContactDO oldContact = contact(10L, 100L, false).setMobile("13900139000");
         CrmContactMapper mapper = proxy(CrmContactMapper.class, (proxy, method, args) -> switch (method.getName()) {
             case "selectById" -> {
+                calls.add("select-contact");
+                yield oldContact;
+            }
+            case "selectByIdForUpdate" -> {
                 calls.add("select-contact");
                 yield oldContact;
             }
@@ -182,6 +187,10 @@ class CrmContactServiceImplTest {
                 calls.add("select-contact");
                 yield oldContact;
             }
+            case "selectByIdForUpdate" -> {
+                calls.add("select-contact");
+                yield oldContact;
+            }
             case "lockCustomerById" -> {
                 calls.add("lock:" + args[0]);
                 yield args[0];
@@ -214,7 +223,7 @@ class CrmContactServiceImplTest {
         CrmContactDO oldContact = contact(10L, 100L, false);
         CrmContactDO oldPrimary = new CrmContactDO().setId(8L).setName("原首联系人").setPrimaryContact(true);
         CrmContactMapper mapper = proxy(CrmContactMapper.class, (proxy, method, args) -> switch (method.getName()) {
-            case "selectById" -> oldContact;
+            case "selectById", "selectByIdForUpdate" -> oldContact;
             case "lockCustomerById" -> args[0];
             case "selectPrimaryContactByCustomerId" -> oldPrimary;
             case "unsetPrimaryContact" -> 0;
@@ -269,12 +278,64 @@ class CrmContactServiceImplTest {
     }
 
     @Test
+    void deleteUsesCurrentPrimaryStateAfterCustomerLock() {
+        List<String> calls = new ArrayList<>();
+        CrmContactDO snapshotContact = contact(10L, 100L, false);
+        CrmContactDO currentContact = contact(10L, 100L, true);
+        CrmContactMapper mapper = proxy(CrmContactMapper.class, (proxy, method, args) -> switch (method.getName()) {
+            case "selectById" -> {
+                calls.add("snapshot");
+                yield snapshotContact;
+            }
+            case "lockCustomerById" -> {
+                calls.add("lock:" + args[0]);
+                yield args[0];
+            }
+            case "selectByIdForUpdate" -> {
+                calls.add("current");
+                yield currentContact;
+            }
+            default -> throw new AssertionError("最新首联系人拒绝删除后不应调用 " + method.getName());
+        });
+
+        assertServiceException(() -> newService(mapper).deleteContact(10L), CONTACT_PRIMARY_DELETE_FAIL);
+
+        assertEquals(List.of("snapshot", "lock:100", "current"), calls);
+    }
+
+    @Test
+    void deleteRejectsContactMovedAfterInitialSnapshot() {
+        List<String> calls = new ArrayList<>();
+        CrmContactDO snapshotContact = contact(10L, 100L, false);
+        CrmContactDO currentContact = contact(10L, 200L, false);
+        CrmContactMapper mapper = proxy(CrmContactMapper.class, (proxy, method, args) -> switch (method.getName()) {
+            case "selectById" -> {
+                calls.add("snapshot:100");
+                yield snapshotContact;
+            }
+            case "lockCustomerById" -> {
+                calls.add("lock:" + args[0]);
+                yield args[0];
+            }
+            case "selectByIdForUpdate" -> {
+                calls.add("current:200");
+                yield currentContact;
+            }
+            default -> throw new AssertionError("客户归属变化后不应调用 " + method.getName());
+        });
+
+        assertServiceException(() -> newService(mapper).deleteContact(10L), CONTACT_CONCURRENT_CHANGE);
+
+        assertEquals(List.of("snapshot:100", "lock:100", "current:200"), calls);
+    }
+
+    @Test
     void movingNonPrimaryIntoCustomerWithoutPrimaryRepairsInvariant() {
         List<Long> lockedCustomerIds = new ArrayList<>();
         AtomicReference<CrmContactDO> updated = new AtomicReference<>();
         CrmContactDO oldContact = contact(10L, 100L, false);
         CrmContactMapper mapper = proxy(CrmContactMapper.class, (proxy, method, args) -> switch (method.getName()) {
-            case "selectById" -> oldContact;
+            case "selectById", "selectByIdForUpdate" -> oldContact;
             case "lockCustomerById" -> {
                 lockedCustomerIds.add((Long) args[0]);
                 yield args[0];
@@ -297,9 +358,63 @@ class CrmContactServiceImplTest {
         assertFalse(oldContact.getPrimaryContact());
     }
 
+    @Test
+    void updateUsesCurrentPrimaryStateAfterCustomerLock() {
+        List<String> calls = new ArrayList<>();
+        CrmContactDO snapshotContact = contact(10L, 100L, false);
+        CrmContactDO currentContact = contact(10L, 100L, true);
+        CrmContactMapper mapper = proxy(CrmContactMapper.class, (proxy, method, args) -> switch (method.getName()) {
+            case "selectById" -> {
+                calls.add("snapshot");
+                yield snapshotContact;
+            }
+            case "lockCustomerById" -> {
+                calls.add("lock:" + args[0]);
+                yield args[0];
+            }
+            case "selectByIdForUpdate" -> {
+                calls.add("current");
+                yield currentContact;
+            }
+            default -> throw new AssertionError("当前首联系人拒绝取消后不应调用 " + method.getName());
+        });
+
+        assertServiceException(() -> newService(mapper).updateContact(contactReq(10L, 100L, false)),
+                CONTACT_PRIMARY_UNSET_FAIL);
+
+        assertEquals(List.of("snapshot", "lock:100", "current"), calls);
+    }
+
+    @Test
+    void updateRejectsContactMovedAfterInitialSnapshot() {
+        List<String> calls = new ArrayList<>();
+        CrmContactDO snapshotContact = contact(10L, 100L, false);
+        CrmContactDO currentContact = contact(10L, 300L, false);
+        CrmContactMapper mapper = proxy(CrmContactMapper.class, (proxy, method, args) -> switch (method.getName()) {
+            case "selectById" -> {
+                calls.add("snapshot:100");
+                yield snapshotContact;
+            }
+            case "lockCustomerById" -> {
+                calls.add("lock:" + args[0]);
+                yield args[0];
+            }
+            case "selectByIdForUpdate" -> {
+                calls.add("current:300");
+                yield currentContact;
+            }
+            default -> throw new AssertionError("客户归属变化后不应调用 " + method.getName());
+        });
+
+        assertServiceException(() -> newService(mapper).updateContact(contactReq(10L, 200L, false)),
+                CONTACT_CONCURRENT_CHANGE);
+
+        assertEquals(List.of("snapshot:100", "lock:100", "lock:200", "current:300"), calls);
+    }
+
     private static CrmContactMapper rejectingLifecycleMapper(CrmContactDO contact, List<String> calls) {
         return proxy(CrmContactMapper.class, (proxy, method, args) -> switch (method.getName()) {
-            case "selectById" -> {
+            case "selectById", "selectByIdForUpdate" -> {
                 calls.add("select-contact");
                 yield contact;
             }

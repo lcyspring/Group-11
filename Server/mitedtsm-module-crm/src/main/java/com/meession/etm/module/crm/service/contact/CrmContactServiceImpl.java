@@ -119,9 +119,13 @@ public class CrmContactServiceImpl implements CrmContactService {
         // 1.2 校验关联数据
         validateRelationDataExists(updateReqVO);
 
-        // 1.3 按客户编号顺序加锁，避免移动联系人时产生死锁；锁后重新读取最新状态
+        // 1.3 按客户编号顺序加锁，避免移动联系人时产生死锁；锁后使用当前读重新获取最新状态
         lockCustomers(oldContact.getCustomerId(), updateReqVO.getCustomerId());
-        oldContact = validateContactExists(updateReqVO.getId());
+        CrmContactDO currentContact = validateContactExistsForUpdate(updateReqVO.getId());
+        if (!Objects.equals(oldContact.getCustomerId(), currentContact.getCustomerId())) {
+            throw exception(CONTACT_CONCURRENT_CHANGE);
+        }
+        oldContact = currentContact;
         validateMobileUnique(updateReqVO.getCustomerId(), updateReqVO.getMobile(), updateReqVO.getId());
         String primaryContactChange = preparePrimaryContactForUpdate(oldContact, updateReqVO);
 
@@ -168,9 +172,13 @@ public class CrmContactServiceImpl implements CrmContactService {
     public void deleteContact(Long id) {
         // 1.1 首次读取并校验存在
         CrmContactDO contact = validateContactExists(id);
-        // 1.2 锁定客户并重新读取，禁止删除最新的首联系人
+        // 1.2 锁定客户并使用当前读重新读取，禁止删除最新的首联系人
         lockCustomer(contact.getCustomerId());
-        contact = validateContactExists(id);
+        CrmContactDO currentContact = validateContactExistsForUpdate(id);
+        if (!Objects.equals(contact.getCustomerId(), currentContact.getCustomerId())) {
+            throw exception(CONTACT_CONCURRENT_CHANGE);
+        }
+        contact = currentContact;
         if (Boolean.TRUE.equals(contact.getPrimaryContact())) {
             throw exception(CONTACT_PRIMARY_DELETE_FAIL);
         }
@@ -280,6 +288,14 @@ public class CrmContactServiceImpl implements CrmContactService {
 
     private CrmContactDO validateContactExists(Long id) {
         CrmContactDO contact = contactMapper.selectById(id);
+        if (contact == null) {
+            throw exception(CONTACT_NOT_EXISTS);
+        }
+        return contact;
+    }
+
+    private CrmContactDO validateContactExistsForUpdate(Long id) {
+        CrmContactDO contact = contactMapper.selectByIdForUpdate(id);
         if (contact == null) {
             throw exception(CONTACT_NOT_EXISTS);
         }

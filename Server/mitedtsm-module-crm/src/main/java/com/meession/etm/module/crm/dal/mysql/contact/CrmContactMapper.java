@@ -31,6 +31,12 @@ public interface CrmContactMapper extends BaseMapperX<CrmContactDO> {
     Long lockCustomerById(@Param("customerId") Long customerId);
 
     /**
+     * 锁后当前读联系人，避免 MySQL RR 快照返回加锁前的首联系人或客户归属状态。
+     */
+    @Select("SELECT * FROM crm_contact WHERE id = #{id} AND deleted = 0 FOR UPDATE")
+    CrmContactDO selectByIdForUpdate(@Param("id") Long id);
+
+    /**
      * 使用当前读获取首联系人，避免事务早期普通查询形成的 RR 快照返回过期首联系人。
      */
     @Select("SELECT * FROM crm_contact WHERE customer_id = #{customerId} AND primary_contact = 1 " +
