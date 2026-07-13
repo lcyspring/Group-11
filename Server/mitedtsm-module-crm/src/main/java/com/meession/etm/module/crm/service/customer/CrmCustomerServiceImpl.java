@@ -95,16 +95,18 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
         createReqVO.setId(null);
         // 1.1 校验客户名称唯一
         validateCustomerNameUnique(null, createReqVO.getName());
-        // 1.2 校验拥有客户是否到达上限
-        validateCustomerExceedOwnerLimit(createReqVO.getOwnerUserId(), 1);
+        // 1.2 校验所选负责人存在且拥有客户未达到上限
+        Long ownerUserId = createReqVO.getOwnerUserId();
+        adminUserApi.validateUser(ownerUserId);
+        validateCustomerExceedOwnerLimit(ownerUserId, 1);
 
         // 2. 插入客户
-        CrmCustomerDO customer = initCustomer(createReqVO, userId);
+        CrmCustomerDO customer = initCustomer(createReqVO, ownerUserId);
         customerMapper.insert(customer);
 
         // 3. 创建数据权限
         permissionService.createPermission(new CrmPermissionCreateReqBO().setBizType(CrmBizTypeEnum.CRM_CUSTOMER.getType())
-                .setBizId(customer.getId()).setUserId(userId).setLevel(CrmPermissionLevelEnum.OWNER.getLevel())); // 设置当前操作的人为负责人
+                .setBizId(customer.getId()).setUserId(ownerUserId).setLevel(CrmPermissionLevelEnum.OWNER.getLevel()));
 
         // 4. 记录操作日志上下文
         LogRecordContext.putVariable("customer", customer);
