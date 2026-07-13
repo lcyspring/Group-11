@@ -55,6 +55,25 @@ docker-images/*.tar
 # Podman offline OCI image archives
 podman/images/*.tar
 
+# Local project-analysis and delivery documents (kept out of product commits)
+docs/01-Existing-System-Analysis/
+docs/02-Prototype-Analysis/
+docs/03-Gap-Analysis/
+docs/04-Requirements-Landing-Analysis/
+docs/05-Requirements-Analysis/
+docs/06-DevSecOps/
+docs/07-Organization/
+docs/08-Project-Planning/
+docs/09-Sprint-Plan/
+docs/10-Testing/
+docs/12-Database/
+docs/12-Traceability/
+docs/13-API/
+docs/14-Frontend/
+docs/17-Templates/
+docs/18-Review/
+docs/Proj-Docs-v-6
+
 
 # Config
 *.keystore
