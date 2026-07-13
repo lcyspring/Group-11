@@ -130,7 +130,7 @@ public class CrmStatisticsCustomerServiceImpl implements CrmStatisticsCustomerSe
                     .mapToInt(CrmStatisticsFollowUpSummaryByDateRespVO::getFollowUpCustomerCount).sum();
             return new CrmStatisticsFollowUpSummaryByDateRespVO()
                     .setTime(LocalDateTimeUtils.formatDateRange(times[0], times[1], reqVO.getInterval()))
-                    .setFollowUpCustomerCount(followUpRecordCount).setFollowUpRecordCount(followUpCustomerCount);
+                    .setFollowUpRecordCount(followUpRecordCount).setFollowUpCustomerCount(followUpCustomerCount);
         });
     }
 
@@ -153,7 +153,7 @@ public class CrmStatisticsCustomerServiceImpl implements CrmStatisticsCustomerSe
             Integer followUpCustomerCount = followUpCustomerCountList.stream().filter(vo -> userId.equals(vo.getOwnerUserId()))
                     .mapToInt(CrmStatisticsFollowUpSummaryByUserRespVO::getFollowUpCustomerCount).sum();
             return (CrmStatisticsFollowUpSummaryByUserRespVO) new CrmStatisticsFollowUpSummaryByUserRespVO()
-                    .setFollowUpCustomerCount(followUpRecordCount).setFollowUpRecordCount(followUpCustomerCount).setOwnerUserId(userId);
+                    .setFollowUpRecordCount(followUpRecordCount).setFollowUpCustomerCount(followUpCustomerCount).setOwnerUserId(userId);
         });
         // 3.2 拼接用户信息
         appendUserInfo(summaryList);

@@ -115,7 +115,8 @@
         SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS time,
                COUNT(*) AS follow_up_record_count
           FROM crm_follow_up_record
-         WHERE creator IN
+         WHERE deleted = 0
+           AND creator IN
                 <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                     #{userId}
                 </foreach>
@@ -129,7 +130,8 @@
         SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS time,
                COUNT(DISTINCT biz_id) AS follow_up_customer_count
           FROM crm_follow_up_record
-         WHERE creator IN
+         WHERE deleted = 0
+           AND creator IN
                 <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                     #{userId}
                 </foreach>
@@ -143,7 +145,8 @@
         SELECT creator as owner_user_id,
                COUNT(*) AS follow_up_record_count
           FROM crm_follow_up_record
-         WHERE creator IN
+         WHERE deleted = 0
+           AND creator IN
                 <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                     #{userId}
                 </foreach>
@@ -158,12 +161,13 @@
             creator as owner_user_id,
             COUNT(DISTINCT biz_id) AS follow_up_customer_count
         FROM crm_follow_up_record
-        WHERE creator IN
+        WHERE deleted = 0
+          AND creator IN
             <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                 #{userId}
             </foreach>
-        AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND #{times[1],javaType=java.time.LocalDateTime}
-        AND biz_type = ${@com.meession.etm.module.crm.enums.common.CrmBizTypeEnum@CRM_CUSTOMER.type}
+          AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND #{times[1],javaType=java.time.LocalDateTime}
+          AND biz_type = ${@com.meession.etm.module.crm.enums.common.CrmBizTypeEnum@CRM_CUSTOMER.type}
         GROUP BY creator
     </select>
 
@@ -172,7 +176,8 @@
         SELECT type AS follow_up_type,
                COUNT(*) AS follow_up_record_count
           FROM crm_follow_up_record
-         WHERE creator IN
+         WHERE deleted = 0
+           AND creator IN
                 <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                     #{userId}
                 </foreach>
