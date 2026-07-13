@@ -3,6 +3,7 @@ package com.meession.etm.module.crm.service.customer;
 import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.module.crm.controller.admin.customer.vo.customer.*;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerOwnerRecordDO;
 import com.meession.etm.module.crm.service.customer.bo.CrmCustomerCreateReqBO;
 import jakarta.validation.Valid;
 
@@ -140,6 +141,14 @@ public interface CrmCustomerService {
      * @param id 编号
      */
     void validateCustomer(Long id);
+
+    /**
+     * 获得客户归属变更记录，按时间倒序返回。
+     *
+     * @param customerId 客户编号
+     * @return 归属变更记录
+     */
+    List<CrmCustomerOwnerRecordDO> getCustomerOwnerRecordList(Long customerId);
 
     /**
      * 客户转移

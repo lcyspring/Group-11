@@ -2,6 +2,7 @@ package com.meession.etm.module.crm.service.customer;
 
 import com.meession.etm.module.crm.controller.admin.customer.vo.customer.CrmCustomerDuplicateCheckReqVO;
 import com.meession.etm.module.crm.controller.admin.customer.vo.customer.CrmCustomerSaveReqVO;
+import com.meession.etm.module.crm.controller.admin.customer.vo.customer.CrmCustomerTransferReqVO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerOwnerRecordDO;
 import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerMapper;
@@ -21,6 +22,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.meession.etm.framework.test.core.util.AssertUtils.assertServiceException;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.*;
 import static com.meession.etm.module.crm.enums.customer.CrmCustomerOwnerRecordTypeEnum.PUT_POOL;
+import static com.meession.etm.module.crm.enums.customer.CrmCustomerOwnerRecordTypeEnum.INITIAL_ASSIGN;
+import static com.meession.etm.module.crm.enums.customer.CrmCustomerOwnerRecordTypeEnum.TRANSFER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -90,6 +93,8 @@ class CrmCustomerServiceImplTest {
 
         assertEquals(20L, ownerRecord.get().getCustomerId());
         assertEquals(100L, ownerRecord.get().getOwnerUserId());
+        assertEquals(100L, ownerRecord.get().getPreviousOwnerUserId());
+        assertNull(ownerRecord.get().getNewOwnerUserId());
         assertEquals(PUT_POOL.getType(), ownerRecord.get().getType());
     }
 
@@ -99,6 +104,7 @@ class CrmCustomerServiceImplTest {
         long ownerUserId = 100L;
         AtomicReference<CrmCustomerDO> insertedCustomer = new AtomicReference<>();
         AtomicReference<CrmPermissionCreateReqBO> createdPermission = new AtomicReference<>();
+        AtomicReference<CrmCustomerOwnerRecordDO> ownerRecord = new AtomicReference<>();
         CrmCustomerServiceImpl service = new CrmCustomerServiceImpl();
         ReflectionTestUtils.setField(service, "customerMapper", proxy(CrmCustomerMapper.class,
                 (proxy, method, args) -> switch (method.getName()) {
@@ -120,6 +126,11 @@ class CrmCustomerServiceImplTest {
                     createdPermission.set((CrmPermissionCreateReqBO) args[0]);
                     return null;
                 }));
+        ReflectionTestUtils.setField(service, "customerOwnerRecordMapper", proxy(CrmCustomerOwnerRecordMapper.class,
+                (proxy, method, args) -> {
+                    ownerRecord.set((CrmCustomerOwnerRecordDO) args[0]);
+                    return 1;
+                }));
         CrmCustomerSaveReqVO reqVO = new CrmCustomerSaveReqVO()
                 .setName("指定负责人客户")
                 .setOwnerUserId(ownerUserId);
@@ -130,6 +141,10 @@ class CrmCustomerServiceImplTest {
         assertEquals(ownerUserId, insertedCustomer.get().getOwnerUserId());
         assertEquals(ownerUserId, createdPermission.get().getUserId());
         assertEquals(20L, createdPermission.get().getBizId());
+        assertEquals(20L, ownerRecord.get().getCustomerId());
+        assertNull(ownerRecord.get().getPreviousOwnerUserId());
+        assertEquals(ownerUserId, ownerRecord.get().getNewOwnerUserId());
+        assertEquals(INITIAL_ASSIGN.getType(), ownerRecord.get().getType());
     }
 
     @Test
@@ -192,11 +207,60 @@ class CrmCustomerServiceImplTest {
                 (proxy, method, args) -> Collections.emptyList()));
         ReflectionTestUtils.setField(service, "permissionService", proxy(CrmPermissionService.class,
                 (proxy, method, args) -> null));
+        ReflectionTestUtils.setField(service, "customerOwnerRecordMapper", proxy(CrmCustomerOwnerRecordMapper.class,
+                (proxy, method, args) -> 1));
 
         service.createCustomer(new CrmCustomerSaveReqVO().setName("分公司")
                 .setParentCustomerId(10L).setOwnerUserId(1L), 1L);
 
         assertEquals(10L, insertedCustomer.get().getParentCustomerId());
+    }
+
+    @Test
+    void transferCustomerRecordsPreviousAndNewOwner() {
+        AtomicReference<CrmCustomerOwnerRecordDO> ownerRecord = new AtomicReference<>();
+        CrmCustomerDO customer = new CrmCustomerDO().setId(20L).setName("客户")
+                .setOwnerUserId(100L);
+        CrmCustomerServiceImpl service = new CrmCustomerServiceImpl();
+        ReflectionTestUtils.setField(service, "customerMapper", proxy(CrmCustomerMapper.class,
+                (proxy, method, args) -> switch (method.getName()) {
+                    case "selectById" -> customer;
+                    case "updateById" -> 1;
+                    default -> throw new AssertionError("未预期的 Mapper 调用 " + method.getName());
+                }));
+        ReflectionTestUtils.setField(service, "customerLimitConfigService", proxy(CrmCustomerLimitConfigService.class,
+                (proxy, method, args) -> Collections.emptyList()));
+        ReflectionTestUtils.setField(service, "permissionService", proxy(CrmPermissionService.class,
+                (proxy, method, args) -> null));
+        ReflectionTestUtils.setField(service, "customerOwnerRecordMapper", proxy(CrmCustomerOwnerRecordMapper.class,
+                (proxy, method, args) -> {
+                    ownerRecord.set((CrmCustomerOwnerRecordDO) args[0]);
+                    return 1;
+                }));
+        CrmCustomerTransferReqVO reqVO = new CrmCustomerTransferReqVO().setId(20L)
+                .setNewOwnerUserId(200L).setToBizTypes(Collections.emptyList());
+
+        service.transferCustomer(reqVO, 100L);
+
+        assertEquals(20L, ownerRecord.get().getCustomerId());
+        assertEquals(200L, ownerRecord.get().getOwnerUserId());
+        assertEquals(100L, ownerRecord.get().getPreviousOwnerUserId());
+        assertEquals(200L, ownerRecord.get().getNewOwnerUserId());
+        assertEquals(TRANSFER.getType(), ownerRecord.get().getType());
+    }
+
+    @Test
+    void ownerRecordListReturnsMapperOrder() {
+        List<CrmCustomerOwnerRecordDO> expected = List.of(
+                new CrmCustomerOwnerRecordDO().setId(2L).setCustomerId(20L),
+                new CrmCustomerOwnerRecordDO().setId(1L).setCustomerId(20L));
+        CrmCustomerServiceImpl service = new CrmCustomerServiceImpl();
+        ReflectionTestUtils.setField(service, "customerMapper", proxy(CrmCustomerMapper.class,
+                (proxy, method, args) -> new CrmCustomerDO().setId(20L)));
+        ReflectionTestUtils.setField(service, "customerOwnerRecordMapper", proxy(CrmCustomerOwnerRecordMapper.class,
+                (proxy, method, args) -> expected));
+
+        assertEquals(expected, service.getCustomerOwnerRecordList(20L));
     }
 
     @Test

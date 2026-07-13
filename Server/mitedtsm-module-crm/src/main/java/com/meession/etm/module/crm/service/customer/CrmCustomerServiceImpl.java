@@ -24,6 +24,7 @@ import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerMapper;
 import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerOwnerRecordMapper;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.enums.common.CrmSceneTypeEnum;
+import com.meession.etm.module.crm.enums.customer.CrmCustomerOwnerRecordTypeEnum;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
 import com.meession.etm.module.crm.framework.permission.core.annotations.CrmPermission;
 import com.meession.etm.module.crm.service.business.CrmBusinessService;
@@ -54,8 +55,10 @@ import static com.meession.etm.module.crm.enums.ErrorCodeConstants.*;
 import static com.meession.etm.module.crm.enums.LogRecordConstants.*;
 import static com.meession.etm.module.crm.enums.customer.CrmCustomerLimitConfigTypeEnum.CUSTOMER_LOCK_LIMIT;
 import static com.meession.etm.module.crm.enums.customer.CrmCustomerLimitConfigTypeEnum.CUSTOMER_OWNER_LIMIT;
+import static com.meession.etm.module.crm.enums.customer.CrmCustomerOwnerRecordTypeEnum.INITIAL_ASSIGN;
 import static com.meession.etm.module.crm.enums.customer.CrmCustomerOwnerRecordTypeEnum.PUT_POOL;
 import static com.meession.etm.module.crm.enums.customer.CrmCustomerOwnerRecordTypeEnum.TAKE_POOL;
+import static com.meession.etm.module.crm.enums.customer.CrmCustomerOwnerRecordTypeEnum.TRANSFER;
 import static java.util.Collections.singletonList;
 
 /**
@@ -119,7 +122,10 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
         permissionService.createPermission(new CrmPermissionCreateReqBO().setBizType(CrmBizTypeEnum.CRM_CUSTOMER.getType())
                 .setBizId(customer.getId()).setUserId(ownerUserId).setLevel(CrmPermissionLevelEnum.OWNER.getLevel()));
 
-        // 4. 记录操作日志上下文
+        // 4. 记录初始归属，与客户和数据权限在同一事务内提交
+        createOwnerRecord(customer.getId(), null, ownerUserId, INITIAL_ASSIGN);
+
+        // 5. 记录操作日志上下文
         LogRecordContext.putVariable("customer", customer);
         LogRecordContext.putVariable("duplicateCheckDecision", Boolean.TRUE.equals(createReqVO.getDuplicateCheckConfirmed())
                 ? "（已确认疑似重复客户后继续创建）" : "");
@@ -245,7 +251,10 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
             transfer(reqVO, userId);
         }
 
-        // 3. 记录转移日志
+        // 3. 记录转移前后归属。位于关联对象转移之后，任一步失败均整体回滚
+        createOwnerRecord(customer.getId(), customer.getOwnerUserId(), reqVO.getNewOwnerUserId(), TRANSFER);
+
+        // 4. 记录转移日志
         LogRecordContext.putVariable("customer", customer);
     }
 
@@ -313,13 +322,17 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
         permissionService.createPermission(new CrmPermissionCreateReqBO().setBizType(CrmBizTypeEnum.CRM_CUSTOMER.getType())
                 .setBizId(customer.getId()).setUserId(userId).setLevel(CrmPermissionLevelEnum.OWNER.getLevel())); // 设置当前操作的人为负责人
 
-        // 4. 记录操作日志上下文
+        // 4. 记录初始归属
+        createOwnerRecord(customer.getId(), null, userId, INITIAL_ASSIGN);
+
+        // 5. 记录操作日志上下文
         LogRecordContext.putVariable("customer", customer);
         LogRecordContext.putVariable("duplicateCheckDecision", "");
         return customer.getId();
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public CrmCustomerImportRespVO importCustomerList(List<CrmCustomerImportExcelVO> importCustomers,
                                                       CrmCustomerImportReqVO importReqVO) {
         // 校验非空
@@ -350,6 +363,7 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
                 if (importReqVO.getOwnerUserId() != null) {
                     permissionService.createPermission(new CrmPermissionCreateReqBO().setBizType(CrmBizTypeEnum.CRM_CUSTOMER.getType())
                             .setBizId(customer.getId()).setUserId(importReqVO.getOwnerUserId()).setLevel(CrmPermissionLevelEnum.OWNER.getLevel()));
+                    createOwnerRecord(customer.getId(), null, importReqVO.getOwnerUserId(), INITIAL_ASSIGN);
                 }
                 // 1.3 记录操作日志
                 getSelf().importCustomerLog(customer, false);
@@ -451,7 +465,8 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
         // 2.4 记录领取/分配事件，供公海统计使用
         customerOwnerRecordMapper.insertBatch(CollectionUtils.convertList(customers, customer ->
                 new CrmCustomerOwnerRecordDO().setCustomerId(customer.getId())
-                        .setOwnerUserId(ownerUserId).setType(TAKE_POOL.getType())));
+                        .setOwnerUserId(ownerUserId).setPreviousOwnerUserId(null).setNewOwnerUserId(ownerUserId)
+                        .setType(TAKE_POOL.getType())));
         // TODO @芋艿：要不要处理关联的联系人？？？
 
         // 3. 记录操作日志
@@ -489,7 +504,8 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
     protected void putCustomerPool(CrmCustomerDO customer) {
         // 1. 记录进入公海事件；后续失败时随事务一起回滚
         customerOwnerRecordMapper.insert(new CrmCustomerOwnerRecordDO().setCustomerId(customer.getId())
-                .setOwnerUserId(customer.getOwnerUserId()).setType(PUT_POOL.getType()));
+                .setOwnerUserId(customer.getOwnerUserId()).setPreviousOwnerUserId(customer.getOwnerUserId())
+                .setNewOwnerUserId(null).setType(PUT_POOL.getType()));
 
         // 2. 设置负责人为 NULL
         int updateOwnerUserIncr = customerMapper.updateOwnerUserIdById(customer.getId(), null);
@@ -515,6 +531,24 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
     }
 
     //======================= 查询相关 =======================
+
+    @Override
+    @CrmPermission(bizType = CrmBizTypeEnum.CRM_CUSTOMER, bizId = "#customerId", level = CrmPermissionLevelEnum.READ)
+    public List<CrmCustomerOwnerRecordDO> getCustomerOwnerRecordList(Long customerId) {
+        validateCustomerExists(customerId);
+        return customerOwnerRecordMapper.selectListByCustomerId(customerId);
+    }
+
+    /**
+     * 创建客户归属变更记录。ownerUserId 保留为公海统计兼容字段。
+     */
+    private void createOwnerRecord(Long customerId, Long previousOwnerUserId, Long newOwnerUserId,
+                                   CrmCustomerOwnerRecordTypeEnum type) {
+        Long ownerUserId = type == PUT_POOL ? previousOwnerUserId : newOwnerUserId;
+        customerOwnerRecordMapper.insert(new CrmCustomerOwnerRecordDO().setCustomerId(customerId)
+                .setOwnerUserId(ownerUserId).setPreviousOwnerUserId(previousOwnerUserId)
+                .setNewOwnerUserId(newOwnerUserId).setType(type.getType()));
+    }
 
     @Override
     @CrmPermission(bizType = CrmBizTypeEnum.CRM_CUSTOMER, bizId = "#id", level = CrmPermissionLevelEnum.READ)

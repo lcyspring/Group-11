@@ -78,12 +78,15 @@
       <el-tab-pane :label="t('operateLogTab')">
         <OperateLogV2 :log-list="logList" />
       </el-tab-pane>
+      <el-tab-pane :label="t('ownerHistoryTab')" lazy>
+        <CustomerOwnerRecordList ref="ownerRecordListRef" :customer-id="customerId" />
+      </el-tab-pane>
     </el-tabs>
   </el-col>
 
   <!-- 表单弹窗：添加/修改 -->
   <CustomerForm ref="formRef" @success="getCustomer" />
-  <CustomerDistributeForm ref="distributeForm" @success="getCustomer" />
+  <CustomerDistributeForm ref="distributeForm" @success="handleDistributeSuccess" />
   <CrmTransferForm ref="transferFormRef" :biz-type="BizTypeEnum.CRM_CUSTOMER" @success="close" />
 </template>
 <script lang="ts" setup>
@@ -104,6 +107,7 @@ import { BizTypeEnum } from '@/api/crm/permission'
 import type { OperateLogVO } from '@/api/system/operatelog'
 import { getOperateLogPage } from '@/api/crm/operateLog'
 import CustomerDistributeForm from '@/views/crm/customer/pool/CustomerDistributeForm.vue'
+import CustomerOwnerRecordList from './CustomerOwnerRecordList.vue'
 
 defineOptions({ name: 'CrmCustomerDetail' })
 
@@ -115,6 +119,7 @@ const { delView } = useTagsViewStore() // 视图操作
 const { push, currentRoute } = useRouter() // 路由
 
 const permissionListRef = ref<InstanceType<typeof PermissionList>>() // 团队成员列表 Ref
+const ownerRecordListRef = ref<InstanceType<typeof CustomerOwnerRecordList>>() // 归属记录 Ref
 
 /** 获取详情 */
 const customer = ref<CustomerApi.CustomerVO>({} as CustomerApi.CustomerVO) // 客户详情
@@ -176,12 +181,18 @@ const handleReceive = async () => {
   await CustomerApi.receiveCustomer([unref(customerId.value)])
   message.success(t('receiveSuccess', { name: customer.value.name }))
   await getCustomer()
+  await ownerRecordListRef.value?.getList()
 }
 
 /** 分配客户 */
 const distributeForm = ref<InstanceType<typeof CustomerDistributeForm>>() // 分配客户表单 Ref
 const handleDistributeForm = async () => {
   distributeForm.value?.open(customerId.value)
+}
+
+const handleDistributeSuccess = async () => {
+  await getCustomer()
+  await ownerRecordListRef.value?.getList()
 }
 
 /** 客户放入公海 */

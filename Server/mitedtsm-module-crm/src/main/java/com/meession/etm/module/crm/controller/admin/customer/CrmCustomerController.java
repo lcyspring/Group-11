@@ -15,6 +15,7 @@ import com.meession.etm.framework.ip.core.utils.AreaUtils;
 import com.meession.etm.module.crm.controller.admin.customer.vo.customer.*;
 import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerOwnerRecordDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerPoolConfigDO;
 import com.meession.etm.module.crm.service.contact.CrmContactService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerPoolConfigService;
@@ -142,6 +143,34 @@ public class CrmCustomerController {
         List<CrmCustomerDO> list = customerService.getDuplicateCustomerList(reqVO, getLoginUserId());
         return success(convertList(list, customer -> new CrmCustomerDuplicateRespVO()
                 .setId(customer.getId()).setName(customer.getName()).setMobile(customer.getMobile())));
+    }
+
+    @GetMapping("/owner-record-list")
+    @Operation(summary = "获得客户归属变更记录")
+    @Parameter(name = "customerId", description = "客户编号", required = true, example = "1024")
+    @PreAuthorize("@ss.hasPermission('crm:customer:query')")
+    public CommonResult<List<CrmCustomerOwnerRecordRespVO>> getCustomerOwnerRecordList(
+            @RequestParam("customerId") Long customerId) {
+        // Service 层会先执行 CRM 客户 READ 权限校验，避免按客户编号越权读取历史
+        List<CrmCustomerOwnerRecordDO> records = customerService.getCustomerOwnerRecordList(customerId);
+        if (CollUtil.isEmpty(records)) {
+            return success(java.util.Collections.emptyList());
+        }
+        Set<Long> userIds = convertSetByFlatMap(records, record -> Stream.of(record.getPreviousOwnerUserId(),
+                record.getNewOwnerUserId(), NumberUtils.parseLong(record.getCreator())));
+        Map<Long, AdminUserRespDTO> userMap = adminUserApi.getUserMap(userIds);
+        Map<Long, CrmCustomerOwnerRecordDO> recordMap = convertMap(records, CrmCustomerOwnerRecordDO::getId);
+        return success(BeanUtils.toBean(records, CrmCustomerOwnerRecordRespVO.class, recordVO -> {
+            CrmCustomerOwnerRecordDO record = recordMap.get(recordVO.getId());
+            Long operatorUserId = NumberUtils.parseLong(record.getCreator());
+            recordVO.setOperatorUserId(operatorUserId);
+            MapUtils.findAndThen(userMap, record.getPreviousOwnerUserId(),
+                    user -> recordVO.setPreviousOwnerUserName(user.getNickname()));
+            MapUtils.findAndThen(userMap, record.getNewOwnerUserId(),
+                    user -> recordVO.setNewOwnerUserName(user.getNickname()));
+            MapUtils.findAndThen(userMap, operatorUserId,
+                    user -> recordVO.setOperatorUserName(user.getNickname()));
+        }));
     }
 
     public List<CrmCustomerRespVO> buildCustomerDetailList(List<CrmCustomerDO> list) {

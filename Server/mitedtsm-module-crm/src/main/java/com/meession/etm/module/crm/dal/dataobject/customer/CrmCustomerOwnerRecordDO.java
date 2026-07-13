@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 /**
- * CRM 客户公海归属变更记录。
+ * CRM 客户归属变更记录。
  */
 @TableName("crm_customer_owner_record")
 @KeySequence("crm_customer_owner_record_seq")
@@ -30,8 +30,18 @@ public class CrmCustomerOwnerRecordDO extends BaseDO {
     /** 客户编号。 */
     private Long customerId;
 
-    /** 放入公海前或领取后的负责人编号。 */
+    /**
+     * 兼容原公海统计的负责人编号。
+     *
+     * 进入公海时为原负责人，其他类型为新负责人。
+     */
     private Long ownerUserId;
+
+    /** 变更前负责人编号。 */
+    private Long previousOwnerUserId;
+
+    /** 变更后负责人编号。 */
+    private Long newOwnerUserId;
 
     /** 归属变更类型，见 CrmCustomerOwnerRecordTypeEnum。 */
     private Integer type;

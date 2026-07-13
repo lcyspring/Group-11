@@ -42,6 +42,19 @@ export interface CustomerDuplicateVO {
   mobile?: string
 }
 
+export interface CustomerOwnerRecordVO {
+  id: number
+  customerId: number
+  type: number
+  previousOwnerUserId?: number
+  previousOwnerUserName?: string
+  newOwnerUserId?: number
+  newOwnerUserName?: string
+  operatorUserId?: number
+  operatorUserName?: string
+  createTime: Date
+}
+
 // 查询客户列表
 export const getCustomerPage = async (params) => {
   return await request.get({ url: `/crm/customer/page`, params })
@@ -79,6 +92,14 @@ export const getDuplicateCustomerList = async (params: {
   excludeId?: number
 }) => {
   return await request.get<CustomerDuplicateVO[]>({ url: `/crm/customer/duplicate-check`, params })
+}
+
+// 查询客户归属变更记录
+export const getCustomerOwnerRecordList = async (customerId: number) => {
+  return await request.get<CustomerOwnerRecordVO[]>({
+    url: '/crm/customer/owner-record-list',
+    params: { customerId }
+  })
 }
 
 // 新增客户
