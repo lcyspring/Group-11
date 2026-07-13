@@ -23,6 +23,7 @@ dist-*
 
 # Dependencies
 node_modules/
+.pnpm-store/
 unpackage/
 # The current Mall H5 release is distributed through Git so deployment
 # members do not need HBuilderX. Other unpackage outputs remain ignored.
@@ -74,6 +75,7 @@ docs/17-Templates/
 docs/18-Review/
 docs/Proj-Docs-v-6
 docs/develop/crm/
+docs/develop/build/
 
 
 # Config
