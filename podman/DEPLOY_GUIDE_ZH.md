@@ -128,13 +128,8 @@ bash ./build-assets.sh --check
 bash ./build-assets.sh
 ```
 
-如果仓库位于 VMware 共享目录（例如 `/mnt/hgfs/...`）或其他不支持软链接的文件系统，
-pnpm 无法直接创建 `node_modules`。`build-assets.sh` 会自动把管理端 Web 构建暂存到
-本机原生文件系统，完成后只回写 `Web/dist-prod/`；可通过以下方式明确指定暂存位置：
-
-```bash
-WEB_BUILD_WORKDIR=/tmp bash ./build-assets.sh
-```
+仓库必须位于支持软链接的文件系统，因为 pnpm 的依赖目录依赖软链接。管理端直接在
+`Web/` 中构建，不再保留旧的暂存和回写兼容路径。
 
 如果 Server 和 InitService 的 Java 构建已经成功、仅管理端 Web 构建失败，无需重跑
 Maven。直接执行以下命令即可只重试 Web：
@@ -284,10 +279,6 @@ IMAGE_ARCHIVE_DIR=/mnt/deployment-images bash ./image-archives.sh --pull
 IMAGE_ARCHIVE_DIR=/mnt/deployment-images IMAGE_SOURCE=archive bash ./up.sh
 ```
 
-已有部署介质若仍使用仓库根目录的旧 `docker-images/`，可显式指定
-`IMAGE_ARCHIVE_DIR=../docker-images`。Podman 可以直接加载其中的镜像归档，整个
-过程仍不需要安装 Docker。
-
 ## 8. 日常更新流程
 
 部署新版本前建议先停止旧 Pod，再拉取和构建：
@@ -333,7 +324,7 @@ cd podman && bash ./down.sh --volumes
 | `HBuilderX CLI was not found` | 安装 HBuilderX CLI 3.1.5+，或设置 `HBUILDERX_CLI=/实际/cli`。 |
 | `HBuilderX completed without the expected H5 output` | 检查 CLI 输出；确认项目能被 HBuilderX 打开，并检查 `MallFrontend/unpackage/dist/build/`。 |
 | 缺少 Java、Maven、pnpm、Podman | 运行 `bash ./install-build-deps-ubuntu.sh`，再运行 `build-assets.sh --check --build-mall`。 |
-| `ERR_PNPM_ENOTSUP ... symlink` | 仓库在 VMware 共享目录等不支持软链接的文件系统上。更新后用 `bash ./build-assets.sh --web-only` 重试即可；脚本会自动暂存 Web 构建，或用 `WEB_BUILD_WORKDIR=/tmp` 明确指定暂存目录。 |
+| `ERR_PNPM_ENOTSUP ... symlink` | 当前文件系统不满足构建要求；将仓库迁移到支持软链接的本地文件系统后重新构建。 |
 | `Could not resolve "./build/vite"` | `Web/build/vite/` 配置源码未随代码检出。更新仓库后重试；不要仅删除或重新安装 `node_modules`。 |
 | 页面能打开但请求发往 `http://localhost:8080` | 运行的是旧 Web 镜像或构建未成功。执行 `bash ./build-assets.sh --web-only && bash ./up.sh --rebuild-web`，然后在浏览器强制刷新。 |
 | 页面 HTML 能打开但多个 `/assets/*.js` 为 404 / MIME `text/html` | 浏览器缓存了旧 `index.html`，其哈希文件已不在新镜像中。更新后的 Nginx 会避免复发；执行 `bash ./up.sh --rebuild-web` 后强制刷新一次。 |

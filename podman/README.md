@@ -63,11 +63,9 @@ build every artifact in one command with
 available with HBuilderX 4.67-alpha+ via `HBUILDERX_PLATFORM=web`; the default
 `h5` platform works with HBuilderX 3.1.5+.
 
-When the repository is on a filesystem without symbolic-link support, such as
-a VMware shared folder mounted at `/mnt/hgfs`, `build-assets.sh` automatically
-stages the Web build on a native local filesystem and copies `Web/dist-prod/`
-back after it succeeds. To choose a staging parent explicitly, use
-`WEB_BUILD_WORKDIR=/tmp bash ./build-assets.sh`.
+The repository must be on a filesystem that supports symbolic links because
+pnpm uses them for its dependency layout. The build runs directly in `Web/`;
+there is no legacy staging or copy-back path.
 
 If the Java artifacts already succeeded and only the management-Web build
 failed, rerun just that stage with `bash ./build-assets.sh --web-only`; it does
@@ -185,10 +183,6 @@ IMAGE_SOURCE=archive bash ./up.sh
 To keep archives outside the repository, point both commands at the same
 directory with `IMAGE_ARCHIVE_DIR=/absolute/path/to/archives`. To always fetch
 current registry images, use `IMAGE_SOURCE=pull bash ./up.sh`.
-
-For a transition from the old project archive directory, set
-`IMAGE_ARCHIVE_DIR=../docker-images` explicitly. Podman can load those image
-archives directly; this still does not require Docker to be installed.
 
 ## Network-drive projects
 

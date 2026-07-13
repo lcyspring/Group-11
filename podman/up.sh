@@ -18,17 +18,8 @@ STOP_TIMEOUT="${STOP_TIMEOUT:-120}"
 # auto: load a local OCI archive when present, otherwise pull from its registry.
 # archive: never use registries; pull: always pull from registries.
 IMAGE_SOURCE="${IMAGE_SOURCE:-auto}"
-# This directory is populated with Podman's image-archives.sh. It may be
-# overridden with an absolute directory when deployment media lives elsewhere.
-if [[ -v IMAGE_ARCHIVE_DIR ]]; then
-    IMAGE_ARCHIVE_DIR_EXPLICIT=true
-else
-    IMAGE_ARCHIVE_DIR="${SCRIPT_DIR}/images"
-    IMAGE_ARCHIVE_DIR_EXPLICIT=false
-fi
-# Existing deployment media may still contain the former archive location.
-# It is a read-only compatibility fallback only; no Docker command is used.
-LEGACY_IMAGE_ARCHIVE_DIR="${LEGACY_IMAGE_ARCHIVE_DIR:-${PROJECT_ROOT}/docker-images}"
+# This directory is populated with Podman's image-archives.sh.
+IMAGE_ARCHIVE_DIR="${IMAGE_ARCHIVE_DIR:-${SCRIPT_DIR}/images}"
 # Proxy use is opt-in. Set USE_HOST_PROXY=true to reuse host proxy settings.
 USE_HOST_PROXY="${USE_HOST_PROXY:-false}"
 # Podman/Pasta creates this dedicated host mapping in each container's
@@ -195,19 +186,7 @@ container_proxy_url() {
 
 image_archive_path() {
     local filename="$1"
-    local preferred_path="${IMAGE_ARCHIVE_DIR}/${filename}"
-
-    if [[ "$IMAGE_ARCHIVE_DIR_EXPLICIT" == true || -r "$preferred_path" ]]; then
-        printf '%s' "$preferred_path"
-        return
-    fi
-
-    local legacy_path="${LEGACY_IMAGE_ARCHIVE_DIR}/${filename}"
-    if [[ -r "$legacy_path" ]]; then
-        printf '%s' "$legacy_path"
-    else
-        printf '%s' "$preferred_path"
-    fi
+    printf '%s/%s' "$IMAGE_ARCHIVE_DIR" "$filename"
 }
 
 ensure_image() {
