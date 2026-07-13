@@ -189,6 +189,66 @@
            AND customer.create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND #{times[1],javaType=java.time.LocalDateTime}
     </select>
 
+    <select id="selectPoolCustomerPutCountByDate"
+            resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsPoolSummaryByDateRespVO">
+        SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS time,
+               COUNT(*) AS customer_put_count
+          FROM crm_customer_owner_record
+         WHERE deleted = 0
+           AND type = ${@com.meession.etm.module.crm.enums.customer.CrmCustomerOwnerRecordTypeEnum@PUT_POOL.type}
+           AND owner_user_id IN
+                <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+                    #{userId}
+                </foreach>
+           AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND #{times[1],javaType=java.time.LocalDateTime}
+         GROUP BY time
+    </select>
+
+    <select id="selectPoolCustomerTakeCountByDate"
+            resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsPoolSummaryByDateRespVO">
+        SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS time,
+               COUNT(*) AS customer_take_count
+          FROM crm_customer_owner_record
+         WHERE deleted = 0
+           AND type = ${@com.meession.etm.module.crm.enums.customer.CrmCustomerOwnerRecordTypeEnum@TAKE_POOL.type}
+           AND owner_user_id IN
+                <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+                    #{userId}
+                </foreach>
+           AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND #{times[1],javaType=java.time.LocalDateTime}
+         GROUP BY time
+    </select>
+
+    <select id="selectPoolCustomerPutCountByUser"
+            resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsPoolSummaryByUserRespVO">
+        SELECT owner_user_id,
+               COUNT(*) AS customer_put_count
+          FROM crm_customer_owner_record
+         WHERE deleted = 0
+           AND type = ${@com.meession.etm.module.crm.enums.customer.CrmCustomerOwnerRecordTypeEnum@PUT_POOL.type}
+           AND owner_user_id IN
+                <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+                    #{userId}
+                </foreach>
+           AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND #{times[1],javaType=java.time.LocalDateTime}
+         GROUP BY owner_user_id
+    </select>
+
+    <select id="selectPoolCustomerTakeCountByUser"
+            resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsPoolSummaryByUserRespVO">
+        SELECT owner_user_id,
+               COUNT(*) AS customer_take_count
+          FROM crm_customer_owner_record
+         WHERE deleted = 0
+           AND type = ${@com.meession.etm.module.crm.enums.customer.CrmCustomerOwnerRecordTypeEnum@TAKE_POOL.type}
+           AND owner_user_id IN
+                <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+                    #{userId}
+                </foreach>
+           AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND #{times[1],javaType=java.time.LocalDateTime}
+         GROUP BY owner_user_id
+    </select>
+
     <!-- TIMESTAMPDIFF 用于求差值；AVG 求平均；TRUNCATE 去掉小数点、只保留整数 -->
     <select id="selectCustomerDealCycleGroupByDate"
             resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerDealCycleByDateRespVO">

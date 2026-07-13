@@ -2,7 +2,10 @@ package com.meession.etm.module.crm.service.customer;
 
 import com.meession.etm.module.crm.controller.admin.customer.vo.customer.CrmCustomerSaveReqVO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerOwnerRecordDO;
 import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerMapper;
+import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerOwnerRecordMapper;
+import com.meession.etm.module.crm.service.contact.CrmContactService;
 import com.meession.etm.module.crm.service.permission.CrmPermissionService;
 import com.meession.etm.module.crm.service.permission.bo.CrmPermissionCreateReqBO;
 import com.meession.etm.module.system.api.user.AdminUserApi;
@@ -15,9 +18,34 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.meession.etm.framework.test.core.util.AssertUtils.assertServiceException;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CUSTOMER_NAME_EXISTS;
+import static com.meession.etm.module.crm.enums.customer.CrmCustomerOwnerRecordTypeEnum.PUT_POOL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class CrmCustomerServiceImplTest {
+
+    @Test
+    void putCustomerPoolRecordsPreviousOwner() {
+        AtomicReference<CrmCustomerOwnerRecordDO> ownerRecord = new AtomicReference<>();
+        CrmCustomerServiceImpl service = new CrmCustomerServiceImpl();
+        ReflectionTestUtils.setField(service, "customerOwnerRecordMapper", proxy(CrmCustomerOwnerRecordMapper.class,
+                (proxy, method, args) -> {
+                    ownerRecord.set((CrmCustomerOwnerRecordDO) args[0]);
+                    return 1;
+                }));
+        ReflectionTestUtils.setField(service, "customerMapper", proxy(CrmCustomerMapper.class,
+                (proxy, method, args) -> 1));
+        ReflectionTestUtils.setField(service, "contactService", proxy(CrmContactService.class,
+                (proxy, method, args) -> null));
+        ReflectionTestUtils.setField(service, "permissionService", proxy(CrmPermissionService.class,
+                (proxy, method, args) -> null));
+        CrmCustomerDO customer = new CrmCustomerDO().setId(20L).setOwnerUserId(100L);
+
+        service.putCustomerPool(customer);
+
+        assertEquals(20L, ownerRecord.get().getCustomerId());
+        assertEquals(100L, ownerRecord.get().getOwnerUserId());
+        assertEquals(PUT_POOL.getType(), ownerRecord.get().getType());
+    }
 
     @Test
     void createCustomerUsesSelectedOwnerForDataAndPermission() {

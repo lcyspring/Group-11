@@ -66,6 +66,12 @@ if [ -d "$SQL_NEW_DIR" ]; then
         echo "Executing: new-large-file-upload.sql"
         mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < "${SQL_NEW_DIR}/new-large-file-upload.sql"
     fi
+
+    # 4.6 执行 CRM 客户公海归属历史表
+    if [ -f "${SQL_NEW_DIR}/new-crm-customer-owner-record.sql" ]; then
+        echo "Executing: new-crm-customer-owner-record.sql"
+        mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < "${SQL_NEW_DIR}/new-crm-customer-owner-record.sql"
+    fi
 fi
 
 echo "MySQL initialization completed successfully!"

@@ -18,8 +18,10 @@ import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerLimitConfigDO;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerOwnerRecordDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerPoolConfigDO;
 import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerMapper;
+import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerOwnerRecordMapper;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.enums.common.CrmSceneTypeEnum;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
@@ -52,6 +54,8 @@ import static com.meession.etm.module.crm.enums.ErrorCodeConstants.*;
 import static com.meession.etm.module.crm.enums.LogRecordConstants.*;
 import static com.meession.etm.module.crm.enums.customer.CrmCustomerLimitConfigTypeEnum.CUSTOMER_LOCK_LIMIT;
 import static com.meession.etm.module.crm.enums.customer.CrmCustomerLimitConfigTypeEnum.CUSTOMER_OWNER_LIMIT;
+import static com.meession.etm.module.crm.enums.customer.CrmCustomerOwnerRecordTypeEnum.PUT_POOL;
+import static com.meession.etm.module.crm.enums.customer.CrmCustomerOwnerRecordTypeEnum.TAKE_POOL;
 import static java.util.Collections.singletonList;
 
 /**
@@ -66,6 +70,8 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
 
     @Resource
     private CrmCustomerMapper customerMapper;
+    @Resource
+    private CrmCustomerOwnerRecordMapper customerOwnerRecordMapper;
 
     @Resource
     private CrmPermissionService permissionService;
@@ -427,6 +433,10 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
         customerMapper.updateBatch(updateCustomers);
         // 2.3 创建负责人数据权限
         permissionService.createPermissionBatch(createPermissions);
+        // 2.4 记录领取/分配事件，供公海统计使用
+        customerOwnerRecordMapper.insertBatch(CollectionUtils.convertList(customers, customer ->
+                new CrmCustomerOwnerRecordDO().setCustomerId(customer.getId())
+                        .setOwnerUserId(ownerUserId).setType(TAKE_POOL.getType())));
         // TODO @芋艿：要不要处理关联的联系人？？？
 
         // 3. 记录操作日志
@@ -462,16 +472,20 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
 
     @Transactional(rollbackFor = Exception.class) // 需要 protected 修饰，因为需要在事务中调用
     protected void putCustomerPool(CrmCustomerDO customer) {
-        // 1. 设置负责人为 NULL
+        // 1. 记录进入公海事件；后续失败时随事务一起回滚
+        customerOwnerRecordMapper.insert(new CrmCustomerOwnerRecordDO().setCustomerId(customer.getId())
+                .setOwnerUserId(customer.getOwnerUserId()).setType(PUT_POOL.getType()));
+
+        // 2. 设置负责人为 NULL
         int updateOwnerUserIncr = customerMapper.updateOwnerUserIdById(customer.getId(), null);
         if (updateOwnerUserIncr == 0) {
             throw exception(CUSTOMER_UPDATE_OWNER_USER_FAIL);
         }
 
-        // 2. 联系人的负责人，也要设置为 null。因为：因为领取后，负责人也要关联过来，这块和 receiveCustomer 是对应的
+        // 3. 联系人的负责人，也要设置为 null。因为：因为领取后，负责人也要关联过来，这块和 receiveCustomer 是对应的
         contactService.updateOwnerUserIdByCustomerId(customer.getId(), null);
 
-        // 3. 删除负责人数据权限
+        // 4. 删除负责人数据权限
         // 注意：需要放在 contactService 后面，不然【客户】数据权限已经被删除，无法操作！
         permissionService.deletePermission(CrmBizTypeEnum.CRM_CUSTOMER.getType(), customer.getId(),
                 CrmPermissionLevelEnum.OWNER.getLevel());
