@@ -7,13 +7,15 @@ import com.meession.etm.framework.common.util.object.BeanUtils;
 import com.meession.etm.module.crm.controller.admin.clue.vo.CrmCluePageReqVO;
 import com.meession.etm.module.crm.controller.admin.clue.vo.CrmClueSaveReqVO;
 import com.meession.etm.module.crm.controller.admin.clue.vo.CrmClueTransferReqVO;
-import com.meession.etm.module.crm.controller.admin.customer.vo.customer.CrmCustomerSaveReqVO;
+import com.meession.etm.module.crm.controller.admin.clue.vo.CrmClueTransformReqVO;
+import com.meession.etm.module.crm.controller.admin.contact.vo.CrmContactSaveReqVO;
 import com.meession.etm.module.crm.dal.dataobject.clue.CrmClueDO;
 import com.meession.etm.module.crm.dal.dataobject.followup.CrmFollowUpRecordDO;
 import com.meession.etm.module.crm.dal.mysql.clue.CrmClueMapper;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
 import com.meession.etm.module.crm.framework.permission.core.annotations.CrmPermission;
+import com.meession.etm.module.crm.service.contact.CrmContactService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
 import com.meession.etm.module.crm.service.customer.bo.CrmCustomerCreateReqBO;
 import com.meession.etm.module.crm.service.followup.CrmFollowUpRecordService;
@@ -56,6 +58,8 @@ public class CrmClueServiceImpl implements CrmClueService {
 
     @Resource
     private CrmCustomerService customerService;
+    @Resource
+    private CrmContactService contactService;
     @Resource
     private CrmPermissionService crmPermissionService;
     @Resource
@@ -177,27 +181,34 @@ public class CrmClueServiceImpl implements CrmClueService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @LogRecord(type = CRM_CLUE_TYPE, subType = CRM_CLUE_TRANSLATE_SUB_TYPE, bizNo = "{{#id}}",
+    @LogRecord(type = CRM_CLUE_TYPE, subType = CRM_CLUE_TRANSLATE_SUB_TYPE, bizNo = "{{#reqVO.id}}",
             success = CRM_CLUE_TRANSLATE_SUCCESS)
-    @CrmPermission(bizType = CrmBizTypeEnum.CRM_CLUE, bizId = "#id", level = CrmPermissionLevelEnum.OWNER)
-    public void transformClue(Long id, Long userId) {
+    @CrmPermission(bizType = CrmBizTypeEnum.CRM_CLUE, bizId = "#reqVO.id", level = CrmPermissionLevelEnum.OWNER)
+    public void transformClue(CrmClueTransformReqVO reqVO, Long userId) {
         // 1.1 校验线索都存在
-        CrmClueDO clue = validateClueExists(id);
+        CrmClueDO clue = validateClueExists(reqVO.getId());
         // 1.2 存在已经转化的
         if (Boolean.TRUE.equals(clue.getTransformStatus())) {
             throw exception(CLUE_TRANSFORM_FAIL_ALREADY);
         }
 
         // 1.3 原子抢占转换权，避免两个并发请求各自创建客户
-        if (clueMapper.updateTransformStatusByIdAndTransformStatus(id, Boolean.FALSE, Boolean.TRUE) == 0) {
+        if (clueMapper.updateTransformStatusByIdAndTransformStatus(reqVO.getId(), Boolean.FALSE, Boolean.TRUE) == 0) {
             throw exception(CLUE_TRANSFORM_FAIL_ALREADY);
         }
 
         // 2.1 遍历线索(未转化的线索)，创建对应的客户
         Long customerId = customerService.createCustomer(BeanUtils.toBean(clue, CrmCustomerCreateReqBO.class), userId);
-        // 2.2 记录转换后的客户；转换状态已在上方原子更新
-        clueMapper.updateById(new CrmClueDO().setId(id).setCustomerId(customerId));
-        // 2.3 复制跟进记录
+        // 2.2 创建首联系人。失败时由外层事务回滚客户及转换状态
+        contactService.createContact(new CrmContactSaveReqVO()
+                .setName(reqVO.getContactName()).setMobile(reqVO.getContactMobile())
+                .setCustomerId(customerId).setOwnerUserId(userId)
+                .setTelephone(clue.getTelephone()).setWechat(clue.getWechat()).setEmail(clue.getEmail())
+                .setAreaId(clue.getAreaId()).setDetailAddress(clue.getDetailAddress())
+                .setMaster(false).setPrimaryContact(true), userId);
+        // 2.3 记录转换后的客户；转换状态已在上方原子更新
+        clueMapper.updateById(new CrmClueDO().setId(reqVO.getId()).setCustomerId(customerId));
+        // 2.4 复制跟进记录
         List<CrmFollowUpRecordDO> followUpRecords = followUpRecordService.getFollowUpRecordByBiz(
                 CrmBizTypeEnum.CRM_CLUE.getType(), singleton(clue.getId()));
         if (CollUtil.isNotEmpty(followUpRecords)) {

@@ -32,6 +32,12 @@ export interface ClueVO {
   updateTime: Date // 更新时间
 }
 
+export interface ClueTransformReqVO {
+  id: number
+  contactName: string
+  contactMobile: string
+}
+
 // 查询线索列表
 export const getCluePage = async (params: any) => {
   return await request.get({ url: `/crm/clue/page`, params })
@@ -68,8 +74,8 @@ export const transferClue = async (data: TransferReqVO) => {
 }
 
 // 线索转化为客户
-export const transformClue = async (id: number) => {
-  return await request.put({ url: '/crm/clue/transform', params: { id } })
+export const transformClue = async (data: ClueTransformReqVO) => {
+  return await request.put({ url: '/crm/clue/transform', data })
 }
 
 // 获得分配给我的、待跟进的线索数量

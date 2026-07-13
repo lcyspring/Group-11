@@ -4,6 +4,7 @@ import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.module.crm.controller.admin.clue.vo.CrmCluePageReqVO;
 import com.meession.etm.module.crm.controller.admin.clue.vo.CrmClueSaveReqVO;
 import com.meession.etm.module.crm.controller.admin.clue.vo.CrmClueTransferReqVO;
+import com.meession.etm.module.crm.controller.admin.clue.vo.CrmClueTransformReqVO;
 import com.meession.etm.module.crm.dal.dataobject.clue.CrmClueDO;
 import jakarta.validation.Valid;
 
@@ -75,10 +76,10 @@ public interface CrmClueService {
     /**
      * 线索转化为客户
      *
-     * @param id  线索编号
+     * @param reqVO  转化信息
      * @param userId 用户编号
      */
-    void transformClue(Long id, Long userId);
+    void transformClue(CrmClueTransformReqVO reqVO, Long userId);
 
     /**
      * 获得分配给我的、待跟进的线索数量

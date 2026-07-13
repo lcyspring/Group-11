@@ -45,12 +45,14 @@
 
   <!-- 表单弹窗：添加/修改 -->
   <ClueForm ref="formRef" @success="getClue" />
+  <ClueTransformForm ref="transformFormRef" @success="getClue" />
   <CrmTransferForm ref="transferFormRef" :biz-type="BizTypeEnum.CRM_CLUE" @success="close" />
 </template>
 <script lang="ts" setup>
 import { useTagsViewStore } from '@/store/modules/tagsView'
 import * as ClueApi from '@/api/crm/clue'
 import ClueForm from '@/views/crm/clue/ClueForm.vue'
+import ClueTransformForm from '@/views/crm/clue/ClueTransformForm.vue'
 import ClueDetailsHeader from './ClueDetailsHeader.vue' // 线索明细 - 头部
 import ClueDetailsInfo from './ClueDetailsInfo.vue' // 线索明细 - 详细信息
 import PermissionList from '@/views/crm/permission/components/PermissionList.vue' // 团队成员列表（权限）
@@ -97,11 +99,9 @@ const transfer = () => {
 }
 
 /** 转化为客户 */
-const handleTransform = async () => {
-  await message.confirm(t('clue.transformConfirm', { name: clue.value.name }))
-  await ClueApi.transformClue(clueId.value)
-  message.success(t('clue.transformSuccess'))
-  await getClue()
+const transformFormRef = ref<InstanceType<typeof ClueTransformForm>>()
+const handleTransform = () => {
+  transformFormRef.value?.open(clue.value)
 }
 
 /** 获取操作日志 */

@@ -13,6 +13,7 @@ import com.meession.etm.module.crm.controller.admin.clue.vo.CrmCluePageReqVO;
 import com.meession.etm.module.crm.controller.admin.clue.vo.CrmClueRespVO;
 import com.meession.etm.module.crm.controller.admin.clue.vo.CrmClueSaveReqVO;
 import com.meession.etm.module.crm.controller.admin.clue.vo.CrmClueTransferReqVO;
+import com.meession.etm.module.crm.controller.admin.clue.vo.CrmClueTransformReqVO;
 import com.meession.etm.module.crm.dal.dataobject.clue.CrmClueDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.service.clue.CrmClueService;
@@ -156,10 +157,9 @@ public class CrmClueController {
 
     @PutMapping("/transform")
     @Operation(summary = "线索转化为客户")
-    @Parameter(name = "id", description = "编号", required = true)
     @PreAuthorize("@ss.hasPermission('crm:clue:update')")
-    public CommonResult<Boolean> transformClue(@RequestParam("id") Long id) {
-        clueService.transformClue(id, getLoginUserId());
+    public CommonResult<Boolean> transformClue(@Valid @RequestBody CrmClueTransformReqVO reqVO) {
+        clueService.transformClue(reqVO, getLoginUserId());
         return success(Boolean.TRUE);
     }
 
