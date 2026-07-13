@@ -2,6 +2,13 @@ export default {
   customer: {
     title: '客户管理',
     name: '客户名称',
+    parentCustomer: '上级客户',
+    parentCustomerPlaceholder: '请选择上级客户（可选）',
+    rootCustomer: '无（集团/根客户）',
+    childCustomers: '下级客户',
+    viewChildCustomers: '查看直接下级客户',
+    childCustomerFilter: '正在查看【{name}】的直接下级客户',
+    clearHierarchyFilter: '返回全部客户',
     primaryContact: '首联系人',
     primaryContactMobile: '首联系人手机',
     contactName: '联系人',

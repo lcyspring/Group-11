@@ -2,6 +2,13 @@ export default {
   customer: {
     title: 'إدارة العملاء',
     name: 'اسم العميل',
+    parentCustomer: 'العميل الرئيسي',
+    parentCustomerPlaceholder: 'اختر العميل الرئيسي (اختياري)',
+    rootCustomer: 'لا يوجد (عميل مجموعة/جذر)',
+    childCustomers: 'العملاء الفرعيون',
+    viewChildCustomers: 'عرض العملاء الفرعيين المباشرين',
+    childCustomerFilter: 'عرض العملاء الفرعيين المباشرين لـ {name}',
+    clearHierarchyFilter: 'العودة إلى جميع العملاء',
     primaryContact: 'جهة الاتصال الأساسية',
     primaryContactMobile: 'هاتف جهة الاتصال الأساسية',
     contactName: 'جهة الاتصال',

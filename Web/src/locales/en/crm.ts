@@ -2,6 +2,13 @@ export default {
   customer: {
     title: 'Customer Management',
     name: 'Customer Name',
+    parentCustomer: 'Parent Customer',
+    parentCustomerPlaceholder: 'Select a parent customer (optional)',
+    rootCustomer: 'None (group/root customer)',
+    childCustomers: 'Child Customers',
+    viewChildCustomers: 'View direct child customers',
+    childCustomerFilter: 'Viewing direct child customers of {name}',
+    clearHierarchyFilter: 'Back to all customers',
     primaryContact: 'Primary Contact',
     primaryContactMobile: 'Primary Contact Mobile',
     contactName: 'Contact',

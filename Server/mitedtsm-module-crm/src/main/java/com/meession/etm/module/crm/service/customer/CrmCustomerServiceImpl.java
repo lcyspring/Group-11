@@ -99,9 +99,14 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
             success = CRM_CUSTOMER_CREATE_SUCCESS)
     public Long createCustomer(CrmCustomerSaveReqVO createReqVO, Long userId) {
         createReqVO.setId(null);
-        // 1.1 校验客户名称唯一
+        // 1.1 校验客户层级。存在父客户时先锁定租户层级，和更新、删除操作串行化
+        if (createReqVO.getParentCustomerId() != null) {
+            validateCustomerHierarchy(null, createReqVO.getParentCustomerId(),
+                    customerMapper.selectHierarchyListForUpdate());
+        }
+        // 1.2 校验客户名称唯一
         validateCustomerNameUnique(null, createReqVO.getName());
-        // 1.2 校验所选负责人存在且拥有客户未达到上限
+        // 1.3 校验所选负责人存在且拥有客户未达到上限
         Long ownerUserId = createReqVO.getOwnerUserId();
         adminUserApi.validateUser(ownerUserId);
         validateCustomerExceedOwnerLimit(ownerUserId, 1);
@@ -141,13 +146,18 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
     public void updateCustomer(CrmCustomerSaveReqVO updateReqVO) {
         Assert.notNull(updateReqVO.getId(), "客户编号不能为空");
         updateReqVO.setOwnerUserId(null);  // 更新的时候，要把 updateReqVO 负责人设置为空，避免修改
-        // 1. 校验存在
+        // 1.1 锁定并校验当前租户的客户层级，防止并发更新分别通过校验后形成环
+        List<CrmCustomerDO> hierarchy = customerMapper.selectHierarchyListForUpdate();
+        validateCustomerHierarchy(updateReqVO.getId(), updateReqVO.getParentCustomerId(), hierarchy);
+        // 1.2 校验存在及名称唯一
         CrmCustomerDO oldCustomer = validateCustomerExists(updateReqVO.getId());
         validateCustomerNameUnique(updateReqVO.getId(), updateReqVO.getName());
 
         // 2. 更新客户
         CrmCustomerDO updateObj = BeanUtils.toBean(updateReqVO, CrmCustomerDO.class);
         customerMapper.updateById(updateObj);
+        // MyBatis 默认忽略 null 字段，因此父关系必须显式更新，才能支持解除上下级关系
+        customerMapper.updateParentCustomerIdById(updateReqVO.getId(), updateReqVO.getParentCustomerId());
 
         // 3. 记录操作日志上下文
         updateReqVO.setOwnerUserId(oldCustomer.getOwnerUserId()); // 避免操作日志出现“删除负责人”的情况
@@ -197,10 +207,12 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
             success = CRM_CUSTOMER_DELETE_SUCCESS)
     @CrmPermission(bizType = CrmBizTypeEnum.CRM_CUSTOMER, bizId = "#id", level = CrmPermissionLevelEnum.OWNER)
     public void deleteCustomer(Long id) {
-        // 1.1 校验存在
+        // 1.1 锁定层级，避免删除与建立下级关系并发造成孤儿关系
+        List<CrmCustomerDO> hierarchy = customerMapper.selectHierarchyListForUpdate();
+        // 1.2 校验存在
         CrmCustomerDO customer = validateCustomerExists(id);
-        // 1.2 检查引用
-        validateCustomerReference(id);
+        // 1.3 检查引用
+        validateCustomerReference(id, hierarchy);
 
         // 2. 删除客户
         customerMapper.deleteById(id);
@@ -596,7 +608,10 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
      *
      * @param id 客户编号
      */
-    private void validateCustomerReference(Long id) {
+    private void validateCustomerReference(Long id, List<CrmCustomerDO> hierarchy) {
+        if (hierarchy.stream().anyMatch(customer -> ObjUtil.equal(customer.getParentCustomerId(), id))) {
+            throw exception(CUSTOMER_DELETE_FAIL_HAVE_REFERENCE, "下级客户");
+        }
         if (contactService.getContactCountByCustomerId(id) > 0) {
             throw exception(CUSTOMER_DELETE_FAIL_HAVE_REFERENCE, CrmBizTypeEnum.CRM_CONTACT.getName());
         }
@@ -605,6 +620,36 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
         }
         if (contractService.getContractCountByCustomerId(id) > 0) {
             throw exception(CUSTOMER_DELETE_FAIL_HAVE_REFERENCE, CrmBizTypeEnum.CRM_CONTRACT.getName());
+        }
+    }
+
+    /**
+     * 校验上级客户关系。传入列表必须来自 {@link CrmCustomerMapper#selectHierarchyListForUpdate()}，
+     * 从而使校验和后续写入共享同一个受锁保护的层级快照。
+     */
+    private void validateCustomerHierarchy(Long customerId, Long parentCustomerId, List<CrmCustomerDO> hierarchy) {
+        Map<Long, Long> parentMap = new HashMap<>(hierarchy.size());
+        hierarchy.forEach(customer -> parentMap.put(customer.getId(), customer.getParentCustomerId()));
+        if (customerId != null && !parentMap.containsKey(customerId)) {
+            throw exception(CUSTOMER_NOT_EXISTS);
+        }
+        if (parentCustomerId == null) {
+            return;
+        }
+        if (ObjUtil.equal(customerId, parentCustomerId)) {
+            throw exception(CUSTOMER_PARENT_SELF);
+        }
+        if (!parentMap.containsKey(parentCustomerId)) {
+            throw exception(CUSTOMER_PARENT_NOT_EXISTS);
+        }
+
+        Set<Long> visited = new HashSet<>();
+        Long ancestorId = parentCustomerId;
+        while (ancestorId != null) {
+            if (ObjUtil.equal(ancestorId, customerId) || !visited.add(ancestorId)) {
+                throw exception(CUSTOMER_HIERARCHY_CYCLE);
+            }
+            ancestorId = parentMap.get(ancestorId);
         }
     }
 

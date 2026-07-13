@@ -2,6 +2,17 @@
   <doc-alert title="【客户】客户管理、公海客户" url="https://doc.iocoder.cn/crm/customer/" />
   <doc-alert title="【通用】数据权限" url="https://doc.iocoder.cn/crm/permission/" />
 
+  <el-alert
+    v-if="queryParams.parentCustomerId"
+    :closable="false"
+    type="info"
+    show-icon
+    class="mb-16px"
+    :title="t('childCustomerFilter', { name: parentCustomerName || `#${queryParams.parentCustomerId}` })"
+  >
+    <el-button link type="primary" @click="clearParentFilter">{{ t('clearHierarchyFilter') }}</el-button>
+  </el-alert>
+
   <ContentWrap>
     <!-- 搜索工作栏 -->
     <el-form
@@ -161,6 +172,7 @@
           </el-link>
         </template>
       </el-table-column>
+      <el-table-column align="center" :label="t('parentCustomer')" prop="parentCustomerName" min-width="160" />
       <el-table-column align="center" :label="t('primaryContact')" prop="primaryContactName" min-width="120" />
       <el-table-column align="center" :label="t('primaryContactMobile')" prop="primaryContactMobile" min-width="130" />
       <el-table-column align="center" :label="t('source')" prop="source" min-width="100">
@@ -290,8 +302,10 @@ const queryParams = reactive({
   industryId: undefined,
   level: undefined,
   source: undefined,
+  parentCustomerId: undefined as number | undefined,
   pool: undefined
 })
+const parentCustomerName = ref('')
 const queryFormRef = ref() // 搜索的表单
 const exportLoading = ref(false) // 导出的加载中
 const activeName = ref('1') // 列表 tab
@@ -324,6 +338,16 @@ const handleQuery = () => {
 const resetQuery = () => {
   queryFormRef.value.resetFields()
   handleQuery()
+}
+
+const syncHierarchyFilterFromRoute = () => {
+  const parentId = Number(currentRoute.value.query.parentCustomerId)
+  queryParams.parentCustomerId = Number.isSafeInteger(parentId) && parentId > 0 ? parentId : undefined
+  parentCustomerName.value = String(currentRoute.value.query.parentCustomerName || '')
+}
+
+const clearParentFilter = () => {
+  push({ name: 'CrmCustomer' })
 }
 
 /** 打开客户详情 */
@@ -376,12 +400,14 @@ const handleExport = async () => {
 watch(
   () => currentRoute.value,
   () => {
+    syncHierarchyFilterFromRoute()
     getList()
   }
 )
 
 /** 初始化 **/
 onMounted(() => {
+  syncHierarchyFilterFromRoute()
   getList()
 })
 </script>

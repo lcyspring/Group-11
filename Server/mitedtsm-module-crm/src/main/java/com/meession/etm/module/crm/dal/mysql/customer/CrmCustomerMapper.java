@@ -52,6 +52,15 @@ public interface CrmCustomerMapper extends BaseMapperX<CrmCustomerDO> {
                 .set(CrmCustomerDO::getOwnerUserId, ownerUserId));
     }
 
+    /**
+     * 显式更新上级客户编号。不能依赖 updateById，因为 MyBatis 默认会忽略 null，导致无法解除父关系。
+     */
+    default int updateParentCustomerIdById(Long id, Long parentCustomerId) {
+        return update(new LambdaUpdateWrapper<CrmCustomerDO>()
+                .eq(CrmCustomerDO::getId, id)
+                .set(CrmCustomerDO::getParentCustomerId, parentCustomerId));
+    }
+
     default PageResult<CrmCustomerDO> selectPage(CrmCustomerPageReqVO pageReqVO, Long ownerUserId) {
         MPJLambdaWrapperX<CrmCustomerDO> query = new MPJLambdaWrapperX<>();
         // 拼接数据权限的查询条件
@@ -64,6 +73,7 @@ public interface CrmCustomerMapper extends BaseMapperX<CrmCustomerDO> {
         // 拼接自身的查询条件
         query.selectAll(CrmCustomerDO.class)
                 .likeIfPresent(CrmCustomerDO::getName, pageReqVO.getName())
+                .eqIfPresent(CrmCustomerDO::getParentCustomerId, pageReqVO.getParentCustomerId())
                 .eqIfPresent(CrmCustomerDO::getMobile, pageReqVO.getMobile())
                 .eqIfPresent(CrmCustomerDO::getIndustryId, pageReqVO.getIndustryId())
                 .eqIfPresent(CrmCustomerDO::getLevel, pageReqVO.getLevel())
@@ -115,6 +125,17 @@ public interface CrmCustomerMapper extends BaseMapperX<CrmCustomerDO> {
 
     default CrmCustomerDO selectByCustomerName(String name) {
         return selectOne(CrmCustomerDO::getName, name);
+    }
+
+    /**
+     * 锁定当前租户的有效客户层级快照。所有层级写操作都先调用本方法，串行化同租户内的
+     * 关系变更，避免两个并发请求分别通过校验后形成环。
+     */
+    default List<CrmCustomerDO> selectHierarchyListForUpdate() {
+        return selectList(new LambdaQueryWrapper<CrmCustomerDO>()
+                .select(CrmCustomerDO::getId, CrmCustomerDO::getParentCustomerId)
+                .orderByAsc(CrmCustomerDO::getId)
+                .last("FOR UPDATE"));
     }
 
     default List<CrmCustomerDO> selectDuplicateList(String name, String mobile, Long excludeId, Long userId) {

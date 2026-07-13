@@ -39,6 +39,7 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static com.meession.etm.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
@@ -151,11 +152,15 @@ public class CrmCustomerController {
         Map<Long, CrmContactDO> primaryContactMap = convertMap(
                 contactService.getPrimaryContactListByCustomerIds(convertSet(list, CrmCustomerDO::getId)),
                 CrmContactDO::getCustomerId);
-        // 1.2 获取创建人、负责人列表
+        // 1.2 批量获取上级客户名称，避免列表产生 N+1 查询
+        Set<Long> parentCustomerIds = convertSet(list, CrmCustomerDO::getParentCustomerId);
+        parentCustomerIds.remove(null);
+        Map<Long, CrmCustomerDO> parentCustomerMap = customerService.getCustomerMap(parentCustomerIds);
+        // 1.3 获取创建人、负责人列表
         Map<Long, AdminUserRespDTO> userMap = adminUserApi.getUserMap(convertSetByFlatMap(list,
                 contact -> Stream.of(NumberUtils.parseLong(contact.getCreator()), contact.getOwnerUserId())));
         Map<Long, DeptRespDTO> deptMap = deptApi.getDeptMap(convertSet(userMap.values(), AdminUserRespDTO::getDeptId));
-        // 1.3 获取距离进入公海的时间
+        // 1.4 获取距离进入公海的时间
         Map<Long, Long> poolDayMap = getPoolDayMap(list);
         // 2. 转换成 VO
         return BeanUtils.toBean(list, CrmCustomerRespVO.class, customerVO -> {
@@ -163,14 +168,17 @@ public class CrmCustomerController {
             // 2.1 设置首联系人姓名和手机
             MapUtils.findAndThen(primaryContactMap, customerVO.getId(), contact -> customerVO
                     .setPrimaryContactName(contact.getName()).setPrimaryContactMobile(contact.getMobile()));
-            // 2.2 设置创建人、负责人名称
+            // 2.2 设置上级客户名称
+            MapUtils.findAndThen(parentCustomerMap, customerVO.getParentCustomerId(), parent ->
+                    customerVO.setParentCustomerName(parent.getName()));
+            // 2.3 设置创建人、负责人名称
             MapUtils.findAndThen(userMap, NumberUtils.parseLong(customerVO.getCreator()),
                     user -> customerVO.setCreatorName(user.getNickname()));
             MapUtils.findAndThen(userMap, customerVO.getOwnerUserId(), user -> {
                 customerVO.setOwnerUserName(user.getNickname());
                 MapUtils.findAndThen(deptMap, user.getDeptId(), dept -> customerVO.setOwnerUserDeptName(dept.getName()));
             });
-            // 2.3 设置距离进入公海的时间
+            // 2.4 设置距离进入公海的时间
             if (customerVO.getOwnerUserId() != null) {
                 customerVO.setPoolDay(poolDayMap.get(customerVO.getId()));
             }

@@ -9,6 +9,22 @@
           <el-descriptions-item :label="t('name')">
             {{ customer.name }}
           </el-descriptions-item>
+          <el-descriptions-item :label="t('parentCustomer')">
+            <el-link
+              v-if="customer.parentCustomerId"
+              type="primary"
+              :underline="false"
+              @click="openCustomer(customer.parentCustomerId)"
+            >
+              {{ customer.parentCustomerName }}
+            </el-link>
+            <span v-else>{{ t('rootCustomer') }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item :label="t('childCustomers')">
+            <el-link type="primary" :underline="false" @click="openChildCustomers">
+              {{ t('viewChildCustomers') }}
+            </el-link>
+          </el-descriptions-item>
           <el-descriptions-item :label="t('source')">
             <dict-tag :type="DICT_TYPE.CRM_CUSTOMER_SOURCE" :value="customer.source" />
           </el-descriptions-item>
@@ -69,5 +85,12 @@ const { customer } = defineProps<{
 }>()
 
 const activeNames = ref(['basicInfo', 'systemInfo']) // 展示的折叠面板
+const { push } = useRouter()
+const openCustomer = (id: number) => push({ name: 'CrmCustomerDetail', params: { id } })
+const openChildCustomers = () =>
+  push({
+    name: 'CrmCustomer',
+    query: { parentCustomerId: customer.id, parentCustomerName: customer.name }
+  })
 </script>
 <style lang="scss" scoped></style>

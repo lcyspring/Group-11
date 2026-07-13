@@ -335,6 +335,7 @@ DROP TABLE IF EXISTS `crm_customer`;
 CREATE TABLE `crm_customer`  (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '编号，主键自增',
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '客户名称',
+  `parent_customer_id` bigint NULL DEFAULT NULL COMMENT '上级客户编号',
   `follow_up_status` tinyint(1) NOT NULL DEFAULT 0 COMMENT '跟进状态',
   `contact_last_time` datetime NULL DEFAULT NULL COMMENT '最后跟进时间',
   `contact_last_content` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '最后跟进内容',
@@ -361,14 +362,15 @@ CREATE TABLE `crm_customer`  (
   `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
   `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户编号',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `owner_user_id`(`owner_user_id` ASC) USING BTREE
+  INDEX `owner_user_id`(`owner_user_id` ASC) USING BTREE,
+  INDEX `idx_crm_customer_parent`(`tenant_id` ASC, `parent_customer_id` ASC, `deleted` ASC) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 18 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'CRM 客户表';
 
 -- ----------------------------
 -- Records of crm_customer
 -- ----------------------------
 BEGIN;
-INSERT INTO `crm_customer` (`id`, `name`, `follow_up_status`, `contact_last_time`, `contact_last_content`, `contact_next_time`, `owner_user_id`, `owner_time`, `lock_status`, `deal_status`, `mobile`, `telephone`, `qq`, `wechat`, `email`, `area_id`, `detail_address`, `industry_id`, `level`, `source`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (12, '测试公海逻辑', 0, NULL, NULL, '2024-02-20 19:28:59', 103, '2024-02-20 20:02:19', b'0', b'0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '1', '2024-02-20 17:41:26', '1', '2024-02-20 20:02:19', b'0', 1), (13, '呵呵哒', 0, NULL, NULL, NULL, NULL, '2024-02-20 20:17:42', b'0', b'0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '1', '2024-02-20 20:17:42', '1', '2024-02-20 12:35:56', b'0', 1), (14, '啦啦啦', 0, NULL, NULL, '2024-02-29 00:00:00', NULL, '2024-02-20 21:39:40', b'0', b'0', '18818260277', '18818260277', NULL, 'wang-server', NULL, 130304, '阿巴都', 2, 3, 1, NULL, '1', '2024-02-20 21:39:40', '1', '2024-02-23 14:30:34', b'0', 1), (15, '小土豆', 0, NULL, NULL, '2024-03-02 00:00:00', NULL, '2024-02-23 00:09:46', b'0', b'0', '18248472642', NULL, NULL, NULL, '768423@qq.com', NULL, NULL, 2, 2, 3, NULL, '1', '2024-02-23 00:09:46', '1', '2024-02-23 14:23:35', b'0', 1), (16, '演示线索', 1, '2024-02-24 15:42:41', '111', '2024-02-19 00:00:00', 1, '2024-02-23 21:16:14', b'0', b'0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '1', '2024-02-23 21:16:14', '1', '2024-02-24 15:42:41', b'0', 1), (17, '演示客户', 0, NULL, NULL, NULL, NULL, '2024-02-20 23:05:17', b'0', b'0', '18818260223', '18818260223', NULL, NULL, '768885413@qq.com', NULL, NULL, NULL, NULL, 1, NULL, '1', '2024-02-23 22:04:53', '1', '2024-02-26 01:36:21', b'0', 1);
+INSERT INTO `crm_customer` (`id`, `name`, `parent_customer_id`, `follow_up_status`, `contact_last_time`, `contact_last_content`, `contact_next_time`, `owner_user_id`, `owner_time`, `lock_status`, `deal_status`, `mobile`, `telephone`, `qq`, `wechat`, `email`, `area_id`, `detail_address`, `industry_id`, `level`, `source`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (12, '测试公海逻辑', NULL, 0, NULL, NULL, '2024-02-20 19:28:59', 103, '2024-02-20 20:02:19', b'0', b'0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '1', '2024-02-20 17:41:26', '1', '2024-02-20 20:02:19', b'0', 1), (13, '呵呵哒', NULL, 0, NULL, NULL, NULL, NULL, '2024-02-20 20:17:42', b'0', b'0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '1', '2024-02-20 20:17:42', '1', '2024-02-20 12:35:56', b'0', 1), (14, '啦啦啦', NULL, 0, NULL, NULL, '2024-02-29 00:00:00', NULL, '2024-02-20 21:39:40', b'0', b'0', '18818260277', '18818260277', NULL, 'wang-server', NULL, 130304, '阿巴都', 2, 3, 1, NULL, '1', '2024-02-20 21:39:40', '1', '2024-02-23 14:30:34', b'0', 1), (15, '小土豆', NULL, 0, NULL, NULL, '2024-03-02 00:00:00', NULL, '2024-02-23 00:09:46', b'0', b'0', '18248472642', NULL, NULL, NULL, '768423@qq.com', NULL, NULL, 2, 2, 3, NULL, '1', '2024-02-23 00:09:46', '1', '2024-02-23 14:23:35', b'0', 1), (16, '演示线索', NULL, 1, '2024-02-24 15:42:41', '111', '2024-02-19 00:00:00', 1, '2024-02-23 21:16:14', b'0', b'0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '1', '2024-02-23 21:16:14', '1', '2024-02-24 15:42:41', b'0', 1), (17, '演示客户', NULL, 0, NULL, NULL, NULL, NULL, '2024-02-20 23:05:17', b'0', b'0', '18818260223', '18818260223', NULL, NULL, '768885413@qq.com', NULL, NULL, NULL, NULL, 1, NULL, '1', '2024-02-23 22:04:53', '1', '2024-02-26 01:36:21', b'0', 1);
 COMMIT;
 
 -- ----------------------------

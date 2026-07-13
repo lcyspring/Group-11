@@ -23,6 +23,14 @@ public class CrmCustomerRespVO {
     @ExcelProperty("客户名称")
     private String name;
 
+    @Schema(description = "上级客户编号", example = "1024")
+    @ExcelProperty("上级客户编号")
+    private Long parentCustomerId;
+
+    @Schema(description = "上级客户名称", example = "集团总部")
+    @ExcelProperty("上级客户名称")
+    private String parentCustomerName;
+
     @Schema(description = "首联系人姓名", example = "张三")
     @ExcelProperty("首联系人")
     private String primaryContactName;

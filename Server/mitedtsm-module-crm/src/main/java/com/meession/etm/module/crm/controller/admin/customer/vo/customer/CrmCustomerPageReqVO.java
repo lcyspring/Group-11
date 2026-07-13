@@ -30,6 +30,9 @@ public class CrmCustomerPageReqVO extends PageParam {
     @Schema(description = "客户名称", example = "赵六")
     private String name;
 
+    @Schema(description = "上级客户编号；用于查询直接下级客户", example = "1024")
+    private Long parentCustomerId;
+
     @Schema(description = "手机", example = "18000000000")
     private String mobile;
 

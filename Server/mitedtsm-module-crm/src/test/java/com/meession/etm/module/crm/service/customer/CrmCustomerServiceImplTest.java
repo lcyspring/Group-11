@@ -19,10 +19,11 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.meession.etm.framework.test.core.util.AssertUtils.assertServiceException;
-import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CUSTOMER_NAME_EXISTS;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.*;
 import static com.meession.etm.module.crm.enums.customer.CrmCustomerOwnerRecordTypeEnum.PUT_POOL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CrmCustomerServiceImplTest {
@@ -153,6 +154,9 @@ class CrmCustomerServiceImplTest {
         CrmCustomerServiceImpl service = new CrmCustomerServiceImpl();
         ReflectionTestUtils.setField(service, "customerMapper", proxy(CrmCustomerMapper.class,
                 (proxy, method, args) -> {
+                    if (method.getName().equals("selectHierarchyListForUpdate")) {
+                        return List.of(new CrmCustomerDO().setId(20L));
+                    }
                     if (method.getName().equals("selectById")) {
                         return new CrmCustomerDO().setId(20L).setName("原客户").setOwnerUserId(1L);
                     }
@@ -164,6 +168,130 @@ class CrmCustomerServiceImplTest {
         CrmCustomerSaveReqVO reqVO = new CrmCustomerSaveReqVO().setId(20L).setName(name);
 
         assertServiceException(() -> service.updateCustomer(reqVO), CUSTOMER_NAME_EXISTS, name);
+    }
+
+    @Test
+    void createCustomerPersistsValidParentCustomer() {
+        AtomicReference<CrmCustomerDO> insertedCustomer = new AtomicReference<>();
+        CrmCustomerServiceImpl service = new CrmCustomerServiceImpl();
+        ReflectionTestUtils.setField(service, "customerMapper", proxy(CrmCustomerMapper.class,
+                (proxy, method, args) -> switch (method.getName()) {
+                    case "selectHierarchyListForUpdate" -> List.of(new CrmCustomerDO().setId(10L));
+                    case "selectByCustomerName" -> null;
+                    case "insert" -> {
+                        CrmCustomerDO customer = (CrmCustomerDO) args[0];
+                        customer.setId(20L);
+                        insertedCustomer.set(customer);
+                        yield 1;
+                    }
+                    default -> throw new AssertionError("未预期的 Mapper 调用 " + method.getName());
+                }));
+        ReflectionTestUtils.setField(service, "adminUserApi", proxy(AdminUserApi.class,
+                (proxy, method, args) -> null));
+        ReflectionTestUtils.setField(service, "customerLimitConfigService", proxy(CrmCustomerLimitConfigService.class,
+                (proxy, method, args) -> Collections.emptyList()));
+        ReflectionTestUtils.setField(service, "permissionService", proxy(CrmPermissionService.class,
+                (proxy, method, args) -> null));
+
+        service.createCustomer(new CrmCustomerSaveReqVO().setName("分公司")
+                .setParentCustomerId(10L).setOwnerUserId(1L), 1L);
+
+        assertEquals(10L, insertedCustomer.get().getParentCustomerId());
+    }
+
+    @Test
+    void updateCustomerRejectsSelfAsParent() {
+        CrmCustomerServiceImpl service = serviceWithHierarchy(List.of(new CrmCustomerDO().setId(10L)));
+        CrmCustomerSaveReqVO reqVO = new CrmCustomerSaveReqVO().setId(10L)
+                .setName("客户 A").setParentCustomerId(10L);
+
+        assertServiceException(() -> service.updateCustomer(reqVO), CUSTOMER_PARENT_SELF);
+    }
+
+    @Test
+    void updateCustomerRejectsMissingOrCrossTenantParent() {
+        CrmCustomerServiceImpl service = serviceWithHierarchy(List.of(new CrmCustomerDO().setId(10L)));
+        CrmCustomerSaveReqVO reqVO = new CrmCustomerSaveReqVO().setId(10L)
+                .setName("客户 A").setParentCustomerId(999L);
+
+        assertServiceException(() -> service.updateCustomer(reqVO), CUSTOMER_PARENT_NOT_EXISTS);
+    }
+
+    @Test
+    void updateCustomerRejectsTwoNodeCycle() {
+        CrmCustomerServiceImpl service = serviceWithHierarchy(List.of(
+                new CrmCustomerDO().setId(10L),
+                new CrmCustomerDO().setId(20L).setParentCustomerId(10L)));
+        CrmCustomerSaveReqVO reqVO = new CrmCustomerSaveReqVO().setId(10L)
+                .setName("客户 A").setParentCustomerId(20L);
+
+        assertServiceException(() -> service.updateCustomer(reqVO), CUSTOMER_HIERARCHY_CYCLE);
+    }
+
+    @Test
+    void updateCustomerRejectsDeepCycle() {
+        CrmCustomerServiceImpl service = serviceWithHierarchy(List.of(
+                new CrmCustomerDO().setId(10L),
+                new CrmCustomerDO().setId(20L).setParentCustomerId(10L),
+                new CrmCustomerDO().setId(30L).setParentCustomerId(20L)));
+        CrmCustomerSaveReqVO reqVO = new CrmCustomerSaveReqVO().setId(10L)
+                .setName("客户 A").setParentCustomerId(30L);
+
+        assertServiceException(() -> service.updateCustomer(reqVO), CUSTOMER_HIERARCHY_CYCLE);
+    }
+
+    @Test
+    void updateCustomerExplicitlyClearsParentRelationship() {
+        AtomicReference<Long> updatedParentId = new AtomicReference<>(99L);
+        CrmCustomerDO oldCustomer = new CrmCustomerDO().setId(10L).setName("分公司")
+                .setOwnerUserId(1L).setParentCustomerId(20L);
+        CrmCustomerServiceImpl service = new CrmCustomerServiceImpl();
+        ReflectionTestUtils.setField(service, "customerMapper", proxy(CrmCustomerMapper.class,
+                (proxy, method, args) -> switch (method.getName()) {
+                    case "selectHierarchyListForUpdate" -> List.of(oldCustomer,
+                            new CrmCustomerDO().setId(20L));
+                    case "selectById" -> oldCustomer;
+                    case "selectByCustomerName" -> oldCustomer;
+                    case "updateById" -> 1;
+                    case "updateParentCustomerIdById" -> {
+                        updatedParentId.set((Long) args[1]);
+                        yield 1;
+                    }
+                    default -> throw new AssertionError("未预期的 Mapper 调用 " + method.getName());
+                }));
+        CrmCustomerSaveReqVO reqVO = new CrmCustomerSaveReqVO().setId(10L)
+                .setName("分公司").setParentCustomerId(null);
+
+        service.updateCustomer(reqVO);
+
+        assertNull(updatedParentId.get());
+    }
+
+    @Test
+    void deleteCustomerRejectsCustomerWithChildren() {
+        List<CrmCustomerDO> hierarchy = List.of(new CrmCustomerDO().setId(10L),
+                new CrmCustomerDO().setId(20L).setParentCustomerId(10L));
+        CrmCustomerServiceImpl service = new CrmCustomerServiceImpl();
+        ReflectionTestUtils.setField(service, "customerMapper", proxy(CrmCustomerMapper.class,
+                (proxy, method, args) -> switch (method.getName()) {
+                    case "selectHierarchyListForUpdate" -> hierarchy;
+                    case "selectById" -> new CrmCustomerDO().setId(10L).setName("集团总部");
+                    default -> throw new AssertionError("存在下级客户时不应继续调用 " + method.getName());
+                }));
+
+        assertServiceException(() -> service.deleteCustomer(10L), CUSTOMER_DELETE_FAIL_HAVE_REFERENCE, "下级客户");
+    }
+
+    private static CrmCustomerServiceImpl serviceWithHierarchy(List<CrmCustomerDO> hierarchy) {
+        CrmCustomerServiceImpl service = new CrmCustomerServiceImpl();
+        ReflectionTestUtils.setField(service, "customerMapper", proxy(CrmCustomerMapper.class,
+                (proxy, method, args) -> {
+                    if (method.getName().equals("selectHierarchyListForUpdate")) {
+                        return hierarchy;
+                    }
+                    throw new AssertionError("层级校验失败时不应继续调用 " + method.getName());
+                }));
+        return service;
     }
 
     private static <T> T proxy(Class<T> type, java.lang.reflect.InvocationHandler handler) {

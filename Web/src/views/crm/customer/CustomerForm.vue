@@ -32,6 +32,26 @@
       </el-row>
       <el-row>
         <el-col :span="12">
+          <el-form-item :label="t('parentCustomer')" prop="parentCustomerId">
+            <el-select
+              v-model="formData.parentCustomerId"
+              class="w-1/1"
+              clearable
+              filterable
+              :placeholder="t('parentCustomerPlaceholder')"
+            >
+              <el-option
+                v-for="item in availableParentCustomers"
+                :key="item.id"
+                :label="item.name"
+                :value="item.id"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
+      </el-row>
+      <el-row>
+        <el-col :span="12">
           <el-form-item :label="t('mobile')" prop="mobile">
             <el-input
               v-model="formData.mobile"
@@ -196,9 +216,11 @@ const duplicateChecked = ref(false)
 const duplicateCandidates = ref<CustomerApi.CustomerDuplicateVO[]>([])
 const areaList = ref([]) // 地区列表
 const userOptions = ref<UserApi.UserVO[]>([]) // 用户列表
+const customerOptions = ref<CustomerApi.CustomerVO[]>([]) // 当前用户可见的上级客户候选
 const formData = ref({
   id: undefined,
   name: undefined,
+  parentCustomerId: undefined,
   contactNextTime: undefined,
   ownerUserId: 0,
   mobile: undefined,
@@ -218,6 +240,9 @@ const formRules = reactive({
   ownerUserId: [{ required: true, message: t('ownerUserRequired'), trigger: 'blur' }]
 })
 const formRef = ref() // 表单 Ref
+const availableParentCustomers = computed(() =>
+  customerOptions.value.filter((customer) => customer.id !== formData.value.id)
+)
 
 const resetDuplicateCheck = () => {
   duplicateChecked.value = false
@@ -261,6 +286,8 @@ const open = async (type: string, id?: number) => {
   areaList.value = await AreaApi.getAreaTree()
   // 获得用户列表
   userOptions.value = await UserApi.getSimpleUserList()
+  // 获得当前用户可见的上级客户候选；后端仍会校验同租户、禁止自关联和循环
+  customerOptions.value = await CustomerApi.getCustomerSimpleList()
   // 默认新建时选中自己
   if (formType.value === 'create') {
     formData.value.ownerUserId = useUserStore().getUser.id
@@ -316,6 +343,7 @@ const resetForm = () => {
   formData.value = {
     id: undefined,
     name: undefined,
+    parentCustomerId: undefined,
     contactNextTime: undefined,
     ownerUserId: 0,
     mobile: undefined,

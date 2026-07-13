@@ -33,6 +33,12 @@ public class CrmCustomerDO extends BaseDO {
      * 客户名称
      */
     private String name;
+    /**
+     * 上级客户编号
+     *
+     * 关联 {@link CrmCustomerDO#getId()} 字段
+     */
+    private Long parentCustomerId;
 
     /**
      * 跟进状态

@@ -4,6 +4,8 @@ import { TransferReqVO } from '@/api/crm/permission'
 export interface CustomerVO {
   id: number // 编号
   name: string // 客户名称
+  parentCustomerId?: number // 上级客户编号
+  parentCustomerName?: string // 上级客户名称
   primaryContactName?: string // 首联系人姓名
   primaryContactMobile?: string // 首联系人手机
   followUpStatus: boolean // 跟进状态
@@ -116,7 +118,7 @@ export const handleImport = async (formData) => {
 
 // 客户列表
 export const getCustomerSimpleList = async () => {
-  return await request.get({ url: `/crm/customer/simple-list` })
+  return await request.get<CustomerVO[]>({ url: `/crm/customer/simple-list` })
 }
 
 // ======================= 业务操作 =======================

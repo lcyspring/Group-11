@@ -72,6 +72,9 @@ public interface ErrorCodeConstants {
     ErrorCode CUSTOMER_CREATE_NAME_NOT_NULL = new ErrorCode(1_020_006_013, "客户名称不能为空！");
     ErrorCode CUSTOMER_NAME_EXISTS = new ErrorCode(1_020_006_014, "已存在名为【{}】的客户！");
     ErrorCode CUSTOMER_UPDATE_DEAL_STATUS_FAIL = new ErrorCode(1_020_006_015, "更新客户的成交状态失败，原因：已经是该状态，无需更新");
+    ErrorCode CUSTOMER_PARENT_SELF = new ErrorCode(1_020_006_016, "上级客户不能是客户自身");
+    ErrorCode CUSTOMER_PARENT_NOT_EXISTS = new ErrorCode(1_020_006_017, "上级客户不存在或不属于当前租户");
+    ErrorCode CUSTOMER_HIERARCHY_CYCLE = new ErrorCode(1_020_006_018, "客户上下级关系不能形成循环");
 
     // ========== 权限管理 1_020_007_000 ==========
     ErrorCode CRM_PERMISSION_NOT_EXISTS = new ErrorCode(1_020_007_000, "数据权限不存在");

@@ -84,6 +84,12 @@ if [ -d "$SQL_NEW_DIR" ]; then
         echo "Executing: new-crm-contact-mobile-unique.sql"
         mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < "${SQL_NEW_DIR}/new-crm-contact-mobile-unique.sql"
     fi
+
+    # 4.9 执行 CRM 客户上下级关系字段和索引
+    if [ -f "${SQL_NEW_DIR}/new-crm-customer-hierarchy.sql" ]; then
+        echo "Executing: new-crm-customer-hierarchy.sql"
+        mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < "${SQL_NEW_DIR}/new-crm-customer-hierarchy.sql"
+    fi
 fi
 
 echo "MySQL initialization completed successfully!"

@@ -61,6 +61,15 @@ class CrmCustomerMapperTest {
         assertTrue(query.getParamNameValuePairs().containsValue(true));
     }
 
+    @Test
+    void selectPageFiltersDirectChildCustomers() {
+        MPJLambdaWrapperX<CrmCustomerDO> query = captureQuery(new CrmCustomerPageReqVO()
+                .setPool(true).setParentCustomerId(10L));
+
+        assertTrue(query.getSqlSegment().contains("parent_customer_id"));
+        assertTrue(query.getParamNameValuePairs().containsValue(10L));
+    }
+
     private static boolean hasParameterContaining(MPJLambdaWrapperX<CrmCustomerDO> query, String expected) {
         return query.getParamNameValuePairs().values().stream()
                 .anyMatch(value -> value instanceof String string && string.contains(expected));
