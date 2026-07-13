@@ -28,6 +28,7 @@ import {
   CrmStatisticsCustomerDealCycleByProductRespVO
 } from '@/api/crm/statistics/customer'
 import { EChartsOption } from 'echarts'
+import { normalizeProductDealCycles } from '../dealCycle'
 
 defineOptions({ name: 'CustomerDealCycleByProduct' })
 
@@ -106,15 +107,10 @@ const echartsOption = reactive<EChartsOption>({
 /** 获取数据并填充图*/
 const fetchAndFill = async () => {
   // 1. 加载统计数据
-  const customerDealCycleByProduct = (
-    await StatisticsCustomerApi.getCustomerDealCycleByProduct(props.queryParams)
-  ).map((s: CrmStatisticsCustomerDealCycleByProductRespVO) => {
-    return {
-      productName: s.productName ?? t('common.unknown'),
-      customerDealCycle: s.customerDealCount,
-      customerDealCount: s.customerDealCount
-    }
-  })
+  const customerDealCycleByProduct = normalizeProductDealCycles(
+    await StatisticsCustomerApi.getCustomerDealCycleByProduct(props.queryParams),
+    t('common.unknown')
+  )
   // 2.1 更新 Echarts 数据
   if (echartsOption.xAxis && echartsOption.xAxis['data']) {
     echartsOption.xAxis['data'] = customerDealCycleByProduct.map(

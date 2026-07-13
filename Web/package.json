@@ -19,7 +19,7 @@
     "preview": "pnpm build:local && vite preview",
     "clean": "npx rimraf node_modules",
     "clean:cache": "npx rimraf node_modules/.cache",
-    "test:crm-statistics": "node --test --experimental-strip-types src/views/crm/statistics/performance/growthRate.test.mjs",
+    "test:crm-statistics": "node --test --experimental-strip-types src/views/crm/statistics/performance/growthRate.test.mjs src/views/crm/statistics/customer/dealCycle.test.mjs",
     "lint:eslint": "eslint --fix --ext .js,.ts,.vue ./src",
     "lint:format": "prettier --write --loglevel warn \"src/**/*.{js,ts,json,tsx,css,less,scss,vue,html,md}\"",
     "lint:style": "stylelint --fix \"./src/**/*.{vue,less,postcss,css,scss}\" --cache --cache-location node_modules/.cache/stylelint/",

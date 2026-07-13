@@ -331,7 +331,6 @@ public class CrmStatisticsCustomerServiceImpl implements CrmStatisticsCustomerSe
         reqVO.setUserIds(userIds);
 
         // 2. 获取客户产品统计数据
-        // TODO @dhb52：未读取产品名
         return customerMapper.selectCustomerDealCycleGroupByProductId(reqVO);
     }
 
