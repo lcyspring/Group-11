@@ -272,11 +272,11 @@
          GROUP BY owner_user_id
     </select>
 
-    <!-- TIMESTAMPDIFF 用于求差值；AVG 求平均；TRUNCATE 去掉小数点、只保留整数 -->
+    <!-- 返回每个客户的首次成交周期，由 Service 按请求区间计算整体平均值。 -->
     <select id="selectCustomerDealCycleGroupByDate"
             resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerDealCycleByDateRespVO">
-        SELECT DATE_FORMAT(contract.order_date, '%Y-%m-%d') AS time,
-               IFNULL(TRUNCATE(AVG(TIMESTAMPDIFF(DAY, customer.create_time, contract.order_date)), 1), 0) AS customer_deal_cycle
+        SELECT DATE_FORMAT(contract.order_date, '%Y-%m-%dT%H:%i:%s') AS time,
+               TIMESTAMPDIFF(DAY, customer.create_time, contract.order_date) AS customer_deal_cycle
           FROM crm_customer AS customer
                 <include refid="firstApprovedContractJoin"/>
          WHERE customer.deleted = 0
@@ -285,7 +285,6 @@
                     #{userId}
                 </foreach>
            AND customer.create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND #{times[1],javaType=java.time.LocalDateTime}
-         GROUP BY time
     </select>
 
     <select id="selectCustomerDealCycleGroupByUser"

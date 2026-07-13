@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -260,9 +261,12 @@ public class CrmStatisticsCustomerServiceImpl implements CrmStatisticsCustomerSe
         // 3. 按照日期间隔，合并统计数据
         List<LocalDateTime[]> timeRanges = LocalDateTimeUtils.getDateRangeList(reqVO.getTimes()[0], reqVO.getTimes()[1], reqVO.getInterval());
         return convertList(timeRanges, times -> {
-            Double customerDealCycle = customerDealCycleList.stream()
+            double averageDealCycle = customerDealCycleList.stream()
                     .filter(vo -> LocalDateTimeUtils.isBetween(times[0], times[1], vo.getTime()))
-                    .mapToDouble(CrmStatisticsCustomerDealCycleByDateRespVO::getCustomerDealCycle).sum();
+                    .mapToDouble(CrmStatisticsCustomerDealCycleByDateRespVO::getCustomerDealCycle)
+                    .average().orElse(0D);
+            double customerDealCycle = BigDecimal.valueOf(averageDealCycle)
+                    .setScale(1, RoundingMode.DOWN).doubleValue();
             return new CrmStatisticsCustomerDealCycleByDateRespVO()
                     .setTime(LocalDateTimeUtils.formatDateRange(times[0], times[1], reqVO.getInterval()))
                     .setCustomerDealCycle(customerDealCycle);
