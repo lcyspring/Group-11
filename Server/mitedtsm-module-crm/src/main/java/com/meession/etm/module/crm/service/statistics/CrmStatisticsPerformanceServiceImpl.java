@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -78,8 +79,15 @@ public class CrmStatisticsPerformanceServiceImpl implements CrmStatisticsPerform
 
         // 2. 获得业绩数据
         int year = performanceReqVO.getTimes()[0].getYear(); // 获取查询的年份
-        performanceReqVO.getTimes()[0] = performanceReqVO.getTimes()[0].minusYears(1);
-        List<CrmStatisticsPerformanceRespVO> performanceList = performanceFunction.apply(performanceReqVO);
+        LocalDateTime originalStartTime = performanceReqVO.getTimes()[0];
+        List<CrmStatisticsPerformanceRespVO> performanceList;
+        try {
+            performanceReqVO.getTimes()[0] = originalStartTime.minusYears(1);
+            performanceList = performanceFunction.apply(performanceReqVO);
+        } finally {
+            // Request VO 仍可能被日志、审计或后续逻辑读取，不能留下被扩展一年的查询起点
+            performanceReqVO.getTimes()[0] = originalStartTime;
+        }
         Map<String, BigDecimal> performanceMap = convertMap(performanceList, CrmStatisticsPerformanceRespVO::getTime,
                 CrmStatisticsPerformanceRespVO::getCurrentMonthCount);
 

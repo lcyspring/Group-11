@@ -32,7 +32,8 @@ public class CrmStatisticsPortraitReqVO {
     @Schema(description = "负责人用户 id 集合", hidden = true, example = "2")
     private List<Long> userIds;
 
-    @Schema(description = "时间范围", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    @Schema(description = "时间范围", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "时间范围不能为空")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
     @Size(min = 2, max = 2, message = "请选择时间范围")
     private LocalDateTime[] times;

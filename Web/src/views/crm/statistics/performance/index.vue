@@ -2,21 +2,15 @@
 <template>
   <ContentWrap>
     <!-- 搜索工作栏 -->
-    <el-form
-      class="-mb-15px"
-      :model="queryParams"
-      ref="queryFormRef"
-      label-width="auto"
-    >
+    <el-form class="-mb-15px" :model="queryParams" ref="queryFormRef" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
-          <el-form-item :label="t('selectYear')" prop="orderDate">
+          <el-form-item :label="t('selectYear')">
             <el-date-picker
-              v-model="queryParams.times[0]"
+              v-model="selectedYear"
               class="!w-240px"
               type="year"
               value-format="YYYY"
-              :default-time="[new Date().getFullYear()]"
             />
           </el-form-item>
         </el-col>
@@ -36,7 +30,12 @@
         </el-col>
         <el-col :span="8">
           <el-form-item :label="t('user')" prop="userId">
-            <el-select v-model="queryParams.userId" class="!w-240px" :placeholder="t('user')" clearable>
+            <el-select
+              v-model="queryParams.userId"
+              class="!w-240px"
+              :placeholder="t('user')"
+              clearable
+            >
               <el-option
                 v-for="(user, index) in userListByDeptId"
                 :label="user.nickname"
@@ -50,8 +49,12 @@
       <el-row>
         <el-col :span="24">
           <el-form-item>
-            <el-button @click="handleQuery"> <Icon icon="ep:search" class="mr-5px" /> {{ t('search') }} </el-button>
-            <el-button @click="resetQuery"> <Icon icon="ep:refresh" class="mr-5px" /> {{ t('reset') }} </el-button>
+            <el-button @click="handleQuery">
+              <Icon icon="ep:search" class="mr-5px" /> {{ t('search') }}
+            </el-button>
+            <el-button @click="resetQuery">
+              <Icon icon="ep:refresh" class="mr-5px" /> {{ t('reset') }}
+            </el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -93,13 +96,15 @@ import ReceivablePricePerformance from './components/ReceivablePricePerformance.
 defineOptions({ name: 'CrmStatisticsPerformance' })
 
 const { t } = useI18n('crm.statistics') // 国际化
+const currentYear = new Date().getFullYear()
+const selectedYear = ref(String(currentYear))
 
 const queryParams = reactive({
   deptId: useUserStore().getUser.deptId,
   userId: undefined,
   times: [
-    formatDate(beginOfDay(new Date(new Date().getFullYear(), 0, 1))),
-    formatDate(endOfDay(new Date(new Date().getFullYear(), 11, 31)))
+    formatDate(beginOfDay(new Date(currentYear, 0, 1))),
+    formatDate(endOfDay(new Date(currentYear, 11, 31)))
   ]
 })
 
@@ -121,8 +126,10 @@ const ReceivablePricePerformanceRef = ref() // 员工回款金额统计
 
 /** 搜索按钮操作 */
 const handleQuery = () => {
-  // 从 queryParams.times[0] 中获取到了年份
-  const selectYear = parseInt(queryParams.times[0])
+  if (!selectedYear.value) {
+    return
+  }
+  const selectYear = Number(selectedYear.value)
   queryParams.times[0] = formatDate(beginOfDay(new Date(selectYear, 0, 1)))
   queryParams.times[1] = formatDate(endOfDay(new Date(selectYear, 11, 31)))
 
@@ -148,12 +155,13 @@ watch(activeTab, () => {
 /** 重置按钮操作 */
 const resetQuery = () => {
   queryFormRef.value.resetFields()
+  selectedYear.value = String(currentYear)
   handleQuery()
 }
 
 // 加载部门树
 onMounted(async () => {
   deptList.value = handleTree(await DeptApi.getSimpleDeptList())
-  userList.value = handleTree(await UserApi.getSimpleUserList())
+  userList.value = await UserApi.getSimpleUserList()
 })
 </script>

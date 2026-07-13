@@ -4,8 +4,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -35,7 +35,8 @@ public class CrmStatisticsPerformanceReqVO {
 
     @Schema(description = "时间范围", requiredMode = Schema.RequiredMode.REQUIRED)
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
-    @NotEmpty(message = "时间范围不能为空")
+    @NotNull(message = "时间范围不能为空")
+    @Size(min = 2, max = 2, message = "请选择时间范围")
     private LocalDateTime[] times;
 
 }

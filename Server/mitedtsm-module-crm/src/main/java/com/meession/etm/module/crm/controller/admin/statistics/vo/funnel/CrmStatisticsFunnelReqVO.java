@@ -36,10 +36,12 @@ public class CrmStatisticsFunnelReqVO extends PageParam {
     private List<Long> userIds;
 
     @Schema(description = "时间间隔类型", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @NotNull(message = "时间间隔类型不能为空")
     @InEnum(value = DateIntervalEnum.class, message = "时间间隔类型，必须是 {value}")
     private Integer interval;
 
-    @Schema(description = "时间范围", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    @Schema(description = "时间范围", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "时间范围不能为空")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
     @Size(min = 2, max = 2, message = "请选择时间范围")
     private LocalDateTime[] times;

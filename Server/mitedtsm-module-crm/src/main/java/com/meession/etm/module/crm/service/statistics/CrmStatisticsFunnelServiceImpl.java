@@ -47,7 +47,7 @@ public class CrmStatisticsFunnelServiceImpl implements CrmStatisticsFunnelServic
         // 1. 获得用户编号数组
         List<Long> userIds = getUserIds(reqVO);
         if (CollUtil.isEmpty(userIds)) {
-            return null;
+            return new CrmStatisticFunnelSummaryRespVO(0L, 0L, 0L);
         }
         reqVO.setUserIds(userIds);
 
