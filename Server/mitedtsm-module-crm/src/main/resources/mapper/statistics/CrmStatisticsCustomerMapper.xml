@@ -179,14 +179,32 @@
                IFNULL(receivable.price, 0) AS receivable_price
           FROM crm_customer AS customer
                 INNER JOIN crm_contract AS contract ON customer.id = contract.customer_id
-                LEFT JOIN crm_receivable AS receivable ON contract.id = receivable.contract_id AND receivable.deleted = 0
-         WHERE customer.deleted = 0 AND contract.deleted = 0
-           AND contract.audit_status = ${@com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
+                    AND contract.id = (
+                        SELECT first_contract.id
+                          FROM crm_contract AS first_contract
+                         WHERE first_contract.customer_id = customer.id
+                           AND first_contract.deleted = 0
+                           AND first_contract.audit_status = ${@com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
+                         ORDER BY first_contract.order_date IS NULL,
+                                  first_contract.order_date,
+                                  first_contract.id
+                         LIMIT 1
+                    )
+                LEFT JOIN (
+                    SELECT contract_id,
+                           SUM(price) AS price
+                      FROM crm_receivable
+                     WHERE deleted = 0
+                       AND audit_status = ${@com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
+                     GROUP BY contract_id
+                ) AS receivable ON contract.id = receivable.contract_id
+         WHERE customer.deleted = 0
            AND customer.owner_user_id IN
                 <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                     #{userId}
                 </foreach>
            AND customer.create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND #{times[1],javaType=java.time.LocalDateTime}
+         ORDER BY customer.create_time, customer.id
     </select>
 
     <select id="selectPoolCustomerPutCountByDate"
