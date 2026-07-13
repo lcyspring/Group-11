@@ -23,6 +23,30 @@
           </el-form-item>
         </el-col>
         <el-col :span="8">
+          <el-form-item :label="t('contactName')" prop="contactName">
+            <el-input
+              v-model="queryParams.contactName"
+              class="!w-240px"
+              clearable
+              :placeholder="t('contactNamePlaceholder')"
+              @keyup.enter="handleQuery"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="8">
+          <el-form-item :label="t('primaryContact')" prop="primaryContactName">
+            <el-input
+              v-model="queryParams.primaryContactName"
+              class="!w-240px"
+              clearable
+              :placeholder="t('primaryContactPlaceholder')"
+              @keyup.enter="handleQuery"
+            />
+          </el-form-item>
+        </el-col>
+      </el-row>
+      <el-row :gutter="20">
+        <el-col :span="8">
           <el-form-item :label="t('mobile')" prop="mobile">
             <el-input
               v-model="queryParams.mobile"
@@ -50,8 +74,6 @@
             </el-select>
           </el-form-item>
         </el-col>
-      </el-row>
-      <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('level')" prop="level">
             <el-select
@@ -69,6 +91,8 @@
             </el-select>
           </el-form-item>
         </el-col>
+      </el-row>
+      <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('source')" prop="source">
             <el-select
@@ -261,6 +285,8 @@ const queryParams = reactive({
   sceneType: '1', // 默认与 activeName 相等
   name: '',
   mobile: '',
+  contactName: '',
+  primaryContactName: '',
   industryId: undefined,
   level: undefined,
   source: undefined,

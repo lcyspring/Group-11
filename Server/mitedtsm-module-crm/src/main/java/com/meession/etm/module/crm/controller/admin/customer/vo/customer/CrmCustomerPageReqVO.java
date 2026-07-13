@@ -33,6 +33,12 @@ public class CrmCustomerPageReqVO extends PageParam {
     @Schema(description = "手机", example = "18000000000")
     private String mobile;
 
+    @Schema(description = "联系人姓名", example = "张三")
+    private String contactName;
+
+    @Schema(description = "首联系人姓名", example = "李四")
+    private String primaryContactName;
+
     @Schema(description = "所属行业", example = "1")
     private Integer industryId;
 

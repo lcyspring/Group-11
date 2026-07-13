@@ -9,6 +9,7 @@ import com.meession.etm.framework.mybatis.core.query.LambdaQueryWrapperX;
 import com.meession.etm.framework.mybatis.core.query.MPJLambdaWrapperX;
 import com.meession.etm.module.crm.controller.admin.customer.vo.customer.CrmCustomerPageReqVO;
 import com.meession.etm.module.crm.dal.dataobject.clue.CrmClueDO;
+import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerPoolConfigDO;
 import com.meession.etm.module.crm.dal.dataobject.permission.CrmPermissionDO;
@@ -68,6 +69,7 @@ public interface CrmCustomerMapper extends BaseMapperX<CrmCustomerDO> {
                 .eqIfPresent(CrmCustomerDO::getLevel, pageReqVO.getLevel())
                 .eqIfPresent(CrmCustomerDO::getSource, pageReqVO.getSource())
                 .eqIfPresent(CrmCustomerDO::getFollowUpStatus, pageReqVO.getFollowUpStatus());
+        appendContactNameConditions(query, pageReqVO);
 
         // backlog 查询
         if (ObjUtil.isNotNull(pageReqVO.getContactStatus())) {
@@ -85,6 +87,30 @@ public interface CrmCustomerMapper extends BaseMapperX<CrmCustomerDO> {
             }
         }
         return selectJoinPage(pageReqVO, CrmCustomerDO.class, query);
+    }
+
+    /**
+     * 按任意联系人或首联系人姓名筛选。联系人是一对多关系，因此必须使用 DISTINCT 保持客户分页不重复。
+     */
+    private static void appendContactNameConditions(MPJLambdaWrapperX<CrmCustomerDO> query,
+                                                    CrmCustomerPageReqVO pageReqVO) {
+        boolean joined = false;
+        if (StrUtil.isNotBlank(pageReqVO.getContactName())) {
+            query.innerJoin(CrmContactDO.class, "contact_filter",
+                            CrmContactDO::getCustomerId, CrmCustomerDO::getId)
+                    .like("contact_filter", CrmContactDO::getName, pageReqVO.getContactName());
+            joined = true;
+        }
+        if (StrUtil.isNotBlank(pageReqVO.getPrimaryContactName())) {
+            query.innerJoin(CrmContactDO.class, "primary_contact_filter",
+                            CrmContactDO::getCustomerId, CrmCustomerDO::getId)
+                    .eq("primary_contact_filter", CrmContactDO::getPrimaryContact, true)
+                    .like("primary_contact_filter", CrmContactDO::getName, pageReqVO.getPrimaryContactName());
+            joined = true;
+        }
+        if (joined) {
+            query.distinct();
+        }
     }
 
     default CrmCustomerDO selectByCustomerName(String name) {
