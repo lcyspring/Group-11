@@ -137,6 +137,8 @@
           </el-link>
         </template>
       </el-table-column>
+      <el-table-column align="center" :label="t('primaryContact')" prop="primaryContactName" min-width="120" />
+      <el-table-column align="center" :label="t('primaryContactMobile')" prop="primaryContactMobile" min-width="130" />
       <el-table-column align="center" :label="t('source')" prop="source" min-width="100">
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.CRM_CUSTOMER_SOURCE" :value="scope.row.source" />

@@ -31,6 +31,10 @@ public interface ErrorCodeConstants {
     ErrorCode CONTACT_NOT_EXISTS = new ErrorCode(1_020_003_000, "联系人不存在");
     ErrorCode CONTACT_DELETE_FAIL_CONTRACT_LINK_EXISTS = new ErrorCode(1_020_003_002, "联系人已关联合同，不能删除");
     ErrorCode CONTACT_UPDATE_OWNER_USER_FAIL = new ErrorCode(1_020_003_003, "更新联系人负责人失败");
+    ErrorCode CONTACT_PRIMARY_UNSET_FAIL = new ErrorCode(1_020_003_004, "当前首联系人不能直接取消，请将其他联系人设为首联系人");
+    ErrorCode CONTACT_PRIMARY_DELETE_FAIL = new ErrorCode(1_020_003_005, "当前首联系人不能删除，请先将其他联系人设为首联系人");
+    ErrorCode CONTACT_PRIMARY_MOVE_FAIL = new ErrorCode(1_020_003_006, "当前首联系人不能移动到其他客户，请先将其他联系人设为首联系人");
+    ErrorCode CONTACT_PRIMARY_SWITCH_CONFLICT = new ErrorCode(1_020_003_007, "首联系人状态已变化，请重试");
 
     // ========== 回款 1-020-004-000 ==========
     ErrorCode RECEIVABLE_NOT_EXISTS = new ErrorCode(1_020_004_000, "回款不存在");

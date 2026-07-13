@@ -104,6 +104,14 @@ public interface CrmContactService {
     List<CrmContactDO> getContactList(Collection<Long> ids);
 
     /**
+     * 批量获得客户的首联系人。
+     *
+     * @param customerIds 客户编号
+     * @return 首联系人列表
+     */
+    List<CrmContactDO> getPrimaryContactListByCustomerIds(Collection<Long> customerIds);
+
+    /**
      * 获得联系人 Map
      *
      * @param ids 编号

@@ -4,6 +4,8 @@ import { TransferReqVO } from '@/api/crm/permission'
 export interface CustomerVO {
   id: number // 编号
   name: string // 客户名称
+  primaryContactName?: string // 首联系人姓名
+  primaryContactMobile?: string // 首联系人手机
   followUpStatus: boolean // 跟进状态
   contactLastTime: Date // 最后跟进时间
   contactLastContent: string // 最后跟进内容

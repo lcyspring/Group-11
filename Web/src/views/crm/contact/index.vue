@@ -156,6 +156,11 @@
           <dict-tag :type="DICT_TYPE.INFRA_BOOLEAN_STRING" :value="scope.row.master" />
         </template>
       </el-table-column>
+      <el-table-column align="center" :label="t('crm.contact.primaryContact')" prop="primaryContact" min-width="100">
+        <template #default="scope">
+          <dict-tag :type="DICT_TYPE.INFRA_BOOLEAN_STRING" :value="scope.row.primaryContact" />
+        </template>
+      </el-table-column>
       <el-table-column align="center" :label="t('crm.contact.parentName')" prop="parentName" min-width="160">
         <template #default="scope">
           <el-link :underline="false" type="primary" @click="openDetail(scope.row.parentId)">

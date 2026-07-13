@@ -2,6 +2,8 @@ export default {
   customer: {
     title: 'Customer Management',
     name: 'Customer Name',
+    primaryContact: 'Primary Contact',
+    primaryContactMobile: 'Primary Contact Mobile',
     followUpStatus: 'Follow Up Status',
     followUpStatusUnfollow: 'Unfollowed',
     followUpStatusFollowing: 'Following',
@@ -159,6 +161,7 @@ export default {
     areaId: 'Area',
     detailAddress: 'Detail Address',
     master: 'Key Decision Maker',
+    primaryContact: 'Primary Contact',
     masterYes: 'Yes',
     masterNo: 'No',
     sex: 'Gender',
@@ -195,6 +198,7 @@ export default {
     nameRequired: 'Name cannot be empty',
     customerIdRequired: 'Customer cannot be empty',
     ownerUserRequired: 'Owner cannot be empty',
+    primaryContactRequired: 'Primary contact selection is required',
     // Actions
     createContact: 'Create Contact',
     relate: 'Relate',

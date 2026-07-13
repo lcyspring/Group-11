@@ -23,6 +23,14 @@ public class CrmCustomerRespVO {
     @ExcelProperty("客户名称")
     private String name;
 
+    @Schema(description = "首联系人姓名", example = "张三")
+    @ExcelProperty("首联系人")
+    private String primaryContactName;
+
+    @Schema(description = "首联系人手机", example = "18000000000")
+    @ExcelProperty("首联系人手机")
+    private String primaryContactMobile;
+
     @Schema(description = "跟进状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "13563")
     @ExcelProperty(value = "跟进状态", converter = DictConvert.class)
     @DictFormat(DictTypeConstants.BOOLEAN_STRING)

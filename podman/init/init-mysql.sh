@@ -72,6 +72,12 @@ if [ -d "$SQL_NEW_DIR" ]; then
         echo "Executing: new-crm-customer-owner-record.sql"
         mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < "${SQL_NEW_DIR}/new-crm-customer-owner-record.sql"
     fi
+
+    # 4.7 执行 CRM 首联系人字段和历史数据初始化
+    if [ -f "${SQL_NEW_DIR}/new-crm-contact-primary.sql" ]; then
+        echo "Executing: new-crm-contact-primary.sql"
+        mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < "${SQL_NEW_DIR}/new-crm-contact-primary.sql"
+    fi
 fi
 
 echo "MySQL initialization completed successfully!"

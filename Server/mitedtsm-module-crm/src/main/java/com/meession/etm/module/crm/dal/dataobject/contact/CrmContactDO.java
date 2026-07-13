@@ -101,6 +101,12 @@ public class CrmContactDO extends BaseDO {
      */
     private Boolean master;
     /**
+     * 是否首联系人
+     *
+     * 同一客户只能有一个首联系人；该字段与 {@link #master} 的关键决策人语义相互独立。
+     */
+    private Boolean primaryContact;
+    /**
      * 职位
      */
     private String post;

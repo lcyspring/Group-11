@@ -13,8 +13,10 @@ import com.meession.etm.framework.common.util.object.BeanUtils;
 import com.meession.etm.framework.excel.core.util.ExcelUtils;
 import com.meession.etm.framework.ip.core.utils.AreaUtils;
 import com.meession.etm.module.crm.controller.admin.customer.vo.customer.*;
+import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerPoolConfigDO;
+import com.meession.etm.module.crm.service.contact.CrmContactService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerPoolConfigService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
 import com.meession.etm.module.system.api.dept.DeptApi;
@@ -54,6 +56,8 @@ public class CrmCustomerController {
 
     @Resource
     private CrmCustomerService customerService;
+    @Resource
+    private CrmContactService contactService;
     @Resource
     private CrmCustomerPoolConfigService customerPoolConfigService;
 
@@ -143,23 +147,30 @@ public class CrmCustomerController {
         if (CollUtil.isEmpty(list)) {
             return java.util.Collections.emptyList();
         }
-        // 1.1 获取创建人、负责人列表
+        // 1.1 批量获取首联系人，避免客户列表产生 N+1 查询
+        Map<Long, CrmContactDO> primaryContactMap = convertMap(
+                contactService.getPrimaryContactListByCustomerIds(convertSet(list, CrmCustomerDO::getId)),
+                CrmContactDO::getCustomerId);
+        // 1.2 获取创建人、负责人列表
         Map<Long, AdminUserRespDTO> userMap = adminUserApi.getUserMap(convertSetByFlatMap(list,
                 contact -> Stream.of(NumberUtils.parseLong(contact.getCreator()), contact.getOwnerUserId())));
         Map<Long, DeptRespDTO> deptMap = deptApi.getDeptMap(convertSet(userMap.values(), AdminUserRespDTO::getDeptId));
-        // 1.2 获取距离进入公海的时间
+        // 1.3 获取距离进入公海的时间
         Map<Long, Long> poolDayMap = getPoolDayMap(list);
         // 2. 转换成 VO
         return BeanUtils.toBean(list, CrmCustomerRespVO.class, customerVO -> {
             customerVO.setAreaName(AreaUtils.format(customerVO.getAreaId()));
-            // 2.1 设置创建人、负责人名称
+            // 2.1 设置首联系人姓名和手机
+            MapUtils.findAndThen(primaryContactMap, customerVO.getId(), contact -> customerVO
+                    .setPrimaryContactName(contact.getName()).setPrimaryContactMobile(contact.getMobile()));
+            // 2.2 设置创建人、负责人名称
             MapUtils.findAndThen(userMap, NumberUtils.parseLong(customerVO.getCreator()),
                     user -> customerVO.setCreatorName(user.getNickname()));
             MapUtils.findAndThen(userMap, customerVO.getOwnerUserId(), user -> {
                 customerVO.setOwnerUserName(user.getNickname());
                 MapUtils.findAndThen(deptMap, user.getDeptId(), dept -> customerVO.setOwnerUserDeptName(dept.getName()));
             });
-            // 2.2 设置距离进入公海的时间
+            // 2.3 设置距离进入公海的时间
             if (customerVO.getOwnerUserId() != null) {
                 customerVO.setPoolDay(poolDayMap.get(customerVO.getId()));
             }

@@ -2,6 +2,8 @@ export default {
   customer: {
     title: 'إدارة العملاء',
     name: 'اسم العميل',
+    primaryContact: 'جهة الاتصال الأساسية',
+    primaryContactMobile: 'هاتف جهة الاتصال الأساسية',
     followUpStatus: 'حالة المتابعة',
     followUpStatusUnfollow: 'غير متابع',
     followUpStatusFollowing: 'قيد المتابعة',
@@ -159,6 +161,7 @@ export default {
     areaId: 'المنطقة',
     detailAddress: 'العنوان التفصيلي',
     master: 'صانع القرار الرئيسي',
+    primaryContact: 'جهة الاتصال الأساسية',
     masterYes: 'نعم',
     masterNo: 'لا',
     sex: 'الجنس',
@@ -195,6 +198,7 @@ export default {
     nameRequired: 'لا يمكن أن يكون الاسم فارغاً',
     customerIdRequired: 'لا يمكن أن يكون العميل فارغاً',
     ownerUserRequired: 'لا يمكن أن يكون المالك فارغاً',
+    primaryContactRequired: 'يجب تحديد ما إذا كانت جهة الاتصال أساسية',
     // Actions
     createContact: 'إنشاء جهة اتصال',
     relate: 'ربط',

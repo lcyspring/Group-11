@@ -80,6 +80,11 @@ public class CrmContactSaveReqVO {
     @DiffLogField(name = "关键决策人", function = SysBooleanParseFunction.NAME)
     private Boolean master;
 
+    @Schema(description = "是否首联系人", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "是否首联系人不能为空")
+    @DiffLogField(name = "首联系人", function = SysBooleanParseFunction.NAME)
+    private Boolean primaryContact;
+
     @Schema(description = "职位")
     @DiffLogField(name = "职位")
     private String post;

@@ -21,6 +21,9 @@
           <el-descriptions-item :label="t('crm.contact.master')">
             <dict-tag :type="DICT_TYPE.INFRA_BOOLEAN_STRING" :value="contact.master" />
           </el-descriptions-item>
+          <el-descriptions-item :label="t('crm.contact.primaryContact')">
+            <dict-tag :type="DICT_TYPE.INFRA_BOOLEAN_STRING" :value="contact.primaryContact" />
+          </el-descriptions-item>
           <el-descriptions-item :label="t('crm.contact.sex')">
             <dict-tag :type="DICT_TYPE.SYSTEM_USER_SEX" :value="contact.sex" />
           </el-descriptions-item>

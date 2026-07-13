@@ -68,9 +68,9 @@ public interface LogRecordConstants {
 
     String CRM_CONTACT_TYPE = "CRM 联系人";
     String CRM_CONTACT_CREATE_SUB_TYPE = "创建联系人";
-    String CRM_CONTACT_CREATE_SUCCESS = "创建了联系人{{#contact.name}}";
+    String CRM_CONTACT_CREATE_SUCCESS = "创建了联系人{{#contact.name}}{{#primaryContactChange}}";
     String CRM_CONTACT_UPDATE_SUB_TYPE = "更新联系人";
-    String CRM_CONTACT_UPDATE_SUCCESS = "更新了联系人【{{#contactName}}】: {_DIFF{#updateReqVO}}";
+    String CRM_CONTACT_UPDATE_SUCCESS = "更新了联系人【{{#contactName}}】: {_DIFF{#updateReqVO}}{{#primaryContactChange}}";
     String CRM_CONTACT_DELETE_SUB_TYPE = "删除联系人";
     String CRM_CONTACT_DELETE_SUCCESS = "删除了联系人【{{#contactName}}】";
     String CRM_CONTACT_TRANSFER_SUB_TYPE = "转移联系人";

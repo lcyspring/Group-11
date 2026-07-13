@@ -34,7 +34,7 @@
         <el-col :span="12">
           <el-form-item :label="t('crm.contact.customerName')" prop="customerId">
             <el-select
-              :disabled="formData.customerDefault"
+              :disabled="formData.customerDefault || (formType === 'update' && originalPrimaryContact)"
               v-model="formData.customerId"
               :placeholder="t('crm.contact.customerIdPlaceholder')"
               class="w-1/1"
@@ -90,6 +90,22 @@
               <el-radio
                 v-for="dict in getBoolDictOptions(DICT_TYPE.INFRA_BOOLEAN_STRING)"
                 :key="dict.value"
+                :value="dict.value"
+              >
+                {{ dict.label }}
+              </el-radio>
+            </el-radio-group>
+          </el-form-item>
+        </el-col>
+      </el-row>
+      <el-row>
+        <el-col :span="12">
+          <el-form-item :label="t('crm.contact.primaryContact')" prop="primaryContact">
+            <el-radio-group v-model="formData.primaryContact">
+              <el-radio
+                v-for="dict in getBoolDictOptions(DICT_TYPE.INFRA_BOOLEAN_STRING)"
+                :key="dict.value"
+                :disabled="formType === 'update' && originalPrimaryContact && dict.value === false"
                 :value="dict.value"
               >
                 {{ dict.label }}
@@ -186,6 +202,7 @@ const dialogVisible = ref(false) // 弹窗的是否展示
 const dialogTitle = ref('') // 弹窗的标题
 const formLoading = ref(false) // 表单的加载中：1）修改时的数据加载；2）提交的按钮禁用
 const formType = ref('') // 表单的类型：create - 新增；update - 修改
+const originalPrimaryContact = ref(false) // 修改时的原始首联系人状态
 const areaList = ref([]) // 地区列表
 const formData = ref({
   id: undefined,
@@ -202,6 +219,7 @@ const formData = ref({
   detailAddress: undefined,
   sex: undefined,
   master: false,
+  primaryContact: false,
   post: undefined,
   parentId: undefined,
   remark: undefined,
@@ -211,7 +229,10 @@ const formData = ref({
 const formRules = reactive({
   name: [{ required: true, message: t('crm.contact.nameRequired'), trigger: 'blur' }],
   customerId: [{ required: true, message: t('crm.contact.customerIdRequired'), trigger: 'blur' }],
-  ownerUserId: [{ required: true, message: t('crm.contact.ownerUserRequired'), trigger: 'blur' }]
+  ownerUserId: [{ required: true, message: t('crm.contact.ownerUserRequired'), trigger: 'blur' }],
+  primaryContact: [
+    { required: true, message: t('crm.contact.primaryContactRequired'), trigger: 'change' }
+  ]
 })
 const formRef = ref() // 表单 Ref
 const userOptions = ref<UserApi.UserVO[]>([]) // 用户列表
@@ -229,6 +250,7 @@ const open = async (type: string, id?: number, customerId?: number, businessId?:
     formLoading.value = true
     try {
       formData.value = await ContactApi.getContact(id)
+      originalPrimaryContact.value = formData.value.primaryContact === true
     } finally {
       formLoading.value = false
     }
@@ -285,6 +307,7 @@ const submitForm = async () => {
 
 /** 重置表单 */
 const resetForm = () => {
+  originalPrimaryContact.value = false
   formData.value = {
     id: undefined,
     name: undefined,
@@ -300,6 +323,7 @@ const resetForm = () => {
     detailAddress: undefined,
     sex: undefined,
     master: false,
+    primaryContact: false,
     post: undefined,
     parentId: undefined,
     remark: undefined,

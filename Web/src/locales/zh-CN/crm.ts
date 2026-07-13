@@ -2,6 +2,8 @@ export default {
   customer: {
     title: '客户管理',
     name: '客户名称',
+    primaryContact: '首联系人',
+    primaryContactMobile: '首联系人手机',
     followUpStatus: '跟进状态',
     followUpStatusUnfollow: '未跟进',
     followUpStatusFollowing: '跟进中',
@@ -159,6 +161,7 @@ export default {
     areaId: '地区',
     detailAddress: '详细地址',
     master: '是否关键决策人',
+    primaryContact: '是否首联系人',
     masterYes: '是',
     masterNo: '否',
     sex: '性别',
@@ -195,6 +198,7 @@ export default {
     nameRequired: '姓名不能为空',
     customerIdRequired: '客户不能为空',
     ownerUserRequired: '负责人不能为空',
+    primaryContactRequired: '是否首联系人不能为空',
     // 操作按钮
     createContact: '创建联系人',
     relate: '关联',

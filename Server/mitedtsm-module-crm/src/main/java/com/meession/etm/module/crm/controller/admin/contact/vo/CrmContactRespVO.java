@@ -91,6 +91,11 @@ public class CrmContactRespVO {
     @DictFormat(DictTypeConstants.BOOLEAN_STRING)
     private Boolean master;
 
+    @Schema(description = "是否首联系人")
+    @ExcelProperty(value = "是否首联系人", converter = DictConvert.class, order = 3)
+    @DictFormat(DictTypeConstants.BOOLEAN_STRING)
+    private Boolean primaryContact;
+
     @Schema(description = "职位")
     @ExcelProperty(value = "职位", order = 3)
     private String post;

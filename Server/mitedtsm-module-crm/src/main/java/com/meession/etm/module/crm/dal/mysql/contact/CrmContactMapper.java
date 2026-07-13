@@ -10,6 +10,8 @@ import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.util.CrmPermissionUtils;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.Collection;
 import java.util.List;
@@ -21,6 +23,26 @@ import java.util.List;
  */
 @Mapper
 public interface CrmContactMapper extends BaseMapperX<CrmContactDO> {
+
+    /**
+     * 锁定客户行，串行化同一客户的首联系人变更。
+     */
+    @Select("SELECT id FROM crm_customer WHERE id = #{customerId} AND deleted = 0 FOR UPDATE")
+    Long lockCustomerById(@Param("customerId") Long customerId);
+
+    /**
+     * 使用当前读获取首联系人，避免事务早期普通查询形成的 RR 快照返回过期首联系人。
+     */
+    @Select("SELECT * FROM crm_contact WHERE customer_id = #{customerId} AND primary_contact = 1 " +
+            "AND deleted = 0 ORDER BY id LIMIT 1 FOR UPDATE")
+    CrmContactDO selectPrimaryContactByCustomerId(@Param("customerId") Long customerId);
+
+    default int unsetPrimaryContact(Long id) {
+        return update(new LambdaUpdateWrapper<CrmContactDO>()
+                .eq(CrmContactDO::getId, id)
+                .eq(CrmContactDO::getPrimaryContact, true)
+                .set(CrmContactDO::getPrimaryContact, false));
+    }
 
     default int updateOwnerUserIdByCustomerId(Long customerId, Long ownerUserId) {
         return update(new LambdaUpdateWrapper<CrmContactDO>()
@@ -71,6 +93,12 @@ public interface CrmContactMapper extends BaseMapperX<CrmContactDO> {
 
     default List<CrmContactDO> selectListByCustomerId(Long customerId) {
         return selectList(CrmContactDO::getCustomerId, customerId);
+    }
+
+    default List<CrmContactDO> selectPrimaryContactListByCustomerIds(Collection<Long> customerIds) {
+        return selectList(new LambdaQueryWrapperX<CrmContactDO>()
+                .in(CrmContactDO::getCustomerId, customerIds)
+                .eq(CrmContactDO::getPrimaryContact, true));
     }
 
     default List<CrmContactDO> selectListByCustomerIdOwnerUserId(Long customerId, Long ownerUserId) {
