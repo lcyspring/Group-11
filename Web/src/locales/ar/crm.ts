@@ -51,6 +51,7 @@ export default {
     contactNextTimePlaceholder: 'حدد وقت الاتصال التالي',
     remarkPlaceholder: 'الرجاء إدخال الملاحظة',
     nameRequired: 'لا يمكن أن يكون اسم العميل فارغاً',
+    nameTooLong: 'لا يمكن أن يتجاوز اسم العميل 100 حرف',
     ownerUserRequired: 'لا يمكن أن يكون المالك فارغاً',
     duplicateCheck: 'التحقق من التكرار',
     duplicateCheckAction: 'تحقق بالاسم أو الهاتف',

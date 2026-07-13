@@ -51,6 +51,7 @@ export default {
     contactNextTimePlaceholder: '选择下次联系时间',
     remarkPlaceholder: '请输入备注',
     nameRequired: '客户名称不能为空',
+    nameTooLong: '客户名称长度不能超过 100 个字符',
     ownerUserRequired: '负责人不能为空',
     duplicateCheck: '客户查重',
     duplicateCheckAction: '按名称/手机查重',

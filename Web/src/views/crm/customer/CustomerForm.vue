@@ -12,7 +12,9 @@
           <el-form-item :label="t('name')" prop="name">
             <el-input
               v-model="formData.name"
+              :maxlength="100"
               :placeholder="t('namePlaceholder')"
+              show-word-limit
               @input="resetDuplicateCheck"
             />
           </el-form-item>
@@ -236,7 +238,10 @@ const formData = ref({
   remark: undefined
 })
 const formRules = reactive({
-  name: [{ required: true, message: t('nameRequired'), trigger: 'blur' }],
+  name: [
+    { required: true, message: t('nameRequired'), trigger: 'blur' },
+    { max: 100, message: t('nameTooLong'), trigger: 'blur' }
+  ],
   ownerUserId: [{ required: true, message: t('ownerUserRequired'), trigger: 'blur' }]
 })
 const formRef = ref() // 表单 Ref

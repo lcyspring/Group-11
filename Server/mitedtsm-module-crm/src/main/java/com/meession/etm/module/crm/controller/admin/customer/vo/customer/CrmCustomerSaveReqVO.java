@@ -33,6 +33,7 @@ public class CrmCustomerSaveReqVO {
     @Schema(description = "客户名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "赵六")
     @DiffLogField(name = "客户名称")
     @NotEmpty(message = "客户名称不能为空")
+    @Size(max = 100, message = "客户名称长度不能超过 100 个字符")
     private String name;
 
     @Schema(description = "上级客户编号", example = "1024")

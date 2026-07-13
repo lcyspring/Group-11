@@ -51,6 +51,7 @@ export default {
     contactNextTimePlaceholder: 'Select next contact time',
     remarkPlaceholder: 'Please enter remark',
     nameRequired: 'Customer name cannot be empty',
+    nameTooLong: 'Customer name cannot exceed 100 characters',
     ownerUserRequired: 'Owner cannot be empty',
     duplicateCheck: 'Duplicate Check',
     duplicateCheckAction: 'Check name/mobile',
