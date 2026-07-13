@@ -10,7 +10,11 @@
       <el-row>
         <el-col :span="12">
           <el-form-item :label="t('name')" prop="name">
-            <el-input v-model="formData.name" :placeholder="t('namePlaceholder')" />
+            <el-input
+              v-model="formData.name"
+              :placeholder="t('namePlaceholder')"
+              @input="resetDuplicateCheck"
+            />
           </el-form-item>
         </el-col>
         <el-col :span="12">
@@ -29,7 +33,11 @@
       <el-row>
         <el-col :span="12">
           <el-form-item :label="t('mobile')" prop="mobile">
-            <el-input v-model="formData.mobile" :placeholder="t('mobilePlaceholder')" />
+            <el-input
+              v-model="formData.mobile"
+              :placeholder="t('mobilePlaceholder')"
+              @input="resetDuplicateCheck"
+            />
           </el-form-item>
         </el-col>
         <el-col :span="12">
@@ -137,6 +145,30 @@
           </el-form-item>
         </el-col>
       </el-row>
+      <el-row v-if="formType === 'create'">
+        <el-col :span="24">
+          <el-form-item :label="t('duplicateCheck')">
+            <el-button :loading="duplicateChecking" @click="checkDuplicates">
+              {{ t('duplicateCheckAction') }}
+            </el-button>
+            <span v-if="duplicateChecked && duplicateCandidates.length === 0" class="ml-12px text-success">
+              {{ t('duplicateNone') }}
+            </span>
+          </el-form-item>
+          <el-alert
+            v-if="duplicateCandidates.length > 0"
+            :closable="false"
+            :title="t('duplicateFound', { count: duplicateCandidates.length })"
+            type="warning"
+            show-icon
+            class="mb-16px"
+          >
+            <div v-for="candidate in duplicateCandidates" :key="candidate.id">
+              #{{ candidate.id }} · {{ candidate.name }} · {{ candidate.mobile || t('duplicateNoMobile') }}
+            </div>
+          </el-alert>
+        </el-col>
+      </el-row>
     </el-form>
     <template #footer>
       <el-button :disabled="formLoading" type="primary" @click="submitForm">{{ t('common.confirm') }}</el-button>
@@ -159,6 +191,9 @@ const dialogVisible = ref(false) // 弹窗的是否展示
 const dialogTitle = ref('') // 弹窗的标题
 const formLoading = ref(false) // 表单的加载中：1）修改时的数据加载；2）提交的按钮禁用
 const formType = ref('') // 表单的类型：create - 新增；update - 修改
+const duplicateChecking = ref(false)
+const duplicateChecked = ref(false)
+const duplicateCandidates = ref<CustomerApi.CustomerDuplicateVO[]>([])
 const areaList = ref([]) // 地区列表
 const userOptions = ref<UserApi.UserVO[]>([]) // 用户列表
 const formData = ref({
@@ -183,6 +218,29 @@ const formRules = reactive({
   ownerUserId: [{ required: true, message: t('ownerUserRequired'), trigger: 'blur' }]
 })
 const formRef = ref() // 表单 Ref
+
+const resetDuplicateCheck = () => {
+  duplicateChecked.value = false
+  duplicateCandidates.value = []
+}
+
+/** 查询疑似重复客户 */
+const checkDuplicates = async () => {
+  const name = formData.value.name?.trim()
+  const mobile = formData.value.mobile?.trim()
+  if (!name && !mobile) {
+    message.warning(t('duplicateConditionRequired'))
+    return []
+  }
+  duplicateChecking.value = true
+  try {
+    duplicateCandidates.value = await CustomerApi.getDuplicateCustomerList({ name, mobile })
+    duplicateChecked.value = true
+    return duplicateCandidates.value
+  } finally {
+    duplicateChecking.value = false
+  }
+}
 
 /** 打开弹窗 */
 const open = async (type: string, id?: number) => {
@@ -217,10 +275,26 @@ const submitForm = async () => {
   if (!formRef) return
   const valid = await formRef.value.validate()
   if (!valid) return
+  let duplicateCheckConfirmed = false
+  if (formType.value === 'create') {
+    const candidates = duplicateChecked.value ? duplicateCandidates.value : await checkDuplicates()
+    const normalizedName = formData.value.name?.trim().toLocaleLowerCase()
+    if (candidates.some((candidate) => candidate.name.trim().toLocaleLowerCase() === normalizedName)) {
+      message.error(t('duplicateNameBlocked'))
+      return
+    }
+    if (candidates.length > 0) {
+      await message.confirm(t('duplicateContinueConfirm', { count: candidates.length }))
+      duplicateCheckConfirmed = true
+    }
+  }
   // 提交请求
   formLoading.value = true
   try {
-    const data = formData.value as unknown as CustomerApi.CustomerVO
+    const data = {
+      ...formData.value,
+      duplicateCheckConfirmed
+    } as unknown as CustomerApi.CustomerVO
     if (formType.value === 'create') {
       await CustomerApi.createCustomer(data)
       message.success(t('common.createSuccess'))
@@ -238,6 +312,7 @@ const submitForm = async () => {
 
 /** 重置表单 */
 const resetForm = () => {
+  resetDuplicateCheck()
   formData.value = {
     id: undefined,
     name: undefined,

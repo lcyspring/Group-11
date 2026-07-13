@@ -78,6 +78,11 @@ public interface CrmCustomerService {
     List<CrmCustomerDO> getCustomerList(Collection<Long> ids);
 
     /**
+     * 按客户名称或手机查询当前用户可见的疑似重复客户。
+     */
+    List<CrmCustomerDO> getDuplicateCustomerList(CrmCustomerDuplicateCheckReqVO reqVO, Long userId);
+
+    /**
      * 获得客户 Map
      *
      * @param ids 客户编号数组

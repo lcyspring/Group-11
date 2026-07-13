@@ -29,6 +29,13 @@ export interface CustomerVO {
   creatorName?: string // 创建人名称
   createTime: Date // 创建时间
   updateTime: Date // 更新时间
+  duplicateCheckConfirmed?: boolean // 是否已确认疑似重复客户
+}
+
+export interface CustomerDuplicateVO {
+  id: number
+  name: string
+  mobile?: string
 }
 
 // 查询客户列表
@@ -59,6 +66,15 @@ export const getFollowCustomerCount = async () => {
 // 查询客户详情
 export const getCustomer = async (id: number) => {
   return await request.get({ url: `/crm/customer/get?id=` + id })
+}
+
+// 查询当前用户可见的疑似重复客户
+export const getDuplicateCustomerList = async (params: {
+  name?: string
+  mobile?: string
+  excludeId?: number
+}) => {
+  return await request.get<CustomerDuplicateVO[]>({ url: `/crm/customer/duplicate-check`, params })
 }
 
 // 新增客户

@@ -129,6 +129,16 @@ public class CrmCustomerController {
         return success(new PageResult<>(buildCustomerDetailList(pageResult.getList()), pageResult.getTotal()));
     }
 
+    @GetMapping("/duplicate-check")
+    @Operation(summary = "查询疑似重复客户", description = "按名称或手机精确匹配，仅返回当前用户有权查看的客户")
+    @PreAuthorize("@ss.hasAnyPermissions('crm:customer:query', 'crm:customer:create')")
+    public CommonResult<List<CrmCustomerDuplicateRespVO>> getDuplicateCustomerList(
+            @Valid CrmCustomerDuplicateCheckReqVO reqVO) {
+        List<CrmCustomerDO> list = customerService.getDuplicateCustomerList(reqVO, getLoginUserId());
+        return success(convertList(list, customer -> new CrmCustomerDuplicateRespVO()
+                .setId(customer.getId()).setName(customer.getName()).setMobile(customer.getMobile())));
+    }
+
     public List<CrmCustomerRespVO> buildCustomerDetailList(List<CrmCustomerDO> list) {
         if (CollUtil.isEmpty(list)) {
             return java.util.Collections.emptyList();

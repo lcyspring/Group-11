@@ -28,7 +28,7 @@ public interface LogRecordConstants {
 
     String CRM_CUSTOMER_TYPE = "CRM 客户";
     String CRM_CUSTOMER_CREATE_SUB_TYPE = "创建客户";
-    String CRM_CUSTOMER_CREATE_SUCCESS = "创建了客户{{#customer.name}}";
+    String CRM_CUSTOMER_CREATE_SUCCESS = "创建了客户【{{#customer.name}}】{{#duplicateCheckDecision}}";
     String CRM_CUSTOMER_UPDATE_SUB_TYPE = "更新客户";
     String CRM_CUSTOMER_UPDATE_SUCCESS = "更新了客户【{{#customerName}}】: {_DIFF{#updateReqVO}}";
     String CRM_CUSTOMER_DELETE_SUB_TYPE = "删除客户";

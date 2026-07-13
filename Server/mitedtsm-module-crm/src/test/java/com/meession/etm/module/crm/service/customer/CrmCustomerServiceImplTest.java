@@ -1,5 +1,6 @@
 package com.meession.etm.module.crm.service.customer;
 
+import com.meession.etm.module.crm.controller.admin.customer.vo.customer.CrmCustomerDuplicateCheckReqVO;
 import com.meession.etm.module.crm.controller.admin.customer.vo.customer.CrmCustomerSaveReqVO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerOwnerRecordDO;
@@ -14,14 +15,58 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Proxy;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.meession.etm.framework.test.core.util.AssertUtils.assertServiceException;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CUSTOMER_NAME_EXISTS;
 import static com.meession.etm.module.crm.enums.customer.CrmCustomerOwnerRecordTypeEnum.PUT_POOL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CrmCustomerServiceImplTest {
+
+    @Test
+    void duplicateCheckNormalizesConditionsAndReturnsCandidates() {
+        AtomicReference<Object[]> queryArgs = new AtomicReference<>();
+        CrmCustomerDO candidate = new CrmCustomerDO().setId(20L).setName("候选客户").setMobile("18000000000");
+        CrmCustomerServiceImpl service = new CrmCustomerServiceImpl();
+        ReflectionTestUtils.setField(service, "customerMapper", proxy(CrmCustomerMapper.class,
+                (proxy, method, args) -> {
+                    if (method.getName().equals("selectDuplicateList")) {
+                        queryArgs.set(args);
+                        return List.of(candidate);
+                    }
+                    throw new AssertionError("未预期的 Mapper 调用 " + method.getName());
+                }));
+        CrmCustomerDuplicateCheckReqVO reqVO = new CrmCustomerDuplicateCheckReqVO()
+                .setName("  候选客户  ").setMobile(" 18000000000 ").setExcludeId(10L);
+
+        List<CrmCustomerDO> result = service.getDuplicateCustomerList(reqVO, 1L);
+
+        assertEquals(List.of(candidate), result);
+        assertEquals("候选客户", queryArgs.get()[0]);
+        assertEquals("18000000000", queryArgs.get()[1]);
+        assertEquals(10L, queryArgs.get()[2]);
+        assertEquals(1L, queryArgs.get()[3]);
+    }
+
+    @Test
+    void duplicateCheckSkipsQueryWhenConditionsAreBlank() {
+        CrmCustomerServiceImpl service = new CrmCustomerServiceImpl();
+        ReflectionTestUtils.setField(service, "customerMapper", proxy(CrmCustomerMapper.class,
+                (proxy, method, args) -> {
+                    throw new AssertionError("空条件不应查询 Mapper");
+                }));
+        CrmCustomerDuplicateCheckReqVO reqVO = new CrmCustomerDuplicateCheckReqVO()
+                .setName("  ").setMobile(null);
+
+        assertTrue(service.getDuplicateCustomerList(reqVO, 1L).isEmpty());
+        assertFalse(reqVO.isSearchConditionPresent());
+        assertTrue(new CrmCustomerDuplicateCheckReqVO().setName("客户").isSearchConditionPresent());
+        assertTrue(new CrmCustomerDuplicateCheckReqVO().setMobile("18000000000").isSearchConditionPresent());
+    }
 
     @Test
     void putCustomerPoolRecordsPreviousOwner() {

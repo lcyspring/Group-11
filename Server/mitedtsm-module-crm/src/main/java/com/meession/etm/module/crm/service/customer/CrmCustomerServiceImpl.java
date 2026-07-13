@@ -116,6 +116,8 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
 
         // 4. 记录操作日志上下文
         LogRecordContext.putVariable("customer", customer);
+        LogRecordContext.putVariable("duplicateCheckDecision", Boolean.TRUE.equals(createReqVO.getDuplicateCheckConfirmed())
+                ? "（已确认疑似重复客户后继续创建）" : "");
         return customer.getId();
     }
 
@@ -301,6 +303,7 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
 
         // 4. 记录操作日志上下文
         LogRecordContext.putVariable("customer", customer);
+        LogRecordContext.putVariable("duplicateCheckDecision", "");
         return customer.getId();
     }
 
@@ -513,6 +516,16 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
             return Collections.emptyList();
         }
         return customerMapper.selectByIds(ids);
+    }
+
+    @Override
+    public List<CrmCustomerDO> getDuplicateCustomerList(CrmCustomerDuplicateCheckReqVO reqVO, Long userId) {
+        String name = StrUtil.trim(reqVO.getName());
+        String mobile = StrUtil.trim(reqVO.getMobile());
+        if (StrUtil.isAllBlank(name, mobile)) {
+            return Collections.emptyList();
+        }
+        return customerMapper.selectDuplicateList(name, mobile, reqVO.getExcludeId(), userId);
     }
 
     @Override

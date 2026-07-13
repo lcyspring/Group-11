@@ -2,6 +2,7 @@ package com.meession.etm.module.crm.dal.mysql.customer;
 
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.util.ObjUtil;
+import cn.hutool.core.util.StrUtil;
 import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.framework.mybatis.core.mapper.BaseMapperX;
 import com.meession.etm.framework.mybatis.core.query.LambdaQueryWrapperX;
@@ -10,8 +11,10 @@ import com.meession.etm.module.crm.controller.admin.customer.vo.customer.CrmCust
 import com.meession.etm.module.crm.dal.dataobject.clue.CrmClueDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerPoolConfigDO;
+import com.meession.etm.module.crm.dal.dataobject.permission.CrmPermissionDO;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.enums.common.CrmSceneTypeEnum;
+import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
 import com.meession.etm.module.crm.util.CrmPermissionUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -86,6 +89,34 @@ public interface CrmCustomerMapper extends BaseMapperX<CrmCustomerDO> {
 
     default CrmCustomerDO selectByCustomerName(String name) {
         return selectOne(CrmCustomerDO::getName, name);
+    }
+
+    default List<CrmCustomerDO> selectDuplicateList(String name, String mobile, Long excludeId, Long userId) {
+        MPJLambdaWrapperX<CrmCustomerDO> query = new MPJLambdaWrapperX<>();
+        if (!CrmPermissionUtils.isCrmAdmin()) {
+            query.innerJoin(CrmPermissionDO.class, on -> on.eq(CrmPermissionDO::getBizType,
+                            CrmBizTypeEnum.CRM_CUSTOMER.getType())
+                    .eq(CrmPermissionDO::getBizId, CrmCustomerDO::getId)
+                    .eq(CrmPermissionDO::getUserId, userId)
+                    .in(CrmPermissionDO::getLevel, CrmPermissionLevelEnum.OWNER.getLevel(),
+                            CrmPermissionLevelEnum.READ.getLevel(), CrmPermissionLevelEnum.WRITE.getLevel()));
+        }
+        query.selectAll(CrmCustomerDO.class)
+                .neIfPresent(CrmCustomerDO::getId, excludeId)
+                .and(condition -> {
+                    if (StrUtil.isNotBlank(name)) {
+                        condition.eq(CrmCustomerDO::getName, name);
+                    }
+                    if (StrUtil.isNotBlank(mobile)) {
+                        if (StrUtil.isNotBlank(name)) {
+                            condition.or();
+                        }
+                        condition.eq(CrmCustomerDO::getMobile, mobile);
+                    }
+                })
+                .orderByAsc(CrmCustomerDO::getId)
+                .last("LIMIT 20");
+        return selectJoinList(CrmCustomerDO.class, query);
     }
 
     default PageResult<CrmCustomerDO> selectPutPoolRemindCustomerPage(CrmCustomerPageReqVO pageReqVO,

@@ -96,4 +96,7 @@ public class CrmCustomerSaveReqVO {
     @DiffLogField(name = "备注")
     private String remark;
 
+    @Schema(description = "是否已确认疑似重复客户，仅用于创建审计", example = "true")
+    private Boolean duplicateCheckConfirmed;
+
 }
