@@ -24,7 +24,7 @@ class CrmStatisticsCustomerMapperTest {
 
         List.of(
                 "selectFollowUpRecordCountGroupByDate",
-                "selectFollowUpCustomerCountGroupByDate",
+                "selectFollowUpCustomerListByDate",
                 "selectFollowUpRecordCountGroupByUser",
                 "selectFollowUpCustomerCountGroupByUser",
                 "selectFollowUpRecordCountGroupByType"

@@ -10,6 +10,7 @@ import com.meession.etm.framework.ip.core.enums.AreaTypeEnum;
 import com.meession.etm.framework.ip.core.utils.AreaUtils;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.customer.*;
 import com.meession.etm.module.crm.dal.mysql.statistics.CrmStatisticsCustomerMapper;
+import com.meession.etm.module.crm.service.statistics.bo.CrmStatisticsFollowUpCustomerByDateBO;
 import com.meession.etm.module.system.api.dept.DeptApi;
 import com.meession.etm.module.system.api.dept.dto.DeptRespDTO;
 import com.meession.etm.module.system.api.user.AdminUserApi;
@@ -117,7 +118,7 @@ public class CrmStatisticsCustomerServiceImpl implements CrmStatisticsCustomerSe
 
         // 2. 按天统计，获取分项统计数据
         List<CrmStatisticsFollowUpSummaryByDateRespVO> followUpRecordCountList = customerMapper.selectFollowUpRecordCountGroupByDate(reqVO);
-        List<CrmStatisticsFollowUpSummaryByDateRespVO> followUpCustomerCountList = customerMapper.selectFollowUpCustomerCountGroupByDate(reqVO);
+        List<CrmStatisticsFollowUpCustomerByDateBO> followUpCustomerList = customerMapper.selectFollowUpCustomerListByDate(reqVO);
 
         // 3. 按照时间间隔，合并统计数据
         List<LocalDateTime[]> timeRanges = LocalDateTimeUtils.getDateRangeList(reqVO.getTimes()[0], reqVO.getTimes()[1], reqVO.getInterval());
@@ -125,9 +126,9 @@ public class CrmStatisticsCustomerServiceImpl implements CrmStatisticsCustomerSe
             Integer followUpRecordCount = followUpRecordCountList.stream()
                     .filter(vo -> LocalDateTimeUtils.isBetween(times[0], times[1], vo.getTime()))
                     .mapToInt(CrmStatisticsFollowUpSummaryByDateRespVO::getFollowUpRecordCount).sum();
-            Integer followUpCustomerCount = followUpCustomerCountList.stream()
+            Integer followUpCustomerCount = (int) followUpCustomerList.stream()
                     .filter(vo -> LocalDateTimeUtils.isBetween(times[0], times[1], vo.getTime()))
-                    .mapToInt(CrmStatisticsFollowUpSummaryByDateRespVO::getFollowUpCustomerCount).sum();
+                    .map(CrmStatisticsFollowUpCustomerByDateBO::getCustomerId).distinct().count();
             return new CrmStatisticsFollowUpSummaryByDateRespVO()
                     .setTime(LocalDateTimeUtils.formatDateRange(times[0], times[1], reqVO.getInterval()))
                     .setFollowUpRecordCount(followUpRecordCount).setFollowUpCustomerCount(followUpCustomerCount);

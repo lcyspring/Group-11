@@ -1,6 +1,7 @@
 package com.meession.etm.module.crm.dal.mysql.statistics;
 
 import com.meession.etm.module.crm.controller.admin.statistics.vo.customer.*;
+import com.meession.etm.module.crm.service.statistics.bo.CrmStatisticsFollowUpCustomerByDateBO;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
@@ -75,7 +76,7 @@ public interface CrmStatisticsCustomerMapper {
      * @param reqVO 请求参数
      * @return 统计数据
      */
-    List<CrmStatisticsFollowUpSummaryByDateRespVO> selectFollowUpCustomerCountGroupByDate(CrmStatisticsCustomerReqVO reqVO);
+    List<CrmStatisticsFollowUpCustomerByDateBO> selectFollowUpCustomerListByDate(CrmStatisticsCustomerReqVO reqVO);
 
     /**
      * 跟进次数(按用户)

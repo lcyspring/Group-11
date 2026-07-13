@@ -5,6 +5,7 @@ import com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmSt
 import com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsFollowUpSummaryByDateRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsFollowUpSummaryByUserRespVO;
 import com.meession.etm.module.crm.dal.mysql.statistics.CrmStatisticsCustomerMapper;
+import com.meession.etm.module.crm.service.statistics.bo.CrmStatisticsFollowUpCustomerByDateBO;
 import com.meession.etm.module.system.api.user.AdminUserApi;
 import com.meession.etm.module.system.api.user.dto.AdminUserRespDTO;
 import org.junit.jupiter.api.Test;
@@ -24,8 +25,10 @@ class CrmStatisticsCustomerServiceImplTest {
         CrmStatisticsCustomerServiceImpl service = serviceWithMapper((proxy, method, args) -> switch (method.getName()) {
             case "selectFollowUpRecordCountGroupByDate" -> List.of(new CrmStatisticsFollowUpSummaryByDateRespVO()
                     .setTime("2024-01-01").setFollowUpRecordCount(7));
-            case "selectFollowUpCustomerCountGroupByDate" -> List.of(new CrmStatisticsFollowUpSummaryByDateRespVO()
-                    .setTime("2024-01-01").setFollowUpCustomerCount(3));
+            case "selectFollowUpCustomerListByDate" -> List.of(
+                    followCustomer("2024-01-01T09:00:00", 1L),
+                    followCustomer("2024-01-01T10:00:00", 2L),
+                    followCustomer("2024-01-01T11:00:00", 3L));
             default -> throw new AssertionError("未预期的 Mapper 调用 " + method.getName());
         });
 
@@ -34,6 +37,32 @@ class CrmStatisticsCustomerServiceImplTest {
         assertEquals(1, result.size());
         assertEquals(7, result.get(0).getFollowUpRecordCount());
         assertEquals(3, result.get(0).getFollowUpCustomerCount());
+    }
+
+    @Test
+    void getFollowUpSummaryByDateDeduplicatesCustomersAcrossDaysInInterval() {
+        CrmStatisticsCustomerServiceImpl service = serviceWithMapper((proxy, method, args) -> switch (method.getName()) {
+            case "selectFollowUpRecordCountGroupByDate" -> List.of(
+                    new CrmStatisticsFollowUpSummaryByDateRespVO()
+                            .setTime("2024-01-01").setFollowUpRecordCount(2),
+                    new CrmStatisticsFollowUpSummaryByDateRespVO()
+                            .setTime("2024-01-02").setFollowUpRecordCount(1));
+            case "selectFollowUpCustomerListByDate" -> List.of(
+                    followCustomer("2024-01-01T09:00:00", 1L),
+                    followCustomer("2024-01-02T09:00:00", 1L),
+                    followCustomer("2024-01-02T10:00:00", 2L));
+            default -> throw new AssertionError("未预期的 Mapper 调用 " + method.getName());
+        });
+        CrmStatisticsCustomerReqVO request = request().setInterval(2).setTimes(new LocalDateTime[]{
+                LocalDateTime.of(2024, 1, 1, 0, 0),
+                LocalDateTime.of(2024, 1, 7, 23, 59, 59)
+        });
+
+        List<CrmStatisticsFollowUpSummaryByDateRespVO> result = service.getFollowUpSummaryByDate(request);
+
+        assertEquals(1, result.size());
+        assertEquals(3, result.get(0).getFollowUpRecordCount());
+        assertEquals(2, result.get(0).getFollowUpCustomerCount());
     }
 
     @Test
@@ -82,6 +111,10 @@ class CrmStatisticsCustomerServiceImplTest {
         return new CrmStatisticsCustomerDealCycleByDateRespVO()
                 .setTime(time)
                 .setCustomerDealCycle(cycle);
+    }
+
+    private static CrmStatisticsFollowUpCustomerByDateBO followCustomer(String time, Long customerId) {
+        return new CrmStatisticsFollowUpCustomerByDateBO().setTime(time).setCustomerId(customerId);
     }
 
     private static CrmStatisticsCustomerReqVO request() {

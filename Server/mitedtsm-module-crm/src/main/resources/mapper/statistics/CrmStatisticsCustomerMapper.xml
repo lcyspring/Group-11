@@ -125,10 +125,10 @@
          GROUP BY time
     </select>
 
-    <select id="selectFollowUpCustomerCountGroupByDate"
-            resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsFollowUpSummaryByDateRespVO">
-        SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS time,
-               COUNT(DISTINCT biz_id) AS follow_up_customer_count
+    <select id="selectFollowUpCustomerListByDate"
+            resultType="com.meession.etm.module.crm.service.statistics.bo.CrmStatisticsFollowUpCustomerByDateBO">
+        SELECT DATE_FORMAT(MIN(create_time), '%Y-%m-%dT%H:%i:%s') AS time,
+               biz_id AS customer_id
           FROM crm_follow_up_record
          WHERE deleted = 0
            AND creator IN
@@ -137,7 +137,7 @@
                 </foreach>
            AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND #{times[1],javaType=java.time.LocalDateTime}
            AND biz_type = ${@com.meession.etm.module.crm.enums.common.CrmBizTypeEnum@CRM_CUSTOMER.type}
-         GROUP BY time
+         GROUP BY DATE(create_time), biz_id
     </select>
 
     <select id="selectFollowUpRecordCountGroupByUser"
