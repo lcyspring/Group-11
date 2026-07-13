@@ -42,6 +42,13 @@ public interface CrmClueService {
     void updateClueFollowUp(Long id, LocalDateTime contactNextTime, String contactLastContent);
 
     /**
+     * 校验线索仍可写，并锁定线索以串行化转换和关联写操作。
+     *
+     * @param id 线索编号
+     */
+    void validateClueWritable(Long id);
+
+    /**
      * 删除线索
      *
      * @param id 编号

@@ -1,14 +1,14 @@
 <template>
   <ClueDetailsHeader :clue="clue" :loading="loading">
     <el-button
-      v-if="permissionListRef?.validateWrite"
+      v-if="permissionListRef?.validateWrite && !clue.transformStatus"
       v-hasPermi="['crm:clue:update']"
       type="primary"
       @click="openForm"
     >
       {{ t('common.edit') }}
     </el-button>
-    <el-button v-if="permissionListRef?.validateOwnerUser" type="primary" @click="transfer">
+    <el-button v-if="permissionListRef?.validateOwnerUser && !clue.transformStatus" type="primary" @click="transfer">
       {{ t('customer.transfer') }}
     </el-button>
     <el-button
@@ -23,7 +23,7 @@
   <el-col>
     <el-tabs>
       <el-tab-pane :label="t('clue.followUpTab')">
-        <FollowUpList :biz-id="clueId" :biz-type="BizTypeEnum.CRM_CLUE" />
+        <FollowUpList :biz-id="clueId" :biz-type="BizTypeEnum.CRM_CLUE" :readonly="clue.transformStatus" />
       </el-tab-pane>
       <el-tab-pane :label="t('clue.basicInfoTab')">
         <ClueDetailsInfo :clue="clue" />
@@ -33,7 +33,7 @@
           ref="permissionListRef"
           :biz-id="clue.id!"
           :biz-type="BizTypeEnum.CRM_CLUE"
-          :show-action="true"
+          :show-action="!clue.transformStatus"
           @quit-team="close"
         />
       </el-tab-pane>

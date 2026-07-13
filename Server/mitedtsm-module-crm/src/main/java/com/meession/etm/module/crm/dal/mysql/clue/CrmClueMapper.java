@@ -10,6 +10,8 @@ import com.meession.etm.module.crm.enums.common.CrmSceneTypeEnum;
 import com.meession.etm.module.crm.util.CrmPermissionUtils;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 /**
  * 线索 Mapper
@@ -18,6 +20,12 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface CrmClueMapper extends BaseMapperX<CrmClueDO> {
+
+    /**
+     * 当前读并锁定线索，使转换与更新、删除、转移及关联写操作串行化。
+     */
+    @Select("SELECT * FROM crm_clue WHERE id = #{id} AND deleted = 0 FOR UPDATE")
+    CrmClueDO selectByIdForUpdate(@Param("id") Long id);
 
     /**
      * 仅当线索仍处于期望的转换状态时更新，用于并发转换的原子抢占。

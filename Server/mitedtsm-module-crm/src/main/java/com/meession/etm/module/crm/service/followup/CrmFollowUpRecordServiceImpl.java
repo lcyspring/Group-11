@@ -21,6 +21,7 @@ import com.meession.etm.module.crm.service.permission.CrmPermissionService;
 import jakarta.annotation.Resource;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.Collection;
@@ -62,6 +63,7 @@ public class CrmFollowUpRecordServiceImpl implements CrmFollowUpRecordService {
     private CrmCustomerService customerService;
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     @CrmPermission(bizTypeValue = "#createReqVO.bizType", bizId = "#createReqVO.bizId", level = CrmPermissionLevelEnum.WRITE)
     public Long createFollowUpRecord(CrmFollowUpRecordSaveReqVO createReqVO) {
         // 1. 创建更进记录
@@ -105,12 +107,16 @@ public class CrmFollowUpRecordServiceImpl implements CrmFollowUpRecordService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteFollowUpRecord(Long id, Long userId) {
         // 校验存在
         CrmFollowUpRecordDO followUpRecord = validateFollowUpRecordExists(id);
         // 校验权限
         if (!permissionService.hasPermission(followUpRecord.getBizType(), followUpRecord.getBizId(), userId, CrmPermissionLevelEnum.OWNER)) {
             throw exception(FOLLOW_UP_RECORD_DELETE_DENIED);
+        }
+        if (ObjUtil.equal(CrmBizTypeEnum.CRM_CLUE.getType(), followUpRecord.getBizType())) {
+            clueService.validateClueWritable(followUpRecord.getBizId());
         }
 
         // 删除

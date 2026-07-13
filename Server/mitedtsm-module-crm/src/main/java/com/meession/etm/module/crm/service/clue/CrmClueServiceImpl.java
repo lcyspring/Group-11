@@ -41,6 +41,7 @@ import static com.meession.etm.framework.common.util.collection.CollectionUtils.
 import static com.meession.etm.framework.common.util.collection.CollectionUtils.singleton;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CLUE_NOT_EXISTS;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CLUE_TRANSFORM_FAIL_ALREADY;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CLUE_UPDATE_FAIL_TRANSFORMED;
 import static com.meession.etm.module.crm.enums.LogRecordConstants.*;
 import static com.meession.etm.module.system.enums.ErrorCodeConstants.USER_NOT_EXISTS;
 
@@ -100,7 +101,7 @@ public class CrmClueServiceImpl implements CrmClueService {
     public void updateClue(CrmClueSaveReqVO updateReqVO) {
         Assert.notNull(updateReqVO.getId(), "线索编号不能为空");
         // 1.1 校验线索是否存在
-        CrmClueDO oldClue = validateClueExists(updateReqVO.getId());
+        CrmClueDO oldClue = validateClueWritableForUpdate(updateReqVO.getId());
         // 1.2 校验关联数据
         validateRelationDataExists(updateReqVO);
 
@@ -123,12 +124,13 @@ public class CrmClueServiceImpl implements CrmClueService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     @LogRecord(type = CRM_CLUE_TYPE, subType = CRM_CLUE_FOLLOW_UP_SUB_TYPE, bizNo = "{{#id}}",
             success = CRM_CLUE_FOLLOW_UP_SUCCESS)
     @CrmPermission(bizType = CrmBizTypeEnum.CRM_CLUE, bizId = "#id", level = CrmPermissionLevelEnum.WRITE)
     public void updateClueFollowUp(Long id, LocalDateTime contactNextTime, String contactLastContent) {
         // 校验线索是否存在
-        CrmClueDO oldClue = validateClueExists(id);
+        CrmClueDO oldClue = validateClueWritableForUpdate(id);
 
         // 更新线索
         clueMapper.updateById(new CrmClueDO().setId(id).setFollowUpStatus(true).setContactNextTime(contactNextTime)
@@ -145,7 +147,7 @@ public class CrmClueServiceImpl implements CrmClueService {
     @CrmPermission(bizType = CrmBizTypeEnum.CRM_CLUE, bizId = "#id", level = CrmPermissionLevelEnum.OWNER)
     public void deleteClue(Long id) {
         // 1. 校验存在
-        CrmClueDO clue = validateClueExists(id);
+        CrmClueDO clue = validateClueWritableForUpdate(id);
 
         // 2. 删除
         clueMapper.deleteById(id);
@@ -167,7 +169,7 @@ public class CrmClueServiceImpl implements CrmClueService {
     @CrmPermission(bizType = CrmBizTypeEnum.CRM_CLUE, bizId = "#reqVO.id", level = CrmPermissionLevelEnum.OWNER)
     public void transferClue(CrmClueTransferReqVO reqVO, Long userId) {
         // 1 校验线索是否存在
-        CrmClueDO clue = validateClueExists(reqVO.getId());
+        CrmClueDO clue = validateClueWritableForUpdate(reqVO.getId());
 
         // 2.1 数据权限转移
         crmPermissionService.transferPermission(new CrmPermissionTransferReqBO(userId, CrmBizTypeEnum.CRM_CLUE.getType(),
@@ -185,8 +187,11 @@ public class CrmClueServiceImpl implements CrmClueService {
             success = CRM_CLUE_TRANSLATE_SUCCESS)
     @CrmPermission(bizType = CrmBizTypeEnum.CRM_CLUE, bizId = "#reqVO.id", level = CrmPermissionLevelEnum.OWNER)
     public void transformClue(CrmClueTransformReqVO reqVO, Long userId) {
-        // 1.1 校验线索都存在
-        CrmClueDO clue = validateClueExists(reqVO.getId());
+        // 1.1 当前读并锁定线索，与更新、删除、转移及关联写操作串行化
+        CrmClueDO clue = clueMapper.selectByIdForUpdate(reqVO.getId());
+        if (clue == null) {
+            throw exception(CLUE_NOT_EXISTS);
+        }
         // 1.2 存在已经转化的
         if (Boolean.TRUE.equals(clue.getTransformStatus())) {
             throw exception(CLUE_TRANSFORM_FAIL_ALREADY);
@@ -221,12 +226,21 @@ public class CrmClueServiceImpl implements CrmClueService {
         LogRecordContext.putVariable("clueName", clue.getName());
     }
 
-    private CrmClueDO validateClueExists(Long id) {
-        CrmClueDO crmClueDO = clueMapper.selectById(id);
-        if (crmClueDO == null) {
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void validateClueWritable(Long id) {
+        validateClueWritableForUpdate(id);
+    }
+
+    private CrmClueDO validateClueWritableForUpdate(Long id) {
+        CrmClueDO clue = clueMapper.selectByIdForUpdate(id);
+        if (clue == null) {
             throw exception(CLUE_NOT_EXISTS);
         }
-        return crmClueDO;
+        if (Boolean.TRUE.equals(clue.getTransformStatus())) {
+            throw exception(CLUE_UPDATE_FAIL_TRANSFORMED);
+        }
+        return clue;
     }
 
     @Override

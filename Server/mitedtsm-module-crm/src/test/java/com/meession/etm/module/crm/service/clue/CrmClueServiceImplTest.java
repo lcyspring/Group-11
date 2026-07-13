@@ -1,5 +1,7 @@
 package com.meession.etm.module.crm.service.clue;
 
+import com.meession.etm.module.crm.controller.admin.clue.vo.CrmClueSaveReqVO;
+import com.meession.etm.module.crm.controller.admin.clue.vo.CrmClueTransferReqVO;
 import com.meession.etm.module.crm.controller.admin.clue.vo.CrmClueTransformReqVO;
 import com.meession.etm.module.crm.controller.admin.contact.vo.CrmContactSaveReqVO;
 import com.meession.etm.module.crm.dal.dataobject.clue.CrmClueDO;
@@ -11,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Proxy;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -19,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.meession.etm.framework.test.core.util.AssertUtils.assertServiceException;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CLUE_TRANSFORM_FAIL_ALREADY;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CLUE_UPDATE_FAIL_TRANSFORMED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -26,12 +30,33 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class CrmClueServiceImplTest {
 
     @Test
+    void transformedClueRejectsDirectWrites() {
+        CrmClueServiceImpl service = new CrmClueServiceImpl();
+        ReflectionTestUtils.setField(service, "clueMapper", proxy(CrmClueMapper.class,
+                (proxy, method, args) -> {
+                    if (method.getName().equals("selectByIdForUpdate")) {
+                        return clue().setTransformStatus(true).setCustomerId(99L);
+                    }
+                    throw new AssertionError("已转换线索不应继续调用 " + method.getName());
+                }));
+
+        assertServiceException(() -> service.updateClue(new CrmClueSaveReqVO().setId(10L)),
+                CLUE_UPDATE_FAIL_TRANSFORMED);
+        assertServiceException(() -> service.updateClueFollowUp(10L, LocalDateTime.now(), "继续跟进"),
+                CLUE_UPDATE_FAIL_TRANSFORMED);
+        assertServiceException(() -> service.deleteClue(10L), CLUE_UPDATE_FAIL_TRANSFORMED);
+        assertServiceException(() -> service.transferClue(
+                new CrmClueTransferReqVO().setId(10L).setNewOwnerUserId(2L), 1L),
+                CLUE_UPDATE_FAIL_TRANSFORMED);
+    }
+
+    @Test
     void transformClueStopsWhenAtomicClaimFails() {
         CrmClueServiceImpl service = new CrmClueServiceImpl();
         AtomicBoolean customerCreated = new AtomicBoolean();
         ReflectionTestUtils.setField(service, "clueMapper", proxy(CrmClueMapper.class,
                 (proxy, method, args) -> switch (method.getName()) {
-                    case "selectById" -> clue();
+                    case "selectByIdForUpdate" -> clue();
                     case "updateTransformStatusByIdAndTransformStatus" -> 0;
                     default -> throw new AssertionError("抢占失败后不应继续调用 " + method.getName());
                 }));
@@ -54,7 +79,7 @@ class CrmClueServiceImplTest {
         AtomicReference<CrmContactSaveReqVO> createdContact = new AtomicReference<>();
         ReflectionTestUtils.setField(service, "clueMapper", proxy(CrmClueMapper.class,
                 (proxy, method, args) -> switch (method.getName()) {
-                    case "selectById" -> clue();
+                    case "selectByIdForUpdate" -> clue();
                     case "updateTransformStatusByIdAndTransformStatus" -> {
                         calls.add("claim");
                         claimed.set(true);

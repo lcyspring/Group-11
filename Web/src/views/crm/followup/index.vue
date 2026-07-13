@@ -1,7 +1,7 @@
 <!-- 某个记录的跟进记录列表，目前主要用于 CRM 客户、商机等详情界面 -->
 <template>
   <!-- 操作栏 -->
-  <el-row class="mb-10px" justify="end">
+  <el-row v-if="!readonly" class="mb-10px" justify="end">
     <el-button @click="openForm">
       <Icon class="mr-5px" icon="ep:edit" />
       {{ t('followUp.createFollowUp') }}
@@ -101,7 +101,7 @@
           </el-link>
         </template>
       </el-table-column>
-      <el-table-column align="center" :label="t('common.action')" fixed="right">
+      <el-table-column v-if="!readonly" align="center" :label="t('common.action')" fixed="right">
         <template #default="scope">
           <el-button link type="danger" @click="handleDelete(scope.row.id)"> {{ t('common.delete') }} </el-button>
         </template>
@@ -137,10 +137,14 @@ const getFileName = (url: string) => {
   return url.substring(url.lastIndexOf('/') + 1)
 }
 
-const props = defineProps<{
-  bizType: number
-  bizId: number
-}>()
+const props = withDefaults(
+  defineProps<{
+    bizType: number
+    bizId: number
+    readonly?: boolean
+  }>(),
+  { readonly: false }
+)
 const message = useMessage() // 消息弹窗
 const { t } = useI18n('crm') // 国际化
 const loading = ref(true) // 列表的加载中

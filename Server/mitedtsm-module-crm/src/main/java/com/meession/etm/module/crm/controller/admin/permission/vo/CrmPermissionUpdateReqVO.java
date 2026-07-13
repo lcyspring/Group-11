@@ -6,6 +6,7 @@ import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
@@ -14,7 +15,7 @@ import java.util.List;
 public class CrmPermissionUpdateReqVO {
 
     @Schema(description = "数据权限编号列表", requiredMode = Schema.RequiredMode.REQUIRED, example = "[1,2]")
-    @NotNull(message = "数据权限编号列表不能为空")
+    @NotEmpty(message = "数据权限编号列表不能为空")
     private List<Long> ids;
 
     @Schema(description = "Crm 类型", requiredMode = Schema.RequiredMode.REQUIRED, example = "2")

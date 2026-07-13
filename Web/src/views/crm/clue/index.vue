@@ -148,6 +148,7 @@
       <el-table-column :label="t('common.action')" align="center" min-width="150" fixed="right">
         <template #default="scope">
           <el-button
+            v-if="!scope.row.transformStatus"
             link
             type="primary"
             @click="openForm('update', scope.row.id)"
@@ -156,6 +157,7 @@
             {{ t('common.edit') }}
           </el-button>
           <el-button
+            v-if="!scope.row.transformStatus"
             link
             type="danger"
             @click="handleDelete(scope.row.id)"
