@@ -78,6 +78,12 @@ if [ -d "$SQL_NEW_DIR" ]; then
         echo "Executing: new-crm-contact-primary.sql"
         mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < "${SQL_NEW_DIR}/new-crm-contact-primary.sql"
     fi
+
+    # 4.8 执行 CRM 有效联系人手机号唯一约束
+    if [ -f "${SQL_NEW_DIR}/new-crm-contact-mobile-unique.sql" ]; then
+        echo "Executing: new-crm-contact-mobile-unique.sql"
+        mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < "${SQL_NEW_DIR}/new-crm-contact-mobile-unique.sql"
+    fi
 fi
 
 echo "MySQL initialization completed successfully!"

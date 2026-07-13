@@ -2,6 +2,7 @@ package com.meession.etm.module.crm.service.contact;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
+import cn.hutool.core.util.StrUtil;
 import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.framework.common.util.object.BeanUtils;
 import com.meession.etm.module.crm.controller.admin.contact.vo.CrmContactBusinessReqVO;
@@ -76,11 +77,13 @@ public class CrmContactServiceImpl implements CrmContactService {
             success = CRM_CONTACT_CREATE_SUCCESS)
     public Long createContact(CrmContactSaveReqVO createReqVO, Long userId) {
         createReqVO.setId(null);
+        normalizeMobile(createReqVO);
         // 1. 校验关联数据
         validateRelationDataExists(createReqVO);
 
-        // 2. 锁定客户并维护唯一首联系人
+        // 2. 锁定客户，校验手机号唯一并维护唯一首联系人
         lockCustomer(createReqVO.getCustomerId());
+        validateMobileUnique(createReqVO.getCustomerId(), createReqVO.getMobile(), null);
         String primaryContactChange = preparePrimaryContactForCreate(createReqVO);
 
         // 3. 插入联系人
@@ -110,6 +113,7 @@ public class CrmContactServiceImpl implements CrmContactService {
             success = CRM_CONTACT_UPDATE_SUCCESS)
     @CrmPermission(bizType = CrmBizTypeEnum.CRM_CONTACT, bizId = "#updateReqVO.id", level = CrmPermissionLevelEnum.WRITE)
     public void updateContact(CrmContactSaveReqVO updateReqVO) {
+        normalizeMobile(updateReqVO);
         // 1.1 首次读取并校验存在
         CrmContactDO oldContact = validateContactExists(updateReqVO.getId());
         // 1.2 校验关联数据
@@ -118,6 +122,7 @@ public class CrmContactServiceImpl implements CrmContactService {
         // 1.3 按客户编号顺序加锁，避免移动联系人时产生死锁；锁后重新读取最新状态
         lockCustomers(oldContact.getCustomerId(), updateReqVO.getCustomerId());
         oldContact = validateContactExists(updateReqVO.getId());
+        validateMobileUnique(updateReqVO.getCustomerId(), updateReqVO.getMobile(), updateReqVO.getId());
         String primaryContactChange = preparePrimaryContactForUpdate(oldContact, updateReqVO);
 
         // 2. 更新联系人
@@ -232,6 +237,20 @@ public class CrmContactServiceImpl implements CrmContactService {
     private void unsetPrimaryContact(Long contactId) {
         if (contactMapper.unsetPrimaryContact(contactId) != 1) {
             throw exception(CONTACT_PRIMARY_SWITCH_CONFLICT);
+        }
+    }
+
+    private void normalizeMobile(CrmContactSaveReqVO reqVO) {
+        reqVO.setMobile(StrUtil.trim(reqVO.getMobile()));
+    }
+
+    private void validateMobileUnique(Long customerId, String mobile, Long excludeId) {
+        // Controller 的 Bean Validation 负责必填和格式；这里保留空值兼容，避免内部历史调用被误判为重复。
+        if (StrUtil.isBlank(mobile)) {
+            return;
+        }
+        if (contactMapper.selectDuplicateMobileId(customerId, mobile, excludeId) != null) {
+            throw exception(CONTACT_MOBILE_EXISTS, mobile);
         }
     }
 

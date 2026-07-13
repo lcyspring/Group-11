@@ -35,6 +35,7 @@ public interface ErrorCodeConstants {
     ErrorCode CONTACT_PRIMARY_DELETE_FAIL = new ErrorCode(1_020_003_005, "当前首联系人不能删除，请先将其他联系人设为首联系人");
     ErrorCode CONTACT_PRIMARY_MOVE_FAIL = new ErrorCode(1_020_003_006, "当前首联系人不能移动到其他客户，请先将其他联系人设为首联系人");
     ErrorCode CONTACT_PRIMARY_SWITCH_CONFLICT = new ErrorCode(1_020_003_007, "首联系人状态已变化，请重试");
+    ErrorCode CONTACT_MOBILE_EXISTS = new ErrorCode(1_020_003_008, "该客户下已存在手机号为【{}】的联系人");
 
     // ========== 回款 1-020-004-000 ==========
     ErrorCode RECEIVABLE_NOT_EXISTS = new ErrorCode(1_020_004_000, "回款不存在");

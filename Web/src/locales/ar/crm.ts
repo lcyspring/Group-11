@@ -197,6 +197,7 @@ export default {
     // Validation
     nameRequired: 'لا يمكن أن يكون الاسم فارغاً',
     customerIdRequired: 'لا يمكن أن يكون العميل فارغاً',
+    mobileRequired: 'لا يمكن أن يكون الهاتف المحمول فارغاً',
     ownerUserRequired: 'لا يمكن أن يكون المالك فارغاً',
     primaryContactRequired: 'يجب تحديد ما إذا كانت جهة الاتصال أساسية',
     // Actions

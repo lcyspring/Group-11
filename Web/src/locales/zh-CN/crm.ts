@@ -197,6 +197,7 @@ export default {
     // 验证消息
     nameRequired: '姓名不能为空',
     customerIdRequired: '客户不能为空',
+    mobileRequired: '手机号不能为空',
     ownerUserRequired: '负责人不能为空',
     primaryContactRequired: '是否首联系人不能为空',
     // 操作按钮

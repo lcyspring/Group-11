@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.meession.etm.framework.test.core.util.AssertUtils.assertServiceException;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTACT_MOBILE_EXISTS;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTACT_PRIMARY_DELETE_FAIL;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTACT_PRIMARY_MOVE_FAIL;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTACT_PRIMARY_SWITCH_CONFLICT;
@@ -26,6 +27,57 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CrmContactServiceImplTest {
+
+    @Test
+    void createRejectsDuplicateMobileAfterCustomerLock() {
+        List<String> calls = new ArrayList<>();
+        CrmContactMapper mapper = proxy(CrmContactMapper.class, (proxy, method, args) -> switch (method.getName()) {
+            case "lockCustomerById" -> {
+                calls.add("lock:" + args[0]);
+                yield args[0];
+            }
+            case "selectDuplicateMobileId" -> {
+                calls.add("duplicate:" + args[0] + ":" + args[1] + ":" + args[2]);
+                yield 8L;
+            }
+            default -> throw new AssertionError("手机号重复后不应调用 " + method.getName());
+        });
+        CrmContactServiceImpl service = newService(mapper);
+        CrmContactSaveReqVO reqVO = contactReq(null, 100L, false).setMobile(" 13800138000 ");
+
+        assertServiceException(() -> service.createContact(reqVO, 1L), CONTACT_MOBILE_EXISTS, "13800138000");
+
+        assertEquals("13800138000", reqVO.getMobile());
+        assertEquals(List.of("lock:100", "duplicate:100:13800138000:null"), calls);
+    }
+
+    @Test
+    void updateRejectsDuplicateMobileAndExcludesCurrentContact() {
+        List<String> calls = new ArrayList<>();
+        CrmContactDO oldContact = contact(10L, 100L, false).setMobile("13900139000");
+        CrmContactMapper mapper = proxy(CrmContactMapper.class, (proxy, method, args) -> switch (method.getName()) {
+            case "selectById" -> {
+                calls.add("select-contact");
+                yield oldContact;
+            }
+            case "lockCustomerById" -> {
+                calls.add("lock:" + args[0]);
+                yield args[0];
+            }
+            case "selectDuplicateMobileId" -> {
+                calls.add("duplicate:" + args[0] + ":" + args[1] + ":" + args[2]);
+                yield 8L;
+            }
+            default -> throw new AssertionError("手机号重复后不应调用 " + method.getName());
+        });
+        CrmContactServiceImpl service = newService(mapper);
+
+        assertServiceException(() -> service.updateContact(
+                contactReq(10L, 100L, false).setMobile("13800138000")), CONTACT_MOBILE_EXISTS, "13800138000");
+
+        assertEquals(List.of("select-contact", "lock:100", "select-contact",
+                "duplicate:100:13800138000:10"), calls);
+    }
 
     @Test
     void getPrimaryContactsSkipsMapperForEmptyCustomerIds() {
@@ -60,6 +112,10 @@ class CrmContactServiceImplTest {
                 calls.add("lock:" + args[0]);
                 yield args[0];
             }
+            case "selectDuplicateMobileId" -> {
+                calls.add("duplicate:" + args[1]);
+                yield null;
+            }
             case "selectPrimaryContactByCustomerId" -> {
                 calls.add("select-primary:" + args[0]);
                 yield null;
@@ -74,14 +130,14 @@ class CrmContactServiceImplTest {
             default -> throw new AssertionError("未预期的 Mapper 调用 " + method.getName());
         });
         CrmContactServiceImpl service = newService(mapper);
-        CrmContactSaveReqVO reqVO = contactReq(null, 100L, false);
+        CrmContactSaveReqVO reqVO = contactReq(null, 100L, false).setMobile("13800138000");
 
         Long id = service.createContact(reqVO, 1L);
 
         assertEquals(10L, id);
         assertTrue(reqVO.getPrimaryContact());
         assertTrue(inserted.get().getPrimaryContact());
-        assertEquals(List.of("lock:100", "select-primary:100", "insert"), calls);
+        assertEquals(List.of("lock:100", "duplicate:13800138000", "select-primary:100", "insert"), calls);
     }
 
     @Test

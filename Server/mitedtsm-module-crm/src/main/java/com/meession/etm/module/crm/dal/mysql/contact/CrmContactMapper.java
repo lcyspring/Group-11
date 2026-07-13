@@ -37,6 +37,14 @@ public interface CrmContactMapper extends BaseMapperX<CrmContactDO> {
             "AND deleted = 0 ORDER BY id LIMIT 1 FOR UPDATE")
     CrmContactDO selectPrimaryContactByCustomerId(@Param("customerId") Long customerId);
 
+    /**
+     * 当前读查询同一客户下的重复手机号。调用方已锁定客户行，用于并发安全地执行唯一性校验。
+     */
+    @Select("SELECT id FROM crm_contact WHERE customer_id = #{customerId} AND mobile = #{mobile} " +
+            "AND deleted = 0 AND (#{excludeId} IS NULL OR id != #{excludeId}) ORDER BY id LIMIT 1 FOR UPDATE")
+    Long selectDuplicateMobileId(@Param("customerId") Long customerId, @Param("mobile") String mobile,
+                                 @Param("excludeId") Long excludeId);
+
     default int unsetPrimaryContact(Long id) {
         return update(new LambdaUpdateWrapper<CrmContactDO>()
                 .eq(CrmContactDO::getId, id)

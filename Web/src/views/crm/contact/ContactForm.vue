@@ -229,6 +229,7 @@ const formData = ref({
 const formRules = reactive({
   name: [{ required: true, message: t('crm.contact.nameRequired'), trigger: 'blur' }],
   customerId: [{ required: true, message: t('crm.contact.customerIdRequired'), trigger: 'blur' }],
+  mobile: [{ required: true, message: t('crm.contact.mobileRequired'), trigger: 'blur' }],
   ownerUserId: [{ required: true, message: t('crm.contact.ownerUserRequired'), trigger: 'blur' }],
   primaryContact: [
     { required: true, message: t('crm.contact.primaryContactRequired'), trigger: 'change' }

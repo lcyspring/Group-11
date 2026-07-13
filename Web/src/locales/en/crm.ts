@@ -197,6 +197,7 @@ export default {
     // Validation
     nameRequired: 'Name cannot be empty',
     customerIdRequired: 'Customer cannot be empty',
+    mobileRequired: 'Mobile cannot be empty',
     ownerUserRequired: 'Owner cannot be empty',
     primaryContactRequired: 'Primary contact selection is required',
     // Actions

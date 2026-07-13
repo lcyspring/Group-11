@@ -6,6 +6,7 @@ import com.meession.etm.module.crm.framework.operatelog.core.*;
 import com.mzt.logapi.starter.annotation.DiffLogField;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -41,7 +42,8 @@ public class CrmContactSaveReqVO {
     @DiffLogField(name = "负责人", function = SysAdminUserParseFunction.NAME)
     private Long ownerUserId;
 
-    @Schema(description = "手机号", example = "1387171766")
+    @Schema(description = "手机号", example = "13871717666")
+    @NotBlank(message = "手机号不能为空")
     @Mobile
     @DiffLogField(name = "手机号")
     private String mobile;
