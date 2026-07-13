@@ -14,6 +14,7 @@ import com.meession.etm.module.crm.enums.common.CrmSceneTypeEnum;
 import com.meession.etm.module.crm.util.CrmPermissionUtils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Select;
 
 import java.math.BigDecimal;
 import java.util.Collection;
@@ -30,6 +31,12 @@ import static com.meession.etm.framework.common.util.collection.CollectionUtils.
  */
 @Mapper
 public interface CrmReceivableMapper extends BaseMapperX<CrmReceivableDO> {
+
+    /**
+     * 锁定合同，串行化同一合同下的回款提交，避免并发提交导致回款金额超过合同金额。
+     */
+    @Select("SELECT id FROM crm_contract WHERE id = #{contractId} AND deleted = 0 FOR UPDATE")
+    Long selectContractIdForUpdate(Long contractId);
 
     default CrmReceivableDO selectByNo(String no) {
         return selectOne(CrmReceivableDO::getNo, no);

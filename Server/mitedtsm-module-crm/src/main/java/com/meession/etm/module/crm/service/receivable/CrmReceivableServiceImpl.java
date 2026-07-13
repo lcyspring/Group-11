@@ -241,11 +241,18 @@ public class CrmReceivableServiceImpl implements CrmReceivableService {
     @LogRecord(type = CRM_RECEIVABLE_TYPE, subType = CRM_RECEIVABLE_SUBMIT_SUB_TYPE, bizNo = "{{#id}}",
             success = CRM_RECEIVABLE_SUBMIT_SUCCESS)
     public void submitReceivable(Long id, Long userId) {
-        // 1. 校验回款是否在审批
+        // 1.1 读取回款以获得合同编号
         CrmReceivableDO receivable = validateReceivableExists(id);
+        // 1.2 锁定合同，串行化同一合同下的回款提交
+        receivableMapper.selectContractIdForUpdate(receivable.getContractId());
+        // 1.3 获得锁后重新读取，避免同一草稿被并发重复提交
+        receivable = validateReceivableExists(id);
         if (ObjUtil.notEqual(receivable.getAuditStatus(), CrmAuditStatusEnum.DRAFT.getStatus())) {
             throw exception(RECEIVABLE_SUBMIT_FAIL_NOT_DRAFT);
         }
+        // 1.4 草稿不占用合同额度，提交审批前必须按最新的审批中、审批通过金额重新校验
+        CrmReceivableSaveReqVO submitReqVO = BeanUtils.toBean(receivable, CrmReceivableSaveReqVO.class);
+        validateReceivablePriceExceedsLimit(submitReqVO);
 
         // 2. 创建回款审批流程实例
         String processInstanceId = bpmProcessInstanceApi.createProcessInstance(userId, new BpmProcessInstanceCreateReqDTO()
