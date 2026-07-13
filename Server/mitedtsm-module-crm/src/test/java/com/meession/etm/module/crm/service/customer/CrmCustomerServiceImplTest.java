@@ -18,6 +18,7 @@ import java.lang.reflect.Proxy;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.meession.etm.framework.test.core.util.AssertUtils.assertServiceException;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.*;
@@ -261,6 +262,27 @@ class CrmCustomerServiceImplTest {
                 (proxy, method, args) -> expected));
 
         assertEquals(expected, service.getCustomerOwnerRecordList(20L));
+    }
+
+    @Test
+    void receiveCustomerRejectsCustomerClaimedBeforeLockAcquisition() {
+        AtomicBoolean lockingReadCalled = new AtomicBoolean();
+        CrmCustomerServiceImpl service = new CrmCustomerServiceImpl();
+        ReflectionTestUtils.setField(service, "customerMapper", proxy(CrmCustomerMapper.class,
+                (proxy, method, args) -> {
+                    if (method.getName().equals("selectByIdsForUpdate")) {
+                        lockingReadCalled.set(true);
+                        return List.of(new CrmCustomerDO().setId(20L).setName("已领取客户")
+                                .setOwnerUserId(100L));
+                    }
+                    throw new AssertionError("已有负责人时不应继续调用 " + method.getName());
+                }));
+        ReflectionTestUtils.setField(service, "adminUserApi", proxy(AdminUserApi.class,
+                (proxy, method, args) -> null));
+
+        assertServiceException(() -> service.receiveCustomer(List.of(20L), 1L, true),
+                CUSTOMER_OWNER_EXISTS, "已领取客户");
+        assertTrue(lockingReadCalled.get());
     }
 
     @Test

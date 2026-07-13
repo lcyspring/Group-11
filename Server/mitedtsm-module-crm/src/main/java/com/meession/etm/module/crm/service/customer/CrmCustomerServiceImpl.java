@@ -429,7 +429,8 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
     @Transactional(rollbackFor = Exception.class)
     public void receiveCustomer(List<Long> ids, Long ownerUserId, Boolean isReceive) {
         // 1.1 校验存在
-        List<CrmCustomerDO> customers = customerMapper.selectByIds(ids);
+        // 锁定客户并使并发领取/分配串行。后到的请求在获锁后会读到最新负责人并被拒绝
+        List<CrmCustomerDO> customers = customerMapper.selectByIdsForUpdate(ids);
         if (customers.size() != ids.size()) {
             throw exception(CUSTOMER_NOT_EXISTS);
         }

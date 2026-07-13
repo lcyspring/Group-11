@@ -6,6 +6,7 @@ import com.meession.etm.module.crm.controller.admin.customer.vo.customer.CrmCust
 import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -68,6 +70,32 @@ class CrmCustomerMapperTest {
 
         assertTrue(query.getSqlSegment().contains("parent_customer_id"));
         assertTrue(query.getParamNameValuePairs().containsValue(10L));
+    }
+
+    @Test
+    void selectByIdsForUpdateUsesDeterministicLockOrder() {
+        AtomicReference<LambdaQueryWrapper<CrmCustomerDO>> captured = new AtomicReference<>();
+        CrmCustomerMapper mapper = (CrmCustomerMapper) Proxy.newProxyInstance(
+                CrmCustomerMapper.class.getClassLoader(), new Class<?>[]{CrmCustomerMapper.class},
+                (proxy, method, args) -> {
+                    if (method.getName().equals("selectList")) {
+                        @SuppressWarnings("unchecked")
+                        LambdaQueryWrapper<CrmCustomerDO> query = (LambdaQueryWrapper<CrmCustomerDO>) args[0];
+                        captured.set(query);
+                        return List.of();
+                    }
+                    if (method.isDefault()) {
+                        return InvocationHandler.invokeDefault(proxy, method, args);
+                    }
+                    throw new AssertionError("未预期的 Mapper 调用 " + method.getName());
+                });
+
+        mapper.selectByIdsForUpdate(List.of(20L, 10L));
+
+        String sql = captured.get().getSqlSegment();
+        assertTrue(sql.contains("id IN"));
+        assertTrue(sql.contains("ORDER BY id ASC"));
+        assertTrue(sql.endsWith("FOR UPDATE"));
     }
 
     private static boolean hasParameterContaining(MPJLambdaWrapperX<CrmCustomerDO> query, String expected) {

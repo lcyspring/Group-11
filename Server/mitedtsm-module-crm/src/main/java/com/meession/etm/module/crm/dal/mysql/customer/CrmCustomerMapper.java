@@ -24,6 +24,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -44,6 +45,16 @@ public interface CrmCustomerMapper extends BaseMapperX<CrmCustomerDO> {
         return selectCount(new LambdaQueryWrapperX<CrmCustomerDO>()
                 .eqIfPresent(CrmCustomerDO::getDealStatus, dealStatus)
                 .eq(CrmCustomerDO::getOwnerUserId, ownerUserId));
+    }
+
+    /**
+     * 按主键顺序锁定客户，使公海批量领取/分配串行。
+     */
+    default List<CrmCustomerDO> selectByIdsForUpdate(Collection<Long> ids) {
+        return selectList(new LambdaQueryWrapper<CrmCustomerDO>()
+                .in(CrmCustomerDO::getId, ids)
+                .orderByAsc(CrmCustomerDO::getId)
+                .last("FOR UPDATE"));
     }
 
     default int updateOwnerUserIdById(Long id, Long ownerUserId) {
