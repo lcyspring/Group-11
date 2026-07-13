@@ -2,6 +2,22 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.meession.etm.module.crm.dal.mysql.statistics.CrmStatisticsCustomerMapper">
 
+    <!-- 每个客户只取下单日期最早的审批通过合同；同日按合同编号稳定选择。 -->
+    <sql id="firstApprovedContractJoin">
+        INNER JOIN crm_contract AS contract ON customer.id = contract.customer_id
+            AND contract.id = (
+                SELECT first_contract.id
+                  FROM crm_contract AS first_contract
+                 WHERE first_contract.customer_id = customer.id
+                   AND first_contract.deleted = 0
+                   AND first_contract.audit_status = ${@com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
+                 ORDER BY first_contract.order_date IS NULL,
+                          first_contract.order_date,
+                          first_contract.id
+                 LIMIT 1
+            )
+    </sql>
+
     <select id="selectCustomerCreateCountGroupByDate"
             resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerSummaryByDateRespVO">
         SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS time,
@@ -178,18 +194,7 @@
                contract.order_date,
                IFNULL(receivable.price, 0) AS receivable_price
           FROM crm_customer AS customer
-                INNER JOIN crm_contract AS contract ON customer.id = contract.customer_id
-                    AND contract.id = (
-                        SELECT first_contract.id
-                          FROM crm_contract AS first_contract
-                         WHERE first_contract.customer_id = customer.id
-                           AND first_contract.deleted = 0
-                           AND first_contract.audit_status = ${@com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
-                         ORDER BY first_contract.order_date IS NULL,
-                                  first_contract.order_date,
-                                  first_contract.id
-                         LIMIT 1
-                    )
+                <include refid="firstApprovedContractJoin"/>
                 LEFT JOIN (
                     SELECT contract_id,
                            SUM(price) AS price
@@ -273,9 +278,8 @@
         SELECT DATE_FORMAT(contract.order_date, '%Y-%m-%d') AS time,
                IFNULL(TRUNCATE(AVG(TIMESTAMPDIFF(DAY, customer.create_time, contract.order_date)), 1), 0) AS customer_deal_cycle
           FROM crm_customer AS customer
-                LEFT JOIN crm_contract AS contract ON contract.customer_id = customer.id
-         WHERE customer.deleted = 0 AND contract.deleted = 0
-           AND contract.audit_status = ${@com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
+                <include refid="firstApprovedContractJoin"/>
+         WHERE customer.deleted = 0
            AND customer.owner_user_id IN
                 <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                     #{userId}
@@ -289,9 +293,8 @@
         SELECT customer.owner_user_id,
                IFNULL(TRUNCATE(AVG(TIMESTAMPDIFF(DAY, customer.create_time, contract.order_date)), 1), 0) AS customer_deal_cycle
           FROM crm_customer AS customer
-                LEFT JOIN crm_contract AS contract ON contract.customer_id = customer.id
-         WHERE customer.deleted = 0 AND contract.deleted = 0
-           AND contract.audit_status = ${@com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
+                <include refid="firstApprovedContractJoin"/>
+         WHERE customer.deleted = 0
            AND customer.owner_user_id IN
                 <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                     #{userId}
@@ -306,10 +309,8 @@
                IFNULL(TRUNCATE(AVG(TIMESTAMPDIFF(DAY, customer.create_time, contract.order_date)), 1), 0) AS customer_deal_cycle,
                COUNT(DISTINCT customer.id) AS customer_deal_count
         FROM crm_customer AS customer
-                LEFT JOIN crm_contract AS contract ON customer.id = contract.customer_id
+                <include refid="firstApprovedContractJoin"/>
         WHERE customer.deleted = 0
-          AND contract.deleted = 0
-          AND contract.audit_status = ${@com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
           AND customer.owner_user_id IN
                 <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                     #{userId}
@@ -325,14 +326,12 @@
                IFNULL(TRUNCATE(AVG(TIMESTAMPDIFF(DAY, customer.create_time, contract.order_date)), 1), 0)   AS customer_deal_cycle,
                COUNT(DISTINCT customer.id)                                                                  AS customer_deal_count
           FROM crm_customer AS customer
-                LEFT JOIN crm_contract AS contract ON customer.id = contract.customer_id
+                <include refid="firstApprovedContractJoin"/>
                 LEFT JOIN crm_contract_product AS contract_product ON contract_product.contract_id = contract.id
                 LEFT JOIN crm_product AS product ON contract_product.product_id = product.id
          WHERE customer.deleted = 0
-           AND contract.deleted = 0
            AND contract_product.deleted = 0
            AND product.deleted = 0
-           AND contract.audit_status = ${@com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
            AND customer.owner_user_id IN
                  <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                      #{userId}
