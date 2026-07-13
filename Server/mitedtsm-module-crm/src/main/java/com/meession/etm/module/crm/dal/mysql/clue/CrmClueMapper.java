@@ -8,6 +8,7 @@ import com.meession.etm.module.crm.dal.dataobject.clue.CrmClueDO;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.enums.common.CrmSceneTypeEnum;
 import com.meession.etm.module.crm.util.CrmPermissionUtils;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
@@ -17,6 +18,16 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface CrmClueMapper extends BaseMapperX<CrmClueDO> {
+
+    /**
+     * 仅当线索仍处于期望的转换状态时更新，用于并发转换的原子抢占。
+     */
+    default int updateTransformStatusByIdAndTransformStatus(Long id, Boolean oldStatus, Boolean newStatus) {
+        return update(new LambdaUpdateWrapper<CrmClueDO>()
+                .eq(CrmClueDO::getId, id)
+                .eq(CrmClueDO::getTransformStatus, oldStatus)
+                .set(CrmClueDO::getTransformStatus, newStatus));
+    }
 
     default PageResult<CrmClueDO> selectPage(CrmCluePageReqVO pageReqVO, Long userId) {
         MPJLambdaWrapperX<CrmClueDO> query = new MPJLambdaWrapperX<>();

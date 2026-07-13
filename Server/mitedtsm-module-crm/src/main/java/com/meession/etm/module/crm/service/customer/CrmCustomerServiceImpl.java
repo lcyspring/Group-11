@@ -93,7 +93,9 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
             success = CRM_CUSTOMER_CREATE_SUCCESS)
     public Long createCustomer(CrmCustomerSaveReqVO createReqVO, Long userId) {
         createReqVO.setId(null);
-        // 1. 校验拥有客户是否到达上限
+        // 1.1 校验客户名称唯一
+        validateCustomerNameUnique(null, createReqVO.getName());
+        // 1.2 校验拥有客户是否到达上限
         validateCustomerExceedOwnerLimit(createReqVO.getOwnerUserId(), 1);
 
         // 2. 插入客户
@@ -131,6 +133,7 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
         updateReqVO.setOwnerUserId(null);  // 更新的时候，要把 updateReqVO 负责人设置为空，避免修改
         // 1. 校验存在
         CrmCustomerDO oldCustomer = validateCustomerExists(updateReqVO.getId());
+        validateCustomerNameUnique(updateReqVO.getId(), updateReqVO.getName());
 
         // 2. 更新客户
         CrmCustomerDO updateObj = BeanUtils.toBean(updateReqVO, CrmCustomerDO.class);
@@ -277,15 +280,18 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
     @LogRecord(type = CRM_CUSTOMER_TYPE, subType = CRM_CUSTOMER_CREATE_SUB_TYPE, bizNo = "{{#customer.id}}",
             success = CRM_CUSTOMER_CREATE_SUCCESS)
     public Long createCustomer(CrmCustomerCreateReqBO createReqBO, Long userId) {
-        // 1. 插入客户
+        // 1. 校验客户名称唯一，避免线索转换产生重复客户
+        validateCustomerNameUnique(null, createReqBO.getName());
+
+        // 2. 插入客户
         CrmCustomerDO customer = initCustomer(createReqBO, userId);
         customerMapper.insert(customer);
 
-        // 2. 创建数据权限
+        // 3. 创建数据权限
         permissionService.createPermission(new CrmPermissionCreateReqBO().setBizType(CrmBizTypeEnum.CRM_CUSTOMER.getType())
                 .setBizId(customer.getId()).setUserId(userId).setLevel(CrmPermissionLevelEnum.OWNER.getLevel())); // 设置当前操作的人为负责人
 
-        // 3. 记录操作日志上下文
+        // 4. 记录操作日志上下文
         LogRecordContext.putVariable("customer", customer);
         return customer.getId();
     }
@@ -540,6 +546,19 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
         // 校验客户名称不能为空
         if (StrUtil.isEmptyIfStr(importCustomer.getName())) {
             throw exception(CUSTOMER_CREATE_NAME_NOT_NULL);
+        }
+    }
+
+    /**
+     * 校验客户名称唯一。客户导入支持显式覆盖，继续使用其独立分支处理。
+     *
+     * @param id   更新时的客户编号；创建时为 {@code null}
+     * @param name 客户名称
+     */
+    private void validateCustomerNameUnique(Long id, String name) {
+        CrmCustomerDO customer = customerMapper.selectByCustomerName(name);
+        if (customer != null && !ObjUtil.equal(customer.getId(), id)) {
+            throw exception(CUSTOMER_NAME_EXISTS, name);
         }
     }
 

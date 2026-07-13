@@ -184,14 +184,19 @@ public class CrmClueServiceImpl implements CrmClueService {
         // 1.1 校验线索都存在
         CrmClueDO clue = validateClueExists(id);
         // 1.2 存在已经转化的
-        if (clue.getTransformStatus()) {
+        if (Boolean.TRUE.equals(clue.getTransformStatus())) {
+            throw exception(CLUE_TRANSFORM_FAIL_ALREADY);
+        }
+
+        // 1.3 原子抢占转换权，避免两个并发请求各自创建客户
+        if (clueMapper.updateTransformStatusByIdAndTransformStatus(id, Boolean.FALSE, Boolean.TRUE) == 0) {
             throw exception(CLUE_TRANSFORM_FAIL_ALREADY);
         }
 
         // 2.1 遍历线索(未转化的线索)，创建对应的客户
         Long customerId = customerService.createCustomer(BeanUtils.toBean(clue, CrmCustomerCreateReqBO.class), userId);
-        // 2.2 更新线索
-        clueMapper.updateById(new CrmClueDO().setId(id).setTransformStatus(Boolean.TRUE).setCustomerId(customerId));
+        // 2.2 记录转换后的客户；转换状态已在上方原子更新
+        clueMapper.updateById(new CrmClueDO().setId(id).setCustomerId(customerId));
         // 2.3 复制跟进记录
         List<CrmFollowUpRecordDO> followUpRecords = followUpRecordService.getFollowUpRecordByBiz(
                 CrmBizTypeEnum.CRM_CLUE.getType(), singleton(clue.getId()));
