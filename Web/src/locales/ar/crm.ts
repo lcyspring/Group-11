@@ -110,6 +110,7 @@ export default {
     businessTab: 'الأعمال',
     contractTab: 'العقود',
     receivableTab: 'المستحقات',
+    workOrderTab: 'أوامر العمل',
     operateLogTab: 'سجل العمليات',
     ownerHistoryTab: 'سجل الملكية',
     ownerChangeType: 'نوع التغيير',
@@ -787,6 +788,13 @@ export default {
       dealCycleDay: 'دورة الصفقة (أيام)',
       areaName: 'المنطقة',
       productName: 'اسم المنتج'
+    },
+    workOrder: {
+      title: 'تحليلات أوامر العمل', total: 'الإجمالي', pending: 'قيد الانتظار', processing: 'قيد المعالجة',
+      completed: 'مكتمل', returned: 'مُعاد', completionRate: 'معدل الإكمال', created: 'تم الإنشاء',
+      trend: 'اتجاه الإنشاء والإكمال', byStatus: 'حسب الحالة', byType: 'حسب النوع', byHandler: 'حسب المعالج',
+      dimension: 'الفئة', count: 'العدد', handler: 'المعالج', issue: 'مشكلة', demand: 'طلب',
+      complaint: 'شكوى', consultation: 'استشارة'
     },
     // Funnel
     funnel: {

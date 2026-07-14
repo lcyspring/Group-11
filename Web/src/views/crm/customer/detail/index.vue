@@ -75,6 +75,9 @@
         <ReceivablePlanList :customer-id="customer.id!" @create-receivable="createReceivable" />
         <ReceivableList ref="receivableListRef" :customer-id="customer.id!" />
       </el-tab-pane>
+      <el-tab-pane :label="t('workOrderTab')" lazy>
+        <WorkOrderList :customer-id="customer.id!" />
+      </el-tab-pane>
       <el-tab-pane :label="t('operateLogTab')">
         <OperateLogV2 :log-list="logList" />
       </el-tab-pane>
@@ -108,6 +111,7 @@ import type { OperateLogVO } from '@/api/system/operatelog'
 import { getOperateLogPage } from '@/api/crm/operateLog'
 import CustomerDistributeForm from '@/views/crm/customer/pool/CustomerDistributeForm.vue'
 import CustomerOwnerRecordList from './CustomerOwnerRecordList.vue'
+import WorkOrderList from '@/views/crm/workorder/components/WorkOrderList.vue'
 
 defineOptions({ name: 'CrmCustomerDetail' })
 

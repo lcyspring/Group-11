@@ -1,0 +1,71 @@
+# 2026-07-14 本机观察环境验收
+
+## 文档边界
+
+- 我们新增的 CRM 交付文档统一位于 `docs/20-CRM-Delivery/`；
+- 不在项目原有的 `docs/develop/` 下新增或维护交付文档；
+- `docs/20-CRM-Delivery/` 作为独立交付目录纳入 `develop` 并随源码上传；
+- 本机含凭据的 `podman/config/runtime-local.yaml` 单独忽略。
+
+## 启动方式
+
+```bash
+cd podman
+bash ./up.sh ./config/runtime-local.yaml
+```
+
+运行配置由 YAML 显式提供，命令行参数只指定配置文件路径。运行环境使用
+rootless Podman，应用产物由 Ubuntu 26.04 构建容器生成。
+
+## 验收结果
+
+验收时间：2026-07-14（Asia/Shanghai）。
+
+| 检查项 | 地址或对象 | 结果 |
+| --- | --- | --- |
+| Server 健康检查 | `http://127.0.0.1:8080/actuator/health` | `200`，`status=UP` |
+| Web 管理端 | `http://127.0.0.1:8081/` | `200 OK` |
+| Mall 前端 | `http://127.0.0.1:8082/` | `200 OK` |
+| 管理端登录接口 | `/admin-api/system/auth/login` | `code=0`，成功签发令牌 |
+| 客服工单闭环 | `/admin-api/crm/work-order/*` | 创建、开始、完结、轨迹、通知和待办通过 |
+| 工单统计 | `/admin-api/crm/statistics-work-order/*` | 五个接口均 `code=0` |
+| 客户 360 工单记录 | `/admin-api/crm/work-order/page?customerId=17` | `code=0`，返回 2 条匹配工单 |
+| Pod | `mitedtsm-rootless` | 运行中 |
+| 基础设施 | MySQL、Redis、RabbitMQ、TDengine | 均运行中 |
+| 应用容器 | Server、Web、Mall | 均运行中 |
+
+管理端观察账号来自项目初始化 SQL 与认证接口示例，并已经实际登录验证：
+
+- 租户 ID：`1`
+- 用户名：`admin`
+- 密码：由本机显式配置或初始化数据提供，不写入可上传文档。
+
+## 本机代理注意事项
+
+本机代理环境会将普通 `curl` 的本地请求错误转发到代理端口。命令行复核本地
+服务时应显式使用 `curl --noproxy '*' ...`。浏览器直接打开上述回环地址不受本
+记录中的命令行代理问题影响。
+
+## 停止方式
+
+观察结束后执行：
+
+```bash
+cd podman
+bash ./down.sh ./config/runtime-local.yaml
+```
+
+当前环境暂不停止，保留给人工观察。
+
+## 本次增量
+
+- Web：已包含客服工单列表、表单、详情轨迹和待办入口；
+- 运行样例：`W-202607-0001` 已完结，`W-202607-0002` 处理中并保留在待办；
+- MySQL 通过 `mysql.timezone` 显式使用 Asia/Shanghai，更新时间不再回退 8 小时；
+- Pod 重建先停止 Server 再停止基础设施，顺序停机复验未触发强杀。
+- 已补执行合同来源字段幂等迁移，待审核回款与回款提醒恢复；
+- Web 已用 Ubuntu 26.04 重建并热替换，默认不再访问百度统计域名；
+- `up.sh` 后续会在 Server 启动前执行 YAML 指定的兼容迁移，避免持久卷结构再次漏更。
+- Web 最终产物已通过 Ubuntu 26.04 构建并使用 `rebuild-web` 热替换；
+- 热替换后 Server 健康为 `UP`，Web/Mall 均为 `200 OK`，工单统计和客户筛选接口无持续 502；
+- CRM 最终回归 161/161，通过率 100%，JaCoCo 行覆盖率 32.07%。

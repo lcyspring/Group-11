@@ -10,6 +10,8 @@
 target/
 
 build/
+!docs/20-CRM-Delivery/build/
+!docs/20-CRM-Delivery/build/**
 .gradle/
 dist/
 dist-*
@@ -49,7 +51,7 @@ docker-images/*.tar
 # Podman offline OCI image archives
 podman/images/*.tar
 
-# Local project-analysis and delivery documents (kept out of product commits)
+# Local source-analysis documents (kept out of product commits)
 docs/01-Existing-System-Analysis/
 docs/02-Prototype-Analysis/
 docs/03-Gap-Analysis/
@@ -67,7 +69,6 @@ docs/14-Frontend/
 docs/17-Templates/
 docs/18-Review/
 docs/Proj-Docs-v-6
-docs/20-CRM-Delivery/
 
 # Local stateful runtime configuration may contain deployment credentials.
 podman/config/runtime-local.yaml

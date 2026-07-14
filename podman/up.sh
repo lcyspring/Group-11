@@ -86,7 +86,7 @@ MYSQL_CHARACTER_SET="$(yaml_require mysql.character_set)"
 MYSQL_COLLATION="$(yaml_require mysql.collation)"
 MYSQL_AUTHENTICATION_PLUGIN="$(yaml_require mysql.authentication_plugin)"
 MYSQL_TIMEZONE="$(yaml_require mysql.timezone)"
-MYSQL_COMPATIBILITY_MIGRATION_FILE="$(yaml_path mysql.compatibility_migration_file)"
+MYSQL_COMPATIBILITY_MIGRATION_MANIFEST="$(yaml_path mysql.compatibility_migration_manifest)"
 RABBITMQ_USERNAME="$(yaml_require rabbitmq.username)"
 RABBITMQ_PASSWORD="$(yaml_require rabbitmq.password)"
 TDENGINE_HOST="$(yaml_require tdengine.host)"
@@ -278,6 +278,14 @@ start_frontends() {
         "$MALL_IMAGE"
 }
 
+start_server() {
+    printf 'Starting Server container.\n'
+    podman_cmd run -d --replace --name "$SERVER_CONTAINER" --pod "$POD_NAME" --pull=never \
+        "${PROXY_ENV[@]}" \
+        --env "SPRING_PROFILES_ACTIVE=${SPRING_PROFILE}" \
+        "$SERVER_IMAGE"
+}
+
 start_web_frontend() {
     printf 'Starting Web frontend container.\n'
     podman_cmd run -d --replace --name "$WEB_CONTAINER" --pod "$POD_NAME" --pull=never \
@@ -403,9 +411,9 @@ show_logs_on_error() {
 
 validate_configuration() {
     case "$START_MODE" in
-        full|check|fast|no-build|frontends-only|rebuild-web|rebuild-mall) ;;
+        full|check|fast|no-build|frontends-only|rebuild-server|rebuild-web|rebuild-mall) ;;
         *)
-            printf 'operation.startup_mode must be full, check, fast, no-build, frontends-only, rebuild-web, or rebuild-mall; got: %s\n' "$START_MODE" >&2
+            printf 'operation.startup_mode must be full, check, fast, no-build, frontends-only, rebuild-server, rebuild-web, or rebuild-mall; got: %s\n' "$START_MODE" >&2
             exit 2
             ;;
     esac
@@ -504,13 +512,28 @@ require_mall_assets() {
     verify_web_entry_assets "${PROJECT_ROOT}/MallFrontend/unpackage/dist/build/web"
 }
 
-apply_mysql_compatibility_migration() {
-    require_file "$MYSQL_COMPATIBILITY_MIGRATION_FILE"
-    printf 'Applying idempotent MySQL compatibility migration: %s\n' \\
-        "$(basename -- "$MYSQL_COMPATIBILITY_MIGRATION_FILE")"
-    podman_cmd exec -i "$MYSQL_CONTAINER" \\
-        mysql "-u${MYSQL_USER}" "-p${MYSQL_ROOT_PASSWORD}" "--database=${MYSQL_DATABASE}" \\
-        < "$MYSQL_COMPATIBILITY_MIGRATION_FILE"
+require_server_assets() {
+    require_file "${SCRIPT_DIR}/Containerfile"
+    require_file "${PROJECT_ROOT}/Server/mitedtsm-server/target/mitedtsm-server.jar"
+}
+
+apply_mysql_compatibility_migrations() {
+    require_file "$MYSQL_COMPATIBILITY_MIGRATION_MANIFEST"
+    local manifest_dir migration_path migration_file
+    manifest_dir="$(cd -- "$(dirname -- "$MYSQL_COMPATIBILITY_MIGRATION_MANIFEST")" && pwd)"
+    while IFS= read -r migration_path || [[ -n "$migration_path" ]]; do
+        [[ -n "$migration_path" && "$migration_path" != \#* ]] || continue
+        if [[ "$migration_path" == /* ]]; then
+            migration_file="$migration_path"
+        else
+            migration_file="${manifest_dir}/${migration_path}"
+        fi
+        require_file "$migration_file"
+        printf 'Applying idempotent MySQL compatibility migration: %s\n' "$(basename -- "$migration_file")"
+        podman_cmd exec -i "$MYSQL_CONTAINER" \
+            mysql "-u${MYSQL_USER}" "-p${MYSQL_ROOT_PASSWORD}" "--database=${MYSQL_DATABASE}" \
+            < "$migration_file"
+    done < "$MYSQL_COMPATIBILITY_MIGRATION_MANIFEST"
 }
 
 verify_web_entry_assets() {
@@ -600,6 +623,34 @@ build_mall_image() {
     podman_cmd build --pull=never "${build_args[@]}" --target mall --tag "$MALL_IMAGE" --file "${SCRIPT_DIR}/Containerfile" "$PROJECT_ROOT"
 }
 
+build_server_image() {
+    local -a build_args=(
+        --build-arg "MYSQL_BASE_IMAGE=${MYSQL_BASE_IMAGE}"
+        --build-arg "RUNTIME_BASE_IMAGE=${RUNTIME_BASE_IMAGE}"
+        --build-arg "NGINX_BASE_IMAGE=${NGINX_BASE_IMAGE}"
+    )
+    printf 'Packaging current Server artifact without rebuilding frontends.\n'
+    podman_cmd build --pull=never "${build_args[@]}" --target server --tag "$SERVER_IMAGE" --file "${SCRIPT_DIR}/Containerfile" "$PROJECT_ROOT"
+}
+
+rebuild_server_only() {
+    podman_cmd pod inspect "$POD_NAME" >/dev/null 2>&1 || {
+        printf 'Pod does not exist: %s. Use startup_mode=full first.\n' "$POD_NAME" >&2
+        return 1
+    }
+    [[ "$(podman_cmd pod inspect --format '{{.State}}' "$POD_NAME")" == "Running" ]] || {
+        printf 'Pod is not running: %s. Use startup_mode=fast or full.\n' "$POD_NAME" >&2
+        return 1
+    }
+    ensure_image "$RUNTIME_BASE_IMAGE" "$(image_archive_path "$RUNTIME_ARCHIVE")"
+    build_server_image
+    if container_is_running "$SERVER_CONTAINER"; then
+        podman_cmd stop --time "$STOP_TIMEOUT" "$SERVER_CONTAINER"
+    fi
+    start_server
+    wait_for 'Spring Boot server' "$SERVER_ATTEMPTS" host_curl --fail --silent --show-error "http://${HEALTH_HTTP_HOST}:${SERVER_PORT}${SERVER_HEALTH_PATH}"
+}
+
 rebuild_web_only() {
     podman_cmd pod inspect "$POD_NAME" >/dev/null 2>&1 || {
         printf 'Pod does not exist: %s. Use startup_mode=full first.\n' "$POD_NAME" >&2
@@ -641,6 +692,8 @@ if [[ "$START_MODE" == "full" || "$START_MODE" == "check" ]]; then
     check_archive_mode_prerequisites
 elif [[ "$START_MODE" == "no-build" ]]; then
     require_runtime_images
+elif [[ "$START_MODE" == "rebuild-server" ]]; then
+    require_server_assets
 elif [[ "$START_MODE" == "rebuild-web" ]]; then
     require_web_assets
 elif [[ "$START_MODE" == "rebuild-mall" ]]; then
@@ -680,6 +733,12 @@ if [[ "$START_MODE" == "frontends-only" ]]; then
 
     start_frontends
     wait_for_frontends
+    show_access_urls
+    exit 0
+fi
+
+if [[ "$START_MODE" == "rebuild-server" ]]; then
+    rebuild_server_only
     show_access_urls
     exit 0
 fi
@@ -783,24 +842,15 @@ tdengine_init_pid=$!
 
 wait "$mysql_ready_pid"
 wait "$mysql_schema_ready_pid"
-apply_mysql_compatibility_migration
+apply_mysql_compatibility_migrations
 wait "$redis_ready_pid"
 wait "$rabbitmq_ready_pid"
 wait "$tdengine_init_pid"
 
 printf 'Starting server and frontends.\n'
-podman_cmd run -d --replace --name "$SERVER_CONTAINER" --pod "$POD_NAME" --pull=never \
-    "${PROXY_ENV[@]}" \
-    --env "SPRING_PROFILES_ACTIVE=${SPRING_PROFILE}" \
-    "$SERVER_IMAGE"
+start_server
+# Do not expose a ready-looking Web UI while its API upstream is still booting.
+wait_for 'Spring Boot server' "$SERVER_ATTEMPTS" host_curl --fail --silent --show-error "http://${HEALTH_HTTP_HOST}:${SERVER_PORT}${SERVER_HEALTH_PATH}"
 start_frontends
-
-# Nginx can serve its static files before the backend finishes its Spring Boot
-# initialization. Probe both paths concurrently to shorten the critical path.
-wait_for 'Spring Boot server' "$SERVER_ATTEMPTS" host_curl --fail --silent --show-error "http://${HEALTH_HTTP_HOST}:${SERVER_PORT}${SERVER_HEALTH_PATH}" &
-server_ready_pid=$!
-wait_for_frontends &
-frontends_ready_pid=$!
-wait "$server_ready_pid"
-wait "$frontends_ready_pid"
+wait_for_frontends
 show_access_urls

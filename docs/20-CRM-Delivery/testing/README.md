@@ -1,0 +1,57 @@
+# CRM 测试目录
+
+每个功能或核心缺陷使用独立目录，固定包含测试计划、执行结果和覆盖率记录。
+
+## 当前基线
+
+更新日期：2026-07-14
+
+- Ubuntu 26.04 容器 CRM 自动化：161/161，失败 0、错误 0、跳过 0。
+- JaCoCo clean 基线：指令 34.04%、分支 33.10%、行 32.07%、方法 22.39%。
+- Ubuntu 26.04 容器 CRM 前端纯函数：7/7。
+- 原始报告：`Server/mitedtsm-module-crm/target/site/jacoco/`，属于构建产物，不提交。
+
+## 目录索引
+
+| 范围 | 类型 |
+|---|---|
+| `customer-duplicate-check/` | 客户名称查重功能与缺陷 |
+| `contact-primary/` | 首联系人生命周期 |
+| `contact-mobile-unique/` | 联系人手机号唯一性 |
+| `customer-contact-filter/` | 客户联系人筛选 |
+| `clue-primary-contact/` | 线索转换创建首联系人 |
+| `clue-readonly/` | 已转换线索只读 |
+| `customer-hierarchy/` | 客户上下级关系 |
+| `customer-owner-history/` | 客户归属历史 |
+| `customer-pool-concurrency/` | 公海并发领取 |
+| `customer-name-validation/` | 客户名称长度边界 |
+| `receivable-submit-amount-guard/` | 回款提交金额保护 |
+| `follow-up-statistics-correctness/` | 跟进字段映射与逻辑删除统计 |
+| `follow-up-statistics-interval-dedup/` | 跟进客户跨周期去重 |
+| `sales-funnel-metric-contract/` | 漏斗转化指标契约 |
+| `customer-deal-status-statistics/` | 客户成交状态分布 |
+| `business-loss-closure/` | 商机输单/无效原因与并发保护 |
+| `sales-forecast/` | 活跃商机销售预测汇总与明细 |
+| `customer-financial-metric-contract/` | 客户成交与回款指标契约 |
+| `customer-deal-top10/` | 客户成交金额 TOP10 排名与钻取 |
+| `customer-region-distribution/` | 客户城市、省份、国家分布与层级聚合 |
+| `business-stage-funnel/` | 商机状态组、累计阶段漏斗及相邻转化率 |
+| `business-stage-funnel-drilldown/` | 阶段漏斗授权分页钻取及统计明细一致性 |
+| `performance-target-foundation/` | 三层五类业绩目标数据源、维护约束和 MySQL 迁移 |
+| `performance-target-completion/` | 五类目标、实际值、完成率统一契约及前端展示 |
+| `performance-target-management/` | 三层五类目标维护、输入校验及前端精确汇总 |
+| `business-stage-forward-guard/` | 商机阶段前向约束、推进说明和操作日志审计 |
+| `business-to-contract-conversion/` | 赢单商机授权、继承、幂等转换合同和 MySQL 唯一键 |
+| `contract-approval-revision-resubmit/` | 合同审批状态映射、修订重提、对象权限及回调幂等 |
+| `receivable-approval-revision-resubmit/` | 回款修订重提、金额边界、权限、回调幂等及生效汇总 |
+| `receivable-plan-effective-status/` | 计划金额守恒、审批生效状态、逾期待办及展示一致性 |
+| `crm-work-order-minimum-closure/` | 客服工单状态机、权限、轨迹、通知、待办和运行闭环 |
+| `crm-work-order-statistics/` | 工单汇总、状态、类型、处理人和创建/完结趋势统计 |
+| `customer-360-work-orders/` | 客户 360 工单分页、详情入口和对象范围复用 |
+
+运行入口统一为：
+
+```bash
+cd podman
+bash ./build-in-ubuntu.sh ./config/test-crm-ubuntu-26.04.yaml
+```

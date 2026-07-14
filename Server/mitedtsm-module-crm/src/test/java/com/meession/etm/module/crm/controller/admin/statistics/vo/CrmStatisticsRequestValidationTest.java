@@ -7,6 +7,7 @@ import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStat
 import com.meession.etm.module.crm.controller.admin.statistics.vo.performance.CrmStatisticsPerformanceReqVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticsPortraitReqVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.rank.CrmStatisticsRankReqVO;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.workorder.CrmStatisticsWorkOrderReqVO;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.junit.jupiter.api.Test;
@@ -65,6 +66,13 @@ class CrmStatisticsRequestValidationTest {
                 .setDeptId(1L).setTimes(oneTime)).size());
         assertEquals(1, validator.validate(new CrmStatisticsRankReqVO()
                 .setDeptId(1L).setTimes(oneTime)).size());
+    }
+
+    @Test
+    void workOrderStatisticsRequiresIntervalAndExactlyTwoTimes() {
+        assertEquals(2, validator.validate(new CrmStatisticsWorkOrderReqVO()).size());
+        assertEquals(1, validator.validate(new CrmStatisticsWorkOrderReqVO().setInterval(1)
+                .setTimes(new LocalDateTime[]{LocalDateTime.of(2026, 7, 1, 0, 0)})).size());
     }
 
 }

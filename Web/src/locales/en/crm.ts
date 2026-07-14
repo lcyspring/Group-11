@@ -112,6 +112,7 @@ export default {
     businessTab: 'Business',
     contractTab: 'Contracts',
     receivableTab: 'Receivables',
+    workOrderTab: 'Work Orders',
     operateLogTab: 'Operation Log',
     ownerHistoryTab: 'Ownership History',
     ownerChangeType: 'Change Type',
@@ -765,6 +766,13 @@ export default {
       dealCycleDay: 'Deal Cycle(days)',
       areaName: 'Area',
       productName: 'Product Name'
+    },
+    workOrder: {
+      title: 'Work Order Analytics', total: 'Total', pending: 'Pending', processing: 'Processing',
+      completed: 'Completed', returned: 'Returned', completionRate: 'Completion Rate', created: 'Created',
+      trend: 'Created and Completed Trend', byStatus: 'By Status', byType: 'By Type', byHandler: 'By Handler',
+      dimension: 'Category', count: 'Count', handler: 'Handler', issue: 'Issue', demand: 'Request',
+      complaint: 'Complaint', consultation: 'Consultation'
     },
     // Funnel
     funnel: {

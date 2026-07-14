@@ -108,6 +108,12 @@ if [ -d "$SQL_NEW_DIR" ]; then
         echo "Executing: new-crm-work-order.sql"
         mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < "${SQL_NEW_DIR}/new-crm-work-order.sql"
     fi
+
+    # 4.13 执行 CRM 客服工单统计菜单与权限
+    if [ -f "${SQL_NEW_DIR}/new-crm-work-order-statistics.sql" ]; then
+        echo "Executing: new-crm-work-order-statistics.sql"
+        mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < "${SQL_NEW_DIR}/new-crm-work-order-statistics.sql"
+    fi
 fi
 
 echo "MySQL initialization completed successfully!"

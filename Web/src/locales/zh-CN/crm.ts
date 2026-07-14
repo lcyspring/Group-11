@@ -110,6 +110,7 @@ export default {
     businessTab: '商机',
     contractTab: '合同',
     receivableTab: '回款',
+    workOrderTab: '工单记录',
     operateLogTab: '操作日志',
     ownerHistoryTab: '归属记录',
     ownerChangeType: '变更类型',
@@ -761,6 +762,13 @@ export default {
       dealCycleDay: '成交周期(天)',
       areaName: '地区',
       productName: '产品名称'
+    },
+    workOrder: {
+      title: '工单统计', total: '工单总数', pending: '待处理', processing: '处理中',
+      completed: '已完结', returned: '已退回', completionRate: '完结率', created: '创建数',
+      trend: '创建与完结趋势', byStatus: '按状态', byType: '按类型', byHandler: '按处理人',
+      dimension: '分类', count: '数量', handler: '处理人', issue: '问题', demand: '需求',
+      complaint: '投诉', consultation: '咨询'
     },
     // 销售漏斗
     funnel: {
