@@ -1,13 +1,19 @@
 package com.meession.etm.module.crm.controller.admin.statistics;
 
+import cn.hutool.extra.spring.SpringUtil;
 import com.meession.etm.framework.common.pojo.CommonResult;
+import com.meession.etm.framework.common.pojo.PageResult;
+import com.meession.etm.module.crm.controller.admin.customer.CrmCustomerController;
+import com.meession.etm.module.crm.controller.admin.customer.vo.customer.CrmCustomerRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticsPortraitReqVO;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticsPortraitCustomerPageReqVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticCustomerAreaRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticCustomerDealStatusRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticCustomerIndustryRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticCustomerLevelRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticCustomerSourceRespVO;
 import com.meession.etm.module.crm.service.statistics.CrmStatisticsPortraitService;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -52,6 +58,18 @@ public class CrmStatisticsPortraitController {
     public CommonResult<List<CrmStatisticCustomerAreaRespVO>> getCustomerCountrySummary(
             @Valid CrmStatisticsPortraitReqVO reqVO) {
         return success(statisticsPortraitService.getCustomerSummaryByCountry(reqVO));
+    }
+
+    @GetMapping("/get-customer-page-by-area")
+    @Operation(summary = "获取区域客户明细分页", description = "按统计时间、负责人范围和区域下级节点钻取")
+    @PreAuthorize("@ss.hasPermission('crm:statistics-portrait:query') " +
+            "and @ss.hasPermission('crm:customer:query')")
+    public CommonResult<PageResult<CrmCustomerRespVO>> getCustomerPageByArea(
+            @Valid CrmStatisticsPortraitCustomerPageReqVO reqVO) {
+        PageResult<CrmCustomerDO> pageResult = statisticsPortraitService.getCustomerPageByArea(reqVO);
+        List<CrmCustomerRespVO> list = SpringUtil.getBean(CrmCustomerController.class)
+                .buildCustomerDetailList(pageResult.getList());
+        return success(new PageResult<>(list, pageResult.getTotal()));
     }
 
     @GetMapping("/get-customer-industry-summary")

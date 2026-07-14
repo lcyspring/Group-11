@@ -8,12 +8,19 @@
   <el-card class="mt-16px" shadow="never">
     <el-table v-loading="loading" :data="list" :table-layout="'auto'">
       <el-table-column align="center" :label="t('portrait.index')" type="index" width="80" />
-      <el-table-column
-        align="center"
-        :label="t(`portrait.${regionType}Name`)"
-        min-width="200"
-        prop="areaName"
-      />
+      <el-table-column align="center" :label="t(`portrait.${regionType}Name`)" min-width="200">
+        <template #default="scope">
+          <el-link
+            v-if="scope.row.areaId !== null"
+            :underline="false"
+            type="primary"
+            @click="openRegion(scope.row.areaId, scope.row.areaName)"
+          >
+            {{ scope.row.areaName }}
+          </el-link>
+          <span v-else>{{ scope.row.areaName }}</span>
+        </template>
+      </el-table-column>
       <el-table-column
         align="center"
         :label="t('portrait.customerCount')"
@@ -40,6 +47,7 @@
       />
     </el-table>
   </el-card>
+  <PortraitCustomerRegionDetail ref="detailRef" :query-params="queryParams" />
 </template>
 
 <script lang="ts" setup>
@@ -49,6 +57,7 @@ import {
 } from '@/api/crm/statistics/portrait'
 import { EChartsOption } from 'echarts'
 import { erpCalculatePercentage, getSumValue } from '@/utils'
+import PortraitCustomerRegionDetail from './PortraitCustomerRegionDetail.vue'
 
 defineOptions({ name: 'PortraitCustomerRegion' })
 
@@ -59,6 +68,11 @@ const props = defineProps<{
 }>()
 const loading = ref(false)
 const list = ref<CrmStatisticCustomerAreaRespVO[]>([])
+const detailRef = ref<InstanceType<typeof PortraitCustomerRegionDetail>>()
+
+const openRegion = (areaId: number, areaName: string) => {
+  detailRef.value?.open(areaId, areaName, props.regionType === 'city' ? 3 : 1)
+}
 
 const echartsOption = reactive<EChartsOption>({
   grid: { left: 30, right: 40, bottom: 20, containLabel: true },

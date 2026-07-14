@@ -1,6 +1,8 @@
 package com.meession.etm.module.crm.service.statistics;
 
+import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.*;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 
 import java.util.List;
 
@@ -28,6 +30,11 @@ public interface CrmStatisticsPortraitService {
      * 获取客户国家统计数据。
      */
     List<CrmStatisticCustomerAreaRespVO> getCustomerSummaryByCountry(CrmStatisticsPortraitReqVO reqVO);
+
+    /**
+     * 获取指定城市、省份或国家下的客户明细分页。
+     */
+    PageResult<CrmCustomerDO> getCustomerPageByArea(CrmStatisticsPortraitCustomerPageReqVO reqVO);
 
     /**
      * 获取客户行业统计数据

@@ -1,9 +1,11 @@
 package com.meession.etm.module.crm.controller.admin.statistics.vo.portrait;
 
+import com.meession.etm.framework.common.pojo.PageParam;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
@@ -13,7 +15,8 @@ import static com.meession.etm.framework.common.util.date.DateUtils.FORMAT_YEAR_
 
 @Schema(description = "管理后台 - CRM 客户画像 Request VO")
 @Data
-public class CrmStatisticsPortraitReqVO {
+@EqualsAndHashCode(callSuper = true)
+public class CrmStatisticsPortraitReqVO extends PageParam {
 
     @Schema(description = "部门 id", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
     @NotNull(message = "部门 id 不能为空")

@@ -15,6 +15,38 @@
       </el-col>
     </el-row>
   </el-card>
+
+  <el-card class="mt-16px" shadow="never">
+    <el-table v-loading="loading" :data="areaStatisticsList" :table-layout="'auto'">
+      <el-table-column align="center" :label="t('portrait.index')" type="index" width="80" />
+      <el-table-column align="center" :label="t('portrait.provinceName')" min-width="200">
+        <template #default="scope">
+          <el-link
+            v-if="scope.row.areaId !== null"
+            :underline="false"
+            type="primary"
+            @click="detailRef?.open(scope.row.areaId, scope.row.areaName, 2)"
+          >
+            {{ scope.row.areaName }}
+          </el-link>
+          <span v-else>{{ scope.row.areaName }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column
+        align="center"
+        :label="t('portrait.customerCount')"
+        min-width="180"
+        prop="customerCount"
+      />
+      <el-table-column
+        align="center"
+        :label="t('portrait.dealCustomerCount')"
+        min-width="180"
+        prop="dealCount"
+      />
+    </el-table>
+  </el-card>
+  <PortraitCustomerRegionDetail ref="detailRef" :query-params="queryParams" />
 </template>
 <script lang="ts" setup>
 import { EChartsOption } from 'echarts'
@@ -25,6 +57,7 @@ import {
   StatisticsPortraitApi
 } from '@/api/crm/statistics/portrait'
 import { areaReplace } from '@/utils'
+import PortraitCustomerRegionDetail from './PortraitCustomerRegionDetail.vue'
 
 defineOptions({ name: 'PortraitCustomerArea' })
 
@@ -37,6 +70,7 @@ echarts?.registerMap('china', china as any)
 
 const loading = ref(false) // 加载中
 const areaStatisticsList = ref<CrmStatisticCustomerAreaRespVO[]>([]) // 列表的数据
+const detailRef = ref<InstanceType<typeof PortraitCustomerRegionDetail>>()
 
 /** 地图配置（全部客户） */
 const echartsOption = reactive<EChartsOption>({

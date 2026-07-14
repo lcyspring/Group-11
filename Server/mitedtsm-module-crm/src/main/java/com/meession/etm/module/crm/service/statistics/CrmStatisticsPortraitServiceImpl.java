@@ -3,10 +3,12 @@ package com.meession.etm.module.crm.service.statistics;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.util.ObjUtil;
+import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.framework.ip.core.Area;
 import com.meession.etm.framework.ip.core.enums.AreaTypeEnum;
 import com.meession.etm.framework.ip.core.utils.AreaUtils;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.*;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.mysql.statistics.CrmStatisticsPortraitMapper;
 import com.meession.etm.module.system.api.dept.DeptApi;
 import com.meession.etm.module.system.api.dept.dto.DeptRespDTO;
@@ -15,8 +17,12 @@ import com.meession.etm.module.system.api.user.dto.AdminUserRespDTO;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +58,39 @@ public class CrmStatisticsPortraitServiceImpl implements CrmStatisticsPortraitSe
     @Override
     public List<CrmStatisticCustomerAreaRespVO> getCustomerSummaryByCountry(CrmStatisticsPortraitReqVO reqVO) {
         return getCustomerSummaryByAreaType(reqVO, AreaTypeEnum.COUNTRY);
+    }
+
+    @Override
+    public PageResult<CrmCustomerDO> getCustomerPageByArea(CrmStatisticsPortraitCustomerPageReqVO reqVO) {
+        List<Long> userIds = getUserIds(reqVO);
+        if (CollUtil.isEmpty(userIds)) {
+            return PageResult.empty();
+        }
+        reqVO.setUserIds(userIds);
+
+        AreaTypeEnum areaType = Arrays.stream(AreaTypeEnum.values())
+                .filter(item -> item.getType().equals(reqVO.getAreaType()))
+                .findFirst().orElse(null);
+        Area selectedArea = AreaUtils.getArea(reqVO.getAreaId());
+        if (areaType == null || selectedArea == null || !areaType.getType().equals(selectedArea.getType())) {
+            return PageResult.empty();
+        }
+        reqVO.setAreaIds(collectAreaIds(selectedArea));
+        return portraitMapper.selectCustomerPageByArea(reqVO);
+    }
+
+    private static List<Integer> collectAreaIds(Area selectedArea) {
+        List<Integer> areaIds = new ArrayList<>();
+        Deque<Area> pending = new ArrayDeque<>();
+        pending.add(selectedArea);
+        while (!pending.isEmpty()) {
+            Area area = pending.removeFirst();
+            areaIds.add(area.getId());
+            if (CollUtil.isNotEmpty(area.getChildren())) {
+                pending.addAll(area.getChildren());
+            }
+        }
+        return areaIds;
     }
 
     private List<CrmStatisticCustomerAreaRespVO> getCustomerSummaryByAreaType(

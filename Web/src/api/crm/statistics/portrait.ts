@@ -1,5 +1,15 @@
 import request from '@/config/axios'
 
+export interface CrmStatisticsPortraitCustomerPageReqVO {
+  deptId: number
+  userId?: number
+  times: string[]
+  areaType: 1 | 2 | 3
+  areaId: number
+  pageNo: number
+  pageSize: number
+}
+
 export interface CrmStatisticCustomerBaseRespVO {
   customerCount: number
   dealCount: number
@@ -22,7 +32,7 @@ export interface CrmStatisticCustomerLevelRespVO extends CrmStatisticCustomerBas
 }
 
 export interface CrmStatisticCustomerAreaRespVO extends CrmStatisticCustomerBaseRespVO {
-  areaId: number
+  areaId: number | null
   areaName: string
   areaPortion: string | number
 }
@@ -77,7 +87,14 @@ export const StatisticsPortraitApi = {
       params
     })
   },
-  // 7. 获取客户成交状态分布
+  // 7. 获取区域客户明细分页
+  getCustomerPageByArea: (params: CrmStatisticsPortraitCustomerPageReqVO) => {
+    return request.get({
+      url: '/crm/statistics-portrait/get-customer-page-by-area',
+      params
+    })
+  },
+  // 8. 获取客户成交状态分布
   getCustomerDealStatus: (params: any) => {
     return request.get({
       url: '/crm/statistics-portrait/get-customer-deal-status-summary',

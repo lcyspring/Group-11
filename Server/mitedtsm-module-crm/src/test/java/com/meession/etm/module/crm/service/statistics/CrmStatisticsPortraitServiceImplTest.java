@@ -1,8 +1,11 @@
 package com.meession.etm.module.crm.service.statistics;
 
+import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticCustomerAreaRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticCustomerDealStatusRespVO;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticsPortraitCustomerPageReqVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticsPortraitReqVO;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.mysql.statistics.CrmStatisticsPortraitMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -12,8 +15,43 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CrmStatisticsPortraitServiceImplTest {
+
+    @Test
+    void getCustomerPageByAreaExpandsDescendantsAndPreservesStatisticsScope() {
+        CrmCustomerDO customer = CrmCustomerDO.builder().id(10L).name("北京客户").areaId(110101).build();
+        PageResult<CrmCustomerDO> expected = new PageResult<>(List.of(customer), 1L);
+        CrmStatisticsPortraitServiceImpl service = new CrmStatisticsPortraitServiceImpl();
+        ReflectionTestUtils.setField(service, "portraitMapper", proxy(CrmStatisticsPortraitMapper.class,
+                (proxy, method, args) -> {
+                    if (method.getName().equals("selectCustomerPageByArea")) {
+                        CrmStatisticsPortraitCustomerPageReqVO reqVO =
+                                (CrmStatisticsPortraitCustomerPageReqVO) args[0];
+                        assertEquals(List.of(99L), reqVO.getUserIds());
+                        assertTrue(reqVO.getAreaIds().containsAll(List.of(110100, 110101, 110102)));
+                        assertTrue(!reqVO.getAreaIds().contains(310100));
+                        return expected;
+                    }
+                    throw new AssertionError("未预期的画像 Mapper 方法: " + method.getName());
+                }));
+
+        assertEquals(expected, service.getCustomerPageByArea(areaPageRequest(3, 110100)));
+    }
+
+    @Test
+    void getCustomerPageByAreaRejectsMismatchedAreaLevel() {
+        CrmStatisticsPortraitServiceImpl service = new CrmStatisticsPortraitServiceImpl();
+        ReflectionTestUtils.setField(service, "portraitMapper", proxy(CrmStatisticsPortraitMapper.class,
+                (proxy, method, args) -> {
+                    throw new AssertionError("层级不匹配时不应查询 Mapper: " + method.getName());
+                }));
+
+        PageResult<CrmCustomerDO> result = service.getCustomerPageByArea(areaPageRequest(2, 110100));
+        assertEquals(0L, result.getTotal());
+        assertTrue(result.getList().isEmpty());
+    }
 
     @Test
     void areaSummariesAggregateRawDistrictsAtRequestedLevel() {
@@ -81,6 +119,18 @@ class CrmStatisticsPortraitServiceImplTest {
     private static CrmStatisticsPortraitReqVO request() {
         return new CrmStatisticsPortraitReqVO().setDeptId(1L).setUserId(99L)
                 .setTimes(new LocalDateTime[]{LocalDateTime.now().minusDays(7), LocalDateTime.now()});
+    }
+
+    private static CrmStatisticsPortraitCustomerPageReqVO areaPageRequest(Integer areaType, Integer areaId) {
+        CrmStatisticsPortraitCustomerPageReqVO reqVO = new CrmStatisticsPortraitCustomerPageReqVO();
+        reqVO.setDeptId(1L);
+        reqVO.setUserId(99L);
+        reqVO.setTimes(new LocalDateTime[]{LocalDateTime.now().minusDays(7), LocalDateTime.now()});
+        reqVO.setAreaType(areaType);
+        reqVO.setAreaId(areaId);
+        reqVO.setPageNo(1);
+        reqVO.setPageSize(10);
+        return reqVO;
     }
 
     private static <T> T proxy(Class<T> type, java.lang.reflect.InvocationHandler handler) {
