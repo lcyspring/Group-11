@@ -1,0 +1,1 @@
+ALTER TABLE `crm_business` ADD COLUMN `contact_id` bigint NULL DEFAULT NULL COMMENT '联系人编号' AFTER `customer_id`;

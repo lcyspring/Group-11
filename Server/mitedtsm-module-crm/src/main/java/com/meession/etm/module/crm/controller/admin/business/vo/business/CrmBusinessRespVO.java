@@ -30,6 +30,12 @@ public class CrmBusinessRespVO {
     @ExcelProperty("客户名称")
     private String customerName;
 
+    @Schema(description = "联系人编号", example = "110")
+    private Long contactId;
+    @Schema(description = "联系人名称", example = "张三")
+    @ExcelProperty("联系人名称")
+    private String contactName;
+
     @Schema(description = "跟进状态", requiredMode = Schema.RequiredMode.REQUIRED, example ="true")
     @ExcelProperty("跟进状态")
     private Boolean followUpStatus;
@@ -64,10 +70,11 @@ public class CrmBusinessRespVO {
     @ExcelProperty("商机状态")
     private String statusName;
 
-    @Schema
+    @Schema(description = "结束状态", example = "1")
     @ExcelProperty("结束状态")
     private Integer endStatus;
 
+    @Schema(description = "结束时的备注")
     @ExcelProperty("结束时的备注")
     private String endRemark;
 

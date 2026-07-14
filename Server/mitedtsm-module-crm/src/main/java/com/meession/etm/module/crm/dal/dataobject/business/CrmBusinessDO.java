@@ -41,6 +41,12 @@ public class CrmBusinessDO extends BaseDO {
      * 关联 {@link CrmCustomerDO#getId()}
      */
     private Long customerId;
+    /**
+     * 联系人编号
+     *
+     * 关联 CrmContactDO 的 id 字段
+     */
+    private Long contactId;
 
     /**
      * 跟进状态

@@ -13,9 +13,11 @@ import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessDO;
 import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessProductDO;
 import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessStatusDO;
 import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessStatusTypeDO;
+import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.product.CrmProductDO;
 import com.meession.etm.module.crm.service.business.CrmBusinessService;
+import com.meession.etm.module.crm.service.contact.CrmContactService;
 import com.meession.etm.module.crm.service.business.CrmBusinessStatusService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
 import com.meession.etm.module.crm.service.product.CrmProductService;
@@ -63,6 +65,8 @@ public class CrmBusinessController {
     private CrmBusinessStatusService businessStatusService;
     @Resource
     private CrmProductService productService;
+    @Resource
+    private CrmContactService contactService;
 
     @Resource
     private AdminUserApi adminUserApi;
@@ -184,11 +188,14 @@ public class CrmBusinessController {
         // 1.1 获取客户列表
         Map<Long, CrmCustomerDO> customerMap = customerService.getCustomerMap(
                 convertSet(list, CrmBusinessDO::getCustomerId));
-        // 1.2 获取创建人、负责人列表
+        // 1.2 获取联系人列表
+        Map<Long, CrmContactDO> contactMap = contactService.getContactMap(
+                convertSet(list, CrmBusinessDO::getContactId));
+        // 1.3 获取创建人、负责人列表
         Map<Long, AdminUserRespDTO> userMap = adminUserApi.getUserMap(convertListByFlatMap(list,
                 contact -> Stream.of(NumberUtils.parseLong(contact.getCreator()), contact.getOwnerUserId())));
         Map<Long, DeptRespDTO> deptMap = deptApi.getDeptMap(convertSet(userMap.values(), AdminUserRespDTO::getDeptId));
-        // 1.3 获得商机状态组
+        // 1.4 获得商机状态组
         Map<Long, CrmBusinessStatusTypeDO> statusTypeMap = businessStatusTypeService.getBusinessStatusTypeMap(
                 convertSet(list, CrmBusinessDO::getStatusTypeId));
         Map<Long, CrmBusinessStatusDO> statusMap = businessStatusService.getBusinessStatusMap(
@@ -197,14 +204,16 @@ public class CrmBusinessController {
         return BeanUtils.toBean(list, CrmBusinessRespVO.class, businessVO -> {
             // 2.1 设置客户名称
             MapUtils.findAndThen(customerMap, businessVO.getCustomerId(), customer -> businessVO.setCustomerName(customer.getName()));
-            // 2.2 设置创建人、负责人名称
+            // 2.2 设置联系人名称
+            MapUtils.findAndThen(contactMap, businessVO.getContactId(), contact -> businessVO.setContactName(contact.getName()));
+            // 2.3 设置创建人、负责人名称
             MapUtils.findAndThen(userMap, NumberUtils.parseLong(businessVO.getCreator()),
                     user -> businessVO.setCreatorName(user.getNickname()));
             MapUtils.findAndThen(userMap, businessVO.getOwnerUserId(), user -> {
                 businessVO.setOwnerUserName(user.getNickname());
                 MapUtils.findAndThen(deptMap, user.getDeptId(), dept -> businessVO.setOwnerUserDeptName(dept.getName()));
             });
-            // 2.3 设置商机状态
+            // 2.4 设置商机状态
             MapUtils.findAndThen(statusTypeMap, businessVO.getStatusTypeId(), statusType -> businessVO.setStatusTypeName(statusType.getName()));
             MapUtils.findAndThen(statusMap, businessVO.getStatusId(), status -> businessVO.setStatusName(
                     businessService.getBusinessStatusName(businessVO.getEndStatus(), status)));

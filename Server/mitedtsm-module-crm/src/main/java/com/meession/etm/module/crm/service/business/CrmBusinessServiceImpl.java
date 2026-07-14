@@ -2,6 +2,7 @@ package com.meession.etm.module.crm.service.business;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
+import com.meession.etm.framework.common.util.collection.MapUtils;
 import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.framework.common.util.number.MoneyUtils;
 import com.meession.etm.framework.common.util.object.BeanUtils;
@@ -15,6 +16,7 @@ import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessDO;
 import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessProductDO;
 import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessStatusDO;
 import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactBusinessDO;
+import com.meession.etm.module.crm.dal.dataobject.product.CrmProductDO;
 import com.meession.etm.module.crm.dal.mysql.business.CrmBusinessMapper;
 import com.meession.etm.module.crm.dal.mysql.business.CrmBusinessProductMapper;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
@@ -43,6 +45,8 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static com.meession.etm.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static com.meession.etm.framework.common.util.collection.CollectionUtils.*;
@@ -206,10 +210,16 @@ public class CrmBusinessServiceImpl implements CrmBusinessService {
 
     private List<CrmBusinessProductDO> validateBusinessProducts(List<CrmBusinessSaveReqVO.BusinessProduct> list) {
         // 1. 校验产品存在
-        productService.validProductList(convertSet(list, CrmBusinessSaveReqVO.BusinessProduct::getProductId));
-        // 2. 转化为 CrmBusinessProductDO 列表
+        Set<Long> productIds = convertSet(list, CrmBusinessSaveReqVO.BusinessProduct::getProductId);
+        productService.validProductList(productIds);
+        // 2. 获取产品原始价格
+        Map<Long, CrmProductDO> productMap = productService.getProductMap(productIds);
+        // 3. 转化为 CrmBusinessProductDO 列表
         return convertList(list, o -> BeanUtils.toBean(o, CrmBusinessProductDO.class,
-                item -> item.setTotalPrice(MoneyUtils.priceMultiply(item.getBusinessPrice(), item.getCount()))));
+                item -> {
+                    item.setTotalPrice(MoneyUtils.priceMultiply(item.getBusinessPrice(), item.getCount()));
+                    MapUtils.findAndThen(productMap, item.getProductId(), product -> item.setProductPrice(product.getPrice()));
+                }));
     }
 
     private void calculateTotalPrice(CrmBusinessDO business, List<CrmBusinessProductDO> businessProducts) {

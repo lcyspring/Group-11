@@ -88,7 +88,7 @@ public class CrmBusinessSaveReqVO {
 
         @Schema(description = "产品数量", requiredMode = Schema.RequiredMode.REQUIRED, example = "8911")
         @NotNull(message = "产品数量不能为空")
-        private Integer count;
+        private BigDecimal count;
 
     }
 
