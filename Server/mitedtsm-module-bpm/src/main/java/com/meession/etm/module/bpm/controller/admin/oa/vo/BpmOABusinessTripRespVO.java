@@ -29,7 +29,7 @@ public class BpmOABusinessTripRespVO {
     private LocalDateTime endTime;
 
     @Schema(description = "出差天数", example = "3")
-    private Long day;
+    private Long days;
 
     @Schema(description = "预算金额", example = "1000.00")
     private BigDecimal budget;

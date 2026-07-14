@@ -34,7 +34,7 @@ public class BpmOABusinessTripDO extends BaseDO {
 
     private LocalDateTime endTime;
 
-    private Long day;
+    private Long days;
 
     private BigDecimal budget;
 

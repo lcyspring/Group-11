@@ -20,6 +20,11 @@ import org.springframework.web.bind.annotation.*;
 import static com.meession.etm.framework.common.pojo.CommonResult.success;
 import static com.meession.etm.framework.security.core.util.SecurityFrameworkUtils.getLoginUserId;
 
+/**
+ * 管理后台 - OA 借款申请控制器
+ *
+ * @author 李春雨
+ */
 @Tag(name = "管理后台 - OA 借款申请")
 @RestController
 @RequestMapping("/bpm/oa/borrow")
@@ -29,6 +34,12 @@ public class BpmOABorrowController {
     @Resource
     private BpmOABorrowService borrowService;
 
+    /**
+     * 创建借款申请
+     *
+     * @param createReqVO 借款申请创建参数
+     * @return 借款申请ID
+     */
     @PostMapping("/create")
     @PreAuthorize("@ss.hasPermission('bpm:oa-borrow:create')")
     @Operation(summary = "创建借款申请")
@@ -36,6 +47,12 @@ public class BpmOABorrowController {
         return success(borrowService.createBorrow(getLoginUserId(), createReqVO));
     }
 
+    /**
+     * 获得借款申请详情
+     *
+     * @param id 借款申请ID
+     * @return 借款申请详情
+     */
     @GetMapping("/get")
     @PreAuthorize("@ss.hasPermission('bpm:oa-borrow:query')")
     @Operation(summary = "获得借款申请")
@@ -45,6 +62,12 @@ public class BpmOABorrowController {
         return success(BeanUtils.toBean(borrow, BpmOABorrowRespVO.class));
     }
 
+    /**
+     * 获得借款申请分页列表
+     *
+     * @param pageVO 分页查询参数
+     * @return 借款申请分页列表
+     */
     @GetMapping("/page")
     @PreAuthorize("@ss.hasPermission('bpm:oa-borrow:query')")
     @Operation(summary = "获得借款申请分页")

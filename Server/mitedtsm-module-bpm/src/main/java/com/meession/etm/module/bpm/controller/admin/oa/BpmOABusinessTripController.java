@@ -20,6 +20,11 @@ import org.springframework.web.bind.annotation.*;
 import static com.meession.etm.framework.common.pojo.CommonResult.success;
 import static com.meession.etm.framework.security.core.util.SecurityFrameworkUtils.getLoginUserId;
 
+/**
+ * 管理后台 - OA 出差申请控制器
+ *
+ * @author 李春雨
+ */
 @Tag(name = "管理后台 - OA 出差申请")
 @RestController
 @RequestMapping("/bpm/oa/business-trip")
@@ -29,6 +34,12 @@ public class BpmOABusinessTripController {
     @Resource
     private BpmOABusinessTripService businessTripService;
 
+    /**
+     * 创建出差申请
+     *
+     * @param createReqVO 出差申请创建参数
+     * @return 出差申请ID
+     */
     @PostMapping("/create")
     @PreAuthorize("@ss.hasPermission('bpm:oa-business-trip:create')")
     @Operation(summary = "创建出差申请")
@@ -36,6 +47,12 @@ public class BpmOABusinessTripController {
         return success(businessTripService.createBusinessTrip(getLoginUserId(), createReqVO));
     }
 
+    /**
+     * 获得出差申请详情
+     *
+     * @param id 出差申请ID
+     * @return 出差申请详情
+     */
     @GetMapping("/get")
     @PreAuthorize("@ss.hasPermission('bpm:oa-business-trip:query')")
     @Operation(summary = "获得出差申请")
@@ -45,6 +62,12 @@ public class BpmOABusinessTripController {
         return success(BeanUtils.toBean(businessTrip, BpmOABusinessTripRespVO.class));
     }
 
+    /**
+     * 获得出差申请分页列表
+     *
+     * @param pageVO 分页查询参数
+     * @return 出差申请分页列表
+     */
     @GetMapping("/page")
     @PreAuthorize("@ss.hasPermission('bpm:oa-business-trip:query')")
     @Operation(summary = "获得出差申请分页")
