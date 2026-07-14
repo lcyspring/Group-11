@@ -105,4 +105,18 @@ public interface ErrorCodeConstants {
 
     // ========== 数据统计 1_020_014_000 ==========
 
+    // ========== 营销活动 1_020_015_000 ==========
+    ErrorCode CAMPAIGN_NOT_EXISTS = new ErrorCode(1_020_015_000, "营销活动不存在");
+    ErrorCode CAMPAIGN_NAME_EXISTS = new ErrorCode(1_020_015_001, "营销活动名称已存在");
+    ErrorCode CAMPAIGN_STATUS_NOT_DRAFT = new ErrorCode(1_020_015_002, "只有草稿状态的营销活动可以编辑");
+    ErrorCode CAMPAIGN_DELETE_FAIL_RUNNING = new ErrorCode(1_020_015_003, "进行中的营销活动不能删除");
+
+    // ========== 营销短信模板 1_020_016_000 ==========
+    ErrorCode MARKETING_SMS_TEMPLATE_NOT_EXISTS = new ErrorCode(1_020_016_000, "营销短信模板不存在");
+    ErrorCode MARKETING_SMS_TEMPLATE_CODE_EXISTS = new ErrorCode(1_020_016_001, "营销短信模板编码已存在");
+
+    // ========== 营销邮件模板 1_020_017_000 ==========
+    ErrorCode MARKETING_MAIL_TEMPLATE_NOT_EXISTS = new ErrorCode(1_020_017_000, "营销邮件模板不存在");
+    ErrorCode MARKETING_MAIL_TEMPLATE_CODE_EXISTS = new ErrorCode(1_020_017_001, "营销邮件模板编码已存在");
+
 }
