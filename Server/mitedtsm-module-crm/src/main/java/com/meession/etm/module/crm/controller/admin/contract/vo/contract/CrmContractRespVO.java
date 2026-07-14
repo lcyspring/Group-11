@@ -140,10 +140,16 @@ public class CrmContractRespVO {
         private Long productId;
         @Schema(description = "产品名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "李四")
         private String productName;
+        @Schema(description = "成交时产品名称快照", example = "李四")
+        private String productNameSnapshot;
         @Schema(description = "产品条码", requiredMode = Schema.RequiredMode.REQUIRED, example = "20529")
         private String productNo;
+        @Schema(description = "成交时产品编码快照", example = "20529")
+        private String productNoSnapshot;
         @Schema(description = "产品单位", requiredMode = Schema.RequiredMode.REQUIRED, example = "李四")
         private Integer productUnit;
+        @Schema(description = "成交时产品单位快照", example = "1")
+        private Integer productUnitSnapshot;
 
         @Schema(description = "产品单价", requiredMode = Schema.RequiredMode.REQUIRED, example = "123.00")
         private BigDecimal productPrice;

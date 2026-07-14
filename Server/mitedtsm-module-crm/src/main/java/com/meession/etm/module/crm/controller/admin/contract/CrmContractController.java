@@ -124,13 +124,26 @@ public class CrmContractController {
         }
         CrmContractRespVO contractVO = buildContractDetailList(singletonList(contract)).get(0);
         // 拼接产品项
-        List<CrmContractProductDO> businessProducts = contractService.getContractProductListByContractId(contractVO.getId());
+        List<CrmContractProductDO> contractProducts = contractService.getContractProductListByContractId(contractVO.getId());
         Map<Long, CrmProductDO> productMap = productService.getProductMap(
-                convertSet(businessProducts, CrmContractProductDO::getProductId));
-        contractVO.setProducts(BeanUtils.toBean(businessProducts, CrmContractRespVO.Product.class, businessProductVO ->
-                MapUtils.findAndThen(productMap, businessProductVO.getProductId(),
-                        product -> businessProductVO.setProductName(product.getName())
-                                .setProductNo(product.getNo()).setProductUnit(product.getUnit()))));
+                convertSet(contractProducts, CrmContractProductDO::getProductId));
+        contractVO.setProducts(BeanUtils.toBean(contractProducts, CrmContractRespVO.Product.class, contractProductVO -> {
+            contractProductVO.setProductName(contractProductVO.getProductNameSnapshot())
+                    .setProductNo(contractProductVO.getProductNoSnapshot())
+                    .setProductUnit(contractProductVO.getProductUnitSnapshot());
+            // 兼容尚未执行回填或目录已删除的历史数据；快照存在时绝不被当前目录覆盖。
+            MapUtils.findAndThen(productMap, contractProductVO.getProductId(), product -> {
+                if (contractProductVO.getProductName() == null) {
+                    contractProductVO.setProductName(product.getName());
+                }
+                if (contractProductVO.getProductNo() == null) {
+                    contractProductVO.setProductNo(product.getNo());
+                }
+                if (contractProductVO.getProductUnit() == null) {
+                    contractProductVO.setProductUnit(product.getUnit());
+                }
+            });
+        }));
         return contractVO;
     }
 

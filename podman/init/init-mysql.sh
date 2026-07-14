@@ -114,6 +114,12 @@ if [ -d "$SQL_NEW_DIR" ]; then
         echo "Executing: new-crm-work-order-statistics.sql"
         mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < "${SQL_NEW_DIR}/new-crm-work-order-statistics.sql"
     fi
+
+    # 4.14 执行 CRM 合同产品不可变文本快照及历史回填
+    if [ -f "${SQL_NEW_DIR}/new-crm-contract-product-snapshot.sql" ]; then
+        echo "Executing: new-crm-contract-product-snapshot.sql"
+        mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < "${SQL_NEW_DIR}/new-crm-contract-product-snapshot.sql"
+    fi
 fi
 
 echo "MySQL initialization completed successfully!"

@@ -36,8 +36,11 @@ export interface ContractVO {
       id: number
       productId: number
       productName: string
+      productNameSnapshot?: string
       productNo: string
+      productNoSnapshot?: string
       productUnit: number
+      productUnitSnapshot?: number
       productPrice: number
       contractPrice: number
       count: number

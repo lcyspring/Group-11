@@ -9,13 +9,20 @@
         min-width="160"
       >
         <template #default="scope">
-          {{ scope.row.productName }}
+          {{ scope.row.productNameSnapshot || scope.row.productName }}
         </template>
       </el-table-column>
-      <el-table-column :label="t('crm.product.no')" align="center" prop="productNo" min-width="120" />
+      <el-table-column :label="t('crm.product.no')" align="center" prop="productNo" min-width="120">
+        <template #default="{ row }">
+          {{ row.productNoSnapshot || row.productNo }}
+        </template>
+      </el-table-column>
       <el-table-column align="center" :label="t('crm.product.unit')" prop="productUnit" min-width="160">
         <template #default="{ row }">
-          <dict-tag :type="DICT_TYPE.CRM_PRODUCT_UNIT" :value="row.productUnit" />
+          <dict-tag
+            :type="DICT_TYPE.CRM_PRODUCT_UNIT"
+            :value="row.productUnitSnapshot ?? row.productUnit"
+          />
         </template>
       </el-table-column>
       <el-table-column

@@ -21,7 +21,7 @@
               :placeholder="t('common.select')"
             >
               <el-option
-                v-for="item in productList"
+                v-for="item in productOptions"
                 :key="item.id"
                 :label="item.name"
                 :value="item.id"
@@ -113,6 +113,23 @@ const formRules = reactive({
 })
 const formRef = ref([]) // 表单 Ref
 const productList = ref<ProductApi.ProductVO[]>([]) // 产品列表
+const productOptions = computed(() => {
+  const options = [...productList.value]
+  formData.value?.forEach((row) => {
+    if (!row.productId || options.some((item) => item.id === row.productId)) {
+      return
+    }
+    // 已下架或已删除产品仍需显示成交快照，但不会进入可新增产品目录。
+    options.push({
+      id: row.productId,
+      name: row.productNameSnapshot || row.productName || `#${row.productId}`,
+      no: row.productNoSnapshot || row.productNo,
+      unit: row.productUnitSnapshot ?? row.productUnit,
+      price: row.productPrice
+    } as ProductApi.ProductVO)
+  })
+  return options
+})
 
 /** 初始化设置产品项 */
 watch(
@@ -163,7 +180,7 @@ const handleDelete = (index: number) => {
 
 /** 处理产品变更 */
 const onChangeProduct = (productId, row) => {
-  const product = productList.value.find((item) => item.id === productId)
+  const product = productOptions.value.find((item) => item.id === productId)
   if (product) {
     row.productUnit = product.unit
     row.productNo = product.no

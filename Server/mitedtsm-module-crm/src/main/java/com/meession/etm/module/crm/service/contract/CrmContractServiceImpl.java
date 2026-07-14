@@ -17,6 +17,7 @@ import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractConfigDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractProductDO;
+import com.meession.etm.module.crm.dal.dataobject.product.CrmProductDO;
 import com.meession.etm.module.crm.dal.mysql.contract.CrmContractMapper;
 import com.meession.etm.module.crm.dal.mysql.contract.CrmContractProductMapper;
 import com.meession.etm.module.crm.dal.redis.no.CrmNoRedisDAO;
@@ -48,7 +49,10 @@ import org.springframework.validation.annotation.Validated;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static com.meession.etm.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static com.meession.etm.framework.common.util.collection.CollectionUtils.*;
@@ -129,7 +133,7 @@ public class CrmContractServiceImpl implements CrmContractService {
             return existingContract.getId();
         }
         // 1.2 校验产品项的有效性
-        List<CrmContractProductDO> contractProducts = validateContractProducts(createReqVO.getProducts());
+        List<CrmContractProductDO> contractProducts = buildContractProducts(createReqVO.getProducts(), null);
         // 1.3 校验关联字段
         validateRelationDataExists(createReqVO);
         // 1.4 生成序号
@@ -207,8 +211,11 @@ public class CrmContractServiceImpl implements CrmContractService {
         if (oldContract.getSourceBusinessId() != null) {
             updateReqVO.setBusinessId(oldContract.getBusinessId()).setCustomerId(oldContract.getCustomerId());
         }
-        // 1.4 校验产品项的有效性
-        List<CrmContractProductDO> contractProducts = validateContractProducts(updateReqVO.getProducts());
+        // 1.4 校验产品项并保留已有产品行的成交快照
+        List<CrmContractProductDO> oldContractProducts =
+                contractProductMapper.selectListByContractId(updateReqVO.getId());
+        List<CrmContractProductDO> contractProducts =
+                buildContractProducts(updateReqVO.getProducts(), oldContractProducts);
         // 1.5 校验关联字段
         validateRelationDataExists(updateReqVO);
 
@@ -221,7 +228,7 @@ public class CrmContractServiceImpl implements CrmContractService {
         calculateTotalPrice(updateObj, contractProducts);
         contractMapper.updateById(updateObj);
         // 2.2 更新合同关联商品
-        updateContractProduct(updateReqVO.getId(), contractProducts);
+        updateContractProduct(updateReqVO.getId(), oldContractProducts, contractProducts);
 
         // 3. 记录操作日志上下文
         updateReqVO.setOwnerUserId(oldContract.getOwnerUserId()); // 避免操作日志出现“删除负责人”的情况
@@ -229,8 +236,8 @@ public class CrmContractServiceImpl implements CrmContractService {
         LogRecordContext.putVariable("contractName", oldContract.getName());
     }
 
-    private void updateContractProduct(Long id, List<CrmContractProductDO> newList) {
-        List<CrmContractProductDO> oldList = contractProductMapper.selectListByContractId(id);
+    private void updateContractProduct(Long id, List<CrmContractProductDO> oldList,
+                                       List<CrmContractProductDO> newList) {
         List<List<CrmContractProductDO>> diffList = diffList(oldList, newList, // id 不同，就认为是不同的记录
                 (oldVal, newVal) -> oldVal.getId().equals(newVal.getId()));
         if (CollUtil.isNotEmpty(diffList.get(0))) {
@@ -272,12 +279,61 @@ public class CrmContractServiceImpl implements CrmContractService {
         }
     }
 
-    private List<CrmContractProductDO> validateContractProducts(List<CrmContractSaveReqVO.Product> list) {
-        // 1. 校验产品存在
-        productService.validProductList(convertSet(list, CrmContractSaveReqVO.Product::getProductId));
-        // 2. 转化为 CrmContractProductDO 列表
-        return convertList(list, o -> BeanUtils.toBean(o, CrmContractProductDO.class,
-                item -> item.setTotalPrice(MoneyUtils.priceMultiply(item.getContractPrice(), item.getCount()))));
+    /**
+     * 根据产品目录生成成交快照。创建时忽略请求中的行编号；更新已有行且产品未变化时，
+     * 继续使用原快照，避免产品改名、改编码、改单位、改价或下架影响历史合同。
+     */
+    private List<CrmContractProductDO> buildContractProducts(List<CrmContractSaveReqVO.Product> list,
+                                                              List<CrmContractProductDO> oldList) {
+        if (CollUtil.isEmpty(list)) {
+            return List.of();
+        }
+        boolean creating = oldList == null;
+        Map<Long, CrmContractProductDO> oldMap = creating ? Map.of()
+                : convertMap(oldList, CrmContractProductDO::getId);
+        Set<Long> seenRowIds = new HashSet<>();
+        Set<Long> currentProductIds = new HashSet<>();
+
+        for (CrmContractSaveReqVO.Product requestProduct : list) {
+            if (creating || requestProduct.getId() == null) {
+                currentProductIds.add(requestProduct.getProductId());
+                continue;
+            }
+            if (!seenRowIds.add(requestProduct.getId())) {
+                throw exception(CONTRACT_PRODUCT_ROW_DUPLICATE);
+            }
+            CrmContractProductDO oldProduct = oldMap.get(requestProduct.getId());
+            if (oldProduct == null) {
+                throw exception(CONTRACT_PRODUCT_ROW_NOT_BELONGS);
+            }
+            if (ObjUtil.notEqual(oldProduct.getProductId(), requestProduct.getProductId())) {
+                currentProductIds.add(requestProduct.getProductId());
+            }
+        }
+
+        Map<Long, CrmProductDO> currentProductMap = CollUtil.isEmpty(currentProductIds) ? Map.of() : convertMap(
+                productService.validProductList(currentProductIds), CrmProductDO::getId);
+        return convertList(list, requestProduct -> {
+            CrmContractProductDO item = BeanUtils.toBean(requestProduct, CrmContractProductDO.class);
+            if (creating) {
+                item.setId(null); // 商机产品行编号不能成为合同产品行编号
+            }
+            CrmContractProductDO oldProduct = creating || requestProduct.getId() == null
+                    ? null : oldMap.get(requestProduct.getId());
+            if (oldProduct != null && ObjUtil.equal(oldProduct.getProductId(), requestProduct.getProductId())) {
+                item.setProductNameSnapshot(oldProduct.getProductNameSnapshot())
+                        .setProductNoSnapshot(oldProduct.getProductNoSnapshot())
+                        .setProductUnitSnapshot(oldProduct.getProductUnitSnapshot())
+                        .setProductPrice(oldProduct.getProductPrice());
+            } else {
+                CrmProductDO currentProduct = currentProductMap.get(requestProduct.getProductId());
+                item.setProductNameSnapshot(currentProduct.getName())
+                        .setProductNoSnapshot(currentProduct.getNo())
+                        .setProductUnitSnapshot(currentProduct.getUnit())
+                        .setProductPrice(currentProduct.getPrice());
+            }
+            return item.setTotalPrice(MoneyUtils.priceMultiply(item.getContractPrice(), item.getCount()));
+        });
     }
 
     private void calculateTotalPrice(CrmContractDO contract, List<CrmContractProductDO> contractProducts) {

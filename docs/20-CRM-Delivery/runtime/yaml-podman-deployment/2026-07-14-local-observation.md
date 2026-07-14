@@ -72,3 +72,6 @@ bash ./down.sh ./config/runtime-local.yaml
 - CRM 当前回归 170/170，通过率 100%，JaCoCo 行覆盖率 32.64%。
 - `rebuild-server` 已在停止旧服务前执行兼容迁移，分派权限和新 Server 同批生效；
 - Web 已再次热替换，工单多维筛选和分派弹窗产物在 8081 提供观察。
+- CRM 合同产品快照迁移已由 `rebuild-server` 执行并重复运行验证幂等；
+- 运行样例合同 21 在产品改名、改编码、改单位、改价并下架后仍返回成交时快照；
+- CRM 当前回归 173/173，JaCoCo 行覆盖率 33.33%，Web/Server 均通过 Ubuntu 26.04 构建并热替换。

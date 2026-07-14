@@ -7,6 +7,8 @@ import com.meession.etm.module.bpm.enums.task.BpmProcessInstanceStatusEnum;
 import com.meession.etm.module.crm.controller.admin.contract.vo.contract.CrmContractSaveReqVO;
 import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
+import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractProductDO;
+import com.meession.etm.module.crm.dal.dataobject.product.CrmProductDO;
 import com.meession.etm.module.crm.dal.mysql.contract.CrmContractMapper;
 import com.meession.etm.module.crm.dal.mysql.contract.CrmContractProductMapper;
 import com.meession.etm.module.crm.dal.redis.no.CrmNoRedisDAO;
@@ -33,11 +35,13 @@ import org.springframework.dao.DuplicateKeyException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.Collections;
 
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTRACT_CREATE_FAIL_BUSINESS_NOT_WON;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTRACT_CREATE_BUSINESS_REQUIRES_CONVERSION;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTRACT_DELETE_FAIL_NOT_NEW_DRAFT;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTRACT_PRODUCT_ROW_NOT_BELONGS;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTRACT_UPDATE_FAIL_NOT_EDITABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -113,12 +117,16 @@ class CrmContractServiceImplTest {
     void createContractInheritsBusinessOwnershipAndSetsConversionSource() {
         when(businessService.validateBusiness(10L)).thenReturn(business(CrmBusinessEndStatusEnum.WIN.getStatus()));
         when(noRedisDAO.generate(CrmNoRedisDAO.CONTRACT_NO_PREFIX)).thenReturn("HT20260714000001");
+        when(productService.validProductList(Collections.singleton(4L)))
+                .thenReturn(Collections.singletonList(product(4L, "商机成交产品", "OPP-SKU", 1, "88.00")));
         doAnswer(invocation -> {
             ((CrmContractDO) invocation.getArgument(0)).setId(99L);
             return 1;
         }).when(contractMapper).insert(any(CrmContractDO.class));
+        CrmContractSaveReqVO conversionRequest = request().setProducts(
+                Collections.singletonList(productRequest(444L, 4L, "999.00", "80.00", 2)));
 
-        assertEquals(99L, service.createContractFromBusiness(request(), 1L));
+        assertEquals(99L, service.createContractFromBusiness(conversionRequest, 1L));
 
         ArgumentCaptor<CrmContractDO> contractCaptor = ArgumentCaptor.forClass(CrmContractDO.class);
         verify(contractMapper).insert(contractCaptor.capture());
@@ -132,6 +140,14 @@ class CrmContractServiceImplTest {
                 ArgumentCaptor.forClass(CrmPermissionCreateReqBO.class);
         verify(crmPermissionService).createPermission(permissionCaptor.capture());
         assertEquals(30L, permissionCaptor.getValue().getUserId());
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Collection<CrmContractProductDO>> productCaptor = ArgumentCaptor.forClass(Collection.class);
+        verify(contractProductMapper).insertBatch(productCaptor.capture());
+        CrmContractProductDO savedProduct = productCaptor.getValue().iterator().next();
+        assertNull(savedProduct.getId()); // 商机产品行 444 不能复用为合同产品行编号
+        assertEquals("商机成交产品", savedProduct.getProductNameSnapshot());
+        assertEquals(new BigDecimal("88.00"), savedProduct.getProductPrice());
     }
 
     @Test
@@ -146,6 +162,72 @@ class CrmContractServiceImplTest {
         assertEquals(100L, service.createContractFromBusiness(request(), 1L));
 
         verify(crmPermissionService, never()).createPermission(any());
+    }
+
+    @Test
+    void createContractSnapshotsCatalogAndIgnoresClientRowIdAndStandardPrice() {
+        when(noRedisDAO.generate(CrmNoRedisDAO.CONTRACT_NO_PREFIX)).thenReturn("HT20260714000003");
+        when(productService.validProductList(Collections.singleton(4L)))
+                .thenReturn(Collections.singletonList(product(4L, "成交产品", "SKU-OLD", 2, "88.00")));
+        doAnswer(invocation -> {
+            ((CrmContractDO) invocation.getArgument(0)).setId(101L);
+            return 1;
+        }).when(contractMapper).insert(any(CrmContractDO.class));
+        CrmContractSaveReqVO createRequest = request().setBusinessId(null)
+                .setProducts(Collections.singletonList(productRequest(777L, 4L, "999.00", "80.00", 2)));
+
+        assertEquals(101L, service.createContract(createRequest, 1L));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Collection<CrmContractProductDO>> captor = ArgumentCaptor.forClass(Collection.class);
+        verify(contractProductMapper).insertBatch(captor.capture());
+        CrmContractProductDO saved = captor.getValue().iterator().next();
+        assertNull(saved.getId());
+        assertEquals("成交产品", saved.getProductNameSnapshot());
+        assertEquals("SKU-OLD", saved.getProductNoSnapshot());
+        assertEquals(2, saved.getProductUnitSnapshot());
+        assertEquals(new BigDecimal("88.00"), saved.getProductPrice());
+        assertEquals(new BigDecimal("160.00"), saved.getTotalPrice());
+    }
+
+    @Test
+    void updateContractPreservesExistingSnapshotWhenCatalogChanges() {
+        when(contractMapper.selectByIdForUpdate(7L))
+                .thenReturn(contract(7L, CrmAuditStatusEnum.DRAFT, null));
+        CrmContractProductDO oldProduct = contractProduct(55L, 7L, 4L,
+                "历史名称", "SKU-HISTORY", 1, "88.00");
+        when(contractProductMapper.selectListByContractId(7L))
+                .thenReturn(Collections.singletonList(oldProduct));
+        CrmContractSaveReqVO updateRequest = updateRequest(7L).setBusinessId(null)
+                .setProducts(Collections.singletonList(productRequest(55L, 4L, "999.00", "70.00", 3)));
+
+        service.updateContract(updateRequest);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Collection<CrmContractProductDO>> captor = ArgumentCaptor.forClass(Collection.class);
+        verify(contractProductMapper).updateBatch(captor.capture());
+        CrmContractProductDO saved = captor.getValue().iterator().next();
+        assertEquals("历史名称", saved.getProductNameSnapshot());
+        assertEquals("SKU-HISTORY", saved.getProductNoSnapshot());
+        assertEquals(1, saved.getProductUnitSnapshot());
+        assertEquals(new BigDecimal("88.00"), saved.getProductPrice());
+        assertEquals(new BigDecimal("210.00"), saved.getTotalPrice());
+        verify(productService, never()).validProductList(any());
+    }
+
+    @Test
+    void updateContractRejectsProductRowFromAnotherContract() {
+        when(contractMapper.selectByIdForUpdate(7L))
+                .thenReturn(contract(7L, CrmAuditStatusEnum.DRAFT, null));
+        when(contractProductMapper.selectListByContractId(7L)).thenReturn(Collections.emptyList());
+        CrmContractSaveReqVO updateRequest = updateRequest(7L).setBusinessId(null)
+                .setProducts(Collections.singletonList(productRequest(999L, 4L, "88.00", "70.00", 1)));
+
+        ServiceException exception = assertThrows(ServiceException.class,
+                () -> service.updateContract(updateRequest));
+
+        assertEquals(CONTRACT_PRODUCT_ROW_NOT_BELONGS.getCode(), exception.getCode());
+        verify(contractMapper, never()).updateById(any(CrmContractDO.class));
     }
 
     @Test
@@ -309,6 +391,30 @@ class CrmContractServiceImplTest {
                 .setCustomerId(20L)
                 .setOwnerUserId(30L)
                 .setEndStatus(endStatus);
+    }
+
+    private static CrmContractSaveReqVO.Product productRequest(Long id, Long productId,
+                                                                String productPrice, String contractPrice,
+                                                                Integer count) {
+        return new CrmContractSaveReqVO.Product()
+                .setId(id)
+                .setProductId(productId)
+                .setProductPrice(new BigDecimal(productPrice))
+                .setContractPrice(new BigDecimal(contractPrice))
+                .setCount(count);
+    }
+
+    private static CrmProductDO product(Long id, String name, String no, Integer unit, String price) {
+        return new CrmProductDO().setId(id).setName(name).setNo(no).setUnit(unit)
+                .setPrice(new BigDecimal(price));
+    }
+
+    private static CrmContractProductDO contractProduct(Long id, Long contractId, Long productId,
+                                                         String name, String no, Integer unit,
+                                                         String productPrice) {
+        return new CrmContractProductDO().setId(id).setContractId(contractId).setProductId(productId)
+                .setProductNameSnapshot(name).setProductNoSnapshot(no).setProductUnitSnapshot(unit)
+                .setProductPrice(new BigDecimal(productPrice));
     }
 
 }

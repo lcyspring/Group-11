@@ -90,6 +90,9 @@ public class CrmContractSaveReqVO {
     @AllArgsConstructor
     public static class Product {
 
+        @Schema(description = "合同产品行编号；更新已有产品行时必传", example = "888")
+        private Long id;
+
         @Schema(description = "产品编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "20529")
         @NotNull(message = "产品编号不能为空")
         private Long productId;

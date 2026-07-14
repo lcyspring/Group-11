@@ -42,7 +42,19 @@ public class CrmContractProductDO extends BaseDO {
      */
     private Long productId;
     /**
-     * 产品单价，单位：元
+     * 成交时产品名称快照
+     */
+    private String productNameSnapshot;
+    /**
+     * 成交时产品编码快照
+     */
+    private String productNoSnapshot;
+    /**
+     * 成交时产品单位快照
+     */
+    private Integer productUnitSnapshot;
+    /**
+     * 成交时产品目录价快照，单位：元
      */
     private BigDecimal productPrice;
     /**

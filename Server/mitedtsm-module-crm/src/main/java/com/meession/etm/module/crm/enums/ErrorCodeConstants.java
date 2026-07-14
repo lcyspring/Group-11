@@ -24,6 +24,10 @@ public interface ErrorCodeConstants {
             "关联合同必须通过商机转合同入口创建");
     ErrorCode CONTRACT_DELETE_FAIL_NOT_NEW_DRAFT = new ErrorCode(1_020_000_009,
             "删除合同失败，只有从未提交审批的草稿可以删除");
+    ErrorCode CONTRACT_PRODUCT_ROW_NOT_BELONGS = new ErrorCode(1_020_000_010,
+            "合同产品行不存在或不属于当前合同，请刷新后重试");
+    ErrorCode CONTRACT_PRODUCT_ROW_DUPLICATE = new ErrorCode(1_020_000_011,
+            "合同产品行重复，请刷新后重试");
 
     // ========== 线索管理 1-020-001-000 ==========
     ErrorCode CLUE_NOT_EXISTS = new ErrorCode(1_020_001_000, "线索不存在");
