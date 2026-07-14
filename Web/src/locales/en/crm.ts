@@ -908,6 +908,29 @@ export default {
     // Common actions
     search: 'Search',
     reset: 'Reset',
+    lineage: {
+      title: 'Metric Refresh and Data Lineage',
+      realtimeQuery: 'Real-time Query',
+      unknownMode: 'Refresh Mode Not Declared',
+      lastRefreshedAt: 'Page Data Last Refreshed',
+      notRefreshed: 'Not Refreshed Yet',
+      refreshNow: 'Refresh Current Chart',
+      viewCatalog: 'View Metric Catalog',
+      loadFailed: 'Metric catalog failed to load; statistics queries remain available',
+      catalogTitle: 'Metric Contract and Data Lineage',
+      refreshMode: 'Refresh Mode',
+      permissionMode: 'Permission Mode',
+      historyRecalculation: 'Historical Recalculation Boundary',
+      reconciliation: 'Reconciliation',
+      metricName: 'Metric Name',
+      metricCode: 'Metric Code',
+      businessTime: 'Business Time Field',
+      sourceTables: 'Source Tables',
+      sourceFields: 'Source Fields',
+      formula: 'Formula',
+      filters: 'Filters',
+      permission: 'Data Permission'
+    },
     // Customer analysis
     customer: {
       title: 'Customer Analysis',

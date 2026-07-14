@@ -905,6 +905,29 @@ export default {
     // Common actions
     search: 'بحث',
     reset: 'إعادة تعيين',
+    lineage: {
+      title: 'تحديث المؤشرات ونسب البيانات',
+      realtimeQuery: 'استعلام فوري',
+      unknownMode: 'وضع التحديث غير محدد',
+      lastRefreshedAt: 'آخر تحديث لبيانات الصفحة',
+      notRefreshed: 'لم يتم التحديث بعد',
+      refreshNow: 'تحديث الرسم الحالي',
+      viewCatalog: 'عرض تعريفات المؤشرات',
+      loadFailed: 'تعذر تحميل تعريفات المؤشرات، ولا تزال الاستعلامات الإحصائية متاحة',
+      catalogTitle: 'تعريف المؤشرات ونسب البيانات',
+      refreshMode: 'وضع التحديث',
+      permissionMode: 'وضع الصلاحيات',
+      historyRecalculation: 'حدود إعادة الحساب التاريخي',
+      reconciliation: 'المطابقة',
+      metricName: 'اسم المؤشر',
+      metricCode: 'رمز المؤشر',
+      businessTime: 'حقل وقت العمل',
+      sourceTables: 'جداول المصدر',
+      sourceFields: 'حقول المصدر',
+      formula: 'صيغة التجميع',
+      filters: 'قواعد التصفية',
+      permission: 'صلاحية البيانات'
+    },
     // Customer analysis
     customer: {
       title: 'تحليل العملاء',

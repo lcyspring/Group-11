@@ -61,6 +61,12 @@
     </el-form>
   </ContentWrap>
 
+  <StatisticsLineagePanel
+    ref="statisticsLineageRef"
+    scope="performance"
+    :on-refresh="handleQuery"
+  />
+
   <!-- 员工业绩统计 -->
   <el-col>
     <el-tabs v-model="activeTab">
@@ -114,6 +120,7 @@ import ContractPricePerformance from './components/ContractPricePerformance.vue'
 import ReceivablePricePerformance from './components/ReceivablePricePerformance.vue'
 import TargetCompletionPerformance from './components/TargetCompletionPerformance.vue'
 import PerformanceTargetManagement from './components/PerformanceTargetManagement.vue'
+import StatisticsLineagePanel from '../components/StatisticsLineagePanel.vue'
 
 defineOptions({ name: 'CrmStatisticsPerformance' })
 
@@ -147,9 +154,10 @@ const ContractPricePerformanceRef = ref() // 员工合同金额统计
 const ReceivablePricePerformanceRef = ref() // 员工回款金额统计
 const TargetCompletionPerformanceRef = ref() // 业绩目标完成度
 const PerformanceTargetManagementRef = ref() // 业绩目标维护
+const statisticsLineageRef = ref<InstanceType<typeof StatisticsLineagePanel>>()
 
 /** 搜索按钮操作 */
-const handleQuery = () => {
+const handleQuery = async () => {
   if (!selectedYear.value) {
     return
   }
@@ -158,28 +166,31 @@ const handleQuery = () => {
   queryParams.times[1] = formatDate(endOfDay(new Date(selectYear, 11, 31)))
 
   // 执行查询
+  let query: Promise<unknown> | undefined
   switch (activeTab.value) {
     case 'ContractCountPerformance':
-      ContractCountPerformanceRef.value?.loadData?.()
+      query = ContractCountPerformanceRef.value?.loadData?.()
       break
     case 'ContractPricePerformance':
-      ContractPricePerformanceRef.value?.loadData?.()
+      query = ContractPricePerformanceRef.value?.loadData?.()
       break
     case 'ReceivablePricePerformance':
-      ReceivablePricePerformanceRef.value?.loadData?.()
+      query = ReceivablePricePerformanceRef.value?.loadData?.()
       break
     case 'TargetCompletionPerformance':
-      TargetCompletionPerformanceRef.value?.loadData?.()
+      query = TargetCompletionPerformanceRef.value?.loadData?.()
       break
     case 'PerformanceTargetManagement':
-      PerformanceTargetManagementRef.value?.loadData?.()
+      query = PerformanceTargetManagementRef.value?.loadData?.()
       break
   }
+  await query
+  statisticsLineageRef.value?.markRefreshed()
 }
 
 // 当 activeTab 改变时，刷新当前活动的 tab
 watch(activeTab, () => {
-  handleQuery()
+  void handleQuery()
 })
 
 /** 重置按钮操作 */
@@ -193,5 +204,6 @@ const resetQuery = () => {
 onMounted(async () => {
   deptList.value = handleTree(await DeptApi.getSimpleDeptList())
   userList.value = await UserApi.getSimpleUserList()
+  await handleQuery()
 })
 </script>

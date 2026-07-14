@@ -258,6 +258,320 @@ mitedtsm:
 --- #################### 密讯相关配置 ####################
 
 mitedtsm:
+  crm:
+    statistics-metadata:
+      # CRM 统计当前均为请求时实时聚合；指标口径只能在此处显式声明。
+      refresh-mode: REALTIME_QUERY
+      permission-mode: CRM_TENANT_AND_DATA_SCOPE
+      history-recalculation: QUERY_CURRENT_LEDGER_STATE_ONLY
+      reconciliation: DRILLDOWN_OR_SOURCE_LEDGER_EXPORT
+      metrics:
+        - scope: customer
+          code: customer.new-count
+          name: 新增客户数
+          source-tables: [crm_customer]
+          source-fields: [id, owner_user_id, create_time, deleted]
+          business-time: crm_customer.create_time
+          formula: COUNT(crm_customer.id)
+          filters: [deleted = 0, owner_user_id in authorized users, create_time in selected range]
+          permission: crm:statistics-customer:query + CRM authorized user scope + tenant isolation
+        - scope: customer
+          code: customer.deal-count
+          name: 成交客户数
+          source-tables: [crm_customer, crm_contract]
+          source-fields: [crm_customer.id, crm_customer.owner_user_id, crm_customer.create_time, crm_contract.customer_id, crm_contract.audit_status]
+          business-time: crm_customer.create_time
+          formula: COUNT(DISTINCT crm_customer.id) with approved contract
+          filters: [customer and contract deleted = 0, contract audit_status = approved, owner_user_id in authorized users]
+          permission: crm:statistics-customer:query + CRM authorized user scope + tenant isolation
+        - scope: customer
+          code: customer.follow-up-count
+          name: 客户跟进次数
+          source-tables: [crm_follow_up_record]
+          source-fields: [id, biz_type, biz_id, creator, create_time, deleted]
+          business-time: crm_follow_up_record.create_time
+          formula: COUNT(crm_follow_up_record.id)
+          filters: [deleted = 0, biz_type = CRM_CUSTOMER, creator in authorized users, create_time in selected range]
+          permission: crm:statistics-customer:query + CRM authorized user scope + tenant isolation
+        - scope: customer
+          code: customer.follow-up-customer-count
+          name: 跟进客户数
+          source-tables: [crm_follow_up_record]
+          source-fields: [biz_id, biz_type, creator, create_time, deleted]
+          business-time: crm_follow_up_record.create_time
+          formula: COUNT(DISTINCT biz_id) inside each display interval
+          filters: [deleted = 0, biz_type = CRM_CUSTOMER, creator in authorized users, create_time in selected range]
+          permission: crm:statistics-customer:query + CRM authorized user scope + tenant isolation
+        - scope: customer
+          code: customer.contract-amount
+          name: 客户合同金额
+          source-tables: [crm_contract]
+          source-fields: [total_price, owner_user_id, order_date, audit_status, deleted]
+          business-time: crm_contract.order_date
+          formula: SUM(crm_contract.total_price)
+          filters: [deleted = 0, audit_status = approved, owner_user_id in authorized users, order_date in selected range]
+          permission: crm:statistics-customer:query + CRM authorized user scope + tenant isolation
+        - scope: customer
+          code: customer.receivable-amount
+          name: 客户回款金额
+          source-tables: [crm_receivable]
+          source-fields: [price, owner_user_id, return_time, audit_status, deleted]
+          business-time: crm_receivable.return_time
+          formula: SUM(crm_receivable.price)
+          filters: [deleted = 0, audit_status = approved, owner_user_id in authorized users, return_time in selected range]
+          permission: crm:statistics-customer:query + CRM authorized user scope + tenant isolation
+        - scope: customer
+          code: customer.deal-top10
+          name: 客户成交金额 TOP10
+          source-tables: [crm_customer, crm_contract]
+          source-fields: [crm_customer.id, crm_customer.name, crm_contract.total_price, crm_contract.order_date, crm_contract.audit_status]
+          business-time: crm_contract.order_date
+          formula: SUM(approved contract total_price) GROUP BY customer ORDER BY amount DESC, customer id ASC LIMIT 10
+          filters: [customer and contract deleted = 0, contract audit_status = approved, customer owner in authorized users]
+          permission: crm:statistics-customer:query + CRM authorized user scope + tenant isolation
+        - scope: funnel
+          code: funnel.business.new-count
+          name: 新增商机数
+          source-tables: [crm_business]
+          source-fields: [id, owner_user_id, create_time, deleted]
+          business-time: crm_business.create_time
+          formula: COUNT(crm_business.id)
+          filters: [deleted = 0, owner_user_id in authorized users, create_time in selected range]
+          permission: crm:statistics-funnel:query + CRM authorized user scope + tenant isolation
+        - scope: funnel
+          code: funnel.stage-count
+          name: 阶段商机数
+          source-tables: [crm_business, crm_business_status]
+          source-fields: [crm_business.id, crm_business.status_id, crm_business.end_status, crm_business.total_price, crm_business_status.sort]
+          business-time: crm_business.create_time
+          formula: COUNT businesses that reached each configured stage
+          filters: [business deleted = 0, active or won business, status type matches query, owner in authorized users]
+          permission: crm:statistics-funnel:query + CRM authorized user scope + tenant isolation
+        - scope: funnel
+          code: funnel.stage-amount
+          name: 阶段商机金额
+          source-tables: [crm_business, crm_business_status]
+          source-fields: [crm_business.total_price, crm_business.status_id, crm_business.end_status, crm_business_status.sort]
+          business-time: crm_business.create_time
+          formula: SUM(total_price) for businesses that reached each configured stage
+          filters: [business deleted = 0, active or won business, status type matches query, owner in authorized users]
+          permission: crm:statistics-funnel:query + CRM authorized user scope + tenant isolation
+        - scope: funnel
+          code: funnel.win-conversion-rate
+          name: 赢单转化率
+          source-tables: [crm_business]
+          source-fields: [id, end_status, owner_user_id, create_time, deleted]
+          business-time: crm_business.create_time
+          formula: won business count / total business count * 100
+          filters: [deleted = 0, owner_user_id in authorized users, create_time in selected range]
+          permission: crm:statistics-funnel:query + CRM authorized user scope + tenant isolation
+        - scope: funnel
+          code: funnel.forecast-expected-amount
+          name: 销售预测金额
+          source-tables: [crm_business]
+          source-fields: [total_price, deal_time, end_status, owner_user_id, deleted]
+          business-time: crm_business.deal_time
+          formula: SUM(total_price)
+          filters: [deleted = 0, end_status = active, owner_user_id in authorized users, deal_time in selected range]
+          permission: crm:statistics-funnel:query + CRM authorized user scope + tenant isolation
+        - scope: funnel
+          code: funnel.forecast-weighted-amount
+          name: 概率金额
+          source-tables: [crm_business, crm_business_status]
+          source-fields: [crm_business.total_price, crm_business.deal_time, crm_business.status_id, crm_business_status.percent]
+          business-time: crm_business.deal_time
+          formula: SUM(total_price * status percent / 100)
+          filters: [business deleted = 0, end_status = active, owner_user_id in authorized users, deal_time in selected range]
+          permission: crm:statistics-funnel:query + CRM authorized user scope + tenant isolation
+        - scope: performance
+          code: performance.contract-count
+          name: 签约合同数
+          source-tables: [crm_contract]
+          source-fields: [id, owner_user_id, order_date, audit_status, deleted]
+          business-time: crm_contract.order_date
+          formula: COUNT(crm_contract.id) GROUP BY calendar month
+          filters: [deleted = 0, audit_status = approved, owner_user_id in authorized users, order_date in selected year]
+          permission: crm:statistics-performance:query + CRM authorized user scope + tenant isolation
+        - scope: performance
+          code: performance.contract-amount
+          name: 签约合同金额
+          source-tables: [crm_contract]
+          source-fields: [total_price, owner_user_id, order_date, audit_status, deleted]
+          business-time: crm_contract.order_date
+          formula: SUM(total_price) GROUP BY calendar month
+          filters: [deleted = 0, audit_status = approved, owner_user_id in authorized users, order_date in selected year]
+          permission: crm:statistics-performance:query + CRM authorized user scope + tenant isolation
+        - scope: performance
+          code: performance.receivable-amount
+          name: 回款金额
+          source-tables: [crm_receivable]
+          source-fields: [price, owner_user_id, return_time, audit_status, deleted]
+          business-time: crm_receivable.return_time
+          formula: SUM(price) GROUP BY calendar month
+          filters: [deleted = 0, audit_status = approved, owner_user_id in authorized users, return_time in selected year]
+          permission: crm:statistics-performance:query + CRM authorized user scope + tenant isolation
+        - scope: performance
+          code: performance.target-completion
+          name: 目标完成率
+          source-tables: [crm_performance_target, crm_contract, crm_receivable, crm_follow_up_record, crm_customer, crm_business]
+          source-fields: [target_type, target_month, target_value, actual metric value]
+          business-time: target calendar month and each actual metric business time
+          formula: actual value / configured target value * 100
+          filters: [target scope matches company department or user, actual metric uses approved ledger rules where applicable]
+          permission: crm:statistics-performance:query + CRM authorized user scope + tenant isolation
+        - scope: portrait
+          code: portrait.customer-region
+          name: 客户区域分布
+          source-tables: [crm_customer, system_area]
+          source-fields: [crm_customer.area_id, crm_customer.owner_user_id, crm_customer.create_time, system_area.parent_id]
+          business-time: crm_customer.create_time
+          formula: COUNT(customer id) GROUP BY normalized city province or country area
+          filters: [customer deleted = 0, area_id is not null, owner_user_id in authorized users, create_time in selected range]
+          permission: crm:statistics-portrait:query + CRM authorized user scope + tenant isolation
+        - scope: portrait
+          code: portrait.customer-industry
+          name: 客户行业分布
+          source-tables: [crm_customer]
+          source-fields: [id, industry_id, deal_status, owner_user_id, create_time]
+          business-time: crm_customer.create_time
+          formula: COUNT(id) and SUM(deal_status) GROUP BY industry_id
+          filters: [deleted = 0, industry_id is not null, owner_user_id in authorized users, create_time in selected range]
+          permission: crm:statistics-portrait:query + CRM authorized user scope + tenant isolation
+        - scope: portrait
+          code: portrait.customer-level
+          name: 客户级别分布
+          source-tables: [crm_customer]
+          source-fields: [id, level, deal_status, owner_user_id, create_time]
+          business-time: crm_customer.create_time
+          formula: COUNT(id) and SUM(deal_status) GROUP BY level
+          filters: [deleted = 0, level is not null, owner_user_id in authorized users, create_time in selected range]
+          permission: crm:statistics-portrait:query + CRM authorized user scope + tenant isolation
+        - scope: portrait
+          code: portrait.customer-source
+          name: 客户来源分布
+          source-tables: [crm_customer]
+          source-fields: [id, source, deal_status, owner_user_id, create_time]
+          business-time: crm_customer.create_time
+          formula: COUNT(id) and SUM(deal_status) GROUP BY source
+          filters: [deleted = 0, source is not null, owner_user_id in authorized users, create_time in selected range]
+          permission: crm:statistics-portrait:query + CRM authorized user scope + tenant isolation
+        - scope: portrait
+          code: portrait.customer-lifecycle
+          name: 客户生命周期分布
+          source-tables: [crm_customer]
+          source-fields: [id, lifecycle_status, owner_user_id, create_time]
+          business-time: crm_customer.create_time
+          formula: COUNT(id) GROUP BY lifecycle_status
+          filters: [deleted = 0, lifecycle_status is not null, owner_user_id in authorized users, create_time in selected range]
+          permission: crm:statistics-portrait:query + CRM authorized user scope + tenant isolation
+        - scope: rank
+          code: rank.contract-amount
+          name: 合同金额排行
+          source-tables: [crm_contract]
+          source-fields: [total_price, owner_user_id, order_date, audit_status, deleted]
+          business-time: crm_contract.order_date
+          formula: SUM(total_price) GROUP BY owner_user_id
+          filters: [deleted = 0, audit_status = approved, owner_user_id in authorized users, order_date in selected range]
+          permission: crm:statistics-rank:query + CRM authorized user scope + tenant isolation
+        - scope: rank
+          code: rank.receivable-amount
+          name: 回款金额排行
+          source-tables: [crm_receivable]
+          source-fields: [price, owner_user_id, return_time, audit_status, deleted]
+          business-time: crm_receivable.return_time
+          formula: SUM(price) GROUP BY owner_user_id
+          filters: [deleted = 0, audit_status = approved, owner_user_id in authorized users, return_time in selected range]
+          permission: crm:statistics-rank:query + CRM authorized user scope + tenant isolation
+        - scope: rank
+          code: rank.contract-count
+          name: 签约合同排行
+          source-tables: [crm_contract]
+          source-fields: [id, owner_user_id, order_date, audit_status, deleted]
+          business-time: crm_contract.order_date
+          formula: COUNT(id) GROUP BY owner_user_id
+          filters: [deleted = 0, audit_status = approved, owner_user_id in authorized users, order_date in selected range]
+          permission: crm:statistics-rank:query + CRM authorized user scope + tenant isolation
+        - scope: rank
+          code: rank.product-sales
+          name: 产品销量排行
+          source-tables: [crm_contract, crm_contract_product]
+          source-fields: [crm_contract.owner_user_id, crm_contract.order_date, crm_contract.audit_status, crm_contract_product.count]
+          business-time: crm_contract.order_date
+          formula: SUM(crm_contract_product.count) GROUP BY contract owner_user_id
+          filters: [contract and product deleted = 0, contract audit_status = approved, owner_user_id in authorized users]
+          permission: crm:statistics-rank:query + CRM authorized user scope + tenant isolation
+        - scope: rank
+          code: rank.customer-count
+          name: 新增客户数排行
+          source-tables: [crm_customer]
+          source-fields: [id, owner_user_id, create_time, deleted]
+          business-time: crm_customer.create_time
+          formula: COUNT(id) GROUP BY owner_user_id
+          filters: [deleted = 0, owner_user_id in authorized users, create_time in selected range]
+          permission: crm:statistics-rank:query + CRM authorized user scope + tenant isolation
+        - scope: rank
+          code: rank.contact-count
+          name: 新增联系人数排行
+          source-tables: [crm_contact]
+          source-fields: [id, owner_user_id, create_time, deleted]
+          business-time: crm_contact.create_time
+          formula: COUNT(id) GROUP BY owner_user_id
+          filters: [deleted = 0, owner_user_id in authorized users, create_time in selected range]
+          permission: crm:statistics-rank:query + CRM authorized user scope + tenant isolation
+        - scope: rank
+          code: rank.follow-up-count
+          name: 跟进次数排行
+          source-tables: [crm_follow_up_record]
+          source-fields: [id, biz_type, creator, create_time, deleted]
+          business-time: crm_follow_up_record.create_time
+          formula: COUNT(id) GROUP BY creator
+          filters: [deleted = 0, biz_type = CRM_CUSTOMER, creator in authorized users, create_time in selected range]
+          permission: crm:statistics-rank:query + CRM authorized user scope + tenant isolation
+        - scope: rank
+          code: rank.follow-up-customer-count
+          name: 跟进客户数排行
+          source-tables: [crm_follow_up_record]
+          source-fields: [biz_id, biz_type, creator, create_time, deleted]
+          business-time: crm_follow_up_record.create_time
+          formula: COUNT(DISTINCT biz_id) GROUP BY creator
+          filters: [deleted = 0, biz_type = CRM_CUSTOMER, creator in authorized users, create_time in selected range]
+          permission: crm:statistics-rank:query + CRM authorized user scope + tenant isolation
+        - scope: workorder
+          code: workorder.total-count
+          name: 工单总数
+          source-tables: [crm_work_order]
+          source-fields: [id, creator, handler_user_id, create_time, tenant_id, deleted]
+          business-time: crm_work_order.create_time
+          formula: COUNT(crm_work_order.id)
+          filters: [tenant_id = current tenant, deleted = 0, creator or handler when query-all permission is absent, create_time in selected range]
+          permission: crm:statistics-work-order:query + tenant isolation + creator/handler scope unless query-all granted
+        - scope: workorder
+          code: workorder.completion-rate
+          name: 工单完结率
+          source-tables: [crm_work_order]
+          source-fields: [id, status, creator, handler_user_id, create_time, tenant_id, deleted]
+          business-time: crm_work_order.create_time
+          formula: completed count / total count * 100
+          filters: [tenant_id = current tenant, deleted = 0, creator or handler when query-all permission is absent, create_time in selected range]
+          permission: crm:statistics-work-order:query + tenant isolation + creator/handler scope unless query-all granted
+        - scope: workorder
+          code: workorder.created-trend
+          name: 工单创建趋势
+          source-tables: [crm_work_order]
+          source-fields: [id, create_time, creator, handler_user_id, tenant_id, deleted]
+          business-time: crm_work_order.create_time
+          formula: COUNT(id) GROUP BY calendar day
+          filters: [tenant_id = current tenant, deleted = 0, creator or handler when query-all permission is absent, create_time in selected range]
+          permission: crm:statistics-work-order:query + tenant isolation + creator/handler scope unless query-all granted
+        - scope: workorder
+          code: workorder.completed-trend
+          name: 工单完结趋势
+          source-tables: [crm_work_order]
+          source-fields: [id, complete_time, creator, handler_user_id, tenant_id, deleted]
+          business-time: crm_work_order.complete_time
+          formula: COUNT(id) GROUP BY calendar day
+          filters: [tenant_id = current tenant, deleted = 0, complete_time is not null, creator or handler when query-all permission is absent]
+          permission: crm:statistics-work-order:query + tenant isolation + creator/handler scope unless query-all granted
   info:
     version: 1.0.0
     base-package: com.meession.etm

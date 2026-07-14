@@ -901,6 +901,29 @@ export default {
     // 通用操作
     search: '查询',
     reset: '重置',
+    lineage: {
+      title: '指标刷新与数据血缘',
+      realtimeQuery: '实时查询',
+      unknownMode: '未声明刷新模式',
+      lastRefreshedAt: '本页数据最后刷新',
+      notRefreshed: '尚未刷新',
+      refreshNow: '刷新当前图表',
+      viewCatalog: '查看指标口径',
+      loadFailed: '指标口径加载失败，统计数据仍可正常查询',
+      catalogTitle: '指标口径与数据血缘',
+      refreshMode: '刷新模式',
+      permissionMode: '权限模式',
+      historyRecalculation: '历史重算边界',
+      reconciliation: '对账方式',
+      metricName: '指标名称',
+      metricCode: '指标编码',
+      businessTime: '业务时间字段',
+      sourceTables: '来源表',
+      sourceFields: '来源字段',
+      formula: '聚合公式',
+      filters: '过滤规则',
+      permission: '数据权限'
+    },
     // 客户分析
     customer: {
       title: '客户分析',

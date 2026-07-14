@@ -53,6 +53,12 @@
     </el-form>
   </ContentWrap>
 
+  <StatisticsLineagePanel
+    ref="statisticsLineageRef"
+    scope="portrait"
+    :on-refresh="handleQuery"
+  />
+
   <!-- 客户画像统计 -->
   <el-col>
     <el-tabs v-model="activeTab">
@@ -109,6 +115,7 @@ import { beginOfDay, defaultShortcuts, endOfDay, formatDate } from '@/utils/form
 import { useUserStore } from '@/store/modules/user'
 
 import { useI18n } from '@/hooks/web/useI18n'
+import StatisticsLineagePanel from '../components/StatisticsLineagePanel.vue'
 
 defineOptions({ name: 'CrmStatisticsPortrait' })
 
@@ -133,37 +140,41 @@ const customerIndustryRef = ref() // 客户行业分析
 const customerLevelRef = ref() // 客户级别分析
 const customerSourceRef = ref() // 客户来源分析
 const customerDealStatusRef = ref() // 客户成交状态分析
+const statisticsLineageRef = ref<InstanceType<typeof StatisticsLineagePanel>>()
 
 /** 搜索按钮操作 */
-const handleQuery = () => {
+const handleQuery = async () => {
+  let query: Promise<unknown> | undefined
   switch (activeTab.value) {
     case 'customerCity': // 城市分布分析
-      customerCityRef.value?.loadData?.()
+      query = customerCityRef.value?.loadData?.()
       break
     case 'customerArea': // 省份分布分析
-      customerAreaRef.value?.loadData?.()
+      query = customerAreaRef.value?.loadData?.()
       break
     case 'customerCountry': // 国家分布分析
-      customerCountryRef.value?.loadData?.()
+      query = customerCountryRef.value?.loadData?.()
       break
     case 'customerIndustry': // 客户行业分析
-      customerIndustryRef.value?.loadData?.()
+      query = customerIndustryRef.value?.loadData?.()
       break
     case 'customerLevel': // 客户级别分析
-      customerLevelRef.value?.loadData?.()
+      query = customerLevelRef.value?.loadData?.()
       break
     case 'customerSource': // 客户来源分析
-      customerSourceRef.value?.loadData?.()
+      query = customerSourceRef.value?.loadData?.()
       break
     case 'customerDealStatus': // 客户成交状态分析
-      customerDealStatusRef.value?.loadData?.()
+      query = customerDealStatusRef.value?.loadData?.()
       break
   }
+  await query
+  statisticsLineageRef.value?.markRefreshed()
 }
 
 // 当 activeTab 改变时，刷新当前活动的 tab
 watch(activeTab, () => {
-  handleQuery()
+  void handleQuery()
 })
 
 /** 重置按钮操作 */
@@ -175,6 +186,7 @@ const resetQuery = () => {
 // 加载部门树
 onMounted(async () => {
   deptList.value = handleTree(await DeptApi.getSimpleDeptList())
+  await handleQuery()
 })
 </script>
 <style lang="scss" scoped></style>

@@ -6,8 +6,8 @@
 
 更新日期：2026-07-14
 
-- Ubuntu 26.04 容器 CRM 自动化：208/208，失败 0、错误 0、跳过 0。
-- CRM JaCoCo 基线：指令 40.08%、分支 37.32%、行 37.91%、方法 25.61%。
+- Ubuntu 26.04 容器 CRM 自动化：213/213，失败 0、错误 0、跳过 0。
+- CRM JaCoCo 基线：指令 40.36%、分支 37.51%、行 38.29%、方法 25.86%。
 - Ubuntu 26.04 BPM 自动化：54 个，48 通过、6 跳过、失败 0；行覆盖率 8.58%。
 - Ubuntu 26.04 容器 CRM 前端纯函数：统计 7/7，发票 3/3。
 - 原始报告：`Server/mitedtsm-module-crm/target/site/jacoco/`，属于构建产物，不提交。
@@ -56,6 +56,7 @@
 | `crm-contract-lifecycle/` | 合同附件、实际签署、Provider 能力、作废、幂等和不可变轨迹 |
 | `customer-four-state-lifecycle/` | 客户四态命令、成交兼容、不可变历史、筛选与画像统计 |
 | `bpm-tenant-unified-backlog/` | BPM 租户查询、模型旁路、统一待办、构建和覆盖率 |
+| `statistics-lineage-refresh/` | 六类统计指标血缘、域权限、实时刷新和覆盖率 |
 
 运行入口统一为：
 

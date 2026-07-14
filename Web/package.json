@@ -14,6 +14,7 @@
     "lint:crm-customer-lifecycle": "eslint --max-warnings=0 --ext .ts,.vue src/api/crm/customer/index.ts src/api/crm/statistics/portrait.ts src/views/crm/customer src/views/crm/statistics/portrait/components/PortraitCustomerDealStatus.vue",
     "lint:crm-customer-360": "eslint --max-warnings=0 --ext .ts,.vue src/api/crm/customer/index.ts src/views/crm/customer/detail src/views/crm/invoice/components/CustomerInvoiceList.vue",
     "lint:crm-bpm-governance": "eslint --max-warnings=0 --ext .ts,.vue src/views/crm/backlog/index.vue src/views/crm/backlog/components/BpmTaskBacklogList.vue",
+    "lint:crm-statistics-lineage": "eslint --max-warnings=0 --ext .ts,.vue src/api/crm/statistics/metadata.ts src/views/crm/statistics/components/StatisticsLineagePanel.vue src/views/crm/statistics/customer/index.vue src/views/crm/statistics/funnel/index.vue src/views/crm/statistics/performance/index.vue src/views/crm/statistics/portrait/index.vue src/views/crm/statistics/rank/index.vue src/views/crm/statistics/workorder/index.vue",
     "build:local": "node --max_old_space_size=4096 ./node_modules/vite/bin/vite.js build",
     "build:dev": "node --max_old_space_size=4096 ./node_modules/vite/bin/vite.js build --mode dev",
     "build:test": "node --max_old_space_size=4096 ./node_modules/vite/bin/vite.js build --mode test",

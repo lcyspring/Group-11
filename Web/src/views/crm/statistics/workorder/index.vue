@@ -2,7 +2,8 @@
   <ContentWrap>
     <el-form :model="queryParams" inline label-width="auto" class="-mb-15px">
       <el-form-item :label="t('timeRange')">
-        <el-date-picker v-model="queryParams.times" type="daterange" value-format="YYYY-MM-DD HH:mm:ss"
+        <el-date-picker
+          v-model="queryParams.times" type="daterange" value-format="YYYY-MM-DD HH:mm:ss"
           :default-time="[new Date('1 00:00:00'), new Date('1 23:59:59')]"
           :start-placeholder="t('common.startTime')" :end-placeholder="t('common.endTime')" />
       </el-form-item>
@@ -14,6 +15,12 @@
       <el-form-item><el-button type="primary" @click="loadData"><Icon icon="ep:search" class="mr-5px" />{{ t('search') }}</el-button></el-form-item>
     </el-form>
   </ContentWrap>
+
+  <StatisticsLineagePanel
+    ref="statisticsLineageRef"
+    scope="workorder"
+    :on-refresh="loadData"
+  />
 
   <el-row :gutter="16" v-loading="loading">
     <el-col v-for="card in summaryCards" :key="card.label" :xs="12" :sm="8" :lg="4">
@@ -36,6 +43,7 @@ import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import { beginOfDay, endOfDay, formatDate } from '@/utils/formatTime'
 import { WorkOrderStatisticsApi, WorkOrderStatisticsHandler, WorkOrderStatisticsStatus, WorkOrderStatisticsSummary, WorkOrderStatisticsTrend, WorkOrderStatisticsType } from '@/api/crm/statistics/workorder'
 import type { EChartsOption } from 'echarts'
+import StatisticsLineagePanel from '../components/StatisticsLineagePanel.vue'
 
 defineOptions({ name: 'CrmStatisticsWorkOrder' })
 const { t } = useI18n('crm.statistics')
@@ -46,6 +54,7 @@ const summary = ref<WorkOrderStatisticsSummary>({ totalCount: 0, pendingCount: 0
 const statusRows = ref<WorkOrderStatisticsStatus[]>([])
 const typeRows = ref<WorkOrderStatisticsType[]>([])
 const handlerRows = ref<WorkOrderStatisticsHandler[]>([])
+const statisticsLineageRef = ref<InstanceType<typeof StatisticsLineagePanel>>()
 
 const summaryCards = computed(() => [
   { label: t('workOrder.total'), value: summary.value.totalCount },
@@ -77,6 +86,7 @@ const loadData = async () => {
     ;(trendOptions.xAxis as any).data = rows.map(row => row.time)
     ;(trendOptions.series as any[])[0].data = rows.map(row => row.createdCount)
     ;(trendOptions.series as any[])[1].data = rows.map(row => row.completedCount)
+    statisticsLineageRef.value?.markRefreshed()
   } finally { loading.value = false }
 }
 const statusLabel = (value: number) => ({ 10: t('workOrder.pending'), 20: t('workOrder.processing'), 30: t('workOrder.completed'), 40: t('workOrder.returned') } as Record<number, string>)[value] || value

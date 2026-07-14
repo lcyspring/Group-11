@@ -105,6 +105,12 @@
     </el-form>
   </ContentWrap>
 
+  <StatisticsLineagePanel
+    ref="statisticsLineageRef"
+    scope="funnel"
+    :on-refresh="handleQuery"
+  />
+
   <!-- 客户统计 -->
   <el-col>
     <el-tabs v-model="activeTab">
@@ -139,6 +145,7 @@ import BusinessSummary from './components/BusinessSummary.vue'
 import BusinessInversionRateSummary from './components/BusinessInversionRateSummary.vue'
 import SalesForecast from './components/SalesForecast.vue'
 import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
+import StatisticsLineagePanel from '../components/StatisticsLineagePanel.vue'
 
 defineOptions({ name: 'CrmStatisticsFunnel' })
 
@@ -173,28 +180,32 @@ const funnelRef = ref() // 销售漏斗
 const businessSummaryRef = ref() // 新增商机分析
 const businessInversionRateSummaryRef = ref() // 商机转化率分析
 const salesForecastRef = ref() // 销售预测
+const statisticsLineageRef = ref<InstanceType<typeof StatisticsLineagePanel>>()
 
 /** 搜索按钮操作 */
-const handleQuery = () => {
+const handleQuery = async () => {
+  let query: Promise<unknown> | undefined
   switch (activeTab.value) {
     case 'funnelRef':
-      funnelRef.value?.loadData?.()
+      query = funnelRef.value?.loadData?.()
       break
     case 'businessSummaryRef':
-      businessSummaryRef.value?.loadData?.()
+      query = businessSummaryRef.value?.loadData?.()
       break
     case 'businessInversionRateSummaryRef':
-      businessInversionRateSummaryRef.value?.loadData?.()
+      query = businessInversionRateSummaryRef.value?.loadData?.()
       break
     case 'salesForecastRef':
-      salesForecastRef.value?.loadData?.()
+      query = salesForecastRef.value?.loadData?.()
       break
   }
+  await query
+  statisticsLineageRef.value?.markRefreshed()
 }
 
 /** 当 activeTab 改变时，刷新当前活动的 tab */
 watch(activeTab, () => {
-  handleQuery()
+  void handleQuery()
 })
 
 /** 重置按钮操作 */
@@ -215,6 +226,6 @@ onMounted(async () => {
   userList.value = handleTree(users)
   statusTypeList.value = statusTypes
   queryParams.statusTypeId = statusTypes[0]?.id
-  handleQuery()
+  await handleQuery()
 })
 </script>
