@@ -1,0 +1,20 @@
+schema_version: 1
+
+image:
+  base: docker.io/library/ubuntu:26.04
+  name: localhost/mitedtsm-hbuilderx-ubuntu:26.04-5.05
+  rebuild: false
+
+hbuilderx:
+  source_dir: /opt/HBuilderX
+
+build:
+  platform: h5
+  clean_output: true
+
+network:
+  mode: none
+
+runtime:
+  memory: 4g
+  cpus: 4

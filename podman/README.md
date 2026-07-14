@@ -52,8 +52,27 @@ bash ./build-in-ubuntu.sh ./config/build-ubuntu-26.04.yaml
 The build entry point also accepts exactly one YAML path. Named Podman volumes
 hold Maven, pnpm-store, and Web `node_modules` caches. The repository must be on
 a filesystem with symbolic-link support; no legacy staging/copy-back path is
-used. The Mall H5 output remains a versioned deployment input and is rebuilt
-separately with HBuilderX only when it changes.
+used.
+
+Mall H5 uses HBuilderX's non-graphical uni-app compiler in a separate Ubuntu
+26.04 image:
+
+```bash
+cd podman
+bash ./build-mall-h5-in-ubuntu.sh ./config/build-mall-h5-ubuntu-26.04.yaml
+```
+
+This entry point likewise accepts only its YAML path. It does not start the
+HBuilderX IDE, Qt, X11, or Xvfb. When the configured image does not exist (or
+`image.rebuild` is `true`), it copies only HBuilderX's bundled Node, Vue 3/Vite
+uni-app compiler, and Dart Sass runtime from `hbuilderx.source_dir`. Normal
+builds use the resulting self-contained image without reading or mounting the
+host HBuilderX installation. `MallFrontend/unpackage/` is generated locally
+and ignored by Git; build it before packaging a deployment image.
+
+`build-assets.sh` remains the Ubuntu 26.04 host-toolchain helper for other
+project members. This workstation should use the two container entry points
+above.
 
 Required runtime artifacts are:
 
@@ -114,6 +133,8 @@ proxy hostnames are translated to the configured `network.host_proxy_name`.
 - `tests/runtime-config/`: parser, CLI contract, preflight, and Pod-state tests.
 - `up.sh` / `down.sh`: YAML-only runtime entry points.
 - `Containerfile.build-ubuntu`: Ubuntu 26.04 build toolchain image.
+- `Containerfile.hbuilderx-ubuntu`: headless Mall H5 compiler image.
+- `build-mall-h5-in-ubuntu.sh`: YAML-only Mall H5 container build entry point.
 - `Containerfile`: multi-target runtime packaging.
 - `image-archives.sh` / `images/`: portable Podman base-image archives.
 
@@ -121,4 +142,10 @@ Run the structured runtime configuration test with:
 
 ```bash
 bash ./tests/runtime-config/run.sh ./config/runtime-local-check.yaml
+```
+
+Run the Mall H5 container integration test with:
+
+```bash
+bash ./tests/mall-h5-build/run.sh ./config/build-mall-h5-ubuntu-26.04.yaml
 ```
