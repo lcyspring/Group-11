@@ -6,6 +6,7 @@ import com.meession.etm.module.bpm.api.task.dto.BpmProcessInstanceCreateReqDTO;
 import com.meession.etm.module.bpm.enums.task.BpmProcessInstanceStatusEnum;
 import com.meession.etm.module.crm.controller.admin.contract.vo.contract.CrmContractSaveReqVO;
 import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessDO;
+import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractProductDO;
 import com.meession.etm.module.crm.dal.dataobject.product.CrmProductDO;
@@ -42,6 +43,7 @@ import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTRACT_CREA
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTRACT_CREATE_BUSINESS_REQUIRES_CONVERSION;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTRACT_DELETE_FAIL_NOT_NEW_DRAFT;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTRACT_PRODUCT_ROW_NOT_BELONGS;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTRACT_SIGN_CONTACT_CUSTOMER_MISMATCH;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTRACT_UPDATE_FAIL_NOT_EDITABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -250,6 +252,19 @@ class CrmContractServiceImplTest {
 
         assertEquals(CONTRACT_UPDATE_FAIL_NOT_EDITABLE.getCode(), exception.getCode());
         verify(contractMapper, never()).updateById(any(CrmContractDO.class));
+    }
+
+    @Test
+    void createContractRejectsSignContactFromAnotherCustomer() {
+        CrmContractSaveReqVO createRequest = request().setBusinessId(null).setCustomerId(20L)
+                .setSignContactId(8L);
+        when(contactService.getContact(8L)).thenReturn(new CrmContactDO().setId(8L).setCustomerId(21L));
+
+        ServiceException exception = assertThrows(ServiceException.class,
+                () -> service.createContract(createRequest, 1L));
+
+        assertEquals(CONTRACT_SIGN_CONTACT_CUSTOMER_MISMATCH.getCode(), exception.getCode());
+        verify(contractMapper, never()).insert(any(CrmContractDO.class));
     }
 
     @Test

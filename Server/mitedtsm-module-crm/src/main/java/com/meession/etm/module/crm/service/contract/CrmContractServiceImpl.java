@@ -14,6 +14,7 @@ import com.meession.etm.module.crm.controller.admin.contract.vo.contract.CrmCont
 import com.meession.etm.module.crm.controller.admin.contract.vo.contract.CrmContractSaveReqVO;
 import com.meession.etm.module.crm.controller.admin.contract.vo.contract.CrmContractTransferReqVO;
 import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessDO;
+import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractConfigDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractProductDO;
@@ -272,7 +273,13 @@ public class CrmContractServiceImpl implements CrmContractService {
         }
         // 4. 校验签约相关字段
         if (reqVO.getSignContactId() != null) {
-            contactService.validateContact(reqVO.getSignContactId());
+            CrmContactDO signContact = contactService.getContact(reqVO.getSignContactId());
+            if (signContact == null) {
+                throw exception(CONTACT_NOT_EXISTS);
+            }
+            if (ObjUtil.notEqual(signContact.getCustomerId(), reqVO.getCustomerId())) {
+                throw exception(CONTRACT_SIGN_CONTACT_CUSTOMER_MISMATCH);
+            }
         }
         if (reqVO.getSignUserId() != null) {
             adminUserApi.validateUser(reqVO.getSignUserId());

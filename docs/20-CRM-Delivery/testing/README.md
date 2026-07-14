@@ -6,8 +6,8 @@
 
 更新日期：2026-07-14
 
-- Ubuntu 26.04 容器 CRM 自动化：192/192，失败 0、错误 0、跳过 0。
-- JaCoCo clean 基线：指令 38.22%、分支 35.86%、行 36.05%、方法 24.53%。
+- Ubuntu 26.04 容器 CRM 自动化：193/193，失败 0、错误 0、跳过 0。
+- JaCoCo clean 基线：指令 38.29%、分支 35.98%、行 36.12%、方法 24.53%。
 - Ubuntu 26.04 容器 CRM 前端纯函数：统计 7/7，发票 3/3。
 - 原始报告：`Server/mitedtsm-module-crm/target/site/jacoco/`，属于构建产物，不提交。
 
@@ -43,6 +43,7 @@
 | `business-stage-forward-guard/` | 商机阶段前向约束、推进说明和操作日志审计 |
 | `business-to-contract-conversion/` | 赢单商机授权、继承、幂等转换合同和 MySQL 唯一键 |
 | `contract-approval-revision-resubmit/` | 合同审批状态映射、修订重提、对象权限及回调幂等 |
+| `contract-sign-contact-integrity/` | 合同签约联系人必须属于合同客户的服务端不变量 |
 | `receivable-approval-revision-resubmit/` | 回款修订重提、金额边界、权限、回调幂等及生效汇总 |
 | `receivable-plan-effective-status/` | 计划金额守恒、审批生效状态、逾期待办及展示一致性 |
 | `crm-work-order-minimum-closure/` | 客服工单状态机、权限、轨迹、通知、待办和运行闭环 |

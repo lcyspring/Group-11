@@ -28,6 +28,8 @@ public interface ErrorCodeConstants {
             "合同产品行不存在或不属于当前合同，请刷新后重试");
     ErrorCode CONTRACT_PRODUCT_ROW_DUPLICATE = new ErrorCode(1_020_000_011,
             "合同产品行重复，请刷新后重试");
+    ErrorCode CONTRACT_SIGN_CONTACT_CUSTOMER_MISMATCH = new ErrorCode(1_020_000_012,
+            "签约联系人不属于合同客户");
 
     // ========== 线索管理 1-020-001-000 ==========
     ErrorCode CLUE_NOT_EXISTS = new ErrorCode(1_020_001_000, "线索不存在");
