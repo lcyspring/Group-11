@@ -2,6 +2,8 @@ package com.meession.etm.module.crm.service.statistics;
 
 import com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerDealCycleByDateRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerReqVO;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerSummaryByDateRespVO;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerSummaryByUserRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsFollowUpSummaryByDateRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsFollowUpSummaryByUserRespVO;
 import com.meession.etm.module.crm.dal.mysql.statistics.CrmStatisticsCustomerMapper;
@@ -12,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Proxy;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +22,45 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class CrmStatisticsCustomerServiceImplTest {
+
+    @Test
+    void getCustomerSummaryByDateReturnsServerDefinedDealRate() {
+        CrmStatisticsCustomerServiceImpl service = serviceWithMapper((proxy, method, args) -> switch (method.getName()) {
+            case "selectCustomerCreateCountGroupByDate" -> List.of(new CrmStatisticsCustomerSummaryByDateRespVO()
+                    .setTime("2024-01-01").setCustomerCreateCount(4));
+            case "selectCustomerDealCountGroupByDate" -> List.of(new CrmStatisticsCustomerSummaryByDateRespVO()
+                    .setTime("2024-01-01").setCustomerDealCount(1));
+            default -> throw new AssertionError("未预期的 Mapper 调用 " + method.getName());
+        });
+
+        List<CrmStatisticsCustomerSummaryByDateRespVO> result = service.getCustomerSummaryByDate(request());
+
+        assertEquals(new BigDecimal("25.00"), result.get(0).getCustomerDealRate());
+    }
+
+    @Test
+    void getCustomerSummaryByUserReturnsAmountsAndRatesWithCorrectSemantics() {
+        CrmStatisticsCustomerServiceImpl service = serviceWithMapper((proxy, method, args) -> switch (method.getName()) {
+            case "selectCustomerCreateCountGroupByUser" -> List.of(new CrmStatisticsCustomerSummaryByUserRespVO()
+                    .setCustomerCreateCount(4).setOwnerUserId(1L));
+            case "selectCustomerDealCountGroupByUser" -> List.of(new CrmStatisticsCustomerSummaryByUserRespVO()
+                    .setCustomerDealCount(1).setOwnerUserId(1L));
+            case "selectContractPriceGroupByUser" -> List.of(new CrmStatisticsCustomerSummaryByUserRespVO()
+                    .setContractPrice(new BigDecimal("100.00")).setOwnerUserId(1L));
+            case "selectReceivablePriceGroupByUser" -> List.of(new CrmStatisticsCustomerSummaryByUserRespVO()
+                    .setReceivablePrice(new BigDecimal("40.00")).setOwnerUserId(1L));
+            default -> throw new AssertionError("未预期的 Mapper 调用 " + method.getName());
+        });
+        AdminUserRespDTO user = new AdminUserRespDTO().setId(1L).setNickname("测试用户");
+        ReflectionTestUtils.setField(service, "adminUserApi", proxy(AdminUserApi.class,
+                (proxy, method, args) -> Map.of(1L, user)));
+
+        List<CrmStatisticsCustomerSummaryByUserRespVO> result = service.getCustomerSummaryByUser(request());
+
+        assertEquals(new BigDecimal("25.00"), result.get(0).getCustomerDealRate());
+        assertEquals(new BigDecimal("60.00"), result.get(0).getUnreceivablePrice());
+        assertEquals(new BigDecimal("40.00"), result.get(0).getReceivableRate());
+    }
 
     @Test
     void getFollowUpSummaryByDateKeepsRecordAndCustomerCountsInTheirFields() {

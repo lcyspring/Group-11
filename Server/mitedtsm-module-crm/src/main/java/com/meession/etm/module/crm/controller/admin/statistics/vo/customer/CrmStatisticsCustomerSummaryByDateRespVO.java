@@ -3,6 +3,8 @@ package com.meession.etm.module.crm.controller.admin.statistics.vo.customer;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Schema(description = "管理后台 - CRM 客户总量分析(按日期) VO")
 @Data
 public class CrmStatisticsCustomerSummaryByDateRespVO {
@@ -15,5 +17,8 @@ public class CrmStatisticsCustomerSummaryByDateRespVO {
 
     @Schema(description = "成交客户数", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
     private Integer customerDealCount;
+
+    @Schema(description = "客户成交率", requiredMode = Schema.RequiredMode.REQUIRED, example = "25.00")
+    private BigDecimal customerDealRate;
 
 }

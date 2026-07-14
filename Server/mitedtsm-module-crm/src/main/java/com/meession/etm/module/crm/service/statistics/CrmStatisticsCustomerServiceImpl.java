@@ -71,7 +71,8 @@ public class CrmStatisticsCustomerServiceImpl implements CrmStatisticsCustomerSe
                     .mapToInt(CrmStatisticsCustomerSummaryByDateRespVO::getCustomerDealCount).sum();
             return new CrmStatisticsCustomerSummaryByDateRespVO()
                     .setTime(LocalDateTimeUtils.formatDateRange(times[0], times[1], reqVO.getInterval()))
-                    .setCustomerCreateCount(customerCreateCount).setCustomerDealCount(customerDealCount);
+                    .setCustomerCreateCount(customerCreateCount).setCustomerDealCount(customerDealCount)
+                    .setCustomerDealRate(calculatePercentage(customerDealCount, customerCreateCount));
         });
     }
 
@@ -101,7 +102,11 @@ public class CrmStatisticsCustomerServiceImpl implements CrmStatisticsCustomerSe
                     .reduce(BigDecimal.ZERO, (sum, vo) -> sum.add(vo.getReceivablePrice()), BigDecimal::add);
             return (CrmStatisticsCustomerSummaryByUserRespVO) new CrmStatisticsCustomerSummaryByUserRespVO()
                     .setCustomerCreateCount(customerCreateCount).setCustomerDealCount(customerDealCount)
-                    .setContractPrice(contractPrice).setReceivablePrice(receivablePrice).setOwnerUserId(userId);
+                    .setCustomerDealRate(calculatePercentage(customerDealCount, customerCreateCount))
+                    .setContractPrice(contractPrice).setReceivablePrice(receivablePrice)
+                    .setUnreceivablePrice(contractPrice.subtract(receivablePrice))
+                    .setReceivableRate(calculatePercentage(receivablePrice, contractPrice))
+                    .setOwnerUserId(userId);
         });
         // 3.2 拼接用户信息
         appendUserInfo(summaryList);
@@ -367,6 +372,18 @@ public class CrmStatisticsCustomerServiceImpl implements CrmStatisticsCustomerSe
         deptIds.add(reqVO.getDeptId());
         // 2.2 获得用户编号
         return convertList(adminUserApi.getUserListByDeptIds(deptIds), AdminUserRespDTO::getId);
+    }
+
+    private static BigDecimal calculatePercentage(long value, long total) {
+        return calculatePercentage(BigDecimal.valueOf(value), BigDecimal.valueOf(total));
+    }
+
+    private static BigDecimal calculatePercentage(BigDecimal value, BigDecimal total) {
+        if (total.signum() == 0) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
+        return value.multiply(BigDecimal.valueOf(100))
+                .divide(total, 2, RoundingMode.HALF_UP);
     }
 
 }

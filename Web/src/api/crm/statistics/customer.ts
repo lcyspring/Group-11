@@ -4,14 +4,18 @@ export interface CrmStatisticsCustomerSummaryByDateRespVO {
   time: string
   customerCreateCount: number
   customerDealCount: number
+  customerDealRate: number | string
 }
 
 export interface CrmStatisticsCustomerSummaryByUserRespVO {
   ownerUserName: string
   customerCreateCount: number
   customerDealCount: number
+  customerDealRate: number | string
   contractPrice: number
   receivablePrice: number
+  unreceivablePrice: number
+  receivableRate: number | string
 }
 
 export interface CrmStatisticsFollowUpSummaryByDateRespVO {

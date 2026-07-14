@@ -15,10 +15,19 @@ public class CrmStatisticsCustomerSummaryByUserRespVO extends CrmStatisticsCusto
     @Schema(description = "成交客户数", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
     private Integer customerDealCount;
 
+    @Schema(description = "客户成交率", requiredMode = Schema.RequiredMode.REQUIRED, example = "25.00")
+    private BigDecimal customerDealRate;
+
     @Schema(description = "合同总金额", requiredMode = Schema.RequiredMode.REQUIRED, example = "100.00")
     private BigDecimal contractPrice;
 
     @Schema(description = "回款金额", requiredMode = Schema.RequiredMode.REQUIRED, example = "100.00")
     private BigDecimal receivablePrice;
+
+    @Schema(description = "未回款金额", requiredMode = Schema.RequiredMode.REQUIRED, example = "60.00")
+    private BigDecimal unreceivablePrice;
+
+    @Schema(description = "回款完成率", requiredMode = Schema.RequiredMode.REQUIRED, example = "40.00")
+    private BigDecimal receivableRate;
 
 }
