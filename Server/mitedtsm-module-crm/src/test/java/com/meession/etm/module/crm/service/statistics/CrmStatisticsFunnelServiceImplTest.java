@@ -3,8 +3,11 @@ package com.meession.etm.module.crm.service.statistics;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticFunnelSummaryRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessForecastByDateRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessInversionRateSummaryByDateRespVO;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessStageReqVO;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessStageSummaryRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsFunnelReqVO;
 import com.meession.etm.module.crm.dal.mysql.statistics.CrmStatisticsFunnelMapper;
+import com.meession.etm.module.crm.service.business.CrmBusinessStatusService;
 import com.meession.etm.module.system.api.dept.DeptApi;
 import com.meession.etm.module.system.api.user.AdminUserApi;
 import org.junit.jupiter.api.Test;
@@ -20,6 +23,51 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class CrmStatisticsFunnelServiceImplTest {
+
+    @Test
+    void getBusinessStageSummaryBuildsMonotonicCumulativeFunnel() {
+        CrmStatisticsFunnelServiceImpl funnelService = new CrmStatisticsFunnelServiceImpl();
+        List<CrmStatisticsBusinessStageSummaryRespVO> rawRows = List.of(
+                stage(11L, "初步接洽", 10, null, 10L, "100000.00"),
+                stage(12L, "需求确认", 20, null, 4L, "50000.00"),
+                stage(13L, "方案报价", 30, null, 1L, "20000.00"),
+                stage(null, null, Integer.MAX_VALUE, 1, 2L, "40000.00")
+        );
+        ReflectionTestUtils.setField(funnelService, "funnelMapper", proxy(CrmStatisticsFunnelMapper.class,
+                (proxy, method, args) -> {
+                    if (method.getName().equals("selectBusinessStageSummary")) {
+                        return rawRows;
+                    }
+                    throw new AssertionError("不应访问其他统计 Mapper 方法: " + method.getName());
+                }));
+        ReflectionTestUtils.setField(funnelService, "businessStatusService", proxy(CrmBusinessStatusService.class,
+                (proxy, method, args) -> {
+                    if (method.getName().equals("validateBusinessStatusType")) {
+                        assertEquals(20L, args[0]);
+                        return null;
+                    }
+                    throw new AssertionError("不应访问其他状态服务方法: " + method.getName());
+                }));
+        CrmStatisticsBusinessStageReqVO reqVO = new CrmStatisticsBusinessStageReqVO();
+        reqVO.setDeptId(1L).setUserId(10L).setInterval(2).setTimes(new LocalDateTime[]{
+                LocalDateTime.of(2026, 7, 1, 0, 0),
+                LocalDateTime.of(2026, 7, 31, 23, 59, 59)
+        });
+        reqVO.setStatusTypeId(20L);
+
+        List<CrmStatisticsBusinessStageSummaryRespVO> result = funnelService.getBusinessStageSummary(reqVO);
+
+        assertAll(
+                () -> assertEquals(List.of(17L, 7L, 3L, 2L),
+                        result.stream().map(CrmStatisticsBusinessStageSummaryRespVO::getBusinessCount).toList()),
+                () -> assertEquals(List.of(new BigDecimal("210000.00"), new BigDecimal("110000.00"),
+                                new BigDecimal("60000.00"), new BigDecimal("40000.00")),
+                        result.stream().map(CrmStatisticsBusinessStageSummaryRespVO::getTotalPrice).toList()),
+                () -> assertEquals(List.of(new BigDecimal("100.00"), new BigDecimal("41.18"),
+                                new BigDecimal("42.86"), new BigDecimal("66.67")),
+                        result.stream().map(CrmStatisticsBusinessStageSummaryRespVO::getConversionRate).toList())
+        );
+    }
 
     @Test
     void getFunnelSummaryReturnsZeroSummaryWhenDepartmentHasNoUsers() {
@@ -126,6 +174,13 @@ class CrmStatisticsFunnelServiceImplTest {
                 .setBusinessCount(count)
                 .setExpectedAmount(new BigDecimal(expected))
                 .setWeightedAmount(new BigDecimal(weighted));
+    }
+
+    private static CrmStatisticsBusinessStageSummaryRespVO stage(Long statusId, String statusName, Integer sort,
+                                                                  Integer endStatus, long count, String totalPrice) {
+        return new CrmStatisticsBusinessStageSummaryRespVO()
+                .setStatusId(statusId).setStatusName(statusName).setSort(sort).setEndStatus(endStatus)
+                .setBusinessCount(count).setTotalPrice(new BigDecimal(totalPrice));
     }
 
     private static <T> T proxy(Class<T> type, java.lang.reflect.InvocationHandler handler) {

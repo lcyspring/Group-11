@@ -10,6 +10,7 @@ import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessDO;
 import com.meession.etm.module.crm.dal.mysql.statistics.CrmStatisticsFunnelMapper;
 import com.meession.etm.module.crm.enums.business.CrmBusinessEndStatusEnum;
 import com.meession.etm.module.crm.service.business.CrmBusinessService;
+import com.meession.etm.module.crm.service.business.CrmBusinessStatusService;
 import com.meession.etm.module.system.api.dept.DeptApi;
 import com.meession.etm.module.system.api.dept.dto.DeptRespDTO;
 import com.meession.etm.module.system.api.user.AdminUserApi;
@@ -41,6 +42,8 @@ public class CrmStatisticsFunnelServiceImpl implements CrmStatisticsFunnelServic
     @Resource
     private CrmBusinessService businessService;
     @Resource
+    private CrmBusinessStatusService businessStatusService;
+    @Resource
     private DeptApi deptApi;
 
     @Override
@@ -57,6 +60,42 @@ public class CrmStatisticsFunnelServiceImpl implements CrmStatisticsFunnelServic
         Long businessCount = funnelMapper.selectBusinessCountByDateAndEndStatus(reqVO, null);
         Long businessWinCount = funnelMapper.selectBusinessCountByDateAndEndStatus(reqVO, CrmBusinessEndStatusEnum.WIN.getStatus());
         return new CrmStatisticFunnelSummaryRespVO(customerCount, businessCount, businessWinCount);
+    }
+
+    @Override
+    public List<CrmStatisticsBusinessStageSummaryRespVO> getBusinessStageSummary(
+            CrmStatisticsBusinessStageReqVO reqVO) {
+        reqVO.setUserIds(getUserIds(reqVO));
+        if (CollUtil.isEmpty(reqVO.getUserIds())) {
+            return Collections.emptyList();
+        }
+        businessStatusService.validateBusinessStatusType(reqVO.getStatusTypeId());
+        List<CrmStatisticsBusinessStageSummaryRespVO> rows = funnelMapper.selectBusinessStageSummary(reqVO);
+        if (CollUtil.isEmpty(rows)) {
+            return Collections.emptyList();
+        }
+
+        // SQL 返回各活跃阶段的当前存量以及赢单。由后向前累加，得到“已到达本阶段”的
+        // 单调漏斗；输单、无效不参与，避免流失商机反向放大后续阶段。
+        long cumulativeCount = 0L;
+        BigDecimal cumulativePrice = BigDecimal.ZERO;
+        for (int index = rows.size() - 1; index >= 0; index--) {
+            CrmStatisticsBusinessStageSummaryRespVO row = rows.get(index);
+            cumulativeCount += row.getBusinessCount();
+            cumulativePrice = cumulativePrice.add(row.getTotalPrice());
+            row.setBusinessCount(cumulativeCount);
+            row.setTotalPrice(cumulativePrice.setScale(2, RoundingMode.HALF_UP));
+        }
+        long previousCount = 0L;
+        for (int index = 0; index < rows.size(); index++) {
+            CrmStatisticsBusinessStageSummaryRespVO row = rows.get(index);
+            row.setConversionRate(index == 0
+                    ? (row.getBusinessCount() == 0L ? BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
+                    : BigDecimal.valueOf(100).setScale(2, RoundingMode.HALF_UP))
+                    : calculatePercentage(row.getBusinessCount(), previousCount));
+            previousCount = row.getBusinessCount();
+        }
+        return rows;
     }
 
     @Override

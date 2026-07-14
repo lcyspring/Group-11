@@ -570,7 +570,8 @@ export default {
     ownerUserId: 'المالك',
     transform: 'تحويل إلى عميل',
     transformTitle: 'تحويل الدليل وإنشاء جهة الاتصال الأساسية',
-    transformDescription: 'سيؤدي تحويل الدليل [{name}] إلى إنشاء العميل وجهة الاتصال الأساسية معاً.',
+    transformDescription:
+      'سيؤدي تحويل الدليل [{name}] إلى إنشاء العميل وجهة الاتصال الأساسية معاً.',
     namePlaceholder: 'الرجاء إدخال اسم الدليل',
     ownerUserName: 'المالك',
     ownerUserDeptName: 'القسم',
@@ -747,6 +748,7 @@ export default {
       stage: 'المرحلة',
       businessCount: 'عدد الأعمال',
       businessTotalPrice: 'إجمالي سعر الأعمال',
+      stageConversionRate: 'معدل تحويل المرحلة (%)',
       // Funnel data
       customer: 'عميل',
       business: 'عمل',

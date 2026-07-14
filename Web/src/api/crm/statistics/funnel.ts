@@ -6,6 +6,16 @@ export interface CrmStatisticFunnelRespVO {
   businessWinCount: number // 赢单数
 }
 
+export interface CrmStatisticsBusinessStageSummaryRespVO {
+  statusId?: number
+  statusName?: string
+  sort: number
+  endStatus?: number
+  businessCount: number
+  totalPrice: number | string
+  conversionRate: number
+}
+
 export interface CrmStatisticsBusinessSummaryByDateRespVO {
   time: string // 时间
   businessCreateCount: number // 商机数
@@ -32,6 +42,13 @@ export const StatisticFunnelApi = {
   getFunnelSummary: (params: any) => {
     return request.get({
       url: '/crm/statistics-funnel/get-funnel-summary',
+      params
+    })
+  },
+  // 1.1 获取按状态组计算的商机阶段漏斗
+  getBusinessStageSummary: (params: any) => {
+    return request.get({
+      url: '/crm/statistics-funnel/get-business-stage-summary',
       params
     })
   },

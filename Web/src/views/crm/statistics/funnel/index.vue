@@ -2,12 +2,7 @@
 <template>
   <ContentWrap>
     <!-- 搜索工作栏 -->
-    <el-form
-      ref="queryFormRef"
-      :model="queryParams"
-      class="-mb-15px"
-      label-width="auto"
-    >
+    <el-form ref="queryFormRef" :model="queryParams" class="-mb-15px" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('timeRange')" prop="orderDate">
@@ -51,7 +46,7 @@
               class="!w-240px"
               node-key="id"
               :placeholder="t('dept')"
-              @change="(queryParams.userId = undefined), handleQuery()"
+              @change="((queryParams.userId = undefined), handleQuery())"
             />
           </el-form-item>
         </el-col>
@@ -71,6 +66,23 @@
                 :key="index"
                 :label="user.nickname"
                 :value="user.id"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col v-if="activeTab === 'funnelRef'" :span="8">
+          <el-form-item :label="t('funnel.statusTypeName')" prop="statusTypeId">
+            <el-select
+              v-model="queryParams.statusTypeId"
+              class="!w-240px"
+              :placeholder="t('funnel.statusTypeName')"
+              @change="handleQuery"
+            >
+              <el-option
+                v-for="statusType in statusTypeList"
+                :key="statusType.id"
+                :label="statusType.name"
+                :value="statusType.id"
               />
             </el-select>
           </el-form-item>
@@ -118,6 +130,7 @@
 <script lang="ts" setup>
 import * as DeptApi from '@/api/system/dept'
 import * as UserApi from '@/api/system/user'
+import * as BusinessStatusApi from '@/api/crm/business/status'
 import { useUserStore } from '@/store/modules/user'
 import { beginOfDay, defaultShortcuts, endOfDay, formatDate } from '@/utils/formatTime'
 import { defaultProps, handleTree } from '@/utils/tree'
@@ -135,6 +148,7 @@ const queryParams = reactive({
   interval: 2, // WEEK, 周
   deptId: useUserStore().getUser.deptId,
   userId: undefined,
+  statusTypeId: undefined as number | undefined,
   times: [
     // 默认显示最近一周的数据
     formatDate(beginOfDay(new Date(new Date().getTime() - 3600 * 1000 * 24 * 7))),
@@ -145,6 +159,7 @@ const queryParams = reactive({
 const queryFormRef = ref() // 搜索的表单
 const deptList = ref<Tree[]>([]) // 部门树形结构
 const userList = ref<UserApi.UserVO[]>([]) // 全量用户清单
+const statusTypeList = ref<BusinessStatusApi.BusinessStatusTypeVO[]>([])
 
 /** 根据选择的部门筛选员工清单 */
 const userListByDeptId = computed(() =>
@@ -185,12 +200,21 @@ watch(activeTab, () => {
 /** 重置按钮操作 */
 const resetQuery = () => {
   queryFormRef.value.resetFields()
+  queryParams.statusTypeId = statusTypeList.value[0]?.id
   handleQuery()
 }
 
 /** 初始化 */
 onMounted(async () => {
-  deptList.value = handleTree(await DeptApi.getSimpleDeptList())
-  userList.value = handleTree(await UserApi.getSimpleUserList())
+  const [departments, users, statusTypes] = await Promise.all([
+    DeptApi.getSimpleDeptList(),
+    UserApi.getSimpleUserList(),
+    BusinessStatusApi.getBusinessStatusTypeSimpleList()
+  ])
+  deptList.value = handleTree(departments)
+  userList.value = handleTree(users)
+  statusTypeList.value = statusTypes
+  queryParams.statusTypeId = statusTypes[0]?.id
+  handleQuery()
 })
 </script>

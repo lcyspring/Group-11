@@ -38,6 +38,14 @@ public class CrmStatisticsFunnelController {
         return success(funnelService.getFunnelSummary(reqVO));
     }
 
+    @GetMapping("/get-business-stage-summary")
+    @Operation(summary = "获取商机阶段漏斗", description = "按状态组统计到达各阶段的商机数量、金额和相邻转化率")
+    @PreAuthorize("@ss.hasPermission('crm:statistics-funnel:query')")
+    public CommonResult<List<CrmStatisticsBusinessStageSummaryRespVO>> getBusinessStageSummary(
+            @Valid CrmStatisticsBusinessStageReqVO reqVO) {
+        return success(funnelService.getBusinessStageSummary(reqVO));
+    }
+
     @GetMapping("/get-business-summary-by-end-status")
     @Operation(summary = "获取商机结束状态统计", description = "用于【销售漏斗】页面的【销售漏斗分析】")
     @PreAuthorize("@ss.hasPermission('crm:statistics-funnel:query')")

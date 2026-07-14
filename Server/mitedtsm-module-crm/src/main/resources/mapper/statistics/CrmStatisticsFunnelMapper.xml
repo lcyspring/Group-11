@@ -33,6 +33,59 @@
         #{reqVO.times[1],javaType=java.time.LocalDateTime}
     </select>
 
+    <select id="selectBusinessStageSummary"
+            resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessStageSummaryRespVO">
+        SELECT stage.statusId,
+               stage.statusName,
+               stage.sort,
+               stage.endStatus,
+               stage.businessCount,
+               stage.totalPrice
+        FROM (
+            SELECT status.id AS statusId,
+                   status.name AS statusName,
+                   status.sort AS sort,
+                   NULL AS endStatus,
+                   COUNT(business.id) AS businessCount,
+                   COALESCE(SUM(business.total_price), 0) AS totalPrice
+            FROM crm_business_status AS status
+            LEFT JOIN crm_business AS business
+                ON business.status_id = status.id
+                AND business.status_type_id = status.type_id
+                AND business.deleted = 0
+                AND business.end_status IS NULL
+                AND business.owner_user_id IN
+                <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+                    #{userId}
+                </foreach>
+                AND business.create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime}
+                AND #{times[1],javaType=java.time.LocalDateTime}
+            WHERE status.deleted = 0
+              AND status.type_id = #{statusTypeId}
+            GROUP BY status.id, status.name, status.sort
+
+            UNION ALL
+
+            SELECT NULL AS statusId,
+                   NULL AS statusName,
+                   2147483647 AS sort,
+                   1 AS endStatus,
+                   COUNT(*) AS businessCount,
+                   COALESCE(SUM(business.total_price), 0) AS totalPrice
+            FROM crm_business AS business
+            WHERE business.deleted = 0
+              AND business.status_type_id = #{statusTypeId}
+              AND business.end_status = 1
+              AND business.owner_user_id IN
+                <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+                    #{userId}
+                </foreach>
+              AND business.create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime}
+              AND #{times[1],javaType=java.time.LocalDateTime}
+        ) AS stage
+        ORDER BY stage.sort, stage.statusId
+    </select>
+
     <select id="selectBusinessSummaryListGroupByEndStatus"
             resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessSummaryByEndStatusRespVO">
         SELECT

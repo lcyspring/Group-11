@@ -2,6 +2,7 @@ package com.meession.etm.module.crm.controller.admin.statistics.vo;
 
 import com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerReqVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsFunnelReqVO;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessStageReqVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.performance.CrmStatisticsPerformanceReqVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticsPortraitReqVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.rank.CrmStatisticsRankReqVO;
@@ -29,6 +30,17 @@ class CrmStatisticsRequestValidationTest {
         CrmStatisticsFunnelReqVO reqVO = new CrmStatisticsFunnelReqVO().setDeptId(1L);
 
         assertEquals(2, validator.validate(reqVO).size());
+    }
+
+    @Test
+    void businessStageFunnelAlsoRequiresStatusType() {
+        CrmStatisticsBusinessStageReqVO reqVO = new CrmStatisticsBusinessStageReqVO();
+        reqVO.setDeptId(1L).setInterval(2).setTimes(new LocalDateTime[]{
+                LocalDateTime.of(2026, 7, 1, 0, 0),
+                LocalDateTime.of(2026, 7, 31, 23, 59, 59)
+        });
+
+        assertEquals(1, validator.validate(reqVO).size());
     }
 
     @Test

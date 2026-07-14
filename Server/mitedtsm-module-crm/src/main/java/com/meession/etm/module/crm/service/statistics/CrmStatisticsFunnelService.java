@@ -22,6 +22,11 @@ public interface CrmStatisticsFunnelService {
     CrmStatisticFunnelSummaryRespVO getFunnelSummary(CrmStatisticsFunnelReqVO reqVO);
 
     /**
+     * 获得按商机状态组计算的阶段漏斗。
+     */
+    List<CrmStatisticsBusinessStageSummaryRespVO> getBusinessStageSummary(CrmStatisticsBusinessStageReqVO reqVO);
+
+    /**
      * 获得商机结束状态统计
      *
      * @param reqVO 请求

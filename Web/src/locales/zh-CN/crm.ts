@@ -747,6 +747,7 @@ export default {
       stage: '阶段',
       businessCount: '商机数',
       businessTotalPrice: '商机总金额(元)',
+      stageConversionRate: '阶段转化率(%)',
       // 漏斗数据
       customer: '客户',
       business: '商机',

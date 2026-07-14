@@ -59,8 +59,10 @@ export default {
     duplicateFound: '{count} possible duplicate customer(s) found',
     duplicateNoMobile: 'No mobile',
     duplicateConditionRequired: 'Enter a customer name or mobile first',
-    duplicateNameBlocked: 'This customer name already exists. Use the existing customer or change the name.',
-    duplicateContinueConfirm: '{count} customer(s) use the same mobile. Continue creating this customer?',
+    duplicateNameBlocked:
+      'This customer name already exists. Use the existing customer or change the name.',
+    duplicateContinueConfirm:
+      '{count} customer(s) use the same mobile. Continue creating this customer?',
     pool: 'Customer Pool',
     putPool: 'Put Into Pool',
     receive: 'Receive Customer',
@@ -325,7 +327,8 @@ export default {
     // Status group related
     statusGroupName: 'Status Group Name',
     applyDept: 'Apply Department',
-    applyDeptTip: 'If no department is selected, it will take effect for the whole company by default',
+    applyDeptTip:
+      'If no department is selected, it will take effect for the whole company by default',
     wholeCompany: 'Whole Company',
     stageSetting: 'Stage Setting',
     stage: 'Stage',
@@ -570,7 +573,8 @@ export default {
     ownerUserId: 'Owner',
     transform: 'Transform To Customer',
     transformTitle: 'Transform Clue and Create Primary Contact',
-    transformDescription: 'Transforming clue [{name}] will create both a customer and its primary contact.',
+    transformDescription:
+      'Transforming clue [{name}] will create both a customer and its primary contact.',
     namePlaceholder: 'Please enter clue name',
     ownerUserName: 'Owner',
     ownerUserDeptName: 'Department',
@@ -747,6 +751,7 @@ export default {
       stage: 'Stage',
       businessCount: 'Business Count',
       businessTotalPrice: 'Business Total Price',
+      stageConversionRate: 'Stage Conversion Rate(%)',
       // Funnel data
       customer: 'Customer',
       business: 'Business',
