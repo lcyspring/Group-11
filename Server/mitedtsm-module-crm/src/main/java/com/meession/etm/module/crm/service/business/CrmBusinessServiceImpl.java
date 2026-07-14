@@ -230,18 +230,23 @@ public class CrmBusinessServiceImpl implements CrmBusinessService {
         if (business.getEndStatus() != null) {
             throw exception(BUSINESS_UPDATE_STATUS_FAIL_END_STATUS);
         }
-        // 1.3 校验商机状态
-        CrmBusinessStatusDO status = null;
-        if (reqVO.getStatusId() != null) {
-            status = businessStatusService.validateBusinessStatus(business.getStatusTypeId(), reqVO.getStatusId());
-        }
-        // 1.4 校验是不是状态没变更
+        // 1.3 校验是不是状态没变更
         if ((reqVO.getStatusId() != null && reqVO.getStatusId().equals(business.getStatusId()))
                 || (reqVO.getEndStatus() != null && reqVO.getEndStatus().equals(business.getEndStatus()))) {
             throw exception(BUSINESS_UPDATE_STATUS_FAIL_STATUS_EQUALS);
         }
-
+        // 1.4 校验商机状态和前向流转
+        CrmBusinessStatusDO status = null;
+        if (reqVO.getStatusId() != null) {
+            status = businessStatusService.validateBusinessStatus(business.getStatusTypeId(), reqVO.getStatusId());
+            CrmBusinessStatusDO oldStatus = businessStatusService.validateBusinessStatus(
+                    business.getStatusTypeId(), business.getStatusId());
+            if (status.getSort() <= oldStatus.getSort()) {
+                throw exception(BUSINESS_UPDATE_STATUS_BACKWARD);
+            }
+        }
         // 2. 更新商机状态
+        String statusRemark = reqVO.getStatusId() != null ? reqVO.getStatusRemark().trim() : null;
         String endRemark = reqVO.getEndStatus() != null && !CrmBusinessEndStatusEnum.WIN.getStatus().equals(reqVO.getEndStatus())
                 ? reqVO.getEndRemark().trim() : null;
         Long newStatusId = reqVO.getStatusId() != null ? reqVO.getStatusId() : business.getStatusId();
@@ -256,6 +261,7 @@ public class CrmBusinessServiceImpl implements CrmBusinessService {
         LogRecordContext.putVariable("oldStatusName", getBusinessStatusName(business.getEndStatus(),
                 businessStatusService.getBusinessStatus(business.getStatusId())));
         LogRecordContext.putVariable("newStatusName", getBusinessStatusName(reqVO.getEndStatus(), status));
+        LogRecordContext.putVariable("statusChangeRemark", statusRemark != null ? statusRemark : endRemark);
     }
 
     @Override

@@ -23,6 +23,10 @@ public class CrmBusinessUpdateStatusReqVO {
     @InEnum(value = CrmBusinessEndStatusEnum.class)
     private Integer endStatus;
 
+    @Schema(description = "阶段推进说明；推进普通阶段时必填", example = "客户已确认需求范围")
+    @Size(max = 500, message = "阶段推进说明不能超过 500 个字符")
+    private String statusRemark;
+
     @Schema(description = "结束原因；输单或无效时必填", example = "客户预算取消")
     @Size(max = 500, message = "结束原因不能超过 500 个字符")
     private String endRemark;
@@ -38,6 +42,11 @@ public class CrmBusinessUpdateStatusReqVO {
             return true;
         }
         return endRemark != null && endRemark.trim().length() >= 10;
+    }
+
+    @AssertTrue(message = "推进普通阶段时必须填写阶段推进说明")
+    public boolean isStatusRemarkValid() {
+        return statusId == null || statusRemark != null && !statusRemark.trim().isEmpty();
     }
 
 }

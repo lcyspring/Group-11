@@ -47,6 +47,7 @@ export interface BusinessUpdateStatusReqVO {
   id: number
   statusId?: number
   endStatus?: number
+  statusRemark?: string
   endRemark?: string
 }
 

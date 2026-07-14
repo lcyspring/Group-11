@@ -57,7 +57,16 @@ class CrmBusinessUpdateStatusReqVOTest {
     @Test
     void stageAndEndStatusAreMutuallyExclusive() {
         CrmBusinessUpdateStatusReqVO reqVO = new CrmBusinessUpdateStatusReqVO()
-                .setId(1L).setStatusId(2L).setEndStatus(CrmBusinessEndStatusEnum.WIN.getStatus());
+                .setId(1L).setStatusId(2L).setStatusRemark("客户需求已确认")
+                .setEndStatus(CrmBusinessEndStatusEnum.WIN.getStatus());
+
+        assertEquals(1, validator.validate(reqVO).size());
+    }
+
+    @Test
+    void stageAdvanceRequiresRemark() {
+        CrmBusinessUpdateStatusReqVO reqVO = new CrmBusinessUpdateStatusReqVO()
+                .setId(1L).setStatusId(2L).setStatusRemark("   ");
 
         assertEquals(1, validator.validate(reqVO).size());
     }

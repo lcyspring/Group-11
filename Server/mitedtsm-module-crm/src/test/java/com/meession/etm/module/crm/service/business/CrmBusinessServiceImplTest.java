@@ -13,6 +13,7 @@ import java.lang.reflect.Proxy;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.BUSINESS_UPDATE_STATUS_CONCURRENT;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.BUSINESS_UPDATE_STATUS_BACKWARD;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -92,6 +93,51 @@ class CrmBusinessServiceImplTest {
         assertNull(updateArgs.get()[5]);
     }
 
+    @Test
+    void updateBusinessStatusRejectsBackwardStage() {
+        CrmBusinessServiceImpl service = new CrmBusinessServiceImpl();
+        CrmBusinessDO business = activeBusiness();
+        ReflectionTestUtils.setField(service, "businessMapper", proxy(CrmBusinessMapper.class,
+                (proxy, method, args) -> {
+                    if (method.getName().equals("selectById")) {
+                        return business;
+                    }
+                    throw new AssertionError("未预期的 Mapper 方法: " + method.getName());
+                }));
+        ReflectionTestUtils.setField(service, "businessStatusService", statusTransitionService(2, 1));
+
+        ServiceException exception = assertThrows(ServiceException.class,
+                () -> service.updateBusinessStatus(new CrmBusinessUpdateStatusReqVO().setId(business.getId())
+                        .setStatusId(40L).setStatusRemark("尝试回退到上一阶段")));
+
+        assertEquals(BUSINESS_UPDATE_STATUS_BACKWARD.getCode(), exception.getCode());
+    }
+
+    @Test
+    void updateBusinessStatusAcceptsForwardStage() {
+        CrmBusinessServiceImpl service = new CrmBusinessServiceImpl();
+        CrmBusinessDO business = activeBusiness();
+        AtomicReference<Object[]> updateArgs = new AtomicReference<>();
+        ReflectionTestUtils.setField(service, "businessMapper", proxy(CrmBusinessMapper.class,
+                (proxy, method, args) -> {
+                    if (method.getName().equals("selectById")) {
+                        return business;
+                    }
+                    if (method.getName().equals("updateStatusIfUnchanged")) {
+                        updateArgs.set(args);
+                        return 1;
+                    }
+                    throw new AssertionError("未预期的 Mapper 方法: " + method.getName());
+                }));
+        ReflectionTestUtils.setField(service, "businessStatusService", statusTransitionService(1, 2));
+
+        service.updateBusinessStatus(new CrmBusinessUpdateStatusReqVO().setId(business.getId())
+                .setStatusId(40L).setStatusRemark("  客户需求范围已经确认  "));
+
+        assertEquals(40L, updateArgs.get()[3]);
+        assertNull(updateArgs.get()[4]);
+    }
+
     private static CrmBusinessDO activeBusiness() {
         return new CrmBusinessDO().setId(10L).setName("重点商机").setStatusTypeId(20L).setStatusId(30L);
     }
@@ -100,6 +146,21 @@ class CrmBusinessServiceImplTest {
         return proxy(CrmBusinessStatusService.class, (proxy, method, args) -> {
             if (method.getName().equals("getBusinessStatus")) {
                 return new CrmBusinessStatusDO().setId(30L).setName("跟进中");
+            }
+            throw new AssertionError("未预期的状态服务方法: " + method.getName());
+        });
+    }
+
+    private static CrmBusinessStatusService statusTransitionService(int currentSort, int targetSort) {
+        return proxy(CrmBusinessStatusService.class, (proxy, method, args) -> {
+            if (method.getName().equals("validateBusinessStatus")) {
+                Long statusId = (Long) args[1];
+                return statusId.equals(30L)
+                        ? new CrmBusinessStatusDO().setId(30L).setName("当前阶段").setSort(currentSort)
+                        : new CrmBusinessStatusDO().setId(40L).setName("目标阶段").setSort(targetSort);
+            }
+            if (method.getName().equals("getBusinessStatus")) {
+                return new CrmBusinessStatusDO().setId(30L).setName("当前阶段").setSort(currentSort);
             }
             throw new AssertionError("未预期的状态服务方法: " + method.getName());
         });
