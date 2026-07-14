@@ -360,4 +360,7 @@ public class TradeOrderDO extends BaseDO {
      */
     private Long pointActivityId;
 
+    @TableField(exist = false)
+    private List<TradeOrderItemDO> items;
+
 }

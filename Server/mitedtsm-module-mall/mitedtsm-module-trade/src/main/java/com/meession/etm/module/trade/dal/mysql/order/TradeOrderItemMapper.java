@@ -32,6 +32,10 @@ public interface TradeOrderItemMapper extends BaseMapperX<TradeOrderItemDO> {
         return selectList(TradeOrderItemDO::getOrderId, orderIds);
     }
 
+    default int deleteByOrderId(Long orderId) {
+        return delete(TradeOrderItemDO::getOrderId, orderId);
+    }
+
     default TradeOrderItemDO selectByIdAndUserId(Long orderItemId, Long loginUserId) {
         return selectOne(new LambdaQueryWrapperX<TradeOrderItemDO>()
                 .eq(TradeOrderItemDO::getId, orderItemId)
