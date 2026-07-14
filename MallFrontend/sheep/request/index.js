@@ -4,7 +4,15 @@
  */
 
 import Request from 'luch-request';
-import { apiPath, baseUrl, tenantId } from '@/sheep/config';
+import {
+  apiPath,
+  baseUrl,
+  legacyMediaFallback,
+  legacyMediaOrigins,
+  staticUrl,
+  tenantId,
+} from '@/sheep/config';
+import { normalizeLegacyMediaPayload } from '@/sheep/url/legacy-media.mjs';
 import $store from '@/sheep/store';
 import $platform from '@/sheep/platform';
 import { showAuthModal } from '@/sheep/hooks/useModal';
@@ -117,6 +125,13 @@ http.interceptors.response.use(
     if (response.config.url.indexOf('/member/auth/') >= 0 && response.data?.data?.accessToken) {
       $store('user').setToken(response.data.data.accessToken, response.data.data.refreshToken);
     }
+
+    // 将已退役演示文件源统一转换为当前部署可用的同源资源或显式占位图。
+    response.data.data = normalizeLegacyMediaPayload(response.data.data, {
+      staticMode: staticUrl,
+      legacyOrigins: legacyMediaOrigins,
+      fallbackUrl: legacyMediaFallback,
+    });
 
     // 自定处理【loading 加载中】：如果需要显示 loading，则关闭 loading
     response.config.custom.showLoading && closeLoading();

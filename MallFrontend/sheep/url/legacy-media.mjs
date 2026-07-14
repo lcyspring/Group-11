@@ -28,3 +28,22 @@ export const normalizeLegacyMediaUrl = (
   if (path.startsWith('/static/')) return path;
   return fallbackUrl || url;
 };
+
+/** Normalize URL-valued strings throughout an API JSON payload. */
+export const normalizeLegacyMediaPayload = (value, config, visited = new WeakSet()) => {
+  if (typeof value === 'string') return normalizeLegacyMediaUrl(value, config);
+  if (value === null || typeof value !== 'object' || visited.has(value)) return value;
+
+  visited.add(value);
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => {
+      value[index] = normalizeLegacyMediaPayload(item, config, visited);
+    });
+    return value;
+  }
+
+  Object.keys(value).forEach((key) => {
+    value[key] = normalizeLegacyMediaPayload(value[key], config, visited);
+  });
+  return value;
+};
