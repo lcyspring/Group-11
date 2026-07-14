@@ -85,6 +85,13 @@ public class CrmContractController {
         return success(contractService.createContract(createReqVO, getLoginUserId()));
     }
 
+    @PostMapping("/create-from-business")
+    @Operation(summary = "从赢单商机幂等创建合同")
+    @PreAuthorize("@ss.hasPermission('crm:contract:create')")
+    public CommonResult<Long> createContractFromBusiness(@Valid @RequestBody CrmContractSaveReqVO createReqVO) {
+        return success(contractService.createContractFromBusiness(createReqVO, getLoginUserId()));
+    }
+
     @PutMapping("/update")
     @Operation(summary = "更新合同")
     @PreAuthorize("@ss.hasPermission('crm:contract:update')")

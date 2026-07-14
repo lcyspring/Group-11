@@ -35,7 +35,11 @@
         <BusinessProductList :business="business" />
       </el-tab-pane>
       <el-tab-pane :label="t('crm.business.contractTab')" lazy>
-        <ContractList :biz-id="business.id!" :biz-type="BizTypeEnum.CRM_BUSINESS" />
+        <ContractList
+          :biz-id="business.id!"
+          :biz-type="BizTypeEnum.CRM_BUSINESS"
+          :business="business"
+        />
       </el-tab-pane>
       <el-tab-pane :label="t('crm.business.operateLogTab')">
         <OperateLogV2 :log-list="logList" />

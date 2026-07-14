@@ -396,6 +396,7 @@ export default {
     ownerUserRequired: 'Owner cannot be empty',
     // Actions
     createContract: 'Create Contract',
+    createFromBusiness: 'Create Contract from Won Business',
     submitAudit: 'Submit Audit',
     viewApproval: 'View Approval',
     // Messages

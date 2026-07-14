@@ -96,6 +96,12 @@ if [ -d "$SQL_NEW_DIR" ]; then
         echo "Executing: new-crm-performance-target.sql"
         mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < "${SQL_NEW_DIR}/new-crm-performance-target.sql"
     fi
+
+    # 4.11 执行 CRM 商机赢单转合同幂等来源字段和唯一键
+    if [ -f "${SQL_NEW_DIR}/new-crm-business-contract-conversion.sql" ]; then
+        echo "Executing: new-crm-business-contract-conversion.sql"
+        mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < "${SQL_NEW_DIR}/new-crm-business-contract-conversion.sql"
+    fi
 fi
 
 echo "MySQL initialization completed successfully!"

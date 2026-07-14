@@ -393,6 +393,7 @@ export default {
     ownerUserRequired: '负责人不能为空',
     // 操作按钮
     createContract: '创建合同',
+    createFromBusiness: '从赢单商机创建合同',
     submitAudit: '提交审核',
     viewApproval: '查看审批',
     // 提示消息

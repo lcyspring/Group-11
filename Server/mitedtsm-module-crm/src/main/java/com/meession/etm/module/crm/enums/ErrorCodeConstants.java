@@ -16,6 +16,11 @@ public interface ErrorCodeConstants {
     ErrorCode CONTRACT_UPDATE_AUDIT_STATUS_FAIL_NOT_PROCESS = new ErrorCode(1_020_000_003, "更新合同审核状态失败，原因：合同不是审核中状态");
     ErrorCode CONTRACT_NO_EXISTS = new ErrorCode(1_020_000_004, "生成合同序列号重复，请重试");
     ErrorCode CONTRACT_DELETE_FAIL = new ErrorCode(1_020_000_005, "删除合同失败，原因：有被回款所使用");
+    ErrorCode CONTRACT_CREATE_FAIL_BUSINESS_NOT_WON = new ErrorCode(1_020_000_006, "只有已赢单商机才能创建合同");
+    ErrorCode CONTRACT_CREATE_FROM_BUSINESS_CONCURRENT = new ErrorCode(1_020_000_007,
+            "商机转合同状态已变化，请刷新后重试");
+    ErrorCode CONTRACT_CREATE_BUSINESS_REQUIRES_CONVERSION = new ErrorCode(1_020_000_008,
+            "关联合同必须通过商机转合同入口创建");
 
     // ========== 线索管理 1-020-001-000 ==========
     ErrorCode CLUE_NOT_EXISTS = new ErrorCode(1_020_001_000, "线索不存在");

@@ -75,7 +75,10 @@ export const getContractSimpleList = async (customerId: number) => {
 
 // 新增 CRM 合同
 export const createContract = async (data: ContractVO) => {
-  return await request.post({ url: `/crm/contract/create`, data })
+  return await request.post({
+    url: data.businessId ? `/crm/contract/create-from-business` : `/crm/contract/create`,
+    data
+  })
 }
 
 // 修改 CRM 合同

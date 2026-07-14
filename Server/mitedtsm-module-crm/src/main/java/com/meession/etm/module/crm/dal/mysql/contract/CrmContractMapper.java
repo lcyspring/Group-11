@@ -29,6 +29,19 @@ public interface CrmContractMapper extends BaseMapperX<CrmContractDO> {
         return selectOne(CrmContractDO::getNo, no);
     }
 
+    default CrmContractDO selectFirstByBusinessId(Long businessId) {
+        return selectOne(new LambdaQueryWrapperX<CrmContractDO>()
+                .eq(CrmContractDO::getBusinessId, businessId)
+                .orderByAsc(CrmContractDO::getId)
+                .last("LIMIT 1"));
+    }
+
+    default CrmContractDO selectBySourceBusinessIdForUpdate(Long businessId) {
+        return selectOne(new LambdaQueryWrapperX<CrmContractDO>()
+                .eq(CrmContractDO::getSourceBusinessId, businessId)
+                .last("FOR UPDATE"));
+    }
+
     default PageResult<CrmContractDO> selectPageByCustomerId(CrmContractPageReqVO pageReqVO) {
         return selectPage(pageReqVO, new LambdaQueryWrapperX<CrmContractDO>()
                 .eq(CrmContractDO::getCustomerId, pageReqVO.getCustomerId())

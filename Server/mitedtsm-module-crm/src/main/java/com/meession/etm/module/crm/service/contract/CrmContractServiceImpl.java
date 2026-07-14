@@ -13,12 +13,14 @@ import com.meession.etm.module.bpm.api.task.dto.BpmProcessInstanceCreateReqDTO;
 import com.meession.etm.module.crm.controller.admin.contract.vo.contract.CrmContractPageReqVO;
 import com.meession.etm.module.crm.controller.admin.contract.vo.contract.CrmContractSaveReqVO;
 import com.meession.etm.module.crm.controller.admin.contract.vo.contract.CrmContractTransferReqVO;
+import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractConfigDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractProductDO;
 import com.meession.etm.module.crm.dal.mysql.contract.CrmContractMapper;
 import com.meession.etm.module.crm.dal.mysql.contract.CrmContractProductMapper;
 import com.meession.etm.module.crm.dal.redis.no.CrmNoRedisDAO;
+import com.meession.etm.module.crm.enums.business.CrmBusinessEndStatusEnum;
 import com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
@@ -38,6 +40,7 @@ import com.mzt.logapi.starter.annotation.LogRecord;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -101,20 +104,58 @@ public class CrmContractServiceImpl implements CrmContractService {
     @LogRecord(type = CRM_CONTRACT_TYPE, subType = CRM_CONTRACT_CREATE_SUB_TYPE, bizNo = "{{#contract.id}}",
             success = CRM_CONTRACT_CREATE_SUCCESS)
     public Long createContract(CrmContractSaveReqVO createReqVO, Long userId) {
-        // 1.1 校验产品项的有效性
+        if (createReqVO.getBusinessId() != null) {
+            throw exception(CONTRACT_CREATE_BUSINESS_REQUIRES_CONVERSION);
+        }
+        return createContractInternal(createReqVO);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @LogRecord(type = CRM_CONTRACT_TYPE, subType = CRM_CONTRACT_CREATE_SUB_TYPE, bizNo = "{{#contract.id}}",
+            success = CRM_CONTRACT_CREATE_SUCCESS)
+    @CrmPermission(bizType = CrmBizTypeEnum.CRM_BUSINESS, bizId = "#createReqVO.businessId",
+            level = CrmPermissionLevelEnum.WRITE)
+    public Long createContractFromBusiness(CrmContractSaveReqVO createReqVO, Long userId) {
+        Assert.notNull(createReqVO.getBusinessId(), "来源商机编号不能为空");
+        return createContractInternal(createReqVO);
+    }
+
+    private Long createContractInternal(CrmContractSaveReqVO createReqVO) {
+        // 1.1 商机转合同时校验赢单状态、复用已有合同，并强制继承客户和负责人
+        CrmContractDO existingContract = prepareBusinessConversion(createReqVO);
+        if (existingContract != null) {
+            LogRecordContext.putVariable("contract", existingContract);
+            return existingContract.getId();
+        }
+        // 1.2 校验产品项的有效性
         List<CrmContractProductDO> contractProducts = validateContractProducts(createReqVO.getProducts());
-        // 1.2 校验关联字段
+        // 1.3 校验关联字段
         validateRelationDataExists(createReqVO);
-        // 1.3 生成序号
+        // 1.4 生成序号
         String no = noRedisDAO.generate(CrmNoRedisDAO.CONTRACT_NO_PREFIX);
         if (contractMapper.selectByNo(no) != null) {
             throw exception(CONTRACT_NO_EXISTS);
         }
 
         // 2.1 插入合同
-        CrmContractDO contract = BeanUtils.toBean(createReqVO, CrmContractDO.class).setNo(no);
+        CrmContractDO contract = BeanUtils.toBean(createReqVO, CrmContractDO.class).setNo(no)
+                .setSourceBusinessId(createReqVO.getBusinessId());
         calculateTotalPrice(contract, contractProducts);
-        contractMapper.insert(contract);
+        try {
+            contractMapper.insert(contract);
+        } catch (DuplicateKeyException ex) {
+            if (createReqVO.getBusinessId() == null) {
+                throw ex;
+            }
+            CrmContractDO concurrentContract = contractMapper.selectBySourceBusinessIdForUpdate(
+                    createReqVO.getBusinessId());
+            if (concurrentContract != null) {
+                LogRecordContext.putVariable("contract", concurrentContract);
+                return concurrentContract.getId();
+            }
+            throw exception(CONTRACT_CREATE_FROM_BUSINESS_CONCURRENT);
+        }
         // 2.2 插入合同关联商品
         if (CollUtil.isNotEmpty(contractProducts)) {
             contractProducts.forEach(item -> item.setContractId(contract.getId()));
@@ -129,6 +170,22 @@ public class CrmContractServiceImpl implements CrmContractService {
         // 4. 记录操作日志上下文
         LogRecordContext.putVariable("contract", contract);
         return contract.getId();
+    }
+
+    private CrmContractDO prepareBusinessConversion(CrmContractSaveReqVO createReqVO) {
+        if (createReqVO.getBusinessId() == null) {
+            return null;
+        }
+        CrmBusinessDO business = businessService.validateBusiness(createReqVO.getBusinessId());
+        if (!CrmBusinessEndStatusEnum.WIN.getStatus().equals(business.getEndStatus())) {
+            throw exception(CONTRACT_CREATE_FAIL_BUSINESS_NOT_WON);
+        }
+        CrmContractDO existingContract = contractMapper.selectFirstByBusinessId(business.getId());
+        if (existingContract != null) {
+            return existingContract;
+        }
+        createReqVO.setCustomerId(business.getCustomerId()).setOwnerUserId(business.getOwnerUserId());
+        return null;
     }
 
     @Override

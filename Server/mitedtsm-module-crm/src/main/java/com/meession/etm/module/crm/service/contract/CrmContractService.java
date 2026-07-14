@@ -34,6 +34,15 @@ public interface CrmContractService {
     Long createContract(@Valid CrmContractSaveReqVO createReqVO, Long userId);
 
     /**
+     * 从赢单商机幂等创建合同
+     *
+     * @param createReqVO 合同及来源商机信息
+     * @param userId      操作用户编号
+     * @return 合同编号
+     */
+    Long createContractFromBusiness(@Valid CrmContractSaveReqVO createReqVO, Long userId);
+
+    /**
      * 更新合同
      *
      * @param updateReqVO 更新信息

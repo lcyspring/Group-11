@@ -55,6 +55,14 @@ public class CrmContractDO extends BaseDO {
     private Long businessId;
 
     /**
+     * 转换来源商机编号。
+     *
+     * 仅由“商机赢单转合同”设置，用于兼容历史上允许一个商机关联多份合同的数据，
+     * 并对新的显式转换建立幂等唯一键。
+     */
+    private Long sourceBusinessId;
+
+    /**
      * 最后跟进时间
      */
     private LocalDateTime contactLastTime;

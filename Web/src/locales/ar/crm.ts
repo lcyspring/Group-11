@@ -393,6 +393,7 @@ export default {
     ownerUserRequired: 'لا يمكن أن يكون المالك فارغاً',
     // Actions
     createContract: 'إنشاء عقد',
+    createFromBusiness: 'إنشاء عقد من صفقة رابحة',
     submitAudit: 'تقديم للتدقيق',
     viewApproval: 'عرض الموافقة',
     // Messages
