@@ -226,7 +226,11 @@ const fetchAndFill = async () => {
 }
 /** 获取商机列表 */
 const getList = async () => {
-  const data = await StatisticFunnelApi.getBusinessPageByDate(props.queryParams)
+  const data = await StatisticFunnelApi.getBusinessPageByDate({
+    ...props.queryParams,
+    pageNo: queryParams0.pageNo,
+    pageSize: queryParams0.pageSize
+  })
   list.value = data.list
   total.value = data.total
 }
@@ -244,6 +248,7 @@ const openCustomerDetail = (id: number) => {
 /** 获取统计数据 */
 const loadData = async () => {
   loading.value = true
+  queryParams0.pageNo = 1
   try {
     await fetchAndFill()
   } finally {

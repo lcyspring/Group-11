@@ -139,7 +139,7 @@ import {
 } from '@/api/crm/statistics/funnel'
 import type { BusinessVO } from '@/api/crm/business'
 import { EChartsOption } from 'echarts'
-import { erpCalculatePercentage, erpPriceTableColumnFormatter } from '@/utils'
+import { erpPriceTableColumnFormatter } from '@/utils'
 import { dateFormatter } from '@/utils/formatTime'
 
 defineOptions({ name: 'BusinessInversionRateSummary' })
@@ -277,8 +277,7 @@ const fetchAndFill = async () => {
   }
   if (echartsOption.series && echartsOption.series[0] && echartsOption.series[0]['data']) {
     echartsOption.series[0]['data'] = businessSummaryByDate.map(
-      (s: CrmStatisticsBusinessInversionRateSummaryByDateRespVO) =>
-        erpCalculatePercentage(s.businessWinCount, s.businessCount)
+      (s: CrmStatisticsBusinessInversionRateSummaryByDateRespVO) => s.businessWinRate
     )
   }
   if (echartsOption.series && echartsOption.series[1] && echartsOption.series[1]['data']) {

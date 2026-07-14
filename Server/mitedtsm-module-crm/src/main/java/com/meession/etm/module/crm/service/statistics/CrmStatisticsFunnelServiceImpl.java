@@ -18,6 +18,7 @@ import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -117,8 +118,21 @@ public class CrmStatisticsFunnelServiceImpl implements CrmStatisticsFunnelServic
                     .mapToLong(CrmStatisticsBusinessInversionRateSummaryByDateRespVO::getBusinessWinCount).sum();
             return new CrmStatisticsBusinessInversionRateSummaryByDateRespVO()
                     .setTime(LocalDateTimeUtils.formatDateRange(times[0], times[1], reqVO.getInterval()))
-                    .setBusinessCount(businessCount).setBusinessWinCount(businessWinCount);
+                    .setBusinessCount(businessCount).setBusinessWinCount(businessWinCount)
+                    .setBusinessWinRate(calculatePercentage(businessWinCount, businessCount));
         });
+    }
+
+    /**
+     * 计算百分比指标，统一由后端定义零分母及舍入口径。
+     */
+    private static BigDecimal calculatePercentage(long value, long total) {
+        if (total == 0L) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
+        return BigDecimal.valueOf(value)
+                .multiply(BigDecimal.valueOf(100))
+                .divide(BigDecimal.valueOf(total), 2, RoundingMode.HALF_UP);
     }
 
     @Override

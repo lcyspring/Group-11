@@ -38,7 +38,7 @@
         SELECT
             end_status AS endStatus,
             COUNT(*) AS businessCount,
-            SUM(total_price) AS totalPrice
+            COALESCE(SUM(total_price), 0) AS totalPrice
         FROM crm_business
         WHERE deleted = 0 AND end_status IS NOT NULL
         AND owner_user_id IN
@@ -55,7 +55,7 @@
         SELECT
             DATE_FORMAT(create_time, '%Y-%m-%d') AS time,
             COUNT(*) AS businessCreateCount,
-            SUM(total_price) AS totalPrice
+            COALESCE(SUM(total_price), 0) AS totalPrice
         FROM crm_business
         WHERE deleted = 0
         AND owner_user_id IN

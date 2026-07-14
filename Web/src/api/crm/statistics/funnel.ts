@@ -16,6 +16,7 @@ export interface CrmStatisticsBusinessInversionRateSummaryByDateRespVO {
   time: string // 时间
   businessCount: number // 商机数量
   businessWinCount: number // 赢单商机数
+  businessWinRate: number // 赢单转化率（百分比）
 }
 
 // 客户分析 API
