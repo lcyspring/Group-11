@@ -7,118 +7,110 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 PODMAN=(podman)
-
-POD_NAME="${POD_NAME:-mitedtsm-rootless}"
-SERVER_PORT="${SERVER_PORT:-8080}"
-WEB_PORT="${WEB_PORT:-8081}"
-MALL_PORT="${MALL_PORT:-8082}"
-# Used when replacing an already-running Pod. The Java server may wait for
-# Quartz jobs during shutdown, so this intentionally exceeds Podman's 10s default.
-STOP_TIMEOUT="${STOP_TIMEOUT:-120}"
-# auto: load a local OCI archive when present, otherwise pull from its registry.
-# archive: never use registries; pull: always pull from registries.
-IMAGE_SOURCE="${IMAGE_SOURCE:-auto}"
-# This directory is populated with Podman's image-archives.sh.
-IMAGE_ARCHIVE_DIR="${IMAGE_ARCHIVE_DIR:-${SCRIPT_DIR}/images}"
-# Proxy use is opt-in. Set USE_HOST_PROXY=true to reuse host proxy settings.
-USE_HOST_PROXY="${USE_HOST_PROXY:-false}"
-# Podman/Pasta creates this dedicated host mapping in each container's
-# /etc/hosts. Use it for a proxy listening on the real host's loopback.
-HOST_PROXY_NAME="host.containers.internal"
-
-# Use fully qualified references so Podman never needs short-name resolution.
-RUNTIME_BASE_IMAGE="${RUNTIME_BASE_IMAGE:-docker.io/library/eclipse-temurin:17-jdk}"
-MYSQL_BASE_IMAGE="${MYSQL_BASE_IMAGE:-docker.io/library/mysql:8.0}"
-REDIS_BASE_IMAGE="${REDIS_BASE_IMAGE:-docker.io/library/redis:6-alpine}"
-RABBITMQ_BASE_IMAGE="${RABBITMQ_BASE_IMAGE:-docker.io/library/rabbitmq:3-management-alpine}"
-TDENGINE_BASE_IMAGE="${TDENGINE_BASE_IMAGE:-docker.io/tdengine/tdengine:3.3.6.0}"
-NGINX_BASE_IMAGE="${NGINX_BASE_IMAGE:-docker.io/library/nginx:stable-alpine}"
-
-MYSQL_CONTAINER="${POD_NAME}-mysql"
-REDIS_CONTAINER="${POD_NAME}-redis"
-RABBITMQ_CONTAINER="${POD_NAME}-rabbitmq"
-TDENGINE_CONTAINER="${POD_NAME}-tdengine"
-INIT_CONTAINER="${POD_NAME}-init"
-SERVER_CONTAINER="${POD_NAME}-server"
-WEB_CONTAINER="${POD_NAME}-web"
-MALL_CONTAINER="${POD_NAME}-mall"
-
-MYSQL_VOLUME="${POD_NAME}-mysql-data"
-REDIS_VOLUME="${POD_NAME}-redis-data"
-RABBITMQ_VOLUME="${POD_NAME}-rabbitmq-data"
-TDENGINE_VOLUME="${POD_NAME}-tdengine-data"
-
-# `localhost/` explicitly selects Podman's local image storage.
-MYSQL_IMAGE="localhost/${POD_NAME}-mysql:latest"
-INIT_IMAGE="localhost/${POD_NAME}-init-service:latest"
-SERVER_IMAGE="localhost/${POD_NAME}-server:latest"
-WEB_IMAGE="localhost/${POD_NAME}-web:latest"
-MALL_IMAGE="localhost/${POD_NAME}-mall:latest"
 PODMAN_PROXY_ARGS=(--http-proxy=false)
-START_MODE=full
 PROXY_ENV=()
 
 usage() {
-    cat <<'EOF'
-Usage: bash ./up.sh [--check|--fast|--no-build|--frontends-only|--rebuild-web]
-
-Without arguments, build runtime images and start the complete rootless Pod.
---check verifies the Podman deployment prerequisites only. It never loads,
-        pulls, builds, creates, or starts anything.
---fast starts an existing Pod without packaging images or recreating containers.
-        It is the quickest restart path after `podman pod stop` or a reboot.
---no-build recreates the complete Pod from existing local images. Use it after
-        `down.sh` when application artifacts have not changed.
---frontends-only starts or replaces only the Web and Mall Nginx containers in
-        an existing running Pod. It does not build images, recreate the Pod,
-        or alter persistent data.
---rebuild-web packages the current Web/dist-prod/ into the Web Nginx image and
-        replaces only that container in an existing running Pod. It does not
-        rebuild Java artifacts or restart Spring Boot, databases, or Mall.
-        Use it only after confirming the deployed Java artifacts are current.
-
-Optional environment variables:
-  IMAGE_SOURCE=auto|archive|pull
-  IMAGE_ARCHIVE_DIR=/absolute/path/to/oci-archives
-  SERVER_PORT=8080 WEB_PORT=8081 MALL_PORT=8082
-  USE_HOST_PROXY=true
-EOF
+    printf 'Usage: bash ./up.sh <config.yaml>\n' >&2
 }
 
-case "$#" in
-    0) ;;
-    1)
-        case "$1" in
-            --check)
-                START_MODE=check
-                ;;
-            --fast)
-                START_MODE=fast
-                ;;
-            --no-build)
-                START_MODE=no-build
-                ;;
-            --frontends-only)
-                START_MODE=frontends-only
-                ;;
-            --rebuild-web)
-                START_MODE=rebuild-web
-                ;;
-            -h|--help)
-                usage
-                exit 0
-                ;;
-            *)
-                usage >&2
-                exit 2
-                ;;
-        esac
-        ;;
-    *)
-        usage >&2
-        exit 2
-        ;;
-esac
+[[ $# -eq 1 ]] || {
+    usage
+    exit 2
+}
+
+# shellcheck source=lib/yaml-config.sh
+source "${SCRIPT_DIR}/lib/yaml-config.sh"
+yaml_config_init "$1"
+
+[[ "$(yaml_require schema_version)" == "1" ]] || {
+    printf 'Unsupported schema_version; expected 1.\n' >&2
+    exit 2
+}
+
+START_MODE="$(yaml_require operation.startup_mode)"
+POD_NAME="$(yaml_require deployment.pod_name)"
+STOP_TIMEOUT="$(yaml_positive_integer deployment.stop_timeout_seconds)"
+HOST_ADDRESS="$(yaml_require network.host_address)"
+SERVER_PORT="$(yaml_port network.server_host_port)"
+SERVER_CONTAINER_PORT="$(yaml_port network.server_container_port)"
+WEB_PORT="$(yaml_port network.web_host_port)"
+WEB_CONTAINER_PORT="$(yaml_port network.web_container_port)"
+MALL_PORT="$(yaml_port network.mall_host_port)"
+MALL_CONTAINER_PORT="$(yaml_port network.mall_container_port)"
+USE_HOST_PROXY="$(yaml_bool network.use_host_proxy)"
+HOST_PROXY_NAME="$(yaml_require network.host_proxy_name)"
+HTTP_PROXY_URL="$(yaml_require network.http_proxy)"
+HTTPS_PROXY_URL="$(yaml_require network.https_proxy)"
+ALL_PROXY_URL="$(yaml_require network.all_proxy)"
+NO_PROXY_VALUE="$(yaml_require network.no_proxy)"
+
+IMAGE_SOURCE="$(yaml_require image.source)"
+IMAGE_ARCHIVE_DIR="$(yaml_path image.archive_dir)"
+RUNTIME_BASE_IMAGE="$(yaml_require image.runtime_base)"
+MYSQL_BASE_IMAGE="$(yaml_require image.mysql_base)"
+REDIS_BASE_IMAGE="$(yaml_require image.redis_base)"
+RABBITMQ_BASE_IMAGE="$(yaml_require image.rabbitmq_base)"
+TDENGINE_BASE_IMAGE="$(yaml_require image.tdengine_base)"
+NGINX_BASE_IMAGE="$(yaml_require image.nginx_base)"
+MYSQL_IMAGE="$(yaml_require image.mysql_runtime)"
+INIT_IMAGE="$(yaml_require image.init_runtime)"
+SERVER_IMAGE="$(yaml_require image.server_runtime)"
+WEB_IMAGE="$(yaml_require image.web_runtime)"
+MALL_IMAGE="$(yaml_require image.mall_runtime)"
+
+RUNTIME_ARCHIVE="$(yaml_require archive.runtime_base)"
+MYSQL_ARCHIVE="$(yaml_require archive.mysql_base)"
+REDIS_ARCHIVE="$(yaml_require archive.redis_base)"
+RABBITMQ_ARCHIVE="$(yaml_require archive.rabbitmq_base)"
+TDENGINE_ARCHIVE="$(yaml_require archive.tdengine_base)"
+NGINX_ARCHIVE="$(yaml_require archive.nginx_base)"
+
+MYSQL_CONTAINER="$(yaml_require container.mysql)"
+REDIS_CONTAINER="$(yaml_require container.redis)"
+RABBITMQ_CONTAINER="$(yaml_require container.rabbitmq)"
+TDENGINE_CONTAINER="$(yaml_require container.tdengine)"
+INIT_CONTAINER="$(yaml_require container.init)"
+SERVER_CONTAINER="$(yaml_require container.server)"
+WEB_CONTAINER="$(yaml_require container.web)"
+MALL_CONTAINER="$(yaml_require container.mall)"
+
+MYSQL_VOLUME="$(yaml_require volume.mysql)"
+REDIS_VOLUME="$(yaml_require volume.redis)"
+RABBITMQ_VOLUME="$(yaml_require volume.rabbitmq)"
+TDENGINE_VOLUME="$(yaml_require volume.tdengine)"
+
+MYSQL_DATABASE="$(yaml_require mysql.database)"
+MYSQL_ROOT_PASSWORD="$(yaml_require mysql.root_password)"
+MYSQL_CHARACTER_SET="$(yaml_require mysql.character_set)"
+MYSQL_COLLATION="$(yaml_require mysql.collation)"
+MYSQL_AUTHENTICATION_PLUGIN="$(yaml_require mysql.authentication_plugin)"
+RABBITMQ_USERNAME="$(yaml_require rabbitmq.username)"
+RABBITMQ_PASSWORD="$(yaml_require rabbitmq.password)"
+TDENGINE_HOST="$(yaml_require tdengine.host)"
+TDENGINE_PORT="$(yaml_port tdengine.port)"
+TDENGINE_FQDN="$(yaml_require tdengine.fqdn)"
+TDENGINE_INITIALIZATION_ATTEMPTS="$(yaml_positive_integer tdengine.initialization_attempts)"
+SPRING_PROFILE="$(yaml_require server.spring_profile)"
+
+HEALTH_INTERVAL="$(yaml_positive_integer health.interval_seconds)"
+HEALTH_HTTP_HOST="$(yaml_require health.http_host)"
+MYSQL_ATTEMPTS="$(yaml_positive_integer health.mysql_attempts)"
+MYSQL_HEALTH_HOST="$(yaml_require health.mysql_host)"
+MYSQL_USER="$(yaml_require health.mysql_user)"
+MYSQL_SCHEMA_ATTEMPTS="$(yaml_positive_integer health.mysql_schema_attempts)"
+MYSQL_SCHEMA_QUERY="$(yaml_require health.mysql_schema_query)"
+REDIS_ATTEMPTS="$(yaml_positive_integer health.redis_attempts)"
+RABBITMQ_ATTEMPTS="$(yaml_positive_integer health.rabbitmq_attempts)"
+RABBITMQ_OS_USER="$(yaml_require health.rabbitmq_os_user)"
+TDENGINE_ATTEMPTS="$(yaml_positive_integer health.tdengine_attempts)"
+TDENGINE_HEALTH_QUERY="$(yaml_require health.tdengine_query)"
+SERVER_ATTEMPTS="$(yaml_positive_integer health.server_attempts)"
+SERVER_HEALTH_PATH="$(yaml_require health.server_path)"
+WEB_ATTEMPTS="$(yaml_positive_integer health.web_attempts)"
+WEB_HEALTH_PATH="$(yaml_require health.web_path)"
+MALL_ATTEMPTS="$(yaml_positive_integer health.mall_attempts)"
+MALL_HEALTH_PATH="$(yaml_require health.mall_path)"
 
 clear_host_proxy() {
     unset http_proxy HTTP_PROXY https_proxy HTTPS_PROXY \
@@ -165,15 +157,6 @@ require_dir() {
     [[ -d "$path" ]] || {
         printf 'Required directory is missing: %s\n' "$path" >&2
         exit 1
-    }
-}
-
-validate_port() {
-    local name="$1"
-    local port="$2"
-    [[ "$port" =~ ^[1-9][0-9]{0,4}$ ]] && ((port <= 65535)) || {
-        printf '%s must be a TCP port between 1 and 65535; got: %s\n' "$name" "$port" >&2
-        exit 2
     }
 }
 
@@ -243,7 +226,7 @@ wait_for() {
             printf '%s is ready.\n' "$description"
             return 0
         fi
-        sleep 2
+        sleep "$HEALTH_INTERVAL"
     done
 
     printf 'Timed out waiting for %s.\n' "$description" >&2
@@ -254,7 +237,7 @@ wait_for() {
 }
 
 initialize_tdengine() {
-    local max_attempts=30
+    local max_attempts="$TDENGINE_INITIALIZATION_ATTEMPTS"
     local attempt exit_code
 
     for ((attempt = 1; attempt <= max_attempts; attempt++)); do
@@ -263,12 +246,12 @@ initialize_tdengine() {
         else
             printf 'TDengine is reachable but not ready to create a database; retrying (%s/%s).\n' \
                 "$attempt" "$max_attempts" >&2
-            sleep 2
+            sleep "$HEALTH_INTERVAL"
         fi
 
         podman_cmd run -d --replace --name "$INIT_CONTAINER" --pod "$POD_NAME" --pull=never \
-            --env TDENGINE_HOST=127.0.0.1 \
-            --env TDENGINE_PORT=6041 \
+            --env "TDENGINE_HOST=${TDENGINE_HOST}" \
+            --env "TDENGINE_PORT=${TDENGINE_PORT}" \
             "$INIT_IMAGE" >/dev/null
         exit_code="$(podman_cmd wait "$INIT_CONTAINER")"
         if [[ "$exit_code" == "0" ]]; then
@@ -300,8 +283,8 @@ start_web_frontend() {
 }
 
 wait_for_frontends() {
-    wait_for 'Web frontend' 30 host_curl --fail --silent --show-error "http://127.0.0.1:${WEB_PORT}/"
-    wait_for 'Mall frontend' 30 host_curl --fail --silent --show-error "http://127.0.0.1:${MALL_PORT}/"
+    wait_for 'Web frontend' "$WEB_ATTEMPTS" host_curl --fail --silent --show-error "http://${HEALTH_HTTP_HOST}:${WEB_PORT}${WEB_HEALTH_PATH}"
+    wait_for 'Mall frontend' "$MALL_ATTEMPTS" host_curl --fail --silent --show-error "http://${HEALTH_HTTP_HOST}:${MALL_PORT}${MALL_HEALTH_PATH}"
 }
 
 container_is_running() {
@@ -325,7 +308,7 @@ require_runtime_images() {
     for image in "${images[@]}"; do
         podman_cmd image exists "$image" || {
             printf 'Required local image is unavailable: %s\n' "$image" >&2
-            printf 'Run bash ./up.sh once without --no-build to package it.\n' >&2
+            printf 'Run up.sh with operation.startup_mode=full to package it.\n' >&2
             exit 1
         }
     done
@@ -333,7 +316,7 @@ require_runtime_images() {
 
 fast_start_existing_pod() {
     podman_cmd pod inspect "$POD_NAME" >/dev/null 2>&1 || {
-        printf 'Pod does not exist: %s. Run bash ./up.sh first.\n' "$POD_NAME" >&2
+        printf 'Pod does not exist: %s. Run up.sh with operation.startup_mode=full first.\n' "$POD_NAME" >&2
         return 1
     }
 
@@ -347,14 +330,14 @@ fast_start_existing_pod() {
             podman_cmd pod start "$POD_NAME"
             ;;
         *)
-            printf 'Pod %s is in state %s and cannot use --fast. Run bash ./up.sh.\n' \
+            printf 'Pod %s is in state %s and cannot use startup_mode=fast. Use startup_mode=full.\n' \
                 "$POD_NAME" "$pod_state" >&2
             return 1
             ;;
     esac
 
     podman_cmd container exists "$SERVER_CONTAINER" || {
-        printf 'Server container is missing from Pod %s. Run bash ./up.sh.\n' "$POD_NAME" >&2
+        printf 'Server container is missing from Pod %s. Use startup_mode=full.\n' "$POD_NAME" >&2
         return 1
     }
     if ! container_is_running "$SERVER_CONTAINER"; then
@@ -364,17 +347,17 @@ fast_start_existing_pod() {
 
     if ! container_is_running "$WEB_CONTAINER" || ! container_is_running "$MALL_CONTAINER"; then
         podman_cmd image exists "$WEB_IMAGE" || {
-            printf 'Required Web image is unavailable: %s. Run bash ./up.sh first.\n' "$WEB_IMAGE" >&2
+            printf 'Required Web image is unavailable: %s. Use startup_mode=full first.\n' "$WEB_IMAGE" >&2
             return 1
         }
         podman_cmd image exists "$MALL_IMAGE" || {
-            printf 'Required Mall image is unavailable: %s. Run bash ./up.sh first.\n' "$MALL_IMAGE" >&2
+            printf 'Required Mall image is unavailable: %s. Use startup_mode=full first.\n' "$MALL_IMAGE" >&2
             return 1
         }
         start_frontends
     fi
 
-    wait_for 'Spring Boot server' 180 host_curl --fail --silent --show-error "http://127.0.0.1:${SERVER_PORT}/actuator/health" &
+    wait_for 'Spring Boot server' "$SERVER_ATTEMPTS" host_curl --fail --silent --show-error "http://${HEALTH_HTTP_HOST}:${SERVER_PORT}${SERVER_HEALTH_PATH}" &
     local server_ready_pid=$!
     wait_for_frontends &
     local frontends_ready_pid=$!
@@ -385,9 +368,9 @@ fast_start_existing_pod() {
 show_access_urls() {
     trap - EXIT
     printf '\nRootless Podman Pod is running on the real host.\n'
-    printf '  Web:    http://127.0.0.1:%s/\n' "$WEB_PORT"
-    printf '  Mall:   http://127.0.0.1:%s/\n' "$MALL_PORT"
-    printf '  Server: http://127.0.0.1:%s/actuator/health\n' "$SERVER_PORT"
+    printf '  Web:    http://%s:%s%s\n' "$HOST_ADDRESS" "$WEB_PORT" "$WEB_HEALTH_PATH"
+    printf '  Mall:   http://%s:%s%s\n' "$HOST_ADDRESS" "$MALL_PORT" "$MALL_HEALTH_PATH"
+    printf '  Server: http://%s:%s%s\n' "$HOST_ADDRESS" "$SERVER_PORT" "$SERVER_HEALTH_PATH"
     podman_cmd ps --pod --filter "pod=${POD_NAME}" --format 'table {{.PodName}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}'
 }
 
@@ -411,16 +394,10 @@ show_logs_on_error() {
 }
 
 validate_configuration() {
-    case "$USE_HOST_PROXY" in
-        true|TRUE|1|yes|YES)
-            USE_HOST_PROXY=true
-            PODMAN_PROXY_ARGS=()
-            ;;
-        false|FALSE|0|no|NO|'')
-            USE_HOST_PROXY=false
-            ;;
+    case "$START_MODE" in
+        full|check|fast|no-build|frontends-only|rebuild-web) ;;
         *)
-            printf 'USE_HOST_PROXY must be true or false; got: %s\n' "$USE_HOST_PROXY" >&2
+            printf 'operation.startup_mode must be full, check, fast, no-build, frontends-only, or rebuild-web; got: %s\n' "$START_MODE" >&2
             exit 2
             ;;
     esac
@@ -433,13 +410,25 @@ validate_configuration() {
             ;;
     esac
 
-    [[ "$STOP_TIMEOUT" =~ ^[1-9][0-9]*$ ]] || {
-        printf 'STOP_TIMEOUT must be a positive number of seconds; got: %s\n' "$STOP_TIMEOUT" >&2
+    [[ "$SERVER_HEALTH_PATH" == /* && "$WEB_HEALTH_PATH" == /* && "$MALL_HEALTH_PATH" == /* ]] || {
+        printf 'All health-check paths must start with /.\n' >&2
         exit 2
     }
-    validate_port SERVER_PORT "$SERVER_PORT"
-    validate_port WEB_PORT "$WEB_PORT"
-    validate_port MALL_PORT "$MALL_PORT"
+
+    if [[ "$HOST_ADDRESS:$SERVER_PORT" == "$HOST_ADDRESS:$WEB_PORT" ||
+          "$HOST_ADDRESS:$SERVER_PORT" == "$HOST_ADDRESS:$MALL_PORT" ||
+          "$HOST_ADDRESS:$WEB_PORT" == "$HOST_ADDRESS:$MALL_PORT" ]]; then
+        printf 'Configured host ports must be unique.\n' >&2
+        exit 2
+    fi
+
+    if [[ "$USE_HOST_PROXY" == "true" ]]; then
+        PODMAN_PROXY_ARGS=()
+        if [[ "$HTTP_PROXY_URL" == "none" && "$HTTPS_PROXY_URL" == "none" && "$ALL_PROXY_URL" == "none" ]]; then
+            printf 'At least one explicit proxy URL is required when network.use_host_proxy=true.\n' >&2
+            exit 2
+        fi
+    fi
 }
 
 verify_rootless_podman() {
@@ -465,10 +454,10 @@ configure_proxy() {
 
     # In this shared Pod, 127.0.0.1 is the Pod itself, not the real host.
     # Pasta's host.containers.internal mapping reaches the host loopback.
-    local container_http_proxy container_https_proxy container_all_proxy
-    container_http_proxy="${CONTAINER_HTTP_PROXY:-$(container_proxy_url "${http_proxy:-${HTTP_PROXY:-}}")}"
-    container_https_proxy="${CONTAINER_HTTPS_PROXY:-$(container_proxy_url "${https_proxy:-${HTTPS_PROXY:-}}")}"
-    container_all_proxy="${CONTAINER_ALL_PROXY:-$(container_proxy_url "${all_proxy:-${ALL_PROXY:-}}")}"
+    local container_http_proxy='' container_https_proxy='' container_all_proxy=''
+    [[ "$HTTP_PROXY_URL" == "none" ]] || container_http_proxy="$(container_proxy_url "$HTTP_PROXY_URL")"
+    [[ "$HTTPS_PROXY_URL" == "none" ]] || container_https_proxy="$(container_proxy_url "$HTTPS_PROXY_URL")"
+    [[ "$ALL_PROXY_URL" == "none" ]] || container_all_proxy="$(container_proxy_url "$ALL_PROXY_URL")"
 
     if [[ -n "$container_http_proxy" ]]; then
         PROXY_ENV+=(--env "http_proxy=${container_http_proxy}" --env "HTTP_PROXY=${container_http_proxy}")
@@ -480,7 +469,7 @@ configure_proxy() {
         PROXY_ENV+=(--env "all_proxy=${container_all_proxy}" --env "ALL_PROXY=${container_all_proxy}")
     fi
     if ((${#PROXY_ENV[@]})); then
-        PROXY_ENV+=(--env "no_proxy=127.0.0.1,localhost,${HOST_PROXY_NAME}" --env "NO_PROXY=127.0.0.1,localhost,${HOST_PROXY_NAME}")
+        PROXY_ENV+=(--env "no_proxy=${NO_PROXY_VALUE}" --env "NO_PROXY=${NO_PROXY_VALUE}")
     fi
 }
 
@@ -536,12 +525,12 @@ check_archive_mode_prerequisites() {
         "$NGINX_BASE_IMAGE"
     )
     local -a archives=(
-        "$(image_archive_path eclipse-temurin-17-jdk.tar)"
-        "$(image_archive_path mysql-8.0.tar)"
-        "$(image_archive_path redis-6-alpine.tar)"
-        "$(image_archive_path rabbitmq-3-management-alpine.tar)"
-        "$(image_archive_path tdengine-3.3.6.0.tar)"
-        "$(image_archive_path nginx-stable-alpine.tar)"
+        "$(image_archive_path "$RUNTIME_ARCHIVE")"
+        "$(image_archive_path "$MYSQL_ARCHIVE")"
+        "$(image_archive_path "$REDIS_ARCHIVE")"
+        "$(image_archive_path "$RABBITMQ_ARCHIVE")"
+        "$(image_archive_path "$TDENGINE_ARCHIVE")"
+        "$(image_archive_path "$NGINX_ARCHIVE")"
     )
 
     for ((index = 0; index < ${#images[@]}; index++)); do
@@ -579,18 +568,18 @@ build_web_image() {
 
 rebuild_web_only() {
     podman_cmd pod inspect "$POD_NAME" >/dev/null 2>&1 || {
-        printf 'Pod does not exist: %s. Run bash ./up.sh first.\n' "$POD_NAME" >&2
+        printf 'Pod does not exist: %s. Use startup_mode=full first.\n' "$POD_NAME" >&2
         return 1
     }
     [[ "$(podman_cmd pod inspect --format '{{.State}}' "$POD_NAME")" == "Running" ]] || {
-        printf 'Pod is not running: %s. Run bash ./up.sh --fast or bash ./up.sh.\n' "$POD_NAME" >&2
+        printf 'Pod is not running: %s. Use startup_mode=fast or full.\n' "$POD_NAME" >&2
         return 1
     }
 
-    ensure_image "$NGINX_BASE_IMAGE" "$(image_archive_path nginx-stable-alpine.tar)"
+    ensure_image "$NGINX_BASE_IMAGE" "$(image_archive_path "$NGINX_ARCHIVE")"
     build_web_image
     start_web_frontend
-    wait_for 'Web frontend' 30 host_curl --fail --silent --show-error "http://127.0.0.1:${WEB_PORT}/"
+    wait_for 'Web frontend' "$WEB_ATTEMPTS" host_curl --fail --silent --show-error "http://${HEALTH_HTTP_HOST}:${WEB_PORT}${WEB_HEALTH_PATH}"
 }
 
 validate_configuration
@@ -621,19 +610,19 @@ fi
 
 if [[ "$START_MODE" == "frontends-only" ]]; then
     podman_cmd pod inspect "$POD_NAME" >/dev/null 2>&1 || {
-        printf 'Pod does not exist: %s. Run bash ./up.sh first.\n' "$POD_NAME" >&2
+        printf 'Pod does not exist: %s. Use startup_mode=full first.\n' "$POD_NAME" >&2
         exit 1
     }
     [[ "$(podman_cmd pod inspect --format '{{.State}}' "$POD_NAME")" == "Running" ]] || {
-        printf 'Pod is not running: %s. Run bash ./up.sh to recreate it.\n' "$POD_NAME" >&2
+        printf 'Pod is not running: %s. Use startup_mode=full to recreate it.\n' "$POD_NAME" >&2
         exit 1
     }
     podman_cmd image exists "$WEB_IMAGE" || {
-        printf 'Required Web image is unavailable: %s. Run bash ./up.sh first.\n' "$WEB_IMAGE" >&2
+        printf 'Required Web image is unavailable: %s. Use startup_mode=full first.\n' "$WEB_IMAGE" >&2
         exit 1
     }
     podman_cmd image exists "$MALL_IMAGE" || {
-        printf 'Required Mall image is unavailable: %s. Run bash ./up.sh first.\n' "$MALL_IMAGE" >&2
+        printf 'Required Mall image is unavailable: %s. Use startup_mode=full first.\n' "$MALL_IMAGE" >&2
         exit 1
     }
 
@@ -650,12 +639,12 @@ if [[ "$START_MODE" == "rebuild-web" ]]; then
 fi
 
 if [[ "$START_MODE" == "full" ]]; then
-    ensure_image "$RUNTIME_BASE_IMAGE" "$(image_archive_path eclipse-temurin-17-jdk.tar)"
-    ensure_image "$MYSQL_BASE_IMAGE" "$(image_archive_path mysql-8.0.tar)"
-    ensure_image "$REDIS_BASE_IMAGE" "$(image_archive_path redis-6-alpine.tar)"
-    ensure_image "$RABBITMQ_BASE_IMAGE" "$(image_archive_path rabbitmq-3-management-alpine.tar)"
-    ensure_image "$TDENGINE_BASE_IMAGE" "$(image_archive_path tdengine-3.3.6.0.tar)"
-    ensure_image "$NGINX_BASE_IMAGE" "$(image_archive_path nginx-stable-alpine.tar)"
+    ensure_image "$RUNTIME_BASE_IMAGE" "$(image_archive_path "$RUNTIME_ARCHIVE")"
+    ensure_image "$MYSQL_BASE_IMAGE" "$(image_archive_path "$MYSQL_ARCHIVE")"
+    ensure_image "$REDIS_BASE_IMAGE" "$(image_archive_path "$REDIS_ARCHIVE")"
+    ensure_image "$RABBITMQ_BASE_IMAGE" "$(image_archive_path "$RABBITMQ_ARCHIVE")"
+    ensure_image "$TDENGINE_BASE_IMAGE" "$(image_archive_path "$TDENGINE_ARCHIVE")"
+    ensure_image "$NGINX_BASE_IMAGE" "$(image_archive_path "$NGINX_ARCHIVE")"
 
     build_runtime_images
 fi
@@ -678,19 +667,19 @@ fi
 printf 'Creating rootless Podman Pod %s.\n' "$POD_NAME"
 podman_cmd pod create \
     --name "$POD_NAME" \
-    --publish "${SERVER_PORT}:8080" \
-    --publish "${WEB_PORT}:8081" \
-    --publish "${MALL_PORT}:8082"
+    --publish "${HOST_ADDRESS}:${SERVER_PORT}:${SERVER_CONTAINER_PORT}" \
+    --publish "${HOST_ADDRESS}:${WEB_PORT}:${WEB_CONTAINER_PORT}" \
+    --publish "${HOST_ADDRESS}:${MALL_PORT}:${MALL_CONTAINER_PORT}"
 
 printf 'Starting infrastructure containers.\n'
 podman_cmd run -d --replace --name "$MYSQL_CONTAINER" --pod "$POD_NAME" --pull=never \
     --volume "${MYSQL_VOLUME}:/var/lib/mysql" \
-    --env MYSQL_DATABASE=mitedtsm_database \
-    --env MYSQL_ROOT_PASSWORD=1234 \
+    --env "MYSQL_DATABASE=${MYSQL_DATABASE}" \
+    --env "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}" \
     "$MYSQL_IMAGE" \
-    --character-set-server=utf8mb4 \
-    --collation-server=utf8mb4_unicode_ci \
-    --default-authentication-plugin=mysql_native_password
+    "--character-set-server=${MYSQL_CHARACTER_SET}" \
+    "--collation-server=${MYSQL_COLLATION}" \
+    "--default-authentication-plugin=${MYSQL_AUTHENTICATION_PLUGIN}"
 
 podman_cmd run -d --replace --name "$REDIS_CONTAINER" --pod "$POD_NAME" --pull=never \
     --volume "${REDIS_VOLUME}:/data" \
@@ -698,28 +687,28 @@ podman_cmd run -d --replace --name "$REDIS_CONTAINER" --pod "$POD_NAME" --pull=n
 
 podman_cmd run -d --replace --name "$RABBITMQ_CONTAINER" --pod "$POD_NAME" --pull=never \
     --volume "${RABBITMQ_VOLUME}:/var/lib/rabbitmq" \
-    --env RABBITMQ_DEFAULT_USER=rabbit \
-    --env RABBITMQ_DEFAULT_PASS=rabbit \
+    --env "RABBITMQ_DEFAULT_USER=${RABBITMQ_USERNAME}" \
+    --env "RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}" \
     "$RABBITMQ_BASE_IMAGE"
 
 podman_cmd run -d --replace --name "$TDENGINE_CONTAINER" --pod "$POD_NAME" --pull=never \
     --volume "${TDENGINE_VOLUME}:/var/lib/taos" \
-    --env TAOS_FQDN=localhost \
+    --env "TAOS_FQDN=${TDENGINE_FQDN}" \
     "$TDENGINE_BASE_IMAGE"
 
-wait_for 'MySQL' 90 podman_cmd exec "$MYSQL_CONTAINER" mysqladmin ping -h 127.0.0.1 --silent &
+wait_for 'MySQL' "$MYSQL_ATTEMPTS" podman_cmd exec "$MYSQL_CONTAINER" mysqladmin ping -h "$MYSQL_HEALTH_HOST" --silent &
 mysql_ready_pid=$!
-wait_for 'MySQL schema initialization' 180 podman_cmd exec "$MYSQL_CONTAINER" \
-    mysql -uroot -p1234 --database=mitedtsm_database -Nse 'SELECT 1 FROM system_users LIMIT 1' &
+wait_for 'MySQL schema initialization' "$MYSQL_SCHEMA_ATTEMPTS" podman_cmd exec "$MYSQL_CONTAINER" \
+    mysql "-u${MYSQL_USER}" "-p${MYSQL_ROOT_PASSWORD}" "--database=${MYSQL_DATABASE}" -Nse "$MYSQL_SCHEMA_QUERY" &
 mysql_schema_ready_pid=$!
-wait_for 'Redis' 60 podman_cmd exec "$REDIS_CONTAINER" redis-cli ping &
+wait_for 'Redis' "$REDIS_ATTEMPTS" podman_cmd exec "$REDIS_CONTAINER" redis-cli ping &
 redis_ready_pid=$!
 # Run the probe as RabbitMQ's own user. Running this Erlang client as root
 # during the broker's first few seconds creates a root-owned cookie and makes
 # the broker's later privilege drop fail.
-wait_for 'RabbitMQ' 90 podman_cmd exec --user rabbitmq "$RABBITMQ_CONTAINER" /opt/rabbitmq/sbin/rabbitmq-diagnostics -q ping &
+wait_for 'RabbitMQ' "$RABBITMQ_ATTEMPTS" podman_cmd exec --user "$RABBITMQ_OS_USER" "$RABBITMQ_CONTAINER" /opt/rabbitmq/sbin/rabbitmq-diagnostics -q ping &
 rabbitmq_ready_pid=$!
-wait_for 'TDengine' 120 podman_cmd exec "$TDENGINE_CONTAINER" taos -s 'SHOW DATABASES;' &
+wait_for 'TDengine' "$TDENGINE_ATTEMPTS" podman_cmd exec "$TDENGINE_CONTAINER" taos -s "$TDENGINE_HEALTH_QUERY" &
 tdengine_ready_pid=$!
 
 # The InitService only talks to TDengine, so run it while MySQL, Redis, and
@@ -737,13 +726,13 @@ wait "$tdengine_init_pid"
 printf 'Starting server and frontends.\n'
 podman_cmd run -d --replace --name "$SERVER_CONTAINER" --pod "$POD_NAME" --pull=never \
     "${PROXY_ENV[@]}" \
-    --env SPRING_PROFILES_ACTIVE=local \
+    --env "SPRING_PROFILES_ACTIVE=${SPRING_PROFILE}" \
     "$SERVER_IMAGE"
 start_frontends
 
 # Nginx can serve its static files before the backend finishes its Spring Boot
 # initialization. Probe both paths concurrently to shorten the critical path.
-wait_for 'Spring Boot server' 180 host_curl --fail --silent --show-error "http://127.0.0.1:${SERVER_PORT}/actuator/health" &
+wait_for 'Spring Boot server' "$SERVER_ATTEMPTS" host_curl --fail --silent --show-error "http://${HEALTH_HTTP_HOST}:${SERVER_PORT}${SERVER_HEALTH_PATH}" &
 server_ready_pid=$!
 wait_for_frontends &
 frontends_ready_pid=$!

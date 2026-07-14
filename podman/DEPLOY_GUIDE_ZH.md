@@ -1,357 +1,191 @@
-# Podman 全流程操作指南
+# Mitedtsm Rootless Podman 全流程指南
 
-本指南适用于团队成员在 Ubuntu 上构建并运行项目，以及在 Windows、虚拟机宿主机或局域网内访问系统。整个流程只使用 rootless Podman；不需要 Docker Engine、`docker` 命令、Docker Socket 或 Compose。
+## 1. 统一原则
 
-默认基础镜像名称中的 `docker.io` 只是 OCI 镜像仓库地址，并不表示需要安装或运行 Docker。镜像由 Podman 直接拉取；离线时也由 Podman 自己生成并加载 OCI 镜像归档。
+项目使用 rootless Podman，不使用项目原有 Docker、Docker Compose 或
+Docker socket。Server、InitService、CRM 测试/JaCoCo 和管理端 Web 均在
+专用 Ubuntu 26.04 容器中编译。
 
-## 1. 先明确谁需要做什么
-
-| 角色 | 需要做的事 |
-| --- | --- |
-| Ubuntu 部署人员 | 拉取代码、安装依赖、构建产物、执行 `up.sh` |
-| HBuilderX CLI 使用者 | 通过脚本生成商城 H5 静态资源；可与 Ubuntu 部署人员是同一人 |
-| Windows 使用者 | 通过 Ubuntu/虚拟机 IP 和前端端口访问系统，不需要安装 Podman |
-
-后端 JAR、`Web/dist-prod` 和镜像 tar 不会提交到 Git。当前商城 H5 的
-`MallFrontend/unpackage/dist/build/web/` 已提交，成员拉取代码即可使用；只有
-更新商城 H5 时才需要在有 HBuilderX 的机器上重新生成并提交该目录。
-
-## 2. 首次部署：Ubuntu 主机
-
-### 2.1 拉取代码
+构建和运行入口的命令行都只接受一个 YAML 配置文件路径：
 
 ```bash
-git clone git@github.com:lcyspring/Group-11.git
-cd Group-11
-git pull --ff-only
+cd /path/to/Group-11/podman
+bash ./build-in-ubuntu.sh ./config/build-ubuntu-26.04.yaml
+bash ./up.sh ./config/runtime-local-check.yaml
+bash ./down.sh ./config/runtime-local-check.yaml
+bash ./image-archives.sh ./config/runtime-local-check.yaml
 ```
 
-后续更新只需要在仓库根目录执行：
+零参数、多参数、旧的 `--check`/`--fast`/`--volumes` 等调用都会以退出码
+2 拒绝。运行脚本也不再使用环境变量覆盖配置。
+
+## 2. 首次准备
+
+宿主机只需可用的 rootless Podman。确认：
 
 ```bash
-git pull --ff-only
+podman info --format '{{.Host.Security.Rootless}}'
 ```
 
-### 2.2 安装基础依赖
+输出必须为 `true`。CachyOS/Arch 可使用现有
+`install-build-deps-cachyos.sh` 安装 Podman/Pasta；Ubuntu 可使用
+`install-build-deps-ubuntu.sh`。这些安装辅助脚本不是运行入口，不受运行期
+YAML 接口约束。
 
-`install-build-deps-ubuntu.sh` 会安装 OpenJDK 17、Maven、Node.js 20、pnpm、Podman、rootless 网络组件和常用原生编译工具。脚本需要 sudo，但不会构建或启动项目。
+项目目录必须支持软链接。pnpm 直接在 `Web/` 工作，旧的不支持软链接目录
+的暂存、复制和回写兼容路径已不再使用。
 
-```bash
-cd podman
-bash ./install-build-deps-ubuntu.sh
-```
+## 3. Ubuntu 26.04 容器编译
 
-默认不使用宿主机代理。只有确实需要代理时才显式开启：
-
-```bash
-USE_HOST_PROXY=true bash ./install-build-deps-ubuntu.sh
-```
-
-如果部署主机是 CachyOS（或 Arch 系），使用对应脚本：
+完整编译：
 
 ```bash
 cd podman
-bash ./install-build-deps-cachyos.sh
+bash ./build-in-ubuntu.sh ./config/build-ubuntu-26.04.yaml
 ```
 
-它会安装 `jdk17-openjdk`、`maven`、`pnpm` 等缺失依赖，并使用已安装的
-Pasta/`passt` 进行 rootless Podman 网络；不要求 `slirp4netns`。先仅查看缺失
-依赖而不安装时可执行 `bash ./install-build-deps-cachyos.sh --check`。
+YAML 显式声明基础镜像、工具链、构建模块、测试/覆盖率开关、并发度、网络
+代理策略、资源限制和缓存卷。当前工具链为 JDK 17、Maven、Node 22 与
+pnpm；具体版本以 `Containerfile.build-ubuntu` 和 YAML 为准。
 
-## 3. 安装并配置 HBuilderX CLI
+输出包括：
 
-商城 H5 由官方 HBuilderX CLI 生成，要求 HBuilderX CLI 3.1.5+。
+- `Server/mitedtsm-server/target/mitedtsm-server.jar`
+- `InitService/target/mitedtsm-init-service.jar`
+- `Web/dist-prod/`
+- CRM Surefire 与 JaCoCo 报告
 
-在 Ubuntu 上，`cli` 位于 HBuilderX 安装目录根目录。假设安装目录是 `/opt/HBuilderX`，可临时指定：
+Mall H5 的已构建产物已纳入版本管理，只有 Mall 源码变化时才需要 HBuilderX
+重新发布到 `MallFrontend/unpackage/dist/build/web/`。
+
+## 4. 运行配置
+
+`config/runtime-local-check.yaml` 是安全模板，其启动和停止模式都是
+`check`。建议复制成不提交的本机配置，然后只修改 YAML：
 
 ```bash
-HBUILDERX_CLI=/opt/HBuilderX/cli bash ./build-mall-h5.sh --check
+cp ./config/runtime-local-check.yaml ./config/runtime-local.yaml
 ```
 
-也可以将安装目录加入 `PATH`：
+主要分组如下：
+
+- `operation`：启动、停止、镜像归档模式及停止时是否删除数据卷；
+- `deployment`：Pod 名和优雅停止超时；
+- `network`：宿主/容器端口、绑定地址和显式代理 URL；
+- `image` / `archive`：基础镜像、运行镜像、来源和离线归档；
+- `container` / `volume`：全部容器名和持久卷名；
+- `mysql` / `rabbitmq` / `tdengine`：服务连接及凭据；
+- `server`：Spring profile；
+- `health`：探测路径、间隔、重试次数和数据库校验 SQL。
+
+相对路径以 YAML 文件所在目录为基准。解析器不执行配置内容，只接受顶层
+键和一层子映射；缺值、重复键、超过两层、非法布尔值/端口/模式都会失败。
+
+注意：示例凭据仅适用于本地开发。面向共享或生产环境时必须在不提交的 YAML
+中更换；不要把真实秘密提交到 Git。
+
+## 5. 无状态预检
+
+保持两个模式为 `check`，依次运行：
 
 ```bash
-export PATH=/opt/HBuilderX:$PATH
-cli ver
+bash ./up.sh ./config/runtime-local-check.yaml
+bash ./down.sh ./config/runtime-local-check.yaml
+bash ./tests/runtime-config/run.sh ./config/runtime-local-check.yaml
 ```
 
-脚本会通过官方命令完成以下动作：启动 HBuilderX、打开 `MallFrontend` 项目、执行 `cli publish --platform h5`，并将生成的 `build/h5` 目录规范为 Podman 所需的 `build/web` 目录。
+预检不会拉取/加载/构建镜像，不会创建、启动、停止或删除 Pod/卷。结构化测试
+还会验证 YAML 标量解析、重复键拒绝、层级限制、单参数契约以及 Pod 状态前后
+一致。
+
+## 6. 启动和恢复
+
+在本机配置中设置 `operation.startup_mode`，再始终执行同一命令：
 
 ```bash
-cd podman
-HBUILDERX_CLI=/opt/HBuilderX/cli bash ./build-mall-h5.sh
+bash ./up.sh ./config/runtime-local.yaml
 ```
 
-成功后必须存在：
+模式说明：
 
-```text
-MallFrontend/unpackage/dist/build/web/index.html
+- `full`：按配置加载/拉取基础镜像，封装当前产物，保留数据卷并替换 Pod；
+- `no-build`：使用现有本地运行镜像重新创建 Pod；
+- `fast`：启动已有的停止状态 Pod，并补齐缺失前端容器；
+- `frontends-only`：仅替换运行中 Pod 的 Web 和 Mall 容器；
+- `rebuild-web`：只封装当前 `Web/dist-prod/` 并替换 Web；
+- `check`：只预检。
+
+后端代码、数据库脚本或产物新旧不确定时使用 `full`。管理端单独变化且后端
+产物确认未变时才使用 `rebuild-web`。
+
+## 7. 停止与数据删除
+
+普通停止需在本机配置中设置：
+
+```yaml
+operation:
+  shutdown_mode: stop
+  remove_volumes_on_down: false
 ```
 
-较新的 HBuilderX 4.67-alpha+ 可以直接使用 `web` 平台：
+然后运行：
 
 ```bash
-HBUILDERX_CLI=/opt/HBuilderX/cli HBUILDERX_PLATFORM=web \
-  bash ./build-mall-h5.sh
+bash ./down.sh ./config/runtime-local.yaml
 ```
 
-如果 HBuilderX CLI 在 Windows 构建机上执行，请将生成的 `MallFrontend/unpackage/dist/build/web/` 整个目录复制到仓库相同位置，然后只提交并推送该目录；Ubuntu 部署机拉取后无需安装 HBuilderX。
+只有明确需要永久删除 MySQL、Redis、RabbitMQ、TDengine 数据时，才把
+`remove_volumes_on_down` 改为 `true`。此行为不再提供命令行快捷开关，避免
+误操作。
 
-## 4. 一次构建全部应用产物
+## 8. 离线镜像与代理
 
-先使用预检模式确认缺少什么；它不会下载依赖、编译或启动容器：
+联网机器在 YAML 中设置 `operation.archive_mode: pull-save` 后调用
+`image-archives.sh`；已有本地镜像时可使用 `save`，无状态检查使用 `check`。
+再为部署配置：
 
-```bash
-cd podman
-HBUILDERX_CLI=/opt/HBuilderX/cli bash ./build-assets.sh --check --build-mall
+```yaml
+image:
+  source: archive
+  archive_dir: ../images
 ```
 
-预检成功后，一条命令构建后端、初始化服务、管理后台和商城 H5：
+`image.source` 支持 `auto`、`archive`、`pull`。归档文件名也全部在
+`archive` 分组中显式声明。
 
-```bash
-HBUILDERX_CLI=/opt/HBuilderX/cli bash ./build-assets.sh --build-mall
+运行期默认 `network.use_host_proxy: false`，脚本会清空代理环境并给 Podman
+传入 `--http-proxy=false`。启用时必须在 YAML 中至少写一个明确 URL：
+
+```yaml
+network:
+  use_host_proxy: true
+  http_proxy: http://127.0.0.1:7890
+  https_proxy: http://127.0.0.1:7890
+  all_proxy: none
 ```
 
-该命令依次生成：
-
-```text
-Server/mitedtsm-server/target/mitedtsm-server.jar
-InitService/target/mitedtsm-init-service.jar
-Web/dist-prod/
-MallFrontend/unpackage/dist/build/web/
-```
-
-如果商城 H5 已经由其他构建机生成，可跳过 `--build-mall`：
-
-```bash
-bash ./build-assets.sh --check
-bash ./build-assets.sh
-```
-
-仓库必须位于支持软链接的文件系统，因为 pnpm 的依赖目录依赖软链接。管理端直接在
-`Web/` 中构建，不再保留旧的暂存和回写兼容路径。
-
-如果 Server 和 InitService 的 Java 构建已经成功、仅管理端 Web 构建失败，无需重跑
-Maven。直接执行以下命令即可只重试 Web：
-
-```bash
-bash ./build-assets.sh --web-only
-```
-
-`Web/build/vite/` 是 Vite 配置源码，必须随 Git 仓库提供。如果构建提示
-`Could not resolve "./build/vite"`，说明代码检出不完整；先更新仓库再重试，
-重新安装 pnpm 依赖无法补回缺失源码。
-
-`Web/.env` 和 `Web/pnpm-lock.yaml` 同样是必须提交的构建输入。脚本使用
-`--frozen-lockfile` 安装依赖，确保全新 clone 不会静默升级 Rollup、Vite 插件等依赖并生成
-不同产物。所有 `VITE_` 变量都会进入浏览器代码，不应放置服务端密钥。
-
-脚本会在 Vite 构建前删除旧的 `Web/dist-prod/`，并在构建/打包前校验 `index.html`
-引用的每个哈希资源都存在。若 Vite 失败，`up.sh` 将因缺少或不完整的前端产物而拒绝部署，
-不会再把旧入口页与新资源混合打进镜像。
-
-## 5. 启动 Podman 服务
-
-```bash
-cd podman
-bash ./up.sh --check
-bash ./up.sh
-```
-
-`--check` 只检查 rootless Podman、端口参数和应用产物，绝不会拉取/加载镜像、构建镜像、创建容器或启动服务。首次部署建议先执行一次。
-
-### 5.1 无变更时的快速启动
-
-`bash ./up.sh` 仍用于部署新的 JAR、前端产物或 SQL。应用产物没有变化时，可以跳过
-镜像打包，缩短日常启动时间：
-
-```bash
-# 已执行 down.sh，Pod 已删除但本地运行镜像仍在
-bash ./up.sh --no-build
-
-# Pod 还保留、只是被 podman pod stop 或主机重启停止
-bash ./up.sh --fast
-```
-
-`--fast` 不重建或替换任何容器，只启动并检查原有 Pod；`--no-build` 用现有本地镜像
-重新创建完整 Pod。两者都保留命名卷中的数据。需要发布新的构建产物时，使用不带参数的
-`bash ./up.sh`。
-
-默认端口如下：
-
-| 服务 | 主机端口 | 用途 |
-| --- | ---: | --- |
-| Server API | 8080 | 后端健康检查和 API |
-| Web 管理后台 | 8081 | 管理员登录和管理页面 |
-| Mall 商城 H5 | 8082 | 商城页面 |
-
-需要改端口时，在启动命令前设置环境变量：
-
-```bash
-SERVER_PORT=18080 WEB_PORT=18081 MALL_PORT=18082 bash ./up.sh
-```
-
-`up.sh` 会构建运行镜像、创建 rootless Podman Pod、初始化数据库，并等待各服务健康后输出访问地址。基础设施健康检查、TDengine 初始化和前端启动会尽可能并行执行；Spring Boot 本身的初始化时间仍取决于应用和数据库数据量。
-
-如果输出已经出现 `Spring Boot server is ready.`，但随后中断，且
-`podman ps --pod` 中没有 `mitedtsm-rootless-web` 或
-`mitedtsm-rootless-mall`，不需要重新构建、重启后端或删除数据。直接执行：
-
-```bash
-bash ./up.sh --frontends-only
-```
-
-该恢复模式只启动（或替换）两个 Nginx 前端容器；它不会打包镜像、重建 Pod、
-重置数据库或删除任何卷。若仍失败，脚本会输出最后一次健康检查的实际错误。
-
-### 5.2 只更新管理端 Web（不重启 Spring Boot）
-
-仅当确认当前运行中的 Server 和 InitService JAR 与待部署版本完全一致时，管理端前端修改后可只生成 `Web/dist-prod/`，再仅重打包和替换 Web Nginx 容器：
-
-```bash
-bash ./build-assets.sh --web-only
-bash ./up.sh --rebuild-web
-```
-
-该路径不会执行 Maven，也不会重启 Spring Boot、MySQL、Redis、RabbitMQ、TDengine、
-商城前端或删除数据卷。只要执行过 `git pull`、修改过后端，或无法确认 JAR 是否最新，就必须改用完整流程
-`bash ./build-assets.sh && bash ./up.sh`。生产构建会固定使用同源 `/admin-api`，因此 Windows
-等远程浏览器的请求会发往 `http://<Ubuntu-IP>:8081/admin-api/...`，而不是其自身的 `localhost:8080`。
-
-Web Nginx 不缓存 `index.html`（其中记录本次构建的哈希 JS/CSS 文件名），但仍长期缓存带哈希的
-静态资源，避免前端发布后浏览器把旧入口页和新 `assets/` 目录混用而出现 JS/CSS 404。
-
-## 6. Windows 或虚拟机外部访问
-
-先在 Ubuntu 上查看局域网 IP：
-
-```bash
-ip -br addr
-```
-
-假设 Ubuntu/虚拟机 IP 为 `192.168.1.50`，Windows 浏览器访问：
-
-```text
-管理后台：http://192.168.1.50:8081/
-商城 H5：http://192.168.1.50:8082/
-```
-
-不要在 Windows 浏览器中把后端写成 `http://localhost:8080`：`localhost` 指向 Windows 自己，而不是 Ubuntu/虚拟机。管理后台已经使用同源 `/admin-api` 代理；登录请求应类似：
-
-```text
-http://192.168.1.50:8081/admin-api/...
-```
-
-若使用 VMware NAT，需要将宿主机端口转发到虚拟机的 8081/8082；若使用桥接网络，通常可直接使用虚拟机 IP。页面能打开但登录失败时，先在浏览器开发者工具的 Network 面板确认请求没有发往 `localhost:8080`，然后重新执行 Web 构建和 `up.sh`。
-
-## 7. 代理和镜像来源
-
-所有脚本默认清除 `http_proxy`、`https_proxy`、`all_proxy` 等宿主机代理变量；Podman 的 `build` 和 `run` 默认也使用 `--http-proxy=false`。
-
-确实需要代理时，对单次命令显式开启：
-
-```bash
-USE_HOST_PROXY=true bash ./build-mall-h5.sh
-USE_HOST_PROXY=true bash ./build-assets.sh --build-mall
-USE_HOST_PROXY=true bash ./up.sh
-```
-
-镜像来源由 `IMAGE_SOURCE` 控制，所有离线归档均由 Podman 生成：
-
-```bash
-# 默认：有本地 podman/images/*.tar 时导入，否则由 Podman 拉取
-IMAGE_SOURCE=auto bash ./up.sh
-
-# 在有网络的 Podman 主机上创建可携带的 OCI 归档
-bash ./image-archives.sh --pull
-
-# 完全离线：复制 podman/images/*.tar 后加载，绝不访问镜像仓库
-IMAGE_SOURCE=archive bash ./up.sh
-
-# 始终由 Podman 从镜像仓库拉取
-IMAGE_SOURCE=pull bash ./up.sh
-```
-
-若部署介质放在仓库外，可在两个命令上使用同一个绝对目录：
-
-```bash
-IMAGE_ARCHIVE_DIR=/mnt/deployment-images bash ./image-archives.sh --pull
-IMAGE_ARCHIVE_DIR=/mnt/deployment-images IMAGE_SOURCE=archive bash ./up.sh
-```
-
-## 8. 日常更新流程
-
-部署新版本前建议先停止旧 Pod，再拉取和构建：
-
-```bash
-cd podman
-bash ./down.sh
-cd ..
-git pull --ff-only
-cd podman
-HBUILDERX_CLI=/opt/HBuilderX/cli bash ./build-assets.sh --build-mall
-bash ./up.sh
-```
-
-`down.sh` 默认停止并移除 Pod，但不会删除数据库等持久化卷。
-
-## 9. 查看状态、日志和停止服务
-
-```bash
-# 查看 Pod 和容器状态
-podman ps --pod
-
-# 查看后端日志
-podman logs --tail 200 mitedtsm-rootless-server
-
-# 查看管理后台 Nginx 日志
-podman logs --tail 200 mitedtsm-rootless-web
-
-# 停止服务，保留数据库卷
-cd podman && bash ./down.sh
-
-# 默认最多等待 120 秒让 Java/Quartz 优雅退出；需要更久时自行调整
-cd podman && STOP_TIMEOUT=300 bash ./down.sh
-
-# 停止服务并删除数据库、Redis、RabbitMQ、TDengine 数据卷（不可恢复）
-cd podman && bash ./down.sh --volumes
-```
-
-## 10. 常见问题
-
-| 现象 | 处理方式 |
-| --- | --- |
-| `HBuilderX CLI was not found` | 安装 HBuilderX CLI 3.1.5+，或设置 `HBUILDERX_CLI=/实际/cli`。 |
-| `HBuilderX completed without the expected H5 output` | 检查 CLI 输出；确认项目能被 HBuilderX 打开，并检查 `MallFrontend/unpackage/dist/build/`。 |
-| 缺少 Java、Maven、pnpm、Podman | 运行 `bash ./install-build-deps-ubuntu.sh`，再运行 `build-assets.sh --check --build-mall`。 |
-| `ERR_PNPM_ENOTSUP ... symlink` | 当前文件系统不满足构建要求；将仓库迁移到支持软链接的本地文件系统后重新构建。 |
-| `Could not resolve "./build/vite"` | `Web/build/vite/` 配置源码未随代码检出。更新仓库后重试；不要仅删除或重新安装 `node_modules`。 |
-| 页面能打开但请求发往 `http://localhost:8080` | 运行的是旧 Web 镜像或构建未成功。执行 `bash ./build-assets.sh --web-only && bash ./up.sh --rebuild-web`，然后在浏览器强制刷新。 |
-| 页面 HTML 能打开但多个 `/assets/*.js` 为 404 / MIME `text/html` | 浏览器缓存了旧 `index.html`，其哈希文件已不在新镜像中。更新后的 Nginx 会避免复发；执行 `bash ./up.sh --rebuild-web` 后强制刷新一次。 |
-| `Run this script as the normal rootless Podman user` | 不要用 sudo 运行 `up.sh`；用安装 Podman 的普通用户运行。 |
-| `StopSignal SIGTERM failed ... resorting to SIGKILL` | 使用新版 `down.sh`；它默认等待 120 秒。仍超时时，查看后端日志并用 `STOP_TIMEOUT=300 bash ./down.sh` 增加优雅退出时间。 |
-| 已显示 `Spring Boot server is ready.`，但没有 Web/Mall 容器 | 执行 `bash ./up.sh --frontends-only`；它只补启动前端，不重新构建或重启后端。 |
-| 访问页面正常但登录报错 | 使用 Ubuntu/虚拟机 IP 加 `:8081`，确认请求地址是 `/admin-api/...` 而不是 Windows 的 `localhost:8080`；重新构建 Web。 |
-| 拉取镜像失败 | 检查网络；需要代理时显式设置 `USE_HOST_PROXY=true`；离线环境在联网机器执行 `bash ./image-archives.sh --pull`，复制 `podman/images/*.tar` 后使用 `IMAGE_SOURCE=archive`。 |
-
-## 11. Git 与凭据规则
-
-不要提交以下内容：
-
-- `target/`、`Web/dist-prod/`、`MallFrontend/unpackage/`、`podman/images/*.tar` 等构建产物；
-- 云厂商 AccessKey、API Key、短信密钥、真实密码；
-- 本地环境文件或部署机私有配置。
-
-初始 SQL 中不再提供云 API 的测试凭据。部署后需要在系统管理界面或部署机私有配置中录入自己的凭据，避免触发 GitHub Push Protection。
-
-## 12. 最短可执行清单
-
-```bash
-git pull --ff-only
-cd podman
-bash ./install-build-deps-ubuntu.sh
-HBUILDERX_CLI=/opt/HBuilderX/cli bash ./build-assets.sh --check --build-mall
-HBUILDERX_CLI=/opt/HBuilderX/cli bash ./build-assets.sh --build-mall
-bash ./up.sh --check
-bash ./up.sh
-```
+脚本不会读取宿主代理环境作为隐式配置；配置 URL 中的 loopback 会转换为
+`network.host_proxy_name`。
+
+## 9. 常见问题
+
+| 现象 | 处理 |
+|---|---|
+| 命令返回退出码 2 | 只传一个 YAML 路径，并检查缺值、重复键、端口和模式。 |
+| `Run this script as the rootless Podman user` | 不要 sudo，修复当前用户的 Podman 会话。 |
+| 缺少 JAR 或 `Web/dist-prod` | 先运行 Ubuntu 26.04 构建配置。 |
+| 离线模式报告缺归档 | 核对 `image.archive_dir` 和 `archive.*` 文件名。 |
+| 页面打开但 API 失败 | 检查 Web 产物使用相对 `/admin-api`，并核对 Server 健康路径。 |
+| Pod 已停止但镜像未变 | 使用 `startup_mode: fast`。 |
+| Pod 已删除但镜像仍有效 | 使用 `startup_mode: no-build`。 |
+| 只更新管理端 | 确认后端产物未变后使用 `startup_mode: rebuild-web`。 |
+
+## 10. 安全检查清单
+
+- 当前用户的 Podman 为 rootless；
+- 编译来自 Ubuntu 26.04 专用镜像；
+- 运行命令只传 YAML 路径；
+- 真实凭据只在不提交的本机配置中；
+- 首次执行状态操作前先运行 `check` 和结构化测试；
+- 删除卷前再次核对 `remove_volumes_on_down: true`；
+- 不使用项目原 Docker 文件和 Compose。

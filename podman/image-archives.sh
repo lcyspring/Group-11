@@ -4,104 +4,77 @@
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-IMAGE_ARCHIVE_DIR="${IMAGE_ARCHIVE_DIR:-${SCRIPT_DIR}/images}"
-USE_HOST_PROXY="${USE_HOST_PROXY:-false}"
-CHECK_ONLY=false
-PULL_IMAGES=false
-
-# Keep these defaults in sync with up.sh. They are fully qualified so no
-# short-name registry configuration is needed.
-RUNTIME_BASE_IMAGE="${RUNTIME_BASE_IMAGE:-docker.io/library/eclipse-temurin:17-jdk}"
-MYSQL_BASE_IMAGE="${MYSQL_BASE_IMAGE:-docker.io/library/mysql:8.0}"
-REDIS_BASE_IMAGE="${REDIS_BASE_IMAGE:-docker.io/library/redis:6-alpine}"
-RABBITMQ_BASE_IMAGE="${RABBITMQ_BASE_IMAGE:-docker.io/library/rabbitmq:3-management-alpine}"
-TDENGINE_BASE_IMAGE="${TDENGINE_BASE_IMAGE:-docker.io/tdengine/tdengine:3.3.6.0}"
-NGINX_BASE_IMAGE="${NGINX_BASE_IMAGE:-docker.io/library/nginx:stable-alpine}"
 
 usage() {
-    cat <<'EOF'
-Usage: bash ./image-archives.sh [--check|--pull]
-
-Writes one OCI archive per base image into podman/images/ by default. These
-archives are consumed by IMAGE_SOURCE=archive bash ./up.sh and are generated
-entirely with Podman.
-
-Options:
-  --check  Verify that every required archive already exists; do not change it.
-  --pull   Pull every base image with Podman before writing its archive.
-
-Optional environment variables:
-  IMAGE_ARCHIVE_DIR=/absolute/path/to/oci-archives
-  USE_HOST_PROXY=true
-EOF
+    printf 'Usage: bash ./image-archives.sh <config.yaml>\n' >&2
 }
 
-case "$#" in
-    0) ;;
-    1)
-        case "$1" in
-            --check)
-                CHECK_ONLY=true
-                ;;
-            --pull)
-                PULL_IMAGES=true
-                ;;
-            -h|--help)
-                usage
-                exit 0
-                ;;
-            *)
-                usage >&2
-                exit 2
-                ;;
-        esac
-        ;;
-    *)
-        usage >&2
-        exit 2
-        ;;
-esac
+[[ $# -eq 1 ]] || {
+    usage
+    exit 2
+}
 
-case "$USE_HOST_PROXY" in
-    true|TRUE|1|yes|YES)
-        USE_HOST_PROXY=true
-        ;;
-    false|FALSE|0|no|NO|'')
-        USE_HOST_PROXY=false
-        ;;
-    *)
-        printf 'USE_HOST_PROXY must be true or false; got: %s\n' "$USE_HOST_PROXY" >&2
-        exit 2
-        ;;
-esac
+# shellcheck source=lib/yaml-config.sh
+source "${SCRIPT_DIR}/lib/yaml-config.sh"
+yaml_config_init "$1"
+
+[[ "$(yaml_require schema_version)" == "1" ]] || {
+    printf 'Unsupported schema_version; expected 1.\n' >&2
+    exit 2
+}
+
+ARCHIVE_MODE="$(yaml_require operation.archive_mode)"
+IMAGE_ARCHIVE_DIR="$(yaml_path image.archive_dir)"
+USE_HOST_PROXY="$(yaml_bool network.use_host_proxy)"
+HTTP_PROXY_URL="$(yaml_require network.http_proxy)"
+HTTPS_PROXY_URL="$(yaml_require network.https_proxy)"
+ALL_PROXY_URL="$(yaml_require network.all_proxy)"
+NO_PROXY_VALUE="$(yaml_require network.no_proxy)"
 
 clear_host_proxy() {
     unset http_proxy HTTP_PROXY https_proxy HTTPS_PROXY \
         all_proxy ALL_PROXY no_proxy NO_PROXY || true
 }
 
-if [[ "$USE_HOST_PROXY" == false ]]; then
-    clear_host_proxy
+clear_host_proxy
+if [[ "$USE_HOST_PROXY" == "true" ]]; then
+    if [[ "$HTTP_PROXY_URL" == "none" && "$HTTPS_PROXY_URL" == "none" && "$ALL_PROXY_URL" == "none" ]]; then
+        printf 'At least one explicit proxy URL is required when network.use_host_proxy=true.\n' >&2
+        exit 2
+    fi
+    [[ "$HTTP_PROXY_URL" == "none" ]] || export http_proxy="$HTTP_PROXY_URL" HTTP_PROXY="$HTTP_PROXY_URL"
+    [[ "$HTTPS_PROXY_URL" == "none" ]] || export https_proxy="$HTTPS_PROXY_URL" HTTPS_PROXY="$HTTPS_PROXY_URL"
+    [[ "$ALL_PROXY_URL" == "none" ]] || export all_proxy="$ALL_PROXY_URL" ALL_PROXY="$ALL_PROXY_URL"
+    export no_proxy="$NO_PROXY_VALUE" NO_PROXY="$NO_PROXY_VALUE"
 fi
 
 archives=(
-    "${IMAGE_ARCHIVE_DIR}/eclipse-temurin-17-jdk.tar"
-    "${IMAGE_ARCHIVE_DIR}/mysql-8.0.tar"
-    "${IMAGE_ARCHIVE_DIR}/redis-6-alpine.tar"
-    "${IMAGE_ARCHIVE_DIR}/rabbitmq-3-management-alpine.tar"
-    "${IMAGE_ARCHIVE_DIR}/tdengine-3.3.6.0.tar"
-    "${IMAGE_ARCHIVE_DIR}/nginx-stable-alpine.tar"
+    "${IMAGE_ARCHIVE_DIR}/$(yaml_require archive.runtime_base)"
+    "${IMAGE_ARCHIVE_DIR}/$(yaml_require archive.mysql_base)"
+    "${IMAGE_ARCHIVE_DIR}/$(yaml_require archive.redis_base)"
+    "${IMAGE_ARCHIVE_DIR}/$(yaml_require archive.rabbitmq_base)"
+    "${IMAGE_ARCHIVE_DIR}/$(yaml_require archive.tdengine_base)"
+    "${IMAGE_ARCHIVE_DIR}/$(yaml_require archive.nginx_base)"
 )
 images=(
-    "$RUNTIME_BASE_IMAGE"
-    "$MYSQL_BASE_IMAGE"
-    "$REDIS_BASE_IMAGE"
-    "$RABBITMQ_BASE_IMAGE"
-    "$TDENGINE_BASE_IMAGE"
-    "$NGINX_BASE_IMAGE"
+    "$(yaml_require image.runtime_base)"
+    "$(yaml_require image.mysql_base)"
+    "$(yaml_require image.redis_base)"
+    "$(yaml_require image.rabbitmq_base)"
+    "$(yaml_require image.tdengine_base)"
+    "$(yaml_require image.nginx_base)"
 )
 
-if [[ "$CHECK_ONLY" == true ]]; then
+case "$ARCHIVE_MODE" in
+    check) ;;
+    save|pull-save) ;;
+    *)
+        printf 'operation.archive_mode must be check, save, or pull-save; got: %s\n' "$ARCHIVE_MODE" >&2
+        exit 2
+        ;;
+esac
+
+if [[ "$ARCHIVE_MODE" == "check" ]]; then
     missing=()
     for archive in "${archives[@]}"; do
         [[ -s "$archive" ]] || missing+=("$archive")
@@ -134,12 +107,12 @@ for ((index = 0; index < ${#images[@]}; index++)); do
     image="${images[index]}"
     archive="${archives[index]}"
 
-    if [[ "$PULL_IMAGES" == true ]]; then
+    if [[ "$ARCHIVE_MODE" == "pull-save" ]]; then
         printf 'Pulling %s with Podman.\n' "$image"
         podman pull "$image"
     elif ! podman image exists "$image"; then
         printf 'Base image is unavailable locally: %s\n' "$image" >&2
-        printf 'Run bash ./image-archives.sh --pull to fetch it with Podman.\n' >&2
+        printf 'Use operation.archive_mode=pull-save to fetch it with Podman.\n' >&2
         exit 1
     fi
 

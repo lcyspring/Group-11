@@ -1,52 +1,38 @@
 #!/usr/bin/env bash
 # Stop the rootless Podman Pod started by up.sh.
-# Pass --volumes only when all service data should be removed.
 
 set -Eeuo pipefail
 
-POD_NAME="${POD_NAME:-mitedtsm-rootless}"
-# Quartz is configured to wait for active jobs on shutdown, so Podman's
-# default 10-second stop window is too short for the Java server.
-STOP_TIMEOUT="${STOP_TIMEOUT:-120}"
-REMOVE_VOLUMES=false
-VOLUMES=(
-    "${POD_NAME}-mysql-data"
-    "${POD_NAME}-redis-data"
-    "${POD_NAME}-rabbitmq-data"
-    "${POD_NAME}-tdengine-data"
-)
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 usage() {
-    cat <<'EOF'
-Usage: bash ./down.sh [--volumes]
-
-Stops and removes the rootless Podman Pod. Persistent volumes are retained
-unless --volumes is supplied.
-EOF
+    printf 'Usage: bash ./down.sh <config.yaml>\n' >&2
 }
 
-case "$#" in
-    0) ;;
-    1)
-        case "$1" in
-            --volumes)
-                REMOVE_VOLUMES=true
-                ;;
-            -h|--help)
-                usage
-                exit 0
-                ;;
-            *)
-                usage >&2
-                exit 2
-                ;;
-        esac
-        ;;
-    *)
-        usage >&2
-        exit 2
-        ;;
-esac
+[[ $# -eq 1 ]] || {
+    usage
+    exit 2
+}
+
+# shellcheck source=lib/yaml-config.sh
+source "${SCRIPT_DIR}/lib/yaml-config.sh"
+yaml_config_init "$1"
+
+[[ "$(yaml_require schema_version)" == "1" ]] || {
+    printf 'Unsupported schema_version; expected 1.\n' >&2
+    exit 2
+}
+
+POD_NAME="$(yaml_require deployment.pod_name)"
+STOP_TIMEOUT="$(yaml_positive_integer deployment.stop_timeout_seconds)"
+SHUTDOWN_MODE="$(yaml_require operation.shutdown_mode)"
+REMOVE_VOLUMES="$(yaml_bool operation.remove_volumes_on_down)"
+VOLUMES=(
+    "$(yaml_require volume.mysql)"
+    "$(yaml_require volume.redis)"
+    "$(yaml_require volume.rabbitmq)"
+    "$(yaml_require volume.tdengine)"
+)
 
 command -v podman >/dev/null 2>&1 || {
     printf 'Podman is required.\n' >&2
@@ -62,10 +48,17 @@ rootless="$(podman info --format '{{.Host.Security.Rootless}}')" || {
     exit 1
 }
 
-[[ "$STOP_TIMEOUT" =~ ^[1-9][0-9]*$ ]] || {
-    printf 'STOP_TIMEOUT must be a positive number of seconds; got: %s\n' "$STOP_TIMEOUT" >&2
-    exit 2
-}
+case "$SHUTDOWN_MODE" in
+    check)
+        printf 'Podman shutdown preflight passed. No Pod or volume was stopped or removed.\n'
+        exit 0
+        ;;
+    stop) ;;
+    *)
+        printf 'operation.shutdown_mode must be check or stop; got: %s\n' "$SHUTDOWN_MODE" >&2
+        exit 2
+        ;;
+esac
 
 if podman pod inspect "$POD_NAME" >/dev/null 2>&1; then
     printf 'Stopping Pod %s gracefully (timeout: %ss).\n' "$POD_NAME" "$STOP_TIMEOUT"
