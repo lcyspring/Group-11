@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 
 /**
@@ -29,6 +30,9 @@ public class CrmNoRedisDAO {
      */
     public static final String RECEIVABLE_PREFIX = "HK";
 
+    /** 客服工单编号前缀。 */
+    public static final String WORK_ORDER_PREFIX = "W-";
+
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
@@ -47,6 +51,17 @@ public class CrmNoRedisDAO {
         // 设置过期时间
         stringRedisTemplate.expire(key, Duration.ofDays(1L));
         return noPrefix + String.format("%06d", no);
+    }
+
+    /**
+     * 生成按月递增的编号，格式为 {PREFIX}yyyyMM-NNNN。
+     */
+    public String generateMonthly(String prefix) {
+        String noPrefix = prefix + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMM"));
+        String key = RedisKeyConstants.NO + noPrefix;
+        Long no = stringRedisTemplate.opsForValue().increment(key);
+        stringRedisTemplate.expire(key, Duration.ofDays(32L));
+        return noPrefix + "-" + String.format("%04d", no);
     }
 
 }

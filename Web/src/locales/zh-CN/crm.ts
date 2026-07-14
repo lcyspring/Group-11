@@ -463,6 +463,24 @@ export default {
       parentIdRequired: '父级分类不能为空'
     }
   },
+  workOrder: {
+    title: '客服工单', no: '工单编号', type: '类型', priority: '优先级', status: '状态',
+    customer: '客户', handler: '处理人', sourceType: '来源类型', source: '来源对象',
+    description: '工单描述', solution: '解决方案', attachments: '附件地址',
+    attachmentsPlaceholder: '多个附件 URL 使用逗号分隔', create: '创建工单', update: '修改工单',
+    start: '开始处理', return: '退回', complete: '完结', resubmit: '重新提交',
+    returnReason: '退回原因', statusPending: '待处理', statusProcessing: '处理中',
+    statusCompleted: '已完结', statusReturned: '已退回', typeIssue: '问题', typeDemand: '需求',
+    typeComplaint: '投诉', typeConsultation: '咨询', priorityLow: '低', priorityMedium: '中',
+    priorityHigh: '高', sourceCustomer: '客户', sourceBusiness: '商机', sourceContract: '合同',
+    titleRequired: '工单标题不能为空', typeRequired: '工单类型不能为空',
+    priorityRequired: '优先级不能为空', customerRequired: '客户不能为空',
+    sourceTypeRequired: '来源类型不能为空', sourceRequired: '来源对象不能为空',
+    handlerRequired: '处理人不能为空', descriptionRequired: '工单描述不能为空',
+    returnReasonRequired: '退回原因不能为空', solutionRequired: '解决方案不能为空',
+    startSuccess: '工单已开始处理', resubmitSuccess: '工单已重新提交',
+    records: '处理轨迹', actionCreate: '创建', actionUpdate: '修改'
+  },
   receivable: {
     title: '回款管理',
     no: '回款编号',
@@ -647,6 +665,7 @@ export default {
     contractRemind: '即将到期的合同',
     receivableAudit: '待审核回款',
     receivablePlanRemind: '待回款提醒',
+    workOrder: '客服工单待办',
     today: '今日',
     total: '共',
     item: '项',

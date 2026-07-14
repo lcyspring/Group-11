@@ -102,6 +102,12 @@ if [ -d "$SQL_NEW_DIR" ]; then
         echo "Executing: new-crm-business-contract-conversion.sql"
         mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < "${SQL_NEW_DIR}/new-crm-business-contract-conversion.sql"
     fi
+
+    # 4.12 执行 CRM 客服工单最小闭环
+    if [ -f "${SQL_NEW_DIR}/new-crm-work-order.sql" ]; then
+        echo "Executing: new-crm-work-order.sql"
+        mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < "${SQL_NEW_DIR}/new-crm-work-order.sql"
+    fi
 fi
 
 echo "MySQL initialization completed successfully!"

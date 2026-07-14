@@ -25,6 +25,7 @@
       <CustomerFollowList v-if="leftMenu === 'customerFollow'" />
       <CustomerPutPoolRemindList v-if="leftMenu === 'customerPutPoolRemind'" />
       <ReceivablePlanRemindList v-if="leftMenu === 'receivablePlanRemind'" />
+      <WorkOrderBacklogList v-if="leftMenu === 'workOrder'" />
     </el-col>
   </el-row>
 </template>
@@ -38,11 +39,13 @@ import ContractAuditList from './components/ContractAuditList.vue'
 import ContractRemindList from './components/ContractRemindList.vue'
 import ReceivablePlanRemindList from './components/ReceivablePlanRemindList.vue'
 import ReceivableAuditList from './components/ReceivableAuditList.vue'
+import WorkOrderBacklogList from './components/WorkOrderBacklogList.vue'
 import * as CustomerApi from '@/api/crm/customer'
 import * as ClueApi from '@/api/crm/clue'
 import * as ContractApi from '@/api/crm/contract'
 import * as ReceivableApi from '@/api/crm/receivable'
 import * as ReceivablePlanApi from '@/api/crm/receivable/plan'
+import * as WorkOrderApi from '@/api/crm/workorder'
 
 defineOptions({ name: 'CrmBacklog' })
 
@@ -58,6 +61,7 @@ const contractAuditCount = ref(0)
 const contractRemindCount = ref(0)
 const receivableAuditCount = ref(0)
 const receivablePlanRemindCount = ref(0)
+const workOrderCount = ref(0)
 
 const leftSides = computed(() => [
   {
@@ -99,6 +103,11 @@ const leftSides = computed(() => [
     name: t('backlog.contractRemind'),
     menu: 'contractRemind',
     count: contractRemindCount.value
+  },
+  {
+    name: t('backlog.workOrder'),
+    menu: 'workOrder',
+    count: workOrderCount.value
   }
 ])
 
@@ -121,6 +130,9 @@ const getCount = () => {
   ReceivableApi.getAuditReceivableCount().then((count) => (receivableAuditCount.value = count))
   ReceivablePlanApi.getReceivablePlanRemindCount().then(
     (count) => (receivablePlanRemindCount.value = count)
+  )
+  WorkOrderApi.getWorkOrderPage({ pageNo: 1, pageSize: 1, backlog: true }).then(
+    (data) => (workOrderCount.value = data.total)
   )
 }
 

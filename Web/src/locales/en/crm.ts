@@ -466,6 +466,24 @@ export default {
       parentIdRequired: 'Parent category cannot be empty'
     }
   },
+  workOrder: {
+    title: 'Service Work Orders', no: 'Work Order No.', type: 'Type', priority: 'Priority', status: 'Status',
+    customer: 'Customer', handler: 'Handler', sourceType: 'Source Type', source: 'Source',
+    description: 'Description', solution: 'Solution', attachments: 'Attachment URLs',
+    attachmentsPlaceholder: 'Separate multiple URLs with commas', create: 'Create Work Order', update: 'Update Work Order',
+    start: 'Start', return: 'Return', complete: 'Complete', resubmit: 'Resubmit',
+    returnReason: 'Return Reason', statusPending: 'Pending', statusProcessing: 'Processing',
+    statusCompleted: 'Completed', statusReturned: 'Returned', typeIssue: 'Issue', typeDemand: 'Request',
+    typeComplaint: 'Complaint', typeConsultation: 'Consultation', priorityLow: 'Low', priorityMedium: 'Medium',
+    priorityHigh: 'High', sourceCustomer: 'Customer', sourceBusiness: 'Opportunity', sourceContract: 'Contract',
+    titleRequired: 'Title is required', typeRequired: 'Type is required', priorityRequired: 'Priority is required',
+    customerRequired: 'Customer is required', sourceTypeRequired: 'Source type is required',
+    sourceRequired: 'Source is required', handlerRequired: 'Handler is required',
+    descriptionRequired: 'Description is required', returnReasonRequired: 'Return reason is required',
+    solutionRequired: 'Solution is required', startSuccess: 'Work order started',
+    resubmitSuccess: 'Work order resubmitted', records: 'Processing History',
+    actionCreate: 'Created', actionUpdate: 'Updated'
+  },
   receivable: {
     title: 'Receivable Management',
     no: 'Receivable No',
@@ -651,6 +669,7 @@ export default {
     contractRemind: 'Contract Expiring',
     receivableAudit: 'Receivable Audit',
     receivablePlanRemind: 'Receivable Plan Remind',
+    workOrder: 'Work Order Backlog',
     today: 'Today',
     total: 'Total',
     item: 'items',

@@ -144,4 +144,18 @@ public interface ErrorCodeConstants {
     ErrorCode PERFORMANCE_TARGET_PERIOD_INVALID = new ErrorCode(1_020_014_005,
             "业绩目标完成度必须查询同一个完整年度");
 
+    // ========== 客服工单 1_020_015_000 ==========
+    ErrorCode WORK_ORDER_NOT_EXISTS = new ErrorCode(1_020_015_000, "客服工单不存在");
+    ErrorCode WORK_ORDER_STATUS_TRANSITION_INVALID = new ErrorCode(1_020_015_001,
+            "客服工单状态已变化或不允许执行当前操作，请刷新后重试");
+    ErrorCode WORK_ORDER_CREATOR_ONLY = new ErrorCode(1_020_015_002, "只有工单创建人可以执行当前操作");
+    ErrorCode WORK_ORDER_HANDLER_ONLY = new ErrorCode(1_020_015_003, "只有工单处理人可以执行当前操作");
+    ErrorCode WORK_ORDER_SOURCE_CUSTOMER_MISMATCH = new ErrorCode(1_020_015_004,
+            "工单来源与所选客户不一致");
+    ErrorCode WORK_ORDER_SOLUTION_REQUIRED = new ErrorCode(1_020_015_005, "完结工单必须填写解决方案");
+    ErrorCode WORK_ORDER_NO_EXISTS = new ErrorCode(1_020_015_006, "生成客服工单编号重复，请重试");
+    ErrorCode WORK_ORDER_DELETE_STATUS_INVALID = new ErrorCode(1_020_015_007,
+            "只有创建人可以删除本人创建且待处理的工单");
+    ErrorCode WORK_ORDER_QUERY_DENIED = new ErrorCode(1_020_015_008, "无权查看该客服工单");
+
 }

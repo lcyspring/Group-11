@@ -463,6 +463,24 @@ export default {
       parentIdRequired: 'لا يمكن أن تكون الفئة الأصل فارغة'
     }
   },
+  workOrder: {
+    title: 'أوامر خدمة العملاء', no: 'رقم أمر العمل', type: 'النوع', priority: 'الأولوية', status: 'الحالة',
+    customer: 'العميل', handler: 'المعالج', sourceType: 'نوع المصدر', source: 'المصدر',
+    description: 'الوصف', solution: 'الحل', attachments: 'روابط المرفقات',
+    attachmentsPlaceholder: 'افصل الروابط المتعددة بفواصل', create: 'إنشاء أمر عمل', update: 'تحديث أمر العمل',
+    start: 'بدء المعالجة', return: 'إرجاع', complete: 'إكمال', resubmit: 'إعادة الإرسال',
+    returnReason: 'سبب الإرجاع', statusPending: 'قيد الانتظار', statusProcessing: 'قيد المعالجة',
+    statusCompleted: 'مكتمل', statusReturned: 'مُعاد', typeIssue: 'مشكلة', typeDemand: 'طلب',
+    typeComplaint: 'شكوى', typeConsultation: 'استشارة', priorityLow: 'منخفضة', priorityMedium: 'متوسطة',
+    priorityHigh: 'عالية', sourceCustomer: 'عميل', sourceBusiness: 'فرصة', sourceContract: 'عقد',
+    titleRequired: 'العنوان مطلوب', typeRequired: 'النوع مطلوب', priorityRequired: 'الأولوية مطلوبة',
+    customerRequired: 'العميل مطلوب', sourceTypeRequired: 'نوع المصدر مطلوب',
+    sourceRequired: 'المصدر مطلوب', handlerRequired: 'المعالج مطلوب',
+    descriptionRequired: 'الوصف مطلوب', returnReasonRequired: 'سبب الإرجاع مطلوب',
+    solutionRequired: 'الحل مطلوب', startSuccess: 'بدأت معالجة أمر العمل',
+    resubmitSuccess: 'تمت إعادة إرسال أمر العمل', records: 'سجل المعالجة',
+    actionCreate: 'إنشاء', actionUpdate: 'تحديث'
+  },
   receivable: {
     title: 'إدارة المستحقات',
     no: 'رقم المستحق',
@@ -648,6 +666,7 @@ export default {
     contractRemind: 'عقد ينتهي قريباً',
     receivableAudit: 'تدقيق المستحق',
     receivablePlanRemind: 'تذكير خطة المستحق',
+    workOrder: 'مهام أوامر العمل',
     today: 'اليوم',
     total: 'الإجمالي',
     item: 'عناصر',
