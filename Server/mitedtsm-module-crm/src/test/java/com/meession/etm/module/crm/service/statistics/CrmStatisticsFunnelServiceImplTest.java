@@ -1,6 +1,7 @@
 package com.meession.etm.module.crm.service.statistics;
 
 import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticFunnelSummaryRespVO;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessForecastByDateRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessInversionRateSummaryByDateRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsFunnelReqVO;
 import com.meession.etm.module.crm.dal.mysql.statistics.CrmStatisticsFunnelMapper;
@@ -80,6 +81,51 @@ class CrmStatisticsFunnelServiceImplTest {
                 () -> assertEquals(0L, result.get(2).getBusinessCount()),
                 () -> assertEquals(0L, result.get(2).getBusinessWinCount())
         );
+    }
+
+    @Test
+    void getBusinessForecastAggregatesExpectedAndWeightedAmountsByInterval() {
+        CrmStatisticsFunnelServiceImpl funnelService = new CrmStatisticsFunnelServiceImpl();
+        List<CrmStatisticsBusinessForecastByDateRespVO> dailyRows = List.of(
+                forecast("2026-07-01", 2L, "100000.00", "30000.00"),
+                forecast("2026-07-20", 1L, "50000.00", "20000.00")
+        );
+        ReflectionTestUtils.setField(funnelService, "funnelMapper", proxy(CrmStatisticsFunnelMapper.class,
+                (proxy, method, args) -> {
+                    if (method.getName().equals("selectBusinessForecastGroupByDate")) {
+                        return dailyRows;
+                    }
+                    throw new AssertionError("不应访问其他统计 Mapper 方法: " + method.getName());
+                }));
+        CrmStatisticsFunnelReqVO reqVO = new CrmStatisticsFunnelReqVO()
+                .setUserId(10L)
+                .setInterval(3)
+                .setTimes(new LocalDateTime[]{
+                        LocalDateTime.of(2026, 7, 1, 0, 0),
+                        LocalDateTime.of(2026, 8, 31, 23, 59, 59)
+                });
+
+        List<CrmStatisticsBusinessForecastByDateRespVO> result =
+                funnelService.getBusinessForecastByDate(reqVO);
+
+        assertAll(
+                () -> assertEquals(2, result.size()),
+                () -> assertEquals(3L, result.get(0).getBusinessCount()),
+                () -> assertEquals(new BigDecimal("150000.00"), result.get(0).getExpectedAmount()),
+                () -> assertEquals(new BigDecimal("50000.00"), result.get(0).getWeightedAmount()),
+                () -> assertEquals(0L, result.get(1).getBusinessCount()),
+                () -> assertEquals(new BigDecimal("0.00"), result.get(1).getExpectedAmount()),
+                () -> assertEquals(new BigDecimal("0.00"), result.get(1).getWeightedAmount())
+        );
+    }
+
+    private static CrmStatisticsBusinessForecastByDateRespVO forecast(String time, long count,
+                                                                       String expected, String weighted) {
+        return new CrmStatisticsBusinessForecastByDateRespVO()
+                .setTime(time)
+                .setBusinessCount(count)
+                .setExpectedAmount(new BigDecimal(expected))
+                .setWeightedAmount(new BigDecimal(weighted));
     }
 
     private static <T> T proxy(Class<T> type, java.lang.reflect.InvocationHandler handler) {

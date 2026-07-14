@@ -84,4 +84,27 @@
         GROUP BY time
     </select>
 
+    <select id="selectBusinessForecastGroupByDate"
+            resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessForecastByDateRespVO">
+        SELECT
+            DATE_FORMAT(business.deal_time, '%Y-%m-%d') AS time,
+            COUNT(*) AS businessCount,
+            COALESCE(SUM(business.total_price), 0) AS expectedAmount,
+            COALESCE(SUM(COALESCE(business.total_price, 0) * COALESCE(status.percent, 0) / 100), 0) AS weightedAmount
+        FROM crm_business AS business
+        INNER JOIN crm_business_status AS status
+            ON status.id = business.status_id AND status.deleted = 0
+        WHERE business.deleted = 0
+          AND business.end_status IS NULL
+          AND business.deal_time IS NOT NULL
+          AND business.owner_user_id IN
+            <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+                #{userId}
+            </foreach>
+          AND business.deal_time BETWEEN #{times[0],javaType=java.time.LocalDateTime}
+          AND #{times[1],javaType=java.time.LocalDateTime}
+        GROUP BY time
+        ORDER BY time
+    </select>
+
 </mapper>

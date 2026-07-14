@@ -206,8 +206,9 @@ public class CrmBusinessController {
             });
             // 2.3 设置商机状态
             MapUtils.findAndThen(statusTypeMap, businessVO.getStatusTypeId(), statusType -> businessVO.setStatusTypeName(statusType.getName()));
-            MapUtils.findAndThen(statusMap, businessVO.getStatusId(), status -> businessVO.setStatusName(
-                    businessService.getBusinessStatusName(businessVO.getEndStatus(), status)));
+            MapUtils.findAndThen(statusMap, businessVO.getStatusId(), status -> businessVO
+                    .setStatusName(businessService.getBusinessStatusName(businessVO.getEndStatus(), status))
+                    .setStatusPercent(status.getPercent()));
         });
     }
 

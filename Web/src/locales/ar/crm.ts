@@ -734,6 +734,7 @@ export default {
       funnel: 'قمع المبيعات',
       businessSummary: 'ملخص الأعمال',
       inversionRate: 'معدل الانعكاس',
+      salesForecast: 'توقعات المبيعات',
       funnelStage: 'قمع المبيعات',
       // View
       customerView: 'عرض العميل',
@@ -768,7 +769,10 @@ export default {
       winConversionRate: 'معدل تحويل الفوز',
       totalBusinessCount: 'إجمالي الأعمال',
       winBusinessCount: 'أعمال الفوز',
-      businessUnit: 'وحدات'
+      businessUnit: 'وحدات',
+      forecastBusinessCount: 'الأعمال النشطة',
+      expectedAmount: 'المبلغ المتوقع',
+      weightedAmount: 'المبلغ المرجح'
     },
     // Performance
     performance: {

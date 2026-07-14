@@ -203,4 +203,12 @@ public interface CrmBusinessService {
      */
     PageResult<CrmBusinessDO> getBusinessPageByDate(CrmStatisticsFunnelReqVO pageVO);
 
+    /**
+     * 获得预计成交时间范围内的活跃商机分页，用于销售预测。
+     *
+     * @param pageVO 请求
+     * @return 商机分页
+     */
+    PageResult<CrmBusinessDO> getBusinessForecastPage(CrmStatisticsFunnelReqVO pageVO);
+
 }

@@ -108,6 +108,9 @@
           :query-params="queryParams"
         />
       </el-tab-pane>
+      <el-tab-pane :label="t('funnel.salesForecast')" lazy name="salesForecastRef">
+        <SalesForecast ref="salesForecastRef" :query-params="queryParams" />
+      </el-tab-pane>
     </el-tabs>
   </el-col>
 </template>
@@ -121,6 +124,7 @@ import { defaultProps, handleTree } from '@/utils/tree'
 import FunnelBusiness from './components/FunnelBusiness.vue'
 import BusinessSummary from './components/BusinessSummary.vue'
 import BusinessInversionRateSummary from './components/BusinessInversionRateSummary.vue'
+import SalesForecast from './components/SalesForecast.vue'
 import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 
 defineOptions({ name: 'CrmStatisticsFunnel' })
@@ -153,6 +157,7 @@ const activeTab = ref('funnelRef') // 活跃标签
 const funnelRef = ref() // 销售漏斗
 const businessSummaryRef = ref() // 新增商机分析
 const businessInversionRateSummaryRef = ref() // 商机转化率分析
+const salesForecastRef = ref() // 销售预测
 
 /** 搜索按钮操作 */
 const handleQuery = () => {
@@ -165,6 +170,9 @@ const handleQuery = () => {
       break
     case 'businessInversionRateSummaryRef':
       businessInversionRateSummaryRef.value?.loadData?.()
+      break
+    case 'salesForecastRef':
+      salesForecastRef.value?.loadData?.()
       break
   }
 }

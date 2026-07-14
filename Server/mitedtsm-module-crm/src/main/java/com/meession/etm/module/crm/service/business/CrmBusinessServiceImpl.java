@@ -389,4 +389,9 @@ public class CrmBusinessServiceImpl implements CrmBusinessService {
         return businessMapper.selectPage(pageVO);
     }
 
+    @Override
+    public PageResult<CrmBusinessDO> getBusinessForecastPage(CrmStatisticsFunnelReqVO pageVO) {
+        return businessMapper.selectForecastPage(pageVO);
+    }
+
 }

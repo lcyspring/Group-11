@@ -123,6 +123,36 @@ public class CrmStatisticsFunnelServiceImpl implements CrmStatisticsFunnelServic
         });
     }
 
+    @Override
+    public List<CrmStatisticsBusinessForecastByDateRespVO> getBusinessForecastByDate(CrmStatisticsFunnelReqVO reqVO) {
+        reqVO.setUserIds(getUserIds(reqVO));
+        if (CollUtil.isEmpty(reqVO.getUserIds())) {
+            return Collections.emptyList();
+        }
+        List<CrmStatisticsBusinessForecastByDateRespVO> forecastList =
+                funnelMapper.selectBusinessForecastGroupByDate(reqVO);
+        List<LocalDateTime[]> timeRanges = LocalDateTimeUtils.getDateRangeList(
+                reqVO.getTimes()[0], reqVO.getTimes()[1], reqVO.getInterval());
+        return convertList(timeRanges, times -> {
+            List<CrmStatisticsBusinessForecastByDateRespVO> rows = forecastList.stream()
+                    .filter(vo -> LocalDateTimeUtils.isBetween(times[0], times[1], vo.getTime()))
+                    .toList();
+            long businessCount = rows.stream()
+                    .mapToLong(CrmStatisticsBusinessForecastByDateRespVO::getBusinessCount).sum();
+            BigDecimal expectedAmount = rows.stream()
+                    .map(CrmStatisticsBusinessForecastByDateRespVO::getExpectedAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal weightedAmount = rows.stream()
+                    .map(CrmStatisticsBusinessForecastByDateRespVO::getWeightedAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP);
+            return new CrmStatisticsBusinessForecastByDateRespVO()
+                    .setTime(LocalDateTimeUtils.formatDateRange(times[0], times[1], reqVO.getInterval()))
+                    .setBusinessCount(businessCount)
+                    .setExpectedAmount(expectedAmount)
+                    .setWeightedAmount(weightedAmount);
+        });
+    }
+
     /**
      * 计算百分比指标，统一由后端定义零分母及舍入口径。
      */
@@ -144,6 +174,15 @@ public class CrmStatisticsFunnelServiceImpl implements CrmStatisticsFunnelServic
         }
         // 2. 执行查询
         return businessService.getBusinessPageByDate(pageVO);
+    }
+
+    @Override
+    public PageResult<CrmBusinessDO> getBusinessForecastPage(CrmStatisticsFunnelReqVO pageVO) {
+        pageVO.setUserIds(getUserIds(pageVO));
+        if (CollUtil.isEmpty(pageVO.getUserIds())) {
+            return PageResult.empty();
+        }
+        return businessService.getBusinessForecastPage(pageVO);
     }
 
     /**

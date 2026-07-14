@@ -59,11 +59,28 @@ public class CrmStatisticsFunnelController {
         return success(funnelService.getBusinessInversionRateSummaryByDate(reqVO));
     }
 
+    @GetMapping("/get-business-forecast-by-date")
+    @Operation(summary = "获取销售预测汇总", description = "按预计成交日期统计活跃商机的预计金额和概率金额")
+    @PreAuthorize("@ss.hasPermission('crm:statistics-funnel:query')")
+    public CommonResult<List<CrmStatisticsBusinessForecastByDateRespVO>> getBusinessForecastByDate(
+            @Valid CrmStatisticsFunnelReqVO reqVO) {
+        return success(funnelService.getBusinessForecastByDate(reqVO));
+    }
+
     @GetMapping("/get-business-page-by-date")
     @Operation(summary = "获得商机分页(按日期)", description = "用于【销售漏斗】页面的【新增商机分析】")
     @PreAuthorize("@ss.hasPermission('crm:business:query')")
     public CommonResult<PageResult<CrmBusinessRespVO>> getBusinessPageByDate(@Valid CrmStatisticsFunnelReqVO pageVO) {
         PageResult<CrmBusinessDO> pageResult = funnelService.getBusinessPageByDate(pageVO);
+        return success(new PageResult<>(buildBusinessDetailList(pageResult.getList()), pageResult.getTotal()));
+    }
+
+    @GetMapping("/get-business-forecast-page")
+    @Operation(summary = "获得销售预测商机分页", description = "按预计成交日期查询尚未结束的商机")
+    @PreAuthorize("@ss.hasPermission('crm:business:query')")
+    public CommonResult<PageResult<CrmBusinessRespVO>> getBusinessForecastPage(
+            @Valid CrmStatisticsFunnelReqVO pageVO) {
+        PageResult<CrmBusinessDO> pageResult = funnelService.getBusinessForecastPage(pageVO);
         return success(new PageResult<>(buildBusinessDetailList(pageResult.getList()), pageResult.getTotal()));
     }
 

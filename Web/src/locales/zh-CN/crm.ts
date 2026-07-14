@@ -734,6 +734,7 @@ export default {
       funnel: '销售漏斗',
       businessSummary: '新增商机分析',
       inversionRate: '商机转化率分析',
+      salesForecast: '销售预测',
       funnelStage: '销售漏斗分析',
       // 视角
       customerView: '客户视角',
@@ -768,7 +769,10 @@ export default {
       winConversionRate: '赢单转化率',
       totalBusinessCount: '商机总数',
       winBusinessCount: '赢单商机数',
-      businessUnit: '个'
+      businessUnit: '个',
+      forecastBusinessCount: '活跃商机数',
+      expectedAmount: '预计成交金额（元）',
+      weightedAmount: '概率金额（元）'
     },
     // 业绩分析
     performance: {

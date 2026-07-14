@@ -46,11 +46,21 @@ public interface CrmStatisticsFunnelService {
     List<CrmStatisticsBusinessInversionRateSummaryByDateRespVO> getBusinessInversionRateSummaryByDate(CrmStatisticsFunnelReqVO reqVO);
 
     /**
+     * 获得销售预测汇总。
+     */
+    List<CrmStatisticsBusinessForecastByDateRespVO> getBusinessForecastByDate(CrmStatisticsFunnelReqVO reqVO);
+
+    /**
      * 获得商机分页(按日期)
      *
      * @param pageVO 请求
      * @return 商机分页
      */
     PageResult<CrmBusinessDO> getBusinessPageByDate(CrmStatisticsFunnelReqVO pageVO);
+
+    /**
+     * 获得销售预测商机分页。
+     */
+    PageResult<CrmBusinessDO> getBusinessForecastPage(CrmStatisticsFunnelReqVO pageVO);
 
 }

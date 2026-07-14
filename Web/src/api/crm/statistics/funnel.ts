@@ -19,6 +19,13 @@ export interface CrmStatisticsBusinessInversionRateSummaryByDateRespVO {
   businessWinRate: number // 赢单转化率（百分比）
 }
 
+export interface CrmStatisticsBusinessForecastByDateRespVO {
+  time: string
+  businessCount: number
+  expectedAmount: number | string
+  weightedAmount: number | string
+}
+
 // 客户分析 API
 export const StatisticFunnelApi = {
   // 1. 获取销售漏斗统计数据
@@ -49,7 +56,21 @@ export const StatisticFunnelApi = {
       params
     })
   },
-  // 5. 获取商机列表(按日期)
+  // 5. 获取销售预测汇总
+  getBusinessForecastByDate: (params: any) => {
+    return request.get({
+      url: '/crm/statistics-funnel/get-business-forecast-by-date',
+      params
+    })
+  },
+  // 6. 获取销售预测商机明细
+  getBusinessForecastPage: (params: any) => {
+    return request.get({
+      url: '/crm/statistics-funnel/get-business-forecast-page',
+      params
+    })
+  },
+  // 7. 获取商机列表(按日期)
   getBusinessPageByDate: (params: any) => {
     return request.get({
       url: '/crm/statistics-funnel/get-business-page-by-date',

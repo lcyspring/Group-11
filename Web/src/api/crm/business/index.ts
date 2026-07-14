@@ -16,6 +16,7 @@ export interface BusinessVO {
   statusTypeName?: string
   statusId: number
   statusName?: string
+  statusPercent?: number
   endStatus: number
   endRemark: string
   dealTime: Date

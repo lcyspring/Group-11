@@ -91,4 +91,14 @@ public interface CrmBusinessMapper extends BaseMapperX<CrmBusinessDO> {
                 .betweenIfPresent(CrmBusinessDO::getCreateTime, pageVO.getTimes()));
     }
 
+    default PageResult<CrmBusinessDO> selectForecastPage(CrmStatisticsFunnelReqVO pageVO) {
+        return selectPage(pageVO, new LambdaQueryWrapperX<CrmBusinessDO>()
+                .in(CrmBusinessDO::getOwnerUserId, pageVO.getUserIds())
+                .betweenIfPresent(CrmBusinessDO::getDealTime, pageVO.getTimes())
+                .isNull(CrmBusinessDO::getEndStatus)
+                .isNotNull(CrmBusinessDO::getDealTime)
+                .orderByAsc(CrmBusinessDO::getDealTime)
+                .orderByAsc(CrmBusinessDO::getId));
+    }
+
 }

@@ -734,6 +734,7 @@ export default {
       funnel: 'Sales Funnel',
       businessSummary: 'Business Summary',
       inversionRate: 'Inversion Rate',
+      salesForecast: 'Sales Forecast',
       funnelStage: 'Sales Funnel',
       // View
       customerView: 'Customer View',
@@ -768,7 +769,10 @@ export default {
       winConversionRate: 'Win Conversion Rate',
       totalBusinessCount: 'Total Business',
       winBusinessCount: 'Win Business',
-      businessUnit: 'units'
+      businessUnit: 'units',
+      forecastBusinessCount: 'Active Businesses',
+      expectedAmount: 'Expected Amount',
+      weightedAmount: 'Weighted Amount'
     },
     // Performance
     performance: {

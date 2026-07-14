@@ -64,6 +64,9 @@ public class CrmBusinessRespVO {
     @ExcelProperty("商机状态")
     private String statusName;
 
+    @Schema(description = "当前阶段赢单率", example = "30")
+    private Integer statusPercent;
+
     @Schema
     @ExcelProperty("结束状态")
     private Integer endStatus;
