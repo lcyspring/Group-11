@@ -503,6 +503,7 @@ export default {
     paramError: 'خطأ في المعلمة، لا يمكن أن يكون المستحق فارغاً!',
     submitAuditConfirm: 'هل أنت متأكد من تقديم المستحق [{no}] للتدقيق؟',
     submitAuditSuccess: 'تم تقديم التدقيق بنجاح!',
+    revise: 'مراجعة',
     createReceivable: 'إنشاء مستحق',
     basicInfoTab: 'المعلومات الأساسية',
     operateLogTab: 'سجل العمليات',

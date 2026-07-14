@@ -25,7 +25,8 @@ public class CrmReceivableStatusListener extends BpmProcessInstanceStatusEventLi
 
     @Override
     public void onEvent(BpmProcessInstanceStatusEvent event) {
-        receivableService.updateReceivableAuditStatus(Long.parseLong(event.getBusinessKey()), event.getStatus());
+        receivableService.updateReceivableAuditStatus(Long.parseLong(event.getBusinessKey()), event.getId(),
+                event.getStatus());
     }
 
 }

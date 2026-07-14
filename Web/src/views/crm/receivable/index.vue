@@ -4,12 +4,7 @@
 
   <ContentWrap>
     <!-- 搜索工作栏 -->
-    <el-form
-      ref="queryFormRef"
-      :model="queryParams"
-      class="-mb-15px"
-      label-width="auto"
-    >
+    <el-form ref="queryFormRef" :model="queryParams" class="-mb-15px" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('receivable.no')" prop="no">
@@ -83,15 +78,32 @@
       <el-tab-pane :label="t('customer.myInvolved')" name="2" />
       <el-tab-pane :label="t('customer.subordinateResponsible')" name="3" />
     </el-tabs>
-    <el-table v-loading="loading" :data="list" :show-overflow-tooltip="true" :stripe="true" :table-layout="'auto'">
-      <el-table-column align="center" fixed="left" :label="t('receivable.no')" prop="no" min-width="180">
+    <el-table
+      v-loading="loading"
+      :data="list"
+      :show-overflow-tooltip="true"
+      :stripe="true"
+      :table-layout="'auto'"
+    >
+      <el-table-column
+        align="center"
+        fixed="left"
+        :label="t('receivable.no')"
+        prop="no"
+        min-width="180"
+      >
         <template #default="scope">
           <el-link :underline="false" type="primary" @click="openDetail(scope.row.id)">
             {{ scope.row.no }}
           </el-link>
         </template>
       </el-table-column>
-      <el-table-column align="center" :label="t('receivable.customerName')" prop="customerName" min-width="120">
+      <el-table-column
+        align="center"
+        :label="t('receivable.customerName')"
+        prop="customerName"
+        min-width="120"
+      >
         <template #default="scope">
           <el-link
             :underline="false"
@@ -102,7 +114,12 @@
           </el-link>
         </template>
       </el-table-column>
-      <el-table-column align="center" :label="t('receivable.contractNo')" prop="contractNo" min-width="180">
+      <el-table-column
+        align="center"
+        :label="t('receivable.contractNo')"
+        prop="contractNo"
+        min-width="180"
+      >
         <template #default="scope">
           <el-link
             :underline="false"
@@ -127,12 +144,22 @@
         min-width="140"
         :formatter="erpPriceTableColumnFormatter"
       />
-      <el-table-column align="center" :label="t('receivable.returnType')" prop="returnType" min-width="130">
+      <el-table-column
+        align="center"
+        :label="t('receivable.returnType')"
+        prop="returnType"
+        min-width="130"
+      >
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.CRM_RECEIVABLE_RETURN_TYPE" :value="scope.row.returnType" />
         </template>
       </el-table-column>
-      <el-table-column align="center" :label="t('receivable.remark')" prop="remark" min-width="200" />
+      <el-table-column
+        align="center"
+        :label="t('receivable.remark')"
+        prop="remark"
+        min-width="200"
+      />
       <el-table-column
         align="center"
         :label="t('receivable.contractPrice') + '（元）'"
@@ -140,8 +167,18 @@
         min-width="140"
         :formatter="erpPriceTableColumnFormatter"
       />
-      <el-table-column align="center" :label="t('receivable.ownerUserName')" prop="ownerUserName" min-width="120" />
-      <el-table-column align="center" :label="t('receivable.ownerUserDeptName')" prop="ownerUserDeptName" min-width="100" />
+      <el-table-column
+        align="center"
+        :label="t('receivable.ownerUserName')"
+        prop="ownerUserName"
+        min-width="120"
+      />
+      <el-table-column
+        align="center"
+        :label="t('receivable.ownerUserDeptName')"
+        prop="ownerUserDeptName"
+        min-width="100"
+      />
       <el-table-column
         :formatter="dateFormatter"
         align="center"
@@ -156,8 +193,19 @@
         prop="createTime"
         min-width="180"
       />
-      <el-table-column align="center" :label="t('receivable.creatorName')" prop="creatorName" min-width="120" />
-      <el-table-column align="center" fixed="right" :label="t('receivable.auditStatus')" prop="auditStatus" min-width="120">
+      <el-table-column
+        align="center"
+        :label="t('receivable.creatorName')"
+        prop="creatorName"
+        min-width="120"
+      />
+      <el-table-column
+        align="center"
+        fixed="right"
+        :label="t('receivable.auditStatus')"
+        prop="auditStatus"
+        min-width="120"
+      >
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.CRM_AUDIT_STATUS" :value="scope.row.auditStatus" />
         </template>
@@ -165,12 +213,13 @@
       <el-table-column align="center" fixed="right" :label="t('common.action')" min-width="180">
         <template #default="scope">
           <el-button
+            v-if="[0, 30, 40].includes(scope.row.auditStatus)"
             v-hasPermi="['crm:receivable:update']"
             link
             type="primary"
             @click="openForm('update', scope.row.id)"
           >
-            {{ t('common.edit') }}
+            {{ scope.row.auditStatus === 0 ? t('common.edit') : t('receivable.revise') }}
           </el-button>
           <el-button
             v-if="scope.row.auditStatus === 0"
@@ -182,7 +231,7 @@
             {{ t('contract.submitAudit') }}
           </el-button>
           <el-button
-            v-else
+            v-if="scope.row.processInstanceId"
             v-hasPermi="['crm:receivable:update']"
             link
             type="primary"
@@ -191,6 +240,7 @@
             {{ t('contract.viewApproval') }}
           </el-button>
           <el-button
+            v-if="scope.row.auditStatus === 0 && !scope.row.processInstanceId && !scope.row.planId"
             v-hasPermi="['crm:receivable:delete']"
             link
             type="danger"

@@ -82,6 +82,8 @@ public class CrmReceivableServiceImpl implements CrmReceivableService {
     @Transactional(rollbackFor = Exception.class)
     @LogRecord(type = CRM_RECEIVABLE_TYPE, subType = CRM_RECEIVABLE_CREATE_SUB_TYPE, bizNo = "{{#receivable.id}}",
             success = CRM_RECEIVABLE_CREATE_SUCCESS)
+    @CrmPermission(bizType = CrmBizTypeEnum.CRM_CONTRACT, bizId = "#createReqVO.contractId",
+            level = CrmPermissionLevelEnum.WRITE)
     public Long createReceivable(CrmReceivableSaveReqVO createReqVO) {
         // 1.1 校验可回款金额超过上限
         validateReceivablePriceExceedsLimit(createReqVO);
@@ -161,21 +163,24 @@ public class CrmReceivableServiceImpl implements CrmReceivableService {
     public void updateReceivable(CrmReceivableSaveReqVO updateReqVO) {
         Assert.notNull(updateReqVO.getId(), "回款编号不能为空");
         updateReqVO.setOwnerUserId(null).setCustomerId(null).setContractId(null).setPlanId(null); // 不允许修改的字段
-        // 1.1 校验存在
-        CrmReceivableDO oldReceivable = validateReceivableExists(updateReqVO.getId());
+        // 1.1 锁定并校验存在，避免编辑与审批回调并发串写
+        CrmReceivableDO oldReceivable = validateReceivableExistsForUpdate(updateReqVO.getId());
         updateReqVO.setOwnerUserId(oldReceivable.getOwnerUserId()).setCustomerId(oldReceivable.getCustomerId())
                 .setContractId(oldReceivable.getContractId()).setPlanId(oldReceivable.getPlanId()); // 设置已存在的值
-        // 1.2 校验可回款金额超过上限
-        validateReceivablePriceExceedsLimit(updateReqVO);
-
-        // 1.3 只有草稿、审批中，可以编辑；
+        // 1.2 只有草稿、审核不通过、已取消可以编辑
         if (!ObjectUtils.equalsAny(oldReceivable.getAuditStatus(), CrmAuditStatusEnum.DRAFT.getStatus(),
-                CrmAuditStatusEnum.PROCESS.getStatus())) {
+                CrmAuditStatusEnum.REJECT.getStatus(), CrmAuditStatusEnum.CANCEL.getStatus())) {
             throw exception(RECEIVABLE_UPDATE_FAIL_EDITING_PROHIBITED);
         }
+        // 1.3 校验可回款金额超过上限
+        validateReceivablePriceExceedsLimit(updateReqVO);
 
         // 2. 更新回款
         CrmReceivableDO updateObj = BeanUtils.toBean(updateReqVO, CrmReceivableDO.class);
+        if (ObjectUtils.equalsAny(oldReceivable.getAuditStatus(), CrmAuditStatusEnum.REJECT.getStatus(),
+                CrmAuditStatusEnum.CANCEL.getStatus())) {
+            updateObj.setAuditStatus(CrmAuditStatusEnum.DRAFT.getStatus());
+        }
         receivableMapper.updateById(updateObj);
 
         // 3. 记录操作日志上下文
@@ -194,19 +199,27 @@ public class CrmReceivableServiceImpl implements CrmReceivableService {
     }
 
     @Override
-    public void updateReceivableAuditStatus(Long id, Integer bpmResult) {
-        // 1.1 校验存在
+    public void updateReceivableAuditStatus(Long id, String processInstanceId, Integer bpmResult) {
+        // 1.1 转换 BPM 流程终态并校验回款存在
+        Integer auditStatus = convertBpmResultToAuditStatus(bpmResult);
         CrmReceivableDO receivable = validateReceivableExists(id);
-        // 1.2 只有审批中，可以更新审批结果
-        if (ObjUtil.notEqual(receivable.getAuditStatus(), CrmAuditStatusEnum.PROCESS.getStatus())) {
-            log.error("[updateReceivableAuditStatus][receivable({}) 不处于审批中，无法更新审批结果({})]",
-                    receivable.getId(), bpmResult);
-            throw exception(RECEIVABLE_UPDATE_AUDIT_STATUS_FAIL_NOT_PROCESS);
+        // 1.2 重复终态事件直接成功，旧流程或乱序事件不得覆盖当前状态
+        if (ObjUtil.equal(receivable.getProcessInstanceId(), processInstanceId)
+                && ObjUtil.equal(receivable.getAuditStatus(), auditStatus)) {
+            return;
+        }
+        if (ObjUtil.notEqual(receivable.getProcessInstanceId(), processInstanceId)
+                || ObjUtil.notEqual(receivable.getAuditStatus(), CrmAuditStatusEnum.PROCESS.getStatus())) {
+            log.warn("[updateReceivableAuditStatus][忽略回款({})的过期或乱序审批事件，当前流程({})、事件流程({})、当前状态({})、目标状态({})]",
+                    receivable.getId(), receivable.getProcessInstanceId(), processInstanceId,
+                    receivable.getAuditStatus(), auditStatus);
+            return;
         }
 
-        // 2. 更新回款审批状态
-        Integer auditStatus = convertBpmResultToAuditStatus(bpmResult);
-        receivableMapper.updateById(new CrmReceivableDO().setId(id).setAuditStatus(auditStatus));
+        // 2. CAS 更新审批结果；并发终态只有首个生效
+        if (receivableMapper.updateAuditStatusIfProcessing(id, processInstanceId, auditStatus) == 0) {
+            log.warn("[updateReceivableAuditStatus][回款({})审批状态已被并发事件更新，忽略目标状态({})]", id, auditStatus);
+        }
     }
 
     @Override
@@ -215,15 +228,12 @@ public class CrmReceivableServiceImpl implements CrmReceivableService {
             success = CRM_RECEIVABLE_DELETE_SUCCESS)
     @CrmPermission(bizType = CrmBizTypeEnum.CRM_RECEIVABLE, bizId = "#id", level = CrmPermissionLevelEnum.OWNER)
     public void deleteReceivable(Long id) {
-        // 1.1 校验存在
-        CrmReceivableDO receivable = validateReceivableExists(id);
-        // 1.2 如果被 CrmReceivablePlanDO 所使用，则不允许删除
-        if (receivable.getPlanId() != null && receivablePlanService.getReceivablePlan(receivable.getPlanId()) != null) {
-            throw exception(RECEIVABLE_DELETE_FAIL);
-        }
-        // 1.3 审批通过时，不允许删除
-        if (ObjUtil.equal(receivable.getAuditStatus(), CrmAuditStatusEnum.APPROVE.getStatus())) {
-            throw exception(RECEIVABLE_DELETE_FAIL_IS_APPROVE);
+        // 1.1 锁定并校验存在
+        CrmReceivableDO receivable = validateReceivableExistsForUpdate(id);
+        // 1.2 只允许删除从未提交且未关联回款计划的新草稿
+        if (ObjUtil.notEqual(receivable.getAuditStatus(), CrmAuditStatusEnum.DRAFT.getStatus())
+                || receivable.getProcessInstanceId() != null || receivable.getPlanId() != null) {
+            throw exception(RECEIVABLE_DELETE_FAIL_NOT_NEW_DRAFT);
         }
 
         // 2.1 删除回款
@@ -240,13 +250,15 @@ public class CrmReceivableServiceImpl implements CrmReceivableService {
     @Transactional(rollbackFor = Exception.class)
     @LogRecord(type = CRM_RECEIVABLE_TYPE, subType = CRM_RECEIVABLE_SUBMIT_SUB_TYPE, bizNo = "{{#id}}",
             success = CRM_RECEIVABLE_SUBMIT_SUCCESS)
+    @CrmPermission(bizType = CrmBizTypeEnum.CRM_RECEIVABLE, bizId = "#id",
+            level = CrmPermissionLevelEnum.WRITE)
     public void submitReceivable(Long id, Long userId) {
         // 1.1 读取回款以获得合同编号
         CrmReceivableDO receivable = validateReceivableExists(id);
         // 1.2 锁定合同，串行化同一合同下的回款提交
         receivableMapper.selectContractIdForUpdate(receivable.getContractId());
-        // 1.3 获得锁后重新读取，避免同一草稿被并发重复提交
-        receivable = validateReceivableExists(id);
+        // 1.3 获得合同锁后锁定并重新读取回款，避免编辑与提交并发串写
+        receivable = validateReceivableExistsForUpdate(id);
         if (ObjUtil.notEqual(receivable.getAuditStatus(), CrmAuditStatusEnum.DRAFT.getStatus())) {
             throw exception(RECEIVABLE_SUBMIT_FAIL_NOT_DRAFT);
         }
@@ -268,6 +280,14 @@ public class CrmReceivableServiceImpl implements CrmReceivableService {
 
     private CrmReceivableDO validateReceivableExists(Long id) {
         CrmReceivableDO receivable = receivableMapper.selectById(id);
+        if (receivable == null) {
+            throw exception(RECEIVABLE_NOT_EXISTS);
+        }
+        return receivable;
+    }
+
+    private CrmReceivableDO validateReceivableExistsForUpdate(Long id) {
+        CrmReceivableDO receivable = receivableMapper.selectByIdForUpdate(id);
         if (receivable == null) {
             throw exception(RECEIVABLE_NOT_EXISTS);
         }

@@ -1,12 +1,12 @@
 package com.meession.etm.module.crm.dal.mysql.receivable;
 
 import cn.hutool.core.collection.CollUtil;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.framework.mybatis.core.mapper.BaseMapperX;
 import com.meession.etm.framework.mybatis.core.query.LambdaQueryWrapperX;
 import com.meession.etm.framework.mybatis.core.query.MPJLambdaWrapperX;
 import com.meession.etm.module.crm.controller.admin.receivable.vo.receivable.CrmReceivablePageReqVO;
-import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
 import com.meession.etm.module.crm.dal.dataobject.receivable.CrmReceivableDO;
 import com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
@@ -37,6 +37,20 @@ public interface CrmReceivableMapper extends BaseMapperX<CrmReceivableDO> {
      */
     @Select("SELECT id FROM crm_contract WHERE id = #{contractId} AND deleted = 0 FOR UPDATE")
     Long selectContractIdForUpdate(Long contractId);
+
+    default CrmReceivableDO selectByIdForUpdate(Long id) {
+        return selectOne(new LambdaQueryWrapperX<CrmReceivableDO>()
+                .eq(CrmReceivableDO::getId, id)
+                .last("FOR UPDATE"));
+    }
+
+    default int updateAuditStatusIfProcessing(Long id, String processInstanceId, Integer auditStatus) {
+        return update(new LambdaUpdateWrapper<CrmReceivableDO>()
+                .eq(CrmReceivableDO::getId, id)
+                .eq(CrmReceivableDO::getProcessInstanceId, processInstanceId)
+                .eq(CrmReceivableDO::getAuditStatus, CrmAuditStatusEnum.PROCESS.getStatus())
+                .set(CrmReceivableDO::getAuditStatus, auditStatus));
+    }
 
     default CrmReceivableDO selectByNo(String no) {
         return selectOne(CrmReceivableDO::getNo, no);
@@ -72,7 +86,7 @@ public interface CrmReceivableMapper extends BaseMapperX<CrmReceivableDO> {
         CrmPermissionUtils.appendPermissionCondition(query, CrmBizTypeEnum.CRM_RECEIVABLE.getType(),
                 CrmReceivableDO::getId, userId, CrmSceneTypeEnum.OWNER.getType());
         // 未审核
-        query.eq(CrmContractDO::getAuditStatus, CrmAuditStatusEnum.PROCESS.getStatus());
+        query.eq(CrmReceivableDO::getAuditStatus, CrmAuditStatusEnum.PROCESS.getStatus());
         return selectCount(query);
     }
 
@@ -89,8 +103,7 @@ public interface CrmReceivableMapper extends BaseMapperX<CrmReceivableDO> {
         // SQL sum 查询
         List<Map<String, Object>> result = selectMaps(new QueryWrapper<CrmReceivableDO>()
                 .select("contract_id, SUM(price) AS total_price")
-                .in("audit_status", CrmAuditStatusEnum.DRAFT.getStatus(), // 草稿 + 审批中 + 审批通过
-                        CrmAuditStatusEnum.PROCESS.getStatus(), CrmAuditStatusEnum.APPROVE.getStatus())
+                .eq("audit_status", CrmAuditStatusEnum.APPROVE.getStatus())
                 .groupBy("contract_id")
                 .in("contract_id", contractIds));
         // 获得金额

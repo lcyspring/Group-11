@@ -40,9 +40,10 @@ public interface CrmReceivableService {
      * 更新回款流程审批结果
      *
      * @param id        回款编号
-     * @param bpmResult BPM 审批结果
+     * @param processInstanceId BPM 流程实例编号
+     * @param bpmResult         BPM 审批结果
      */
-    void updateReceivableAuditStatus(Long id, Integer bpmResult);
+    void updateReceivableAuditStatus(Long id, String processInstanceId, Integer bpmResult);
 
     /**
      * 删除回款

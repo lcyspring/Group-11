@@ -9,6 +9,7 @@ import com.meession.etm.module.crm.controller.admin.receivable.vo.plan.CrmReceiv
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
 import com.meession.etm.module.crm.dal.dataobject.receivable.CrmReceivablePlanDO;
 import com.meession.etm.module.crm.dal.mysql.receivable.CrmReceivablePlanMapper;
+import com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
 import com.meession.etm.module.crm.framework.permission.core.annotations.CrmPermission;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static com.meession.etm.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.RECEIVABLE_PLAN_CREATE_FAIL_CONTRACT_NOT_APPROVE;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.RECEIVABLE_PLAN_NOT_EXISTS;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.RECEIVABLE_PLAN_UPDATE_FAIL;
 import static com.meession.etm.module.crm.enums.LogRecordConstants.*;
@@ -57,6 +59,8 @@ public class CrmReceivablePlanServiceImpl implements CrmReceivablePlanService {
     @Transactional(rollbackFor = Exception.class)
     @LogRecord(type = CRM_RECEIVABLE_PLAN_TYPE, subType = CRM_RECEIVABLE_PLAN_CREATE_SUB_TYPE, bizNo = "{{#receivablePlan.id}}",
             success = CRM_RECEIVABLE_PLAN_CREATE_SUCCESS)
+    @CrmPermission(bizType = CrmBizTypeEnum.CRM_CONTRACT, bizId = "#createReqVO.contractId",
+            level = CrmPermissionLevelEnum.WRITE)
     public Long createReceivablePlan(CrmReceivablePlanSaveReqVO createReqVO) {
         // 1. 校验关联数据是否存在
         validateRelationDataExists(createReqVO);
@@ -116,7 +120,10 @@ public class CrmReceivablePlanServiceImpl implements CrmReceivablePlanService {
         }
         // 校验合同存在
         if (reqVO.getContractId() != null) {
-            CrmContractDO contract = contractService.getContract(reqVO.getContractId());
+            CrmContractDO contract = contractService.validateContract(reqVO.getContractId());
+            if (!CrmAuditStatusEnum.APPROVE.getStatus().equals(contract.getAuditStatus())) {
+                throw exception(RECEIVABLE_PLAN_CREATE_FAIL_CONTRACT_NOT_APPROVE);
+            }
             reqVO.setCustomerId(contract.getCustomerId());
         }
     }

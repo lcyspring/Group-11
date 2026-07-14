@@ -9,7 +9,13 @@
 
   <!-- 列表 -->
   <ContentWrap class="mt-10px">
-    <el-table v-loading="loading" :data="list" :show-overflow-tooltip="true" :stripe="true" :table-layout="'auto'">
+    <el-table
+      v-loading="loading"
+      :data="list"
+      :show-overflow-tooltip="true"
+      :stripe="true"
+      :table-layout="'auto'"
+    >
       <el-table-column align="center" :label="t('receivable.no')" prop="no" />
       <el-table-column align="center" :label="t('receivable.customerId')" prop="customerName" />
       <el-table-column align="center" :label="t('contract.title')" prop="contract.no" />
@@ -20,7 +26,12 @@
         prop="returnTime"
         min-width="150"
       />
-      <el-table-column align="center" :label="t('receivable.returnType')" prop="returnType" min-width="130">
+      <el-table-column
+        align="center"
+        :label="t('receivable.returnType')"
+        prop="returnType"
+        min-width="130"
+      >
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.CRM_RECEIVABLE_RETURN_TYPE" :value="scope.row.returnType" />
         </template>
@@ -36,14 +47,16 @@
       <el-table-column align="center" fixed="right" :label="t('common.action')" min-width="150">
         <template #default="scope">
           <el-button
+            v-if="[0, 30, 40].includes(scope.row.auditStatus)"
             v-hasPermi="['crm:receivable:update']"
             link
             type="primary"
             @click="openForm('update', scope.row.id)"
           >
-            {{ t('common.edit') }}
+            {{ scope.row.auditStatus === 0 ? t('common.edit') : t('receivable.revise') }}
           </el-button>
           <el-button
+            v-if="scope.row.auditStatus === 0 && !scope.row.processInstanceId && !scope.row.planId"
             v-hasPermi="['crm:receivable:delete']"
             link
             type="danger"

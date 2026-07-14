@@ -2,6 +2,7 @@ package com.meession.etm.module.crm.controller.admin.receivable.vo.plan;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.DecimalMin;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -34,6 +35,7 @@ public class CrmReceivablePlanSaveReqVO {
 
     @Schema(description = "计划回款金额", requiredMode = Schema.RequiredMode.REQUIRED, example = "9000")
     @NotNull(message = "计划回款金额不能为空")
+    @DecimalMin(value = "0.01", message = "计划回款金额必须大于 0")
     private BigDecimal price;
 
     @Schema(description = "提前几天提醒", example = "1")

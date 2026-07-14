@@ -43,6 +43,13 @@ class CrmReceivableServiceImplTest {
                         receivableReads.incrementAndGet();
                         yield draft;
                     }
+                    case "selectByIdForUpdate" -> {
+                        if (!contractLocked.get()) {
+                            throw new AssertionError("锁定回款前必须先锁定合同");
+                        }
+                        receivableReads.incrementAndGet();
+                        yield draft;
+                    }
                     case "selectContractIdForUpdate" -> {
                         assertEquals(contractId, args[0]);
                         contractLocked.set(true);

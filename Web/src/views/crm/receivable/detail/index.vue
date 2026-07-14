@@ -1,7 +1,10 @@
 <template>
   <ReceivableDetailsHeader v-loading="loading" :receivable="receivable">
-    <el-button v-if="permissionListRef?.validateWrite" @click="openForm('update', receivable.id)">
-      {{ t('common.edit') }}
+    <el-button
+      v-if="permissionListRef?.validateWrite && [0, 30, 40].includes(receivable.auditStatus)"
+      @click="openForm('update', receivable.id)"
+    >
+      {{ receivable.auditStatus === 0 ? t('common.edit') : t('receivable.revise') }}
     </el-button>
   </ReceivableDetailsHeader>
   <el-col>
