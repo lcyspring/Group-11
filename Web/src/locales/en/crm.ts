@@ -472,7 +472,7 @@ export default {
     customer: 'Customer', handler: 'Handler', sourceType: 'Source Type', source: 'Source',
     description: 'Description', solution: 'Solution', attachments: 'Attachment URLs',
     attachmentsPlaceholder: 'Separate multiple URLs with commas', create: 'Create Work Order', update: 'Update Work Order',
-    start: 'Start', return: 'Return', complete: 'Complete', resubmit: 'Resubmit',
+    start: 'Start', return: 'Return', complete: 'Complete', resubmit: 'Resubmit', assign: 'Assign',
     returnReason: 'Return Reason', statusPending: 'Pending', statusProcessing: 'Processing',
     statusCompleted: 'Completed', statusReturned: 'Returned', typeIssue: 'Issue', typeDemand: 'Request',
     typeComplaint: 'Complaint', typeConsultation: 'Consultation', priorityLow: 'Low', priorityMedium: 'Medium',
@@ -482,7 +482,9 @@ export default {
     sourceRequired: 'Source is required', handlerRequired: 'Handler is required',
     descriptionRequired: 'Description is required', returnReasonRequired: 'Return reason is required',
     solutionRequired: 'Solution is required', startSuccess: 'Work order started',
-    resubmitSuccess: 'Work order resubmitted', records: 'Processing History',
+    resubmitSuccess: 'Work order resubmitted', assignSuccess: 'Work order assigned',
+    assignRemark: 'Assignment Note', view: 'Work Order View', createdByMe: 'Created by Me', handledByMe: 'Handled by Me',
+    records: 'Processing History',
     actionCreate: 'Created', actionUpdate: 'Updated'
   },
   receivable: {

@@ -93,6 +93,15 @@ public class CrmWorkOrderController {
         return success(true);
     }
 
+    @PutMapping("/assign")
+    @Operation(summary = "分派待处理客服工单")
+    @PreAuthorize("@ss.hasPermission('crm:work-order:assign')")
+    public CommonResult<Boolean> assign(@Valid @RequestBody CrmWorkOrderAssignReqVO reqVO) {
+        boolean queryAll = securityFrameworkService.hasPermission("crm:work-order:query-all");
+        workOrderService.assignWorkOrder(reqVO, getLoginUserId(), queryAll);
+        return success(true);
+    }
+
     @PutMapping("/return")
     @Operation(summary = "退回客服工单")
     @PreAuthorize("@ss.hasPermission('crm:work-order:process')")

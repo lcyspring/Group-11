@@ -32,17 +32,23 @@ public interface CrmWorkOrderMapper extends BaseMapperX<CrmWorkOrderDO> {
                     .in(CrmWorkOrderDO::getStatus, 10, 20)
                     .or(nested -> nested.eq(CrmWorkOrderDO::getCreator, String.valueOf(userId))
                             .eq(CrmWorkOrderDO::getStatus, 40)));
+        } else if (Integer.valueOf(1).equals(reqVO.getSceneType())) {
+            query.eq(CrmWorkOrderDO::getCreator, String.valueOf(userId));
+        } else if (Integer.valueOf(2).equals(reqVO.getSceneType())) {
+            query.eq(CrmWorkOrderDO::getHandlerUserId, userId);
         } else if (!queryAll) {
-            if (Integer.valueOf(1).equals(reqVO.getSceneType())) {
-                query.eq(CrmWorkOrderDO::getCreator, String.valueOf(userId));
-            } else if (Integer.valueOf(2).equals(reqVO.getSceneType())) {
-                query.eq(CrmWorkOrderDO::getHandlerUserId, userId);
-            } else {
-                query.and(wrapper -> wrapper.eq(CrmWorkOrderDO::getCreator, String.valueOf(userId))
-                        .or().eq(CrmWorkOrderDO::getHandlerUserId, userId));
-            }
+            query.and(wrapper -> wrapper.eq(CrmWorkOrderDO::getCreator, String.valueOf(userId))
+                    .or().eq(CrmWorkOrderDO::getHandlerUserId, userId));
         }
         return selectPage(reqVO, query);
+    }
+
+    default int assignIfPending(Long id, Integer pendingStatus, Long oldHandlerUserId, Long newHandlerUserId) {
+        return update(new LambdaUpdateWrapper<CrmWorkOrderDO>()
+                .eq(CrmWorkOrderDO::getId, id)
+                .eq(CrmWorkOrderDO::getStatus, pendingStatus)
+                .eq(CrmWorkOrderDO::getHandlerUserId, oldHandlerUserId)
+                .set(CrmWorkOrderDO::getHandlerUserId, newHandlerUserId));
     }
 
     default int startIfPending(Long id, Integer pendingStatus, Integer processingStatus, LocalDateTime processTime) {

@@ -30,6 +30,7 @@ rootless Podman，应用产物由 Ubuntu 26.04 构建容器生成。
 | 客服工单闭环 | `/admin-api/crm/work-order/*` | 创建、开始、完结、轨迹、通知和待办通过 |
 | 工单统计 | `/admin-api/crm/statistics-work-order/*` | 五个接口均 `code=0` |
 | 客户 360 工单记录 | `/admin-api/crm/work-order/page?customerId=17` | `code=0`，返回 2 条匹配工单 |
+| 工单手工分派 | `/admin-api/crm/work-order/assign` | `W-202607-0003` 从用户 100 分派至 145，轨迹和通知通过 |
 | Pod | `mitedtsm-rootless` | 运行中 |
 | 基础设施 | MySQL、Redis、RabbitMQ、TDengine | 均运行中 |
 | 应用容器 | Server、Web、Mall | 均运行中 |
@@ -68,4 +69,6 @@ bash ./down.sh ./config/runtime-local.yaml
 - `up.sh` 后续会在 Server 启动前执行 YAML 指定的兼容迁移，避免持久卷结构再次漏更。
 - Web 最终产物已通过 Ubuntu 26.04 构建并使用 `rebuild-web` 热替换；
 - 热替换后 Server 健康为 `UP`，Web/Mall 均为 `200 OK`，工单统计和客户筛选接口无持续 502；
-- CRM 最终回归 161/161，通过率 100%，JaCoCo 行覆盖率 32.07%。
+- CRM 当前回归 170/170，通过率 100%，JaCoCo 行覆盖率 32.64%。
+- `rebuild-server` 已在停止旧服务前执行兼容迁移，分派权限和新 Server 同批生效；
+- Web 已再次热替换，工单多维筛选和分派弹窗产物在 8081 提供观察。

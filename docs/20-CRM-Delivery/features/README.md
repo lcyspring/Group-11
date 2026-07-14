@@ -28,5 +28,6 @@
 | CRM-FEATURE-022 | 回款计划合同金额守恒、审批生效状态、逾期待办及前端统一口径 | GAP-FIN-001/002、GAP-RPT-002、ADR-007/008 | 子闭环完成 | `docs/20-CRM-Delivery/testing/receivable-plan-effective-status/` |
 | CRM-FEATURE-023 | 客服工单来源、分派、状态机、轨迹、通知和前端操作最小闭环 | GAP-WO-001、ADR-010 | 子闭环完成 | `docs/20-CRM-Delivery/testing/crm-work-order-minimum-closure/` |
 | CRM-FEATURE-024 | 客服工单接入个人待办并明确待办范围 | GAP-WO-001、GAP-APR-003 | 子闭环完成 | `docs/20-CRM-Delivery/testing/crm-work-order-minimum-closure/` |
+| CRM-FEATURE-025 | 待处理工单手工分派、并发保护、轨迹通知和多维个人视图筛选 | US-WO-002/003、GAP-WO-001/002 | 子闭环完成 | `docs/20-CRM-Delivery/testing/crm-work-order-dispatch/` |
 
 说明：`CRM-FEATURE-005` 只关闭首联系人、重复/并发保护和失败回滚子项；任务、通话、短信等活动迁移规则仍待后续阶段完成。`CRM-FEATURE-007` 基于现有布尔成交字段完成二态基线，原型四态生命周期仍需新增客户状态模型。`CRM-FEATURE-015/016/017` 已建立目标事实源、完成度展示和三层目标维护入口；目标逐级分解合计规则仍待业务签署。

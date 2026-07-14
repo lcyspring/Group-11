@@ -14,6 +14,7 @@ public interface CrmWorkOrderService {
     CrmWorkOrderDO getWorkOrder(Long id, Long userId, boolean queryAll);
     PageResult<CrmWorkOrderDO> getWorkOrderPage(CrmWorkOrderPageReqVO reqVO, Long userId, boolean queryAll);
     List<CrmWorkOrderRecordDO> getWorkOrderRecords(Long id, Long userId, boolean queryAll);
+    void assignWorkOrder(CrmWorkOrderAssignReqVO reqVO, Long userId, boolean queryAll);
     void startWorkOrder(CrmWorkOrderActionReqVO reqVO, Long userId);
     void returnWorkOrder(CrmWorkOrderReturnReqVO reqVO, Long userId);
     void resubmitWorkOrder(CrmWorkOrderActionReqVO reqVO, Long userId);

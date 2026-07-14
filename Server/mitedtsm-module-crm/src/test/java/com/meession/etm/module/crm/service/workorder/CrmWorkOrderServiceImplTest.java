@@ -4,6 +4,7 @@ import com.meession.etm.framework.common.exception.ServiceException;
 import com.meession.etm.module.crm.controller.admin.workorder.vo.*;
 import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessDO;
 import com.meession.etm.module.crm.dal.dataobject.workorder.CrmWorkOrderDO;
+import com.meession.etm.module.crm.dal.dataobject.workorder.CrmWorkOrderRecordDO;
 import com.meession.etm.module.crm.dal.mysql.workorder.CrmWorkOrderMapper;
 import com.meession.etm.module.crm.dal.mysql.workorder.CrmWorkOrderRecordMapper;
 import com.meession.etm.module.crm.dal.redis.no.CrmNoRedisDAO;
@@ -103,6 +104,43 @@ class CrmWorkOrderServiceImplTest {
 
         verify(notificationService).notifyReturned(argThat(item ->
                 item.getStatus().equals(40) && "缺少现场照片".equals(item.getReturnReason())));
+    }
+
+    @Test
+    void creatorCanAssignPendingOrderWithAtomicOldHandlerGuard() {
+        CrmWorkOrderDO order = order(10L, "1", 2L, 10);
+        when(workOrderMapper.selectById(10L)).thenReturn(order);
+        when(workOrderMapper.assignIfPending(10L, 10, 2L, 3L)).thenReturn(1);
+
+        service.assignWorkOrder(new CrmWorkOrderAssignReqVO().setId(10L).setHandlerUserId(3L)
+                .setRemark("转客服二组"), 1L, false);
+
+        verify(adminUserApi).validateUser(3L);
+        verify(workOrderMapper).assignIfPending(10L, 10, 2L, 3L);
+        verify(recordMapper).insert(org.mockito.ArgumentMatchers.<CrmWorkOrderRecordDO>argThat(record ->
+                record.getActionType().equals(7)
+                && record.getHandlerUserId().equals(3L) && "转客服二组".equals(record.getRemark())));
+        verify(notificationService).notifyAssigned(argThat(item -> item.getHandlerUserId().equals(3L)));
+    }
+
+    @Test
+    void handlerCannotAssignWithoutQueryAllScope() {
+        when(workOrderMapper.selectById(10L)).thenReturn(order(10L, "1", 2L, 10));
+
+        assertServiceException(() -> service.assignWorkOrder(
+                new CrmWorkOrderAssignReqVO().setId(10L).setHandlerUserId(3L), 2L, false),
+                WORK_ORDER_ASSIGN_DENIED);
+        verify(workOrderMapper, never()).assignIfPending(any(), anyInt(), any(), any());
+    }
+
+    @Test
+    void assignmentRejectsUnchangedHandler() {
+        when(workOrderMapper.selectById(10L)).thenReturn(order(10L, "1", 2L, 10));
+
+        assertServiceException(() -> service.assignWorkOrder(
+                new CrmWorkOrderAssignReqVO().setId(10L).setHandlerUserId(2L), 1L, false),
+                WORK_ORDER_HANDLER_UNCHANGED);
+        verify(adminUserApi, never()).validateUser(anyLong());
     }
 
     @Test

@@ -469,7 +469,7 @@ export default {
     customer: '客户', handler: '处理人', sourceType: '来源类型', source: '来源对象',
     description: '工单描述', solution: '解决方案', attachments: '附件地址',
     attachmentsPlaceholder: '多个附件 URL 使用逗号分隔', create: '创建工单', update: '修改工单',
-    start: '开始处理', return: '退回', complete: '完结', resubmit: '重新提交',
+    start: '开始处理', return: '退回', complete: '完结', resubmit: '重新提交', assign: '分派',
     returnReason: '退回原因', statusPending: '待处理', statusProcessing: '处理中',
     statusCompleted: '已完结', statusReturned: '已退回', typeIssue: '问题', typeDemand: '需求',
     typeComplaint: '投诉', typeConsultation: '咨询', priorityLow: '低', priorityMedium: '中',
@@ -479,7 +479,8 @@ export default {
     sourceTypeRequired: '来源类型不能为空', sourceRequired: '来源对象不能为空',
     handlerRequired: '处理人不能为空', descriptionRequired: '工单描述不能为空',
     returnReasonRequired: '退回原因不能为空', solutionRequired: '解决方案不能为空',
-    startSuccess: '工单已开始处理', resubmitSuccess: '工单已重新提交',
+    startSuccess: '工单已开始处理', resubmitSuccess: '工单已重新提交', assignSuccess: '工单已分派',
+    assignRemark: '分派说明', view: '工单视图', createdByMe: '我创建的', handledByMe: '我处理的',
     records: '处理轨迹', actionCreate: '创建', actionUpdate: '修改'
   },
   receivable: {

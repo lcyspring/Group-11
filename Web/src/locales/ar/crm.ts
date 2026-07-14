@@ -469,7 +469,7 @@ export default {
     customer: 'العميل', handler: 'المعالج', sourceType: 'نوع المصدر', source: 'المصدر',
     description: 'الوصف', solution: 'الحل', attachments: 'روابط المرفقات',
     attachmentsPlaceholder: 'افصل الروابط المتعددة بفواصل', create: 'إنشاء أمر عمل', update: 'تحديث أمر العمل',
-    start: 'بدء المعالجة', return: 'إرجاع', complete: 'إكمال', resubmit: 'إعادة الإرسال',
+    start: 'بدء المعالجة', return: 'إرجاع', complete: 'إكمال', resubmit: 'إعادة الإرسال', assign: 'تعيين',
     returnReason: 'سبب الإرجاع', statusPending: 'قيد الانتظار', statusProcessing: 'قيد المعالجة',
     statusCompleted: 'مكتمل', statusReturned: 'مُعاد', typeIssue: 'مشكلة', typeDemand: 'طلب',
     typeComplaint: 'شكوى', typeConsultation: 'استشارة', priorityLow: 'منخفضة', priorityMedium: 'متوسطة',
@@ -479,7 +479,9 @@ export default {
     sourceRequired: 'المصدر مطلوب', handlerRequired: 'المعالج مطلوب',
     descriptionRequired: 'الوصف مطلوب', returnReasonRequired: 'سبب الإرجاع مطلوب',
     solutionRequired: 'الحل مطلوب', startSuccess: 'بدأت معالجة أمر العمل',
-    resubmitSuccess: 'تمت إعادة إرسال أمر العمل', records: 'سجل المعالجة',
+    resubmitSuccess: 'تمت إعادة إرسال أمر العمل', assignSuccess: 'تم تعيين أمر العمل',
+    assignRemark: 'ملاحظة التعيين', view: 'عرض أمر العمل', createdByMe: 'أنشأتها أنا', handledByMe: 'أعالجها أنا',
+    records: 'سجل المعالجة',
     actionCreate: 'إنشاء', actionUpdate: 'تحديث'
   },
   receivable: {

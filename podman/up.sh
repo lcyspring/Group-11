@@ -644,6 +644,11 @@ rebuild_server_only() {
     }
     ensure_image "$RUNTIME_BASE_IMAGE" "$(image_archive_path "$RUNTIME_ARCHIVE")"
     build_server_image
+    container_is_running "$MYSQL_CONTAINER" || {
+        printf 'MySQL container is not running: %s. Use startup_mode=full first.\n' "$MYSQL_CONTAINER" >&2
+        return 1
+    }
+    apply_mysql_compatibility_migrations
     if container_is_running "$SERVER_CONTAINER"; then
         podman_cmd stop --time "$STOP_TIMEOUT" "$SERVER_CONTAINER"
     fi

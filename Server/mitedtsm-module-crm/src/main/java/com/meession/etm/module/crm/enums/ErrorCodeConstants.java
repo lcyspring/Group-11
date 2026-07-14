@@ -157,5 +157,8 @@ public interface ErrorCodeConstants {
     ErrorCode WORK_ORDER_DELETE_STATUS_INVALID = new ErrorCode(1_020_015_007,
             "只有创建人可以删除本人创建且待处理的工单");
     ErrorCode WORK_ORDER_QUERY_DENIED = new ErrorCode(1_020_015_008, "无权查看该客服工单");
+    ErrorCode WORK_ORDER_ASSIGN_DENIED = new ErrorCode(1_020_015_009,
+            "只有工单创建人或具有全量工单权限的调度人员可以分派工单");
+    ErrorCode WORK_ORDER_HANDLER_UNCHANGED = new ErrorCode(1_020_015_010, "新处理人不能与当前处理人相同");
 
 }

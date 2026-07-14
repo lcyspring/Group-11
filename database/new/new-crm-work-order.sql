@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS `crm_work_order` (
 CREATE TABLE IF NOT EXISTS `crm_work_order_record` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '编号',
   `work_order_id` bigint NOT NULL COMMENT '工单编号',
-  `action_type` tinyint NOT NULL COMMENT '操作：1创建、2修改、3开始、4退回、5重提、6完结',
+  `action_type` tinyint NOT NULL COMMENT '操作：1创建、2修改、3开始、4退回、5重提、6完结、7分派',
   `from_status` tinyint NULL COMMENT '原状态',
   `to_status` tinyint NOT NULL COMMENT '目标状态',
   `operator_user_id` bigint NOT NULL COMMENT '操作人',
@@ -46,6 +46,10 @@ CREATE TABLE IF NOT EXISTS `crm_work_order_record` (
   PRIMARY KEY (`id`),
   KEY `idx_crm_work_order_record_order` (`tenant_id`, `work_order_id`, `id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='CRM 客服工单操作轨迹';
+
+-- 兼容已创建的持久化表，仅更新动作字典注释，不改变列类型和数据。
+ALTER TABLE `crm_work_order_record`
+  MODIFY COLUMN `action_type` tinyint NOT NULL COMMENT '操作：1创建、2修改、3开始、4退回、5重提、6完结、7分派';
 
 INSERT INTO `system_dict_type` (`name`, `type`, `status`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
 SELECT 'CRM 客服工单状态', 'crm_work_order_status', 0, 'CRM 客服工单状态', '1', NOW(), '1', NOW(), b'0'
@@ -96,6 +100,8 @@ INSERT INTO `system_menu` (`name`, `permission`, `type`, `sort`, `parent_id`, `p
 SELECT '工单删除', 'crm:work-order:delete', 3, 5, id, '', '', '', '', 0, b'1', b'1', b'1', '1', NOW(), '1', NOW(), b'0' FROM `system_menu` WHERE `path`='work-order' AND `parent_id` IN (SELECT id FROM (SELECT id FROM `system_menu` WHERE `path`='/crm' AND `parent_id`=0 AND `deleted`=b'0') root) AND `deleted`=b'0' AND NOT EXISTS (SELECT 1 FROM `system_menu` WHERE `permission`='crm:work-order:delete' AND `deleted`=b'0');
 INSERT INTO `system_menu` (`name`, `permission`, `type`, `sort`, `parent_id`, `path`, `icon`, `component`, `component_name`, `status`, `visible`, `keep_alive`, `always_show`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
 SELECT '工单处理', 'crm:work-order:process', 3, 6, id, '', '', '', '', 0, b'1', b'1', b'1', '1', NOW(), '1', NOW(), b'0' FROM `system_menu` WHERE `path`='work-order' AND `parent_id` IN (SELECT id FROM (SELECT id FROM `system_menu` WHERE `path`='/crm' AND `parent_id`=0 AND `deleted`=b'0') root) AND `deleted`=b'0' AND NOT EXISTS (SELECT 1 FROM `system_menu` WHERE `permission`='crm:work-order:process' AND `deleted`=b'0');
+INSERT INTO `system_menu` (`name`, `permission`, `type`, `sort`, `parent_id`, `path`, `icon`, `component`, `component_name`, `status`, `visible`, `keep_alive`, `always_show`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
+SELECT '工单分派', 'crm:work-order:assign', 3, 7, id, '', '', '', '', 0, b'1', b'1', b'1', '1', NOW(), '1', NOW(), b'0' FROM `system_menu` WHERE `path`='work-order' AND `parent_id` IN (SELECT id FROM (SELECT id FROM `system_menu` WHERE `path`='/crm' AND `parent_id`=0 AND `deleted`=b'0') root) AND `deleted`=b'0' AND NOT EXISTS (SELECT 1 FROM `system_menu` WHERE `permission`='crm:work-order:assign' AND `deleted`=b'0');
 
 INSERT INTO `system_menu_i18n` (`menu_id`, `language`, `name`)
 SELECT m.id, l.language,

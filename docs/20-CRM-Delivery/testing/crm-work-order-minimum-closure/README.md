@@ -13,7 +13,7 @@ bash ./build-in-ubuntu.sh ./config/test-crm-ubuntu-26.04.yaml
 
 结果：
 
-- CRM 全量：161/161，通过 161，失败 0，错误 0，跳过 0；
+- CRM 全量：170/170，通过 170，失败 0，错误 0，跳过 0；
 - 工单专属：6/6；
 - 覆盖创建初始轨迹和通知、处理人权限、原子开始处理、完结方案必填、
   退回原因和通知、来源客户不一致。
@@ -22,7 +22,7 @@ bash ./build-in-ubuntu.sh ./config/test-crm-ubuntu-26.04.yaml
 
 | 范围 | 指令 | 分支 | 行 | 方法 |
 | --- | ---: | ---: | ---: | ---: |
-| CRM 模块整体 | 34.04% | 33.10% | 32.07% | 22.39% |
+| CRM 模块整体 | 34.60% | 33.82% | 32.64% | 22.50% |
 | `CrmWorkOrderServiceImpl` | 53.08% | 42.55% | 57.41% | 62.50% |
 
 原始报告：`Server/mitedtsm-module-crm/target/site/jacoco/`（构建产物，不提交）。

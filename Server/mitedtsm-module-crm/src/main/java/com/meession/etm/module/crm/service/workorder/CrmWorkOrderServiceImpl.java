@@ -109,6 +109,28 @@ public class CrmWorkOrderServiceImpl implements CrmWorkOrderService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    public void assignWorkOrder(CrmWorkOrderAssignReqVO reqVO, Long userId, boolean queryAll) {
+        CrmWorkOrderDO old = requireParticipant(reqVO.getId(), userId, queryAll);
+        if (!queryAll && !ObjectUtil.equal(old.getCreator(), String.valueOf(userId))) {
+            throw exception(WORK_ORDER_ASSIGN_DENIED);
+        }
+        if (ObjectUtil.equal(old.getHandlerUserId(), reqVO.getHandlerUserId())) {
+            throw exception(WORK_ORDER_HANDLER_UNCHANGED);
+        }
+        adminUserApi.validateUser(reqVO.getHandlerUserId());
+        int updated = workOrderMapper.assignIfPending(old.getId(), CrmWorkOrderStatusEnum.PENDING.getStatus(),
+                old.getHandlerUserId(), reqVO.getHandlerUserId());
+        if (updated != 1) {
+            throw exception(WORK_ORDER_STATUS_TRANSITION_INVALID);
+        }
+        old.setHandlerUserId(reqVO.getHandlerUserId());
+        appendRecord(old, CrmWorkOrderActionTypeEnum.ASSIGN, old.getStatus(), old.getStatus(), userId,
+                reqVO.getRemark());
+        notificationService.notifyAssigned(old);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public void startWorkOrder(CrmWorkOrderActionReqVO reqVO, Long userId) {
         CrmWorkOrderDO old = requireParticipant(reqVO.getId(), userId, false);
         requireHandler(old, userId);

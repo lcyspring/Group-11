@@ -45,6 +45,8 @@ export const createWorkOrder = async (data: WorkOrderVO) => await request.post({
 export const updateWorkOrder = async (data: WorkOrderVO) => await request.put({ url: '/crm/work-order/update', data })
 export const deleteWorkOrder = async (id: number) => await request.delete({ url: '/crm/work-order/delete?id=' + id })
 export const startWorkOrder = async (id: number, remark?: string) => await request.put({ url: '/crm/work-order/start', data: { id, remark } })
+export const assignWorkOrder = async (id: number, handlerUserId: number, remark?: string) =>
+  await request.put({ url: '/crm/work-order/assign', data: { id, handlerUserId, remark } })
 export const returnWorkOrder = async (id: number, reason: string) => await request.put({ url: '/crm/work-order/return', data: { id, reason } })
 export const resubmitWorkOrder = async (id: number, remark?: string) => await request.put({ url: '/crm/work-order/resubmit', data: { id, remark } })
 export const completeWorkOrder = async (id: number, solution: string) => await request.put({ url: '/crm/work-order/complete', data: { id, solution } })
