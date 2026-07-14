@@ -7,6 +7,21 @@ export interface StatisticsPerformanceRespVO {
   lastYearCount: number
 }
 
+export interface StatisticsTargetCompletionRespVO {
+  time: string
+  targetValue: number | string
+  actualValue: number | string
+  completionRate?: number | string
+}
+
+export interface StatisticsTargetCompletionSummaryRespVO {
+  targetType: number
+  annualTarget: number | string
+  annualActual: number | string
+  annualCompletionRate?: number | string
+  monthlyList: StatisticsTargetCompletionRespVO[]
+}
+
 // 排行 API
 export const StatisticsPerformanceApi = {
   // 员工获得合同金额统计
@@ -27,6 +42,13 @@ export const StatisticsPerformanceApi = {
   getContractCountPerformance: (params: any) => {
     return request.get({
       url: '/crm/statistics-performance/get-contract-count-performance',
+      params
+    })
+  },
+  // 月度业绩目标、实际值和完成率
+  getTargetCompletion: (params: any) => {
+    return request.get({
+      url: '/crm/statistics-performance/get-target-completion',
       params
     })
   }

@@ -5,7 +5,14 @@ import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.util.ObjUtil;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.performance.CrmStatisticsPerformanceReqVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.performance.CrmStatisticsPerformanceRespVO;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.performance.CrmStatisticsTargetCompletionReqVO;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.performance.CrmStatisticsTargetCompletionRespVO;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.performance.CrmStatisticsTargetCompletionSummaryRespVO;
+import com.meession.etm.module.crm.dal.dataobject.statistics.CrmPerformanceTargetDO;
+import com.meession.etm.module.crm.dal.mysql.statistics.CrmPerformanceTargetMapper;
 import com.meession.etm.module.crm.dal.mysql.statistics.CrmStatisticsPerformanceMapper;
+import com.meession.etm.module.crm.enums.statistics.CrmPerformanceTargetScopeTypeEnum;
+import com.meession.etm.module.crm.enums.statistics.CrmPerformanceTargetTypeEnum;
 import com.meession.etm.module.system.api.dept.DeptApi;
 import com.meession.etm.module.system.api.dept.dto.DeptRespDTO;
 import com.meession.etm.module.system.api.user.AdminUserApi;
@@ -15,7 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -24,6 +33,10 @@ import java.util.function.Function;
 
 import static com.meession.etm.framework.common.util.collection.CollectionUtils.convertList;
 import static com.meession.etm.framework.common.util.collection.CollectionUtils.convertMap;
+import static com.meession.etm.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.PERFORMANCE_TARGET_FILTER_SCOPE_MISMATCH;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.PERFORMANCE_TARGET_PERIOD_INVALID;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.PERFORMANCE_TARGET_TYPE_INVALID;
 
 /**
  * CRM 员工业绩分析 Service 实现类
@@ -36,6 +49,8 @@ public class CrmStatisticsPerformanceServiceImpl implements CrmStatisticsPerform
 
     @Resource
     private CrmStatisticsPerformanceMapper performanceMapper;
+    @Resource
+    private CrmPerformanceTargetMapper performanceTargetMapper;
 
     @Resource
     private AdminUserApi adminUserApi;
@@ -55,6 +70,115 @@ public class CrmStatisticsPerformanceServiceImpl implements CrmStatisticsPerform
     @Override
     public List<CrmStatisticsPerformanceRespVO> getReceivablePricePerformance(CrmStatisticsPerformanceReqVO performanceReqVO) {
         return getPerformance(performanceReqVO, performanceMapper::selectReceivablePricePerformance);
+    }
+
+    @Override
+    public CrmStatisticsTargetCompletionSummaryRespVO getTargetCompletion(
+            CrmStatisticsTargetCompletionReqVO reqVO) {
+        int year = validateCompletionPeriod(reqVO);
+        Long targetScopeId = getTargetScopeId(reqVO);
+        CrmPerformanceTargetTypeEnum targetType = CrmPerformanceTargetTypeEnum.fromType(reqVO.getTargetType());
+        if (targetType == null) {
+            throw exception(PERFORMANCE_TARGET_TYPE_INVALID);
+        }
+
+        List<Long> userIds = getUserIds(reqVO);
+        reqVO.setUserIds(userIds);
+        List<CrmStatisticsPerformanceRespVO> actualRows = CollUtil.isEmpty(userIds)
+                ? Collections.emptyList() : getActualRows(reqVO, targetType);
+        Map<String, BigDecimal> actualByMonth = convertMap(actualRows, CrmStatisticsPerformanceRespVO::getTime,
+                CrmStatisticsPerformanceRespVO::getCurrentMonthCount);
+        List<CrmPerformanceTargetDO> targetRows = performanceTargetMapper.selectListByScopeAndYear(
+                reqVO.getScopeType(), targetScopeId, year, reqVO.getTargetType());
+        Map<Integer, BigDecimal> targetByMonth = convertMap(targetRows, CrmPerformanceTargetDO::getTargetMonth,
+                CrmPerformanceTargetDO::getTargetValue);
+
+        List<CrmStatisticsTargetCompletionRespVO> monthlyList = new ArrayList<>(12);
+        BigDecimal annualTarget = BigDecimal.ZERO;
+        BigDecimal annualActual = BigDecimal.ZERO;
+        for (int month = 1; month <= 12; month++) {
+            String monthKey = String.format("%d%02d", year, month);
+            BigDecimal targetValue = targetByMonth.getOrDefault(month, BigDecimal.ZERO);
+            BigDecimal actualValue = actualByMonth.getOrDefault(monthKey, BigDecimal.ZERO);
+            annualTarget = annualTarget.add(targetValue);
+            annualActual = annualActual.add(actualValue);
+            monthlyList.add(new CrmStatisticsTargetCompletionRespVO()
+                    .setTime(String.format("%d-%02d", year, month))
+                    .setTargetValue(targetValue.toPlainString())
+                    .setActualValue(actualValue.toPlainString())
+                    .setCompletionRate(calculateCompletionRate(actualValue, targetValue)));
+        }
+        return new CrmStatisticsTargetCompletionSummaryRespVO()
+                .setTargetType(reqVO.getTargetType())
+                .setAnnualTarget(annualTarget.toPlainString())
+                .setAnnualActual(annualActual.toPlainString())
+                .setAnnualCompletionRate(calculateCompletionRate(annualActual, annualTarget))
+                .setMonthlyList(monthlyList);
+    }
+
+    private List<CrmStatisticsPerformanceRespVO> getActualRows(CrmStatisticsPerformanceReqVO reqVO,
+                                                                CrmPerformanceTargetTypeEnum targetType) {
+        return switch (targetType) {
+            case CONTRACT_PRICE -> performanceMapper.selectContractPricePerformance(reqVO);
+            case RECEIVABLE_PRICE -> performanceMapper.selectReceivablePricePerformance(reqVO);
+            case FOLLOW_UP_COUNT -> performanceMapper.selectFollowUpCountPerformance(reqVO);
+            case CUSTOMER_COUNT -> performanceMapper.selectCustomerCountPerformance(reqVO);
+            case BUSINESS_COUNT -> performanceMapper.selectBusinessCountPerformance(reqVO);
+        };
+    }
+
+    private int validateCompletionPeriod(CrmStatisticsTargetCompletionReqVO reqVO) {
+        if (reqVO.getTimes() == null || reqVO.getTimes().length != 2
+                || reqVO.getTimes()[0] == null || reqVO.getTimes()[1] == null) {
+            throw exception(PERFORMANCE_TARGET_PERIOD_INVALID);
+        }
+        LocalDateTime start = reqVO.getTimes()[0];
+        LocalDateTime end = reqVO.getTimes()[1];
+        int year = start.getYear();
+        boolean completeYear = end.getYear() == year
+                && start.toLocalDate().equals(java.time.LocalDate.of(year, 1, 1))
+                && start.toLocalTime().equals(LocalTime.MIDNIGHT)
+                && end.toLocalDate().equals(java.time.LocalDate.of(year, 12, 31))
+                && end.toLocalTime().equals(LocalTime.of(23, 59, 59));
+        if (!completeYear) {
+            throw exception(PERFORMANCE_TARGET_PERIOD_INVALID);
+        }
+        return year;
+    }
+
+    private Long getTargetScopeId(CrmStatisticsTargetCompletionReqVO reqVO) {
+        CrmPerformanceTargetScopeTypeEnum scopeType = CrmPerformanceTargetScopeTypeEnum.fromType(reqVO.getScopeType());
+        if (scopeType == null) {
+            throw exception(PERFORMANCE_TARGET_FILTER_SCOPE_MISMATCH);
+        }
+        return switch (scopeType) {
+            case COMPANY -> {
+                DeptRespDTO dept = deptApi.getDept(reqVO.getDeptId());
+                if (reqVO.getUserId() != null || dept == null || !Long.valueOf(0L).equals(dept.getParentId())) {
+                    throw exception(PERFORMANCE_TARGET_FILTER_SCOPE_MISMATCH);
+                }
+                yield 0L;
+            }
+            case DEPARTMENT -> {
+                if (reqVO.getUserId() != null) {
+                    throw exception(PERFORMANCE_TARGET_FILTER_SCOPE_MISMATCH);
+                }
+                yield reqVO.getDeptId();
+            }
+            case USER -> {
+                if (reqVO.getUserId() == null) {
+                    throw exception(PERFORMANCE_TARGET_FILTER_SCOPE_MISMATCH);
+                }
+                yield reqVO.getUserId();
+            }
+        };
+    }
+
+    private static BigDecimal calculateCompletionRate(BigDecimal actualValue, BigDecimal targetValue) {
+        if (targetValue.signum() == 0) {
+            return null;
+        }
+        return actualValue.multiply(BigDecimal.valueOf(100)).divide(targetValue, 2, RoundingMode.HALF_UP);
     }
 
     /**

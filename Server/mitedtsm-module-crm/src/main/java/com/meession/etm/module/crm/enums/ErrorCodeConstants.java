@@ -120,5 +120,9 @@ public interface ErrorCodeConstants {
     ErrorCode PERFORMANCE_TARGET_CONCURRENT_MODIFICATION = new ErrorCode(1_020_014_002,
             "业绩目标已被其他操作修改，请刷新后重试");
     ErrorCode PERFORMANCE_TARGET_TYPE_INVALID = new ErrorCode(1_020_014_003, "业绩目标类型无效");
+    ErrorCode PERFORMANCE_TARGET_FILTER_SCOPE_MISMATCH = new ErrorCode(1_020_014_004,
+            "业绩目标范围与部门、人员筛选条件不一致");
+    ErrorCode PERFORMANCE_TARGET_PERIOD_INVALID = new ErrorCode(1_020_014_005,
+            "业绩目标完成度必须查询同一个完整年度");
 
 }

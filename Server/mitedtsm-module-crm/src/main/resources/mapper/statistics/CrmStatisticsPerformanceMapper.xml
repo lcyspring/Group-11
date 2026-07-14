@@ -53,4 +53,50 @@
         GROUP BY time
     </select>
 
+    <select id="selectFollowUpCountPerformance"
+            resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.performance.CrmStatisticsPerformanceRespVO">
+        SELECT DATE_FORMAT(create_time, '%Y%m') AS time,
+               COUNT(1) AS currentMonthCount
+        FROM crm_follow_up_record
+        WHERE deleted = 0
+          AND biz_type = ${@com.meession.etm.module.crm.enums.common.CrmBizTypeEnum@CRM_CUSTOMER.type}
+          AND creator IN
+            <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+                #{userId}
+            </foreach>
+          AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND
+            #{times[1],javaType=java.time.LocalDateTime}
+        GROUP BY time
+    </select>
+
+    <select id="selectCustomerCountPerformance"
+            resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.performance.CrmStatisticsPerformanceRespVO">
+        SELECT DATE_FORMAT(create_time, '%Y%m') AS time,
+               COUNT(1) AS currentMonthCount
+        FROM crm_customer
+        WHERE deleted = 0
+          AND owner_user_id IN
+            <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+                #{userId}
+            </foreach>
+          AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND
+            #{times[1],javaType=java.time.LocalDateTime}
+        GROUP BY time
+    </select>
+
+    <select id="selectBusinessCountPerformance"
+            resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.performance.CrmStatisticsPerformanceRespVO">
+        SELECT DATE_FORMAT(create_time, '%Y%m') AS time,
+               COUNT(1) AS currentMonthCount
+        FROM crm_business
+        WHERE deleted = 0
+          AND owner_user_id IN
+            <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+                #{userId}
+            </foreach>
+          AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND
+            #{times[1],javaType=java.time.LocalDateTime}
+        GROUP BY time
+    </select>
+
 </mapper>

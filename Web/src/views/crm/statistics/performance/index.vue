@@ -79,6 +79,16 @@
           ref="ReceivablePricePerformanceRef"
         />
       </el-tab-pane>
+      <el-tab-pane
+        :label="t('performance.targetCompletion')"
+        name="TargetCompletionPerformance"
+        lazy
+      >
+        <TargetCompletionPerformance
+          :query-params="queryParams"
+          ref="TargetCompletionPerformanceRef"
+        />
+      </el-tab-pane>
     </el-tabs>
   </el-col>
 </template>
@@ -92,6 +102,7 @@ import { defaultProps, handleTree } from '@/utils/tree'
 import ContractCountPerformance from './components/ContractCountPerformance.vue'
 import ContractPricePerformance from './components/ContractPricePerformance.vue'
 import ReceivablePricePerformance from './components/ReceivablePricePerformance.vue'
+import TargetCompletionPerformance from './components/TargetCompletionPerformance.vue'
 
 defineOptions({ name: 'CrmStatisticsPerformance' })
 
@@ -123,6 +134,7 @@ const activeTab = ref('ContractCountPerformance')
 const ContractCountPerformanceRef = ref() // 员工合同数量统计
 const ContractPricePerformanceRef = ref() // 员工合同金额统计
 const ReceivablePricePerformanceRef = ref() // 员工回款金额统计
+const TargetCompletionPerformanceRef = ref() // 业绩目标完成度
 
 /** 搜索按钮操作 */
 const handleQuery = () => {
@@ -143,6 +155,9 @@ const handleQuery = () => {
       break
     case 'ReceivablePricePerformance':
       ReceivablePricePerformanceRef.value?.loadData?.()
+      break
+    case 'TargetCompletionPerformance':
+      TargetCompletionPerformanceRef.value?.loadData?.()
       break
   }
 }

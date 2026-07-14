@@ -4,6 +4,8 @@ package com.meession.etm.module.crm.service.statistics;
 
 import com.meession.etm.module.crm.controller.admin.statistics.vo.performance.CrmStatisticsPerformanceReqVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.performance.CrmStatisticsPerformanceRespVO;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.performance.CrmStatisticsTargetCompletionReqVO;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.performance.CrmStatisticsTargetCompletionSummaryRespVO;
 
 import java.util.List;
 
@@ -37,6 +39,11 @@ public interface CrmStatisticsPerformanceService {
      * @return 员工获得回款金额分析
      */
     List<CrmStatisticsPerformanceRespVO> getReceivablePricePerformance(CrmStatisticsPerformanceReqVO performanceReqVO);
+
+    /**
+     * 获得月度目标、实际值和完成率。
+     */
+    CrmStatisticsTargetCompletionSummaryRespVO getTargetCompletion(CrmStatisticsTargetCompletionReqVO reqVO);
 
 
 }
