@@ -12,7 +12,21 @@
 
 ---
 
-## 二、Bug详细记录
+## 二、Bug统计表
+
+| 编号 | 类型 | 描述 | 解决方案 | 状态 |
+|------|------|------|----------|------|
+| BUG-001 | 类型不兼容 | `createTime` 字段类型 `List<LocalDateTime>` 与 `betweenIfPresent()` 方法期望的 `Object[]` 不兼容 | 将 `List<LocalDateTime>` 改为 `LocalDateTime[]` | ✅ 已修复 |
+| BUG-002 | 注解使用错误 | Spring Boot 3.x 中 `@MockBean` 注解包路径变更 | 改为 `@MockitoBean` 注解 | ✅ 已修复 |
+| BUG-003 | 数据库表缺失 | 测试初始化SQL脚本中缺少 `bpm_oa_business_trip` 和 `bpm_oa_borrow` 表定义 | 在 `create_tables.sql` 中添加建表语句 | ✅ 已修复 |
+| BUG-004 | 保留关键字冲突 | `day` 是 H2 数据库保留关键字，导致 SQL 语法错误 | 将字段名 `day` 改为 `days` | ✅ 已修复 |
+| BUG-005 | 数据精度问题 | Java `LocalDateTime` 纳秒精度与 H2 `timestamp` 微秒精度不一致 | 使用 `assertNotNull()` 替代精确日期比较 | ✅ 已修复 |
+| BUG-006 | 数据范围问题 | 随机生成的金额超出 `DECIMAL(10,2)` 字段范围 | 在测试中手动指定合理金额值 | ✅ 已修复 |
+| BUG-007 | 查询逻辑问题 | 中文模糊查询无法匹配，用户ID过滤导致查询结果为空 | 改为英文数据，查询时不传用户ID | ✅ 已修复 |
+
+---
+
+## 三、Bug详细记录
 
 ### Bug 01: Mapper编译错误 - createTime类型不兼容
 
@@ -421,9 +435,9 @@ PageResult<BpmOABusinessTripDO> pageResult = businessTripService.getBusinessTrip
 
 ---
 
-## 三、Bug分类统计
+## 四、Bug分类统计
 
-### 3.1 按严重程度分类
+### 4.1 按严重程度分类
 
 | 严重程度 | 数量 | 占比 |
 |---------|------|------|
@@ -431,7 +445,7 @@ PageResult<BpmOABusinessTripDO> pageResult = businessTripService.getBusinessTrip
 | 中 | 2 | 28.6% |
 | 低 | 2 | 28.6% |
 
-### 3.2 按发现阶段分类
+### 4.2 按发现阶段分类
 
 | 阶段 | 数量 | 占比 |
 |------|------|------|
@@ -439,7 +453,7 @@ PageResult<BpmOABusinessTripDO> pageResult = businessTripService.getBusinessTrip
 | 测试编译阶段 | 1 | 14.3% |
 | 测试运行阶段 | 5 | 71.4% |
 
-### 3.3 按问题类型分类
+### 4.3 按问题类型分类
 
 | 类型 | 数量 | 占比 |
 |------|------|------|
@@ -453,7 +467,7 @@ PageResult<BpmOABusinessTripDO> pageResult = businessTripService.getBusinessTrip
 
 ---
 
-## 四、Bug修复时间线
+## 五、Bug修复时间线
 
 | 时间 | Bug编号 | 修复耗时 |
 |------|---------|---------|
@@ -468,9 +482,9 @@ PageResult<BpmOABusinessTripDO> pageResult = businessTripService.getBusinessTrip
 
 ---
 
-## 五、经验总结
+## 六、经验总结
 
-### 5.1 已吸取的教训
+### 6.1 已吸取的教训
 
 | 教训 | 对应Bug | 预防措施 |
 |------|---------|---------|
@@ -482,7 +496,7 @@ PageResult<BpmOABusinessTripDO> pageResult = businessTripService.getBusinessTrip
 | 测试数据应在合理业务范围内 | BUG-006 | 生成测试数据时指定合理的取值范围 |
 | 测试查询条件应与实际数据匹配 | BUG-007 | 测试时使用明确的查询条件和数据 |
 
-### 5.2 待改进项
+### 6.2 待改进项
 
 | 改进项 | 优先级 | 计划时间 |
 |--------|--------|---------|
@@ -492,9 +506,9 @@ PageResult<BpmOABusinessTripDO> pageResult = businessTripService.getBusinessTrip
 
 ---
 
-## 六、验证结果
+## 七、验证结果
 
-### 6.1 测试执行统计
+### 7.1 测试执行统计
 
 | 测试类 | 测试用例数 | 通过 | 失败 | 错误 | 跳过 |
 |--------|-----------|------|------|------|------|
@@ -502,7 +516,7 @@ PageResult<BpmOABusinessTripDO> pageResult = businessTripService.getBusinessTrip
 | `BpmOABorrowServiceImplTest` | 6 | 6 | 0 | 0 | 0 |
 | **合计** | **12** | **12** | **0** | **0** | **0** |
 
-### 6.2 覆盖率结果
+### 7.2 覆盖率结果
 
 | 模块 | 行覆盖率 | 分支覆盖率 |
 |------|---------|-----------|
