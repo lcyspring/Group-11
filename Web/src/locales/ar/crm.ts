@@ -863,6 +863,7 @@ export default {
     receivableAudit: 'تدقيق المستحق',
     receivablePlanRemind: 'تذكير خطة المستحق',
     workOrder: 'مهام أوامر العمل',
+    bpmTask: 'مهام موافقة سير العمل',
     today: 'اليوم',
     total: 'الإجمالي',
     item: 'عناصر',

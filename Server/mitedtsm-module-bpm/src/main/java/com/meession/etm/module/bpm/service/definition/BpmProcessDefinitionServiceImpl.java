@@ -57,12 +57,19 @@ public class BpmProcessDefinitionServiceImpl implements BpmProcessDefinitionServ
 
     @Override
     public ProcessDefinition getProcessDefinition(String id) {
-        return repositoryService.getProcessDefinition(id);
+        if (StrUtil.isEmpty(id)) {
+            return null;
+        }
+        return repositoryService.createProcessDefinitionQuery()
+                .processDefinitionId(id)
+                .processDefinitionTenantId(FlowableUtils.getTenantId())
+                .singleResult();
     }
 
     @Override
     public List<ProcessDefinition> getProcessDefinitionList(Set<String> ids) {
-        return repositoryService.createProcessDefinitionQuery().processDefinitionIds(ids).list();
+        return repositoryService.createProcessDefinitionQuery().processDefinitionIds(ids)
+                .processDefinitionTenantId(FlowableUtils.getTenantId()).list();
     }
 
     @Override
@@ -70,7 +77,8 @@ public class BpmProcessDefinitionServiceImpl implements BpmProcessDefinitionServ
         if (StrUtil.isEmpty(deploymentId)) {
             return null;
         }
-        return repositoryService.createProcessDefinitionQuery().deploymentId(deploymentId).singleResult();
+        return repositoryService.createProcessDefinitionQuery().deploymentId(deploymentId)
+                .processDefinitionTenantId(FlowableUtils.getTenantId()).singleResult();
     }
 
     @Override
@@ -78,7 +86,8 @@ public class BpmProcessDefinitionServiceImpl implements BpmProcessDefinitionServ
         if (CollUtil.isEmpty(deploymentIds)) {
             return emptyList();
         }
-        return repositoryService.createProcessDefinitionQuery().deploymentIds(deploymentIds).list();
+        return repositoryService.createProcessDefinitionQuery().deploymentIds(deploymentIds)
+                .processDefinitionTenantId(FlowableUtils.getTenantId()).list();
     }
 
     @Override
@@ -128,7 +137,8 @@ public class BpmProcessDefinitionServiceImpl implements BpmProcessDefinitionServ
         if (StrUtil.isEmpty(id)) {
             return null;
         }
-        return repositoryService.createDeploymentQuery().deploymentId(id).singleResult();
+        return repositoryService.createDeploymentQuery().deploymentId(id)
+                .deploymentTenantId(FlowableUtils.getTenantId()).singleResult();
     }
 
     @Override
@@ -144,7 +154,8 @@ public class BpmProcessDefinitionServiceImpl implements BpmProcessDefinitionServ
 
         // 设置 ProcessDefinition 的 category 分类
         ProcessDefinition definition = repositoryService.createProcessDefinitionQuery()
-                .deploymentId(deploy.getId()).singleResult();
+                .deploymentId(deploy.getId())
+                .processDefinitionTenantId(FlowableUtils.getTenantId()).singleResult();
         repositoryService.setProcessDefinitionCategory(definition.getId(), model.getCategory());
         // 注意 1，ProcessDefinition 的 key 和 name 是通过 BPMN 中的 <bpmn2:process /> 的 id 和 name 决定
         // 注意 2，目前该项目的设计上，需要保证 Model、Deployment、ProcessDefinition 使用相同的 key，保证关联性。
@@ -169,7 +180,7 @@ public class BpmProcessDefinitionServiceImpl implements BpmProcessDefinitionServ
 
     @Override
     public void updateProcessDefinitionState(String id, Integer state) {
-        ProcessDefinition processDefinition = repositoryService.getProcessDefinition(id);
+        ProcessDefinition processDefinition = getProcessDefinition(id);
         if (processDefinition == null) {
             throw exception(PROCESS_DEFINITION_NOT_EXISTS);
         }
@@ -200,7 +211,7 @@ public class BpmProcessDefinitionServiceImpl implements BpmProcessDefinitionServ
 
     @Override
     public BpmnModel getProcessDefinitionBpmnModel(String id) {
-        return repositoryService.getBpmnModel(id);
+        return getProcessDefinition(id) == null ? null : repositoryService.getBpmnModel(id);
     }
 
     @Override

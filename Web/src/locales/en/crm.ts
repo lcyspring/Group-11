@@ -866,6 +866,7 @@ export default {
     receivableAudit: 'Receivable Audit',
     receivablePlanRemind: 'Receivable Plan Remind',
     workOrder: 'Work Order Backlog',
+    bpmTask: 'Workflow Approval Tasks',
     today: 'Today',
     total: 'Total',
     item: 'items',

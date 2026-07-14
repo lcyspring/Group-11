@@ -92,3 +92,7 @@ bash ./down.sh ./config/runtime-local.yaml
   已确认回款 16016.000000；参与人范围工单为 3，OA 任务明确标记未接入。
 - CRM 当前回归 208/208；JaCoCo 指令 40.08%、分支 37.32%、行 37.91%、方法 25.61%；
   客户 360 专项 ESLint 0 警告，Web/Server Ubuntu 26.04 构建与热替换通过。
+- CRM 待办中心已接入 Flowable 审批待办，入口受 `bpm:task:query` 权限控制；租户 1 的待办、
+  已办 API 均返回 `code=0`，当前运行样本数量为 0。
+- BPM 回归 54 个：48 通过、6 跳过、失败 0；JaCoCo 行覆盖率 8.58%、分支覆盖率 4.37%；
+  最终 Server/Web 已热替换，8080 为 `UP`、8081 为 200，运行 YAML 已恢复 `full`。

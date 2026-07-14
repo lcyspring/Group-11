@@ -859,6 +859,7 @@ export default {
     receivableAudit: '待审核回款',
     receivablePlanRemind: '待回款提醒',
     workOrder: '客服工单待办',
+    bpmTask: '流程审批待办',
     today: '今日',
     total: '共',
     item: '项',
