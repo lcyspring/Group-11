@@ -1,0 +1,179 @@
+TC_ID,模块,标题,步骤,预期结果,优先级
+TC-API-AUTH-001,登录认证,正常登录,"1. 调用登录接口 POST /admin-api/system/auth/login
+2. 传入 username=admin, password=admin123","1. 返回code=0
+2. 包含accessToken和refreshToken",P0
+TC-API-AUTH-002,登录认证,错误密码登录,"1. 使用错误密码调用登录接口","1. 返回错误码
+2. 提示密码错误",P0
+TC-API-AUTH-003,登录认证,未认证访问受保护接口,"1. 无Token访问用户列表接口","1. 返回401未授权",P0
+TC-API-USER-001,用户管理,分页查询用户,"1. 登录获取Token
+2. 调用 GET /admin-api/system/user/page?pageNo=1&pageSize=10","1. 返回分页数据
+2. code=0",P0
+TC-API-USER-002,用户管理,查询单个用户,"1. 登录获取Token
+2. 调用 GET /admin-api/system/user/get?id={userId}","1. 返回用户详情
+2. code=0",P0
+TC-API-USER-003,用户管理,list-all接口测试,"1. 登录获取Token
+2. 调用 GET /admin-api/system/user/list-all","1. 返回用户列表
+2. code=0",P1
+TC-API-ROLE-001,角色管理,分页查询角色,"1. 登录获取Token
+2. 调用 GET /admin-api/system/role/page?pageNo=1&pageSize=10","1. 返回分页数据
+2. code=0",P0
+TC-API-ROLE-002,角色管理,查询单个角色,"1. 登录获取Token
+2. 调用 GET /admin-api/system/role/get?id={roleId}","1. 返回角色详情
+2. code=0",P0
+TC-API-ROLE-003,角色管理,list-all接口测试,"1. 登录获取Token
+2. 调用 GET /admin-api/system/role/list-all","1. 返回角色列表
+2. code=0",P1
+TC-API-DEPT-001,部门管理,查询部门列表,"1. 登录获取Token
+2. 调用 GET /admin-api/system/dept/list","1. 返回部门树
+2. code=0",P1
+TC-API-DEPT-002,部门管理,查询单个部门,"1. 登录获取Token
+2. 调用 GET /admin-api/system/dept/get?id={deptId}","1. 返回部门详情
+2. code=0",P1
+TC-API-DEPT-003,部门管理,查询部门简单列表,"1. 登录获取Token
+2. 调用 GET /admin-api/system/dept/list-all-simple","1. 返回部门列表
+2. code=0",P1
+TC-API-DICT-001,字典管理,分页查询字典类型,"1. 登录获取Token
+2. 调用 GET /admin-api/system/dict-type/page?pageNo=1&pageSize=10","1. 返回分页数据
+2. code=0",P1
+TC-API-DICT-002,字典管理,list-all接口测试,"1. 登录获取Token
+2. 调用 GET /admin-api/system/dict-type/list-all","1. 返回字典类型列表
+2. code=0",P1
+TC-API-TENANT-001,租户管理,分页查询租户,"1. 登录获取Token
+2. 调用 GET /admin-api/system/tenant/page?pageNo=1&pageSize=10","1. 返回分页数据
+2. code=0",P1
+TC-API-TENANT-002,租户管理,查询单个租户,"1. 登录获取Token
+2. 调用 GET /admin-api/system/tenant/get?id={tenantId}","1. 返回租户详情
+2. code=0",P1
+TC-API-POST-001,岗位管理,分页查询岗位,"1. 登录获取Token
+2. 调用 GET /admin-api/system/post/page?pageNo=1&pageSize=10","1. 返回分页数据
+2. code=0",P1
+TC-API-NOTICE-001,通知管理,分页查询通知,"1. 登录获取Token
+2. 调用 GET /admin-api/system/notice/page?pageNo=1&pageSize=10","1. 返回分页数据
+2. code=0",P1
+TC-API-FILE-001,文件管理,分页查询文件,"1. 登录获取Token
+2. 调用 GET /admin-api/infra/file/page?pageNo=1&pageSize=10","1. 返回分页数据
+2. code=0",P1
+TC-API-JOB-001,定时任务,分页查询任务,"1. 登录获取Token
+2. 调用 GET /admin-api/infra/job/page?pageNo=1&pageSize=10","1. 返回任务数据
+2. code=0",P1
+TC-API-JOB-002,定时任务,查询单个任务,"1. 登录获取Token
+2. 调用 GET /admin-api/infra/job/get?id={jobId}","1. 返回任务详情
+2. code=0",P1
+TC-API-CONFIG-001,配置管理,分页查询配置,"1. 登录获取Token
+2. 调用 GET /admin-api/infra/config/page?pageNo=1&pageSize=10","1. 返回分页数据
+2. code=0",P1
+TC-API-CONFIG-002,配置管理,查询单个配置,"1. 登录获取Token
+2. 调用 GET /admin-api/infra/config/get?id={configId}","1. 返回配置详情
+2. code=0",P1
+TC-API-LOG-001,日志管理,分页查询日志,"1. 登录获取Token
+2. 调用 GET /admin-api/infra/log/page?pageNo=1&pageSize=10","1. 返回分页数据
+2. code=0",P1
+TC-API-CRM-001,CRM客户管理,分页查询客户,"1. 登录获取Token
+2. 调用 GET /admin-api/crm/customer/page?pageNo=1&pageSize=10","1. 返回客户数据
+2. code=0",P0
+TC-API-CRM-002,CRM客户管理,查询单个客户,"1. 登录获取Token
+2. 调用 GET /admin-api/crm/customer/get?id={customerId}","1. 返回客户详情
+2. code=0",P0
+TC-API-CRM-003,CRM客户管理,分页查询联系人,"1. 登录获取Token
+2. 调用 GET /admin-api/crm/contact/page?pageNo=1&pageSize=10","1. 返回联系人数据
+2. code=0",P1
+TC-API-CRM-004,CRM客户管理,分页查询线索,"1. 登录获取Token
+2. 调用 GET /admin-api/crm/clue/page?pageNo=1&pageSize=10","1. 返回线索数据
+2. code=0",P1
+TC-API-CRM-005,CRM客户管理,分页查询商机,"1. 登录获取Token
+2. 调用 GET /admin-api/crm/business/page?pageNo=1&pageSize=10","1. 返回商机数据
+2. code=0",P1
+TC-API-CRM-006,CRM客户管理,分页查询合同,"1. 登录获取Token
+2. 调用 GET /admin-api/crm/contract/page?pageNo=1&pageSize=10","1. 返回合同数据
+2. code=0",P1
+TC-API-CRM-007,CRM客户管理,分页查询应收款,"1. 登录获取Token
+2. 调用 GET /admin-api/crm/receivable/page?pageNo=1&pageSize=10","1. 返回应收款数据
+2. code=0",P1
+TC-API-CRM-008,CRM客户管理,客户池配置查询,"1. 登录获取Token
+2. 调用 GET /admin-api/crm/customer/pool-config/page","1. 返回配置数据
+2. code=0",P1
+TC-API-ERP-PROD-001,ERP产品管理,分页查询产品,"1. 登录获取Token
+2. 调用 GET /admin-api/erp/product/page?pageNo=1&pageSize=10","1. 返回产品数据
+2. code=0",P0
+TC-API-ERP-PROD-002,ERP产品管理,查询单个产品,"1. 登录获取Token
+2. 调用 GET /admin-api/erp/product/get?id={productId}","1. 返回产品详情
+2. code=0",P0
+TC-API-ERP-PROD-003,ERP产品管理,分页查询产品单位,"1. 登录获取Token
+2. 调用 GET /admin-api/erp/product-unit/page?pageNo=1&pageSize=10","1. 返回单位数据
+2. code=0",P1
+TC-API-ERP-PURCH-001,ERP采购管理,分页查询采购订单,"1. 登录获取Token
+2. 调用 GET /admin-api/erp/purchase-order/page?pageNo=1&pageSize=10","1. 返回订单数据
+2. code=0",P1
+TC-API-ERP-PURCH-002,ERP采购管理,分页查询供应商,"1. 登录获取Token
+2. 调用 GET /admin-api/erp/supplier/page?pageNo=1&pageSize=10","1. 返回供应商数据
+2. code=0",P1
+TC-API-ERP-SALE-001,ERP销售管理,分页查询销售订单,"1. 登录获取Token
+2. 调用 GET /admin-api/erp/sale-order/page?pageNo=1&pageSize=10","1. 返回订单数据
+2. code=0",P1
+TC-API-ERP-SALE-002,ERP销售管理,分页查询客户,"1. 登录获取Token
+2. 调用 GET /admin-api/erp/customer/page?pageNo=1&pageSize=10","1. 返回客户数据
+2. code=0",P1
+TC-API-ERP-STOCK-001,ERP库存管理,分页查询仓库,"1. 登录获取Token
+2. 调用 GET /admin-api/erp/warehouse/page?pageNo=1&pageSize=10","1. 返回仓库数据
+2. code=0",P1
+TC-API-ERP-STOCK-002,ERP库存管理,分页查询库存,"1. 登录获取Token
+2. 调用 GET /admin-api/erp/stock/page?pageNo=1&pageSize=10","1. 返回库存数据
+2. code=0",P1
+TC-API-ERP-STOCK-003,ERP库存管理,分页查询入库单,"1. 登录获取Token
+2. 调用 GET /admin-api/erp/stock-in/page?pageNo=1&pageSize=10","1. 返回入库单数据
+2. code=0",P1
+TC-API-ERP-STOCK-004,ERP库存管理,分页查询出库单,"1. 登录获取Token
+2. 调用 GET /admin-api/erp/stock-out/page?pageNo=1&pageSize=10","1. 返回出库单数据
+2. code=0",P1
+TC-API-ERP-FIN-001,ERP财务管理,分页查询付款单,"1. 登录获取Token
+2. 调用 GET /admin-api/erp/finance-payment/page?pageNo=1&pageSize=10","1. 返回付款单数据
+2. code=0",P1
+TC-API-ERP-FIN-002,ERP财务管理,分页查询收款单,"1. 登录获取Token
+2. 调用 GET /admin-api/erp/finance-receipt/page?pageNo=1&pageSize=10","1. 返回收款单数据
+2. code=0",P1
+TC-API-PAY-001,Pay支付管理,分页查询支付订单,"1. 登录获取Token
+2. 调用 GET /admin-api/pay/order/page?pageNo=1&pageSize=10","1. 返回订单数据
+2. code=0",P1
+TC-API-PAY-002,Pay支付管理,分页查询退款单,"1. 登录获取Token
+2. 调用 GET /admin-api/pay/refund/page?pageNo=1&pageSize=10","1. 返回退款单数据
+2. code=0",P1
+TC-API-PAY-003,Pay支付管理,分页查询支付应用,"1. 登录获取Token
+2. 调用 GET /admin-api/pay/app/page?pageNo=1&pageSize=10","1. 返回应用数据
+2. code=0",P1
+TC-API-PAY-004,Pay支付管理,分页查询钱包,"1. 登录获取Token
+2. 调用 GET /admin-api/pay/wallet/page?pageNo=1&pageSize=10","1. 返回钱包数据
+2. code=0",P1
+TC-API-MEMBER-001,会员管理,分页查询会员用户,"1. 登录获取Token
+2. 调用 GET /admin-api/member/user/page?pageNo=1&pageSize=10","1. 返回会员数据
+2. code=0",P1
+TC-API-MEMBER-002,会员管理,分页查询积分记录,"1. 登录获取Token
+2. 调用 GET /admin-api/member/point/record/page?pageNo=1&pageSize=10","1. 返回记录数据
+2. code=0",P1
+TC-API-MEMBER-003,会员管理,分页查询会员标签,"1. 登录获取Token
+2. 调用 GET /admin-api/member/tag/page?pageNo=1&pageSize=10","1. 返回标签数据
+2. code=0",P1
+TC-API-MEMBER-004,会员管理,分页查询会员分组,"1. 登录获取Token
+2. 调用 GET /admin-api/member/group/page?pageNo=1&pageSize=10","1. 返回分组数据
+2. code=0",P1
+TC-API-MEMBER-005,会员管理,查询会员配置,"1. 登录获取Token
+2. 调用 GET /admin-api/member/config/get","1. 返回配置数据
+2. code=0",P1
+TC-API-AI-001,AI人工智能,分页查询知识库,"1. 登录获取Token
+2. 调用 GET /admin-api/ai/knowledge/page?pageNo=1&pageSize=10","1. 返回知识库数据
+2. code=0",P1
+TC-API-AI-002,AI人工智能,分页查询模型,"1. 登录获取Token
+2. 调用 GET /admin-api/ai/model/page?pageNo=1&pageSize=10","1. 返回模型数据
+2. code=0",P1
+TC-API-AI-003,AI人工智能,分页查询对话,"1. 登录获取Token
+2. 调用 GET /admin-api/ai/chat/conversation/page?pageNo=1&pageSize=10","1. 返回对话数据
+2. code=0",P1
+TC-API-AI-004,AI人工智能,分页查询写作记录,"1. 登录获取Token
+2. 调用 GET /admin-api/ai/write/page?pageNo=1&pageSize=10","1. 返回记录数据
+2. code=0",P1
+TC-API-AI-005,AI人工智能,分页查询API密钥,"1. 登录获取Token
+2. 调用 GET /admin-api/ai/api-key/page?pageNo=1&pageSize=10","1. 返回密钥数据
+2. code=0",P1
+TC-API-MP-001,MP公众号,分页查询公众号,"1. 登录获取Token
+2. 调用 GET /admin-api/mp/account/page?pageNo=1&pageSize=10","1. 返回公众号数据
+2. code=0",P1
+TC-API-SEC-001,安全测试,无Token访问受保护接口,"1. 不携带Token访问用户列表接口","1. 返回401未授权",P0

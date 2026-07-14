@@ -1,0 +1,955 @@
+{
+  "info": {
+    "_postman_id": "mitedtsm-api-collection",
+    "name": "MITEDTSM API Collection",
+    "description": "密讯ETM系统完整接口测试集合\n技术栈：JDK17 + SpringBoot 3.5.9 + Vue3 + TypeScript\nJava包名：com.meession.etm\n多租户：支持(tenant-id header)\n\n包含10个Folder共30个接口测试用例，覆盖System/CRM/ERP/BPM/Mall/WMS核心模块",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01-认证模块-System-Auth",
+      "description": "系统认证模块：登录、登出、Token刷新、验证码、权限信息",
+      "item": [
+        {
+          "name": "获取验证码",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('响应包含captchaId', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('captchaId');",
+                  "});",
+                  "pm.test('响应时间小于500ms', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(500);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin-api/system/auth/captcha",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin-api", "system", "auth", "captcha"]
+            }
+          }
+        },
+        {
+          "name": "用户登录",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('响应包含token', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('token');",
+                  "    pm.environment.set('token', jsonData.data.token);",
+                  "});",
+                  "pm.test('响应code为0', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.code).to.eql(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "tenant-id", "value": "{{tenantId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\",\n  \"captchaId\": \"{{captchaId}}\",\n  \"captchaCode\": \"{{captchaCode}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin-api/system/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin-api", "system", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "获取当前用户权限信息",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('响应包含用户和权限', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('user');",
+                  "    pm.expect(jsonData.data).to.have.property('permissions');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin-api/system/auth/get-permission-info",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin-api", "system", "auth", "get-permission-info"]
+            }
+          }
+        },
+        {
+          "name": "用户登出",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('响应code为0', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.code).to.eql(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin-api/system/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin-api", "system", "auth", "logout"]
+            }
+          }
+        },
+        {
+          "name": "刷新Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('返回新token', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('token');",
+                  "    pm.environment.set('token', jsonData.data.token);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin-api/system/auth/refresh-token",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin-api", "system", "auth", "refresh-token"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02-用户管理-System-User",
+      "description": "用户管理模块：CRUD、分页查询、状态管理、密码重置",
+      "item": [
+        {
+          "name": "分页查询用户列表",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('响应包含分页数据', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('records');",
+                  "    pm.expect(jsonData.data).to.have.property('total');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin-api/system/user/page?pageNo=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin-api", "system", "user", "page"],
+              "query": [
+                { "key": "pageNo", "value": "1" },
+                { "key": "pageSize", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "根据ID查询用户",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('响应包含用户信息', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('id');",
+                  "    pm.expect(jsonData.data).to.have.property('username');",
+                  "    pm.expect(jsonData.data).to.have.property('email');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin-api/system/user/get?id={{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin-api", "system", "user", "get"],
+              "query": [
+                { "key": "id", "value": "{{userId}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "新增用户",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('响应code为0', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.code).to.eql(0);",
+                  "});",
+                  "pm.test('响应包含新增用户ID', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('createdUserId', jsonData.data);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser_{{timestamp}}\",\n  \"password\": \"Test@123456\",\n  \"nickname\": \"测试用户\",\n  \"email\": \"testuser@mitedtsm.com\",\n  \"mobile\": \"13800138000\",\n  \"deptId\": 1,\n  \"roleIds\": [2],\n  \"status\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin-api/system/user/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin-api", "system", "user", "create"]
+            }
+          }
+        },
+        {
+          "name": "更新用户信息",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('响应code为0', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.code).to.eql(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{userId}},\n  \"nickname\": \"更新后的昵称\",\n  \"email\": \"updated@mitedtsm.com\",\n  \"mobile\": \"13900139000\",\n  \"status\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin-api/system/user/update",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin-api", "system", "user", "update"]
+            }
+          }
+        },
+        {
+          "name": "删除用户",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('响应code为0', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.code).to.eql(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin-api/system/user/delete?id={{createdUserId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin-api", "system", "user", "delete"],
+              "query": [
+                { "key": "id", "value": "{{createdUserId}}" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03-角色权限-System-Role",
+      "description": "角色管理模块：CRUD、菜单权限分配",
+      "item": [
+        {
+          "name": "查询角色列表",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('响应为数组', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin-api/system/role/list",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin-api", "system", "role", "list"]
+            }
+          }
+        },
+        {
+          "name": "新增角色",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('响应code为0', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.code).to.eql(0);",
+                  "    pm.environment.set('createdRoleId', jsonData.data);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"测试角色\",\n  \"code\": \"TEST_ROLE_{{timestamp}}\",\n  \"description\": \"自动化测试角色\",\n  \"sort\": 10,\n  \"status\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin-api/system/role/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin-api", "system", "role", "create"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04-组织架构-System-Dept",
+      "description": "组织架构模块：部门树、岗位管理",
+      "item": [
+        {
+          "name": "查询部门树",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('返回部门树结构', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.not.be.null;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin-api/system/dept/list",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin-api", "system", "dept", "list"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05-CRM客户管理",
+      "description": "CRM客户管理模块：客户CRUD、跟进记录",
+      "item": [
+        {
+          "name": "分页查询客户",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('返回分页数据', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('records');",
+                  "    pm.expect(jsonData.data).to.have.property('total');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin-api/crm/customer/page?pageNo=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin-api", "crm", "customer", "page"],
+              "query": [
+                { "key": "pageNo", "value": "1" },
+                { "key": "pageSize", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "新增客户",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('客户创建成功', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.code).to.eql(0);",
+                  "    pm.environment.set('customerId', jsonData.data);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyName\": \"测试科技有限公司\",\n  \"industry\": \"信息技术\",\n  \"contactPerson\": \"王经理\",\n  \"contactPhone\": \"13900139001\",\n  \"contactEmail\": \"wang@test-tech.com\",\n  \"address\": \"北京市海淀区科技园\",\n  \"source\": \"WEBSITE\",\n  \"level\": \"A\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin-api/crm/customer/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin-api", "crm", "customer", "create"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06-ERP进销存",
+      "description": "ERP模块：产品、采购、销售、库存、财务",
+      "item": [
+        {
+          "name": "分页查询产品",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('返回分页数据', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('records');",
+                  "    pm.expect(jsonData.data).to.have.property('total');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin-api/erp/product/page?pageNo=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin-api", "erp", "product", "page"],
+              "query": [
+                { "key": "pageNo", "value": "1" },
+                { "key": "pageSize", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "分页查询采购订单",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('返回分页数据', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('records');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin-api/erp/purchase-order/page?pageNo=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin-api", "erp", "purchase-order", "page"],
+              "query": [
+                { "key": "pageNo", "value": "1" },
+                { "key": "pageSize", "value": "10" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "07-BPM工作流",
+      "description": "BPM模块：流程定义、流程实例、任务审批",
+      "item": [
+        {
+          "name": "查询流程定义",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin-api/bpm/definition/page?pageNo=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin-api", "bpm", "definition", "page"],
+              "query": [
+                { "key": "pageNo", "value": "1" },
+                { "key": "pageSize", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "查询待办任务",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('返回待办列表', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.not.be.null;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin-api/bpm/task/todo-page?pageNo=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin-api", "bpm", "task", "todo-page"],
+              "query": [
+                { "key": "pageNo", "value": "1" },
+                { "key": "pageSize", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "发起OA请假流程",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('流程发起成功', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.code).to.eql(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"leaveType\": \"ANNUAL\",\n  \"startTime\": \"2026-03-25 09:00:00\",\n  \"endTime\": \"2026-03-26 18:00:00\",\n  \"reason\": \"年假休息\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin-api/bpm/oa/leave/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin-api", "bpm", "oa", "leave", "create"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "08-Mall商城",
+      "description": "商城模块：商品、订单、营销活动",
+      "item": [
+        {
+          "name": "分页查询商城商品",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('返回分页数据', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('records');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin-api/mall/product/page?pageNo=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin-api", "mall", "product", "page"],
+              "query": [
+                { "key": "pageNo", "value": "1" },
+                { "key": "pageSize", "value": "10" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "09-Pay支付",
+      "description": "支付模块：支付订单、退款、渠道管理",
+      "item": [
+        {
+          "name": "分页查询支付订单",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('返回分页数据', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('records');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin-api/pay/order/page?pageNo=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin-api", "pay", "order", "page"],
+              "query": [
+                { "key": "pageNo", "value": "1" },
+                { "key": "pageSize", "value": "10" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "10-Infra基础设施",
+      "description": "基础设施模块：文件管理、代码生成、任务调度",
+      "item": [
+        {
+          "name": "分页查询文件",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('返回分页数据', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('records');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin-api/infra/file/page?pageNo=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin-api", "infra", "file", "page"],
+              "query": [
+                { "key": "pageNo", "value": "1" },
+                { "key": "pageSize", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "查询定时任务",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('状态码为200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin-api/infra/job/page?pageNo=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin-api", "infra", "job", "page"],
+              "query": [
+                { "key": "pageNo", "value": "1" },
+                { "key": "pageSize", "value": "10" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "Admin@123456",
+      "type": "string"
+    },
+    {
+      "key": "tenantId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "timestamp",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
