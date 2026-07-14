@@ -201,4 +201,20 @@ public interface ErrorCodeConstants {
     ErrorCode INVOICE_PROVIDER_RESULT_INVALID = new ErrorCode(1_020_016_014,
             "开票适配器返回的幂等标识无效，操作已回滚");
 
+    // ========== 回款退款/冲销 1_020_017_000 ==========
+    ErrorCode RECEIVABLE_REFUND_NOT_EXISTS = new ErrorCode(1_020_017_000, "退款/冲销记录不存在");
+    ErrorCode RECEIVABLE_REFUND_NO_EXISTS = new ErrorCode(1_020_017_001, "退款/冲销编号已存在，请重试");
+    ErrorCode RECEIVABLE_REFUND_SOURCE_NOT_APPROVED = new ErrorCode(1_020_017_002,
+            "只有审批通过的回款可以创建退款/冲销");
+    ErrorCode RECEIVABLE_REFUND_AMOUNT_EXCEEDS = new ErrorCode(1_020_017_003,
+            "退款/冲销金额超出原回款剩余可退金额，目前可退：{} 元");
+    ErrorCode RECEIVABLE_REFUND_EDIT_STATUS_INVALID = new ErrorCode(1_020_017_004,
+            "当前退款/冲销状态不允许编辑");
+    ErrorCode RECEIVABLE_REFUND_DELETE_STATUS_INVALID = new ErrorCode(1_020_017_005,
+            "只有从未提交的新草稿可以删除");
+    ErrorCode RECEIVABLE_REFUND_SUBMIT_STATUS_INVALID = new ErrorCode(1_020_017_006,
+            "只有草稿退款/冲销可以提交审批");
+    ErrorCode RECEIVABLE_REFUND_CONCURRENT_CHANGE = new ErrorCode(1_020_017_007,
+            "退款/冲销状态已变化，请刷新后重试");
+
 }

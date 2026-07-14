@@ -36,5 +36,6 @@
 | CRM-FEATURE-030 | 客户 360 统一摘要、合同映射销售单据、财务净额、附件和发票关系视图 | US-CUS-003、GAP-CUS-003、ADR-002 | 已实现 | `docs/20-CRM-Delivery/testing/customer-360-read-model/` |
 | CRM-FEATURE-031 | BPM 租户安全查询、模型治理及 CRM 流程审批统一待办 | GAP-APR-001/003、GAP-IAM-003 | 已实现 | `docs/20-CRM-Delivery/testing/bpm-tenant-unified-backlog/` |
 | CRM-FEATURE-032 | 六类 CRM 统计指标 YAML 血缘目录、域权限隔离和显式实时刷新 | US-RPT-010、GAP-RPT-001～003 | 已实现 | `docs/20-CRM-Delivery/testing/statistics-lineage-refresh/` |
+| CRM-FEATURE-033 | CRM 回款退款/业务冲销草稿、审批、金额守恒、不可变轨迹和对象权限闭环 | GAP-FIN-001/002、ADR-007/008 | 子闭环完成 | `docs/20-CRM-Delivery/testing/crm-receivable-refund/` |
 
-说明：`CRM-FEATURE-005` 只关闭首联系人、重复/并发保护和失败回滚子项；任务、通话、短信等活动迁移规则仍待后续阶段完成。`CRM-FEATURE-007` 是历史二态基线，现已由 `CRM-FEATURE-029` 升级为四态模型。`CRM-FEATURE-015/016/017` 已建立目标事实源、完成度展示和三层目标维护入口；目标逐级分解合计规则仍待业务签署。`CRM-FEATURE-028` 不宣称已接入外部电子签平台，也不包含正式补充协议的新审批命令。`CRM-FEATURE-030` 不伪造尚未实现的 OA 任务、CRM 退款和费用真源。
+说明：`CRM-FEATURE-005` 只关闭首联系人、重复/并发保护和失败回滚子项；任务、通话、短信等活动迁移规则仍待后续阶段完成。`CRM-FEATURE-007` 是历史二态基线，现已由 `CRM-FEATURE-029` 升级为四态模型。`CRM-FEATURE-015/016/017` 已建立目标事实源、完成度展示和三层目标维护入口；目标逐级分解合计规则仍待业务签署。`CRM-FEATURE-028` 不宣称已接入外部电子签平台，也不包含正式补充协议的新审批命令。`CRM-FEATURE-030` 尚未聚合新建的退款真源，也不伪造尚未实现的 OA 任务和费用真源。`CRM-FEATURE-033` 的真实 BPM 提交验收等待审批流程定义部署。

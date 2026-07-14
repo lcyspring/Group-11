@@ -534,7 +534,8 @@ apply_mysql_compatibility_migrations() {
         require_file "$migration_file"
         printf 'Applying idempotent MySQL compatibility migration: %s\n' "$(basename -- "$migration_file")"
         podman_cmd exec -i "$MYSQL_CONTAINER" \
-            mysql "-u${MYSQL_USER}" "-p${MYSQL_ROOT_PASSWORD}" "--database=${MYSQL_DATABASE}" \
+            mysql "--default-character-set=${MYSQL_CHARACTER_SET}" \
+            "-u${MYSQL_USER}" "-p${MYSQL_ROOT_PASSWORD}" "--database=${MYSQL_DATABASE}" \
             < "$migration_file"
     done < "$MYSQL_COMPATIBILITY_MIGRATION_MANIFEST"
 }
@@ -549,7 +550,8 @@ apply_runtime_file_storage() {
         return 2
     }
     printf 'Selecting explicit runtime file client %s (%s storage).\n' "$FILE_CLIENT_ID" "$FILE_STORAGE_MODE"
-    podman_cmd exec "$MYSQL_CONTAINER" mysql "-u${MYSQL_USER}" "-p${MYSQL_ROOT_PASSWORD}" \
+    podman_cmd exec "$MYSQL_CONTAINER" mysql "--default-character-set=${MYSQL_CHARACTER_SET}" \
+        "-u${MYSQL_USER}" "-p${MYSQL_ROOT_PASSWORD}" \
         "--database=${MYSQL_DATABASE}" -e \
         "UPDATE infra_file_config SET master=(id=${FILE_CLIENT_ID}), config=CASE WHEN id=${FILE_CLIENT_ID} THEN JSON_SET(config, '$.domain', '${FILE_PUBLIC_BASE_URL}') ELSE config END WHERE deleted=b'0';"
 }
@@ -846,7 +848,8 @@ podman_cmd run -d --replace --name "$TDENGINE_CONTAINER" --pod "$POD_NAME" --pul
 wait_for 'MySQL' "$MYSQL_ATTEMPTS" podman_cmd exec "$MYSQL_CONTAINER" mysqladmin ping -h "$MYSQL_HEALTH_HOST" --silent &
 mysql_ready_pid=$!
 wait_for 'MySQL schema initialization' "$MYSQL_SCHEMA_ATTEMPTS" podman_cmd exec "$MYSQL_CONTAINER" \
-    mysql "-u${MYSQL_USER}" "-p${MYSQL_ROOT_PASSWORD}" "--database=${MYSQL_DATABASE}" -Nse "$MYSQL_SCHEMA_QUERY" &
+    mysql "--default-character-set=${MYSQL_CHARACTER_SET}" \
+    "-u${MYSQL_USER}" "-p${MYSQL_ROOT_PASSWORD}" "--database=${MYSQL_DATABASE}" -Nse "$MYSQL_SCHEMA_QUERY" &
 mysql_schema_ready_pid=$!
 wait_for 'Redis' "$REDIS_ATTEMPTS" podman_cmd exec "$REDIS_CONTAINER" redis-cli ping &
 redis_ready_pid=$!

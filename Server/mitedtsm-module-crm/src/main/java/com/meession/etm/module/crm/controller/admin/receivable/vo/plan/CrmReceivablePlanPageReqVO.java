@@ -38,7 +38,7 @@ public class CrmReceivablePlanPageReqVO extends PageParam {
 
     @Schema(description = "场景类型", example = "1")
     @InEnum(CrmSceneTypeEnum.class)
-    private Integer sceneType; // 场景类型，为 null 时则表示全部
+    private Integer sceneType; // 普通用户为 null 时默认本人负责，CRM 管理员为 null 时表示全部
 
     @Schema(description = "提醒类型", example = "1")
     private Integer remindType; // 提醒类型，为 null 时则表示全部

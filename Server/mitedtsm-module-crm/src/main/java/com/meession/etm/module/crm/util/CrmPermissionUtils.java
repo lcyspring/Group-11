@@ -49,6 +49,13 @@ public class CrmPermissionUtils {
                                                                                     Long userId, Integer sceneType) {
         MybatisPlusJoinProperties mybatisPlusJoinProperties = SpringUtil.getBean(MybatisPlusJoinProperties.class);
         final String ownerUserIdField = mybatisPlusJoinProperties.getTableAlias() + ".owner_user_id";
+        // 缺省场景不能等价于“无数据权限条件”。CRM 管理员保留全量视图，普通用户默认仅看本人负责。
+        if (sceneType == null) {
+            sceneType = resolveDefaultSceneType(false, isCrmAdmin());
+            if (sceneType == null) {
+                return;
+            }
+        }
         // 场景一：我负责的数据
         if (CrmSceneTypeEnum.isOwner(sceneType)) {
             query.eq(ownerUserIdField, userId);
@@ -74,6 +81,13 @@ public class CrmPermissionUtils {
                 query.in(ownerUserIdField, convertSet(subordinateUsers, AdminUserRespDTO::getId));
             }
         }
+    }
+
+    static Integer resolveDefaultSceneType(boolean sceneProvided, boolean crmAdmin) {
+        if (sceneProvided || crmAdmin) {
+            return null;
+        }
+        return CrmSceneTypeEnum.OWNER.getType();
     }
 
 }

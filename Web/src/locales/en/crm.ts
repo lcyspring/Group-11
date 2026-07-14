@@ -680,6 +680,27 @@ export default {
     voidReasonRequired: 'Void reason is required',
     exportFileName: 'CRM Invoices'
   },
+  refund: {
+    title: 'Refund / Reversal Management', detail: 'Refund / Reversal Details', no: 'Business No.',
+    sourceReceivable: 'Original Receivable', sourceAmount: 'Original Amount',
+    reservedAmount: 'Processing and Approved', remainingAmount: 'Remaining Refundable',
+    customer: 'Customer', contract: 'Contract', owner: 'Owner', creator: 'Creator', type: 'Business Type',
+    typeCustomerRefund: 'Customer Refund', typeBusinessReversal: 'Business Reversal',
+    amount: 'Refund / Reversal Amount', refundTime: 'Business Date', reason: 'Business Reason', remark: 'Remark',
+    auditStatus: 'Approval Status', statusDraft: 'Draft', statusProcessing: 'Processing',
+    statusApproved: 'Approved', statusRejected: 'Rejected', statusCanceled: 'Canceled', createTime: 'Created At',
+    createDraft: 'Create Refund / Reversal Draft', updateDraft: 'Revise Refund / Reversal', revise: 'Revise',
+    submit: 'Submit for Approval', viewApproval: 'View Approval',
+    submitConfirm: 'Submit refund / reversal {no} for approval?',
+    submitSuccess: 'Refund / reversal submitted for approval',
+    boundaryHint: 'This is a CRM business reversal record; it does not represent a bank refund, accounting entry, or completed Pay/ERP operation.',
+    sourceRequired: 'Original receivable is required', typeRequired: 'Business type is required',
+    amountRequired: 'Amount is required', refundTimeRequired: 'Business date is required',
+    reasonRequired: 'Business reason is required', reasonLength: 'Business reason must contain 10 to 500 characters',
+    actionRecords: 'Immutable Action Trail', noActionRecords: 'No action records', systemCallback: 'Workflow Callback',
+    actionCreate: 'Create Draft', actionUpdate: 'Update / Revise', actionSubmit: 'Submit',
+    actionApprove: 'Approve', actionReject: 'Reject', actionCancel: 'Cancel', actionDelete: 'Delete New Draft'
+  },
   receivable: {
     title: 'Receivable Management',
     no: 'Receivable No',

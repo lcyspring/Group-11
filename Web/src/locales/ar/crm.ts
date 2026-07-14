@@ -677,6 +677,26 @@ export default {
     voidReasonRequired: 'سبب الإلغاء مطلوب',
     exportFileName: 'فواتير CRM'
   },
+  refund: {
+    title: 'إدارة الاسترداد / العكس', detail: 'تفاصيل الاسترداد / العكس', no: 'رقم العملية',
+    sourceReceivable: 'التحصيل الأصلي', sourceAmount: 'المبلغ الأصلي',
+    reservedAmount: 'قيد الموافقة والمعتمد', remainingAmount: 'المبلغ المتبقي القابل للاسترداد',
+    customer: 'العميل', contract: 'العقد', owner: 'المسؤول', creator: 'المنشئ', type: 'نوع العملية',
+    typeCustomerRefund: 'استرداد للعميل', typeBusinessReversal: 'عكس تجاري',
+    amount: 'مبلغ الاسترداد / العكس', refundTime: 'تاريخ العملية', reason: 'سبب العملية', remark: 'ملاحظة',
+    auditStatus: 'حالة الموافقة', statusDraft: 'مسودة', statusProcessing: 'قيد الموافقة',
+    statusApproved: 'معتمد', statusRejected: 'مرفوض', statusCanceled: 'ملغى', createTime: 'وقت الإنشاء',
+    createDraft: 'إنشاء مسودة استرداد / عكس', updateDraft: 'مراجعة الاسترداد / العكس', revise: 'مراجعة',
+    submit: 'إرسال للموافقة', viewApproval: 'عرض الموافقة',
+    submitConfirm: 'هل تريد إرسال العملية {no} للموافقة؟', submitSuccess: 'تم إرسال العملية للموافقة',
+    boundaryHint: 'هذا سجل عكس تجاري في CRM ولا يعني إتمام استرداد بنكي أو قيد محاسبي أو عملية Pay/ERP.',
+    sourceRequired: 'التحصيل الأصلي مطلوب', typeRequired: 'نوع العملية مطلوب', amountRequired: 'المبلغ مطلوب',
+    refundTimeRequired: 'تاريخ العملية مطلوب', reasonRequired: 'سبب العملية مطلوب',
+    reasonLength: 'يجب أن يكون السبب بين 10 و500 حرف', actionRecords: 'سجل الإجراءات غير القابل للتغيير',
+    noActionRecords: 'لا توجد إجراءات', systemCallback: 'استدعاء سير العمل', actionCreate: 'إنشاء مسودة',
+    actionUpdate: 'تعديل / مراجعة', actionSubmit: 'إرسال', actionApprove: 'موافقة',
+    actionReject: 'رفض', actionCancel: 'إلغاء', actionDelete: 'حذف مسودة جديدة'
+  },
   receivable: {
     title: 'إدارة المستحقات',
     no: 'رقم المستحق',

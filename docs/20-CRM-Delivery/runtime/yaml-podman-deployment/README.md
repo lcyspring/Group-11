@@ -28,12 +28,16 @@
 
 ## 模式
 
-- 启动：`check`、`full`、`fast`、`no-build`、`frontends-only`、`rebuild-web`、`rebuild-mall`；
+- 启动：`check`、`full`、`fast`、`no-build`、`frontends-only`、`rebuild-server`、`rebuild-web`、`rebuild-mall`；
 - 停止：`check`、`stop`；
 - 镜像归档：`check`、`save`、`pull-save`；
 - 删除卷：停止为 `stop` 且 `remove_volumes_on_down: true` 时才执行。
 
-## 安全边界
+## 数据库字符集边界
 
-本次只用提交模板执行 `check`，没有构建、拉取/加载镜像、创建/启动/停止 Pod
-或删除卷。测试前后 Pod 快照相同。
+MySQL 表字符集和客户端连接字符集必须同时正确。首次初始化固定使用 utf8mb4，运行期兼容迁移、
+schema 探针和文件存储配置更新使用 YAML 的 `mysql.character_set`，防止中文 SQL 被按 latin1
+双重编码。存量可见数据由 manifest 中的幂等修复迁移按稳定键纠正。
+
+`check` 模式不改变 Pod、卷和数据；`full` 及热替换模式会按各自定义构建或替换容器。删除卷仍只在
+停止为 `stop` 且 `remove_volumes_on_down: true` 时发生。

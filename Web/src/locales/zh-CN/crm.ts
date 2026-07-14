@@ -674,6 +674,25 @@ export default {
     voidReasonRequired: '作废原因不能为空',
     exportFileName: 'CRM发票'
   },
+  refund: {
+    title: '退款/冲销管理', detail: '退款/冲销详情', no: '业务编号', sourceReceivable: '原回款',
+    sourceAmount: '原回款金额', reservedAmount: '审批中及已通过金额', remainingAmount: '剩余可退金额',
+    customer: '客户', contract: '合同', owner: '负责人', creator: '创建人', type: '业务类型',
+    typeCustomerRefund: '客户退款', typeBusinessReversal: '业务冲销', amount: '退款/冲销金额',
+    refundTime: '业务日期', reason: '业务原因', remark: '备注', auditStatus: '审批状态',
+    statusDraft: '草稿', statusProcessing: '审批中', statusApproved: '审批通过',
+    statusRejected: '审批驳回', statusCanceled: '已取消', createTime: '创建时间',
+    createDraft: '创建退款/冲销草稿', updateDraft: '修订退款/冲销', revise: '修订',
+    submit: '提交审批', viewApproval: '查看审批', submitConfirm: '确定提交编号为【{no}】的退款/冲销审批吗？',
+    submitSuccess: '退款/冲销已提交审批',
+    boundaryHint: '这里只记录 CRM 业务反向确认，不代表银行退款、会计入账或 Pay/ERP 已完成。',
+    sourceRequired: '原回款不能为空', typeRequired: '业务类型不能为空', amountRequired: '退款/冲销金额不能为空',
+    refundTimeRequired: '业务日期不能为空', reasonRequired: '业务原因不能为空',
+    reasonLength: '业务原因长度必须为 10 到 500 个字符', actionRecords: '不可变动作轨迹',
+    noActionRecords: '暂无动作轨迹', systemCallback: '流程回调', actionCreate: '创建草稿',
+    actionUpdate: '修改/修订', actionSubmit: '提交审批', actionApprove: '审批通过',
+    actionReject: '审批驳回', actionCancel: '审批取消', actionDelete: '删除新草稿'
+  },
   receivable: {
     title: '回款管理',
     no: '回款编号',
