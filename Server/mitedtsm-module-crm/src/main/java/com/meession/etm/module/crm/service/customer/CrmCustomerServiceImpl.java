@@ -654,4 +654,113 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
         return SpringUtil.getBean(getClass());
     }
 
+    @Override
+    public CrmCustomerDuplicateCheckRespVO checkDuplicate(CrmCustomerDuplicateCheckReqVO reqVO) {
+        List<CrmCustomerDO> customers = customerMapper.selectDuplicateCustomers(
+                reqVO.getName(), reqVO.getMobile(), reqVO.getTelephone(),
+                reqVO.getEmail(), reqVO.getQq(), reqVO.getWechat(), reqVO.getStrictMatch());
+
+        if (CollUtil.isEmpty(customers)) {
+            return CrmCustomerDuplicateCheckRespVO.builder()
+                    .hasDuplicate(false)
+                    .duplicates(Collections.emptyList())
+                    .build();
+        }
+
+        List<CrmCustomerDuplicateCheckRespVO.DuplicateCustomer> duplicates = new ArrayList<>();
+        for (CrmCustomerDO customer : customers) {
+            DuplicateCustomerMatchResult matchResult = calculateMatchScore(customer, reqVO);
+            if (matchResult.getMatchScore() > 0) {
+                duplicates.add(CrmCustomerDuplicateCheckRespVO.DuplicateCustomer.builder()
+                        .id(customer.getId())
+                        .name(customer.getName())
+                        .mobile(customer.getMobile())
+                        .telephone(customer.getTelephone())
+                        .email(customer.getEmail())
+                        .qq(customer.getQq())
+                        .wechat(customer.getWechat())
+                        .matchScore(matchResult.getMatchScore())
+                        .matchedFields(matchResult.getMatchedFields())
+                        .build());
+            }
+        }
+
+        duplicates.sort((a, b) -> Integer.compare(b.getMatchScore(), a.getMatchScore()));
+
+        return CrmCustomerDuplicateCheckRespVO.builder()
+                .hasDuplicate(!duplicates.isEmpty())
+                .duplicates(duplicates)
+                .build();
+    }
+
+    private DuplicateCustomerMatchResult calculateMatchScore(CrmCustomerDO customer, CrmCustomerDuplicateCheckReqVO reqVO) {
+        int score = 0;
+        List<String> matchedFields = new ArrayList<>();
+
+        if (StrUtil.isNotEmpty(reqVO.getName()) && StrUtil.isNotEmpty(customer.getName())) {
+            if (customer.getName().equalsIgnoreCase(reqVO.getName())) {
+                score += 40;
+                matchedFields.add("name");
+            } else if (customer.getName().toLowerCase().contains(reqVO.getName().toLowerCase())) {
+                score += 20;
+                matchedFields.add("name");
+            }
+        }
+
+        if (StrUtil.isNotEmpty(reqVO.getMobile()) && StrUtil.isNotEmpty(customer.getMobile())) {
+            if (customer.getMobile().equals(reqVO.getMobile())) {
+                score += 30;
+                matchedFields.add("mobile");
+            }
+        }
+
+        if (StrUtil.isNotEmpty(reqVO.getTelephone()) && StrUtil.isNotEmpty(customer.getTelephone())) {
+            if (customer.getTelephone().equals(reqVO.getTelephone())) {
+                score += 30;
+                matchedFields.add("telephone");
+            }
+        }
+
+        if (StrUtil.isNotEmpty(reqVO.getEmail()) && StrUtil.isNotEmpty(customer.getEmail())) {
+            if (customer.getEmail().equalsIgnoreCase(reqVO.getEmail())) {
+                score += 25;
+                matchedFields.add("email");
+            }
+        }
+
+        if (StrUtil.isNotEmpty(reqVO.getQq()) && StrUtil.isNotEmpty(customer.getQq())) {
+            if (customer.getQq().equals(reqVO.getQq())) {
+                score += 20;
+                matchedFields.add("qq");
+            }
+        }
+
+        if (StrUtil.isNotEmpty(reqVO.getWechat()) && StrUtil.isNotEmpty(customer.getWechat())) {
+            if (customer.getWechat().equalsIgnoreCase(reqVO.getWechat())) {
+                score += 20;
+                matchedFields.add("wechat");
+            }
+        }
+
+        return new DuplicateCustomerMatchResult(score, matchedFields);
+    }
+
+    private static class DuplicateCustomerMatchResult {
+        private final int matchScore;
+        private final List<String> matchedFields;
+
+        public DuplicateCustomerMatchResult(int matchScore, List<String> matchedFields) {
+            this.matchScore = matchScore;
+            this.matchedFields = matchedFields;
+        }
+
+        public int getMatchScore() {
+            return matchScore;
+        }
+
+        public List<String> getMatchedFields() {
+            return matchedFields;
+        }
+    }
+
 }

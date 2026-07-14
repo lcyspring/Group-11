@@ -195,4 +195,12 @@ public interface CrmCustomerService {
      */
     int autoPutCustomerPool();
 
+    /**
+     * 客户查重
+     *
+     * @param reqVO 查重请求
+     * @return 查重结果
+     */
+    CrmCustomerDuplicateCheckRespVO checkDuplicate(CrmCustomerDuplicateCheckReqVO reqVO);
+
 }

@@ -313,4 +313,11 @@ public class CrmCustomerController {
         return success(true);
     }
 
+    @PostMapping("/duplicate-check")
+    @Operation(summary = "客户查重")
+    @PreAuthorize("@ss.hasPermission('crm:customer:query')")
+    public CommonResult<CrmCustomerDuplicateCheckRespVO> checkDuplicate(@Valid @RequestBody CrmCustomerDuplicateCheckReqVO reqVO) {
+        return success(customerService.checkDuplicate(reqVO));
+    }
+
 }

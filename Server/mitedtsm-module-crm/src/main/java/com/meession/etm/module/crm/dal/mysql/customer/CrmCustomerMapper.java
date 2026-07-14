@@ -21,6 +21,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -231,6 +232,64 @@ public interface CrmCustomerMapper extends BaseMapperX<CrmCustomerDO> {
                 .set(CrmCustomerDO::getLastReceiveTime, lastReceiveTime)
                 .set(CrmCustomerDO::getReceiveFreezeEndTime, receiveFreezeEndTime)
                 .set(CrmCustomerDO::getPoolStatus, 0));
+    }
+
+    default List<CrmCustomerDO> selectDuplicateCustomers(String name, String mobile, String telephone,
+                                                          String email, String qq, String wechat, Boolean strictMatch) {
+        LambdaQueryWrapper<CrmCustomerDO> query = new LambdaQueryWrapper<>();
+
+        if (strictMatch != null && strictMatch) {
+            if (ObjUtil.isNotEmpty(name)) {
+                query.eq(CrmCustomerDO::getName, name);
+            }
+            if (ObjUtil.isNotEmpty(mobile)) {
+                query.eq(CrmCustomerDO::getMobile, mobile);
+            }
+            if (ObjUtil.isNotEmpty(telephone)) {
+                query.eq(CrmCustomerDO::getTelephone, telephone);
+            }
+            if (ObjUtil.isNotEmpty(email)) {
+                query.eq(CrmCustomerDO::getEmail, email);
+            }
+            if (ObjUtil.isNotEmpty(qq)) {
+                query.eq(CrmCustomerDO::getQq, qq);
+            }
+            if (ObjUtil.isNotEmpty(wechat)) {
+                query.eq(CrmCustomerDO::getWechat, wechat);
+            }
+        } else {
+            boolean hasCondition = false;
+            if (ObjUtil.isNotEmpty(name)) {
+                query.like(CrmCustomerDO::getName, name);
+                hasCondition = true;
+            }
+            if (ObjUtil.isNotEmpty(mobile)) {
+                query.eq(CrmCustomerDO::getMobile, mobile);
+                hasCondition = true;
+            }
+            if (ObjUtil.isNotEmpty(telephone)) {
+                query.eq(CrmCustomerDO::getTelephone, telephone);
+                hasCondition = true;
+            }
+            if (ObjUtil.isNotEmpty(email)) {
+                query.eq(CrmCustomerDO::getEmail, email);
+                hasCondition = true;
+            }
+            if (ObjUtil.isNotEmpty(qq)) {
+                query.eq(CrmCustomerDO::getQq, qq);
+                hasCondition = true;
+            }
+            if (ObjUtil.isNotEmpty(wechat)) {
+                query.eq(CrmCustomerDO::getWechat, wechat);
+                hasCondition = true;
+            }
+            if (!hasCondition) {
+                return Collections.emptyList();
+            }
+        }
+
+        query.last("LIMIT 20");
+        return selectList(query);
     }
 
 }
