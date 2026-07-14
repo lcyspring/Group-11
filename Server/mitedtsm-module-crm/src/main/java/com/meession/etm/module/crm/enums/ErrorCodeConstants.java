@@ -30,6 +30,16 @@ public interface ErrorCodeConstants {
             "合同产品行重复，请刷新后重试");
     ErrorCode CONTRACT_SIGN_CONTACT_CUSTOMER_MISMATCH = new ErrorCode(1_020_000_012,
             "签约联系人不属于合同客户");
+    ErrorCode CONTRACT_SIGN_REQUIRES_APPROVED = new ErrorCode(1_020_000_013, "只有审批通过的合同可以签署");
+    ErrorCode CONTRACT_SIGN_ALREADY_EXISTS = new ErrorCode(1_020_000_014, "合同已经存在签署记录，不能覆盖");
+    ErrorCode CONTRACT_SIGN_NOT_EXISTS = new ErrorCode(1_020_000_015, "合同签署记录不存在");
+    ErrorCode CONTRACT_SIGN_STATUS_INVALID = new ErrorCode(1_020_000_016, "当前合同签署状态不允许该操作");
+    ErrorCode CONTRACT_ATTACHMENT_NOT_EXISTS = new ErrorCode(1_020_000_017, "合同附件不存在");
+    ErrorCode CONTRACT_ATTACHMENT_NOT_BELONGS = new ErrorCode(1_020_000_018, "附件不属于当前合同");
+    ErrorCode CONTRACT_ATTACHMENT_SIGNED_COPY_REQUIRED = new ErrorCode(1_020_000_019, "签署必须选择签署副本附件");
+    ErrorCode CONTRACT_ATTACHMENT_IMMUTABLE = new ErrorCode(1_020_000_020, "正式合同附件已锁定，不能删除");
+    ErrorCode CONTRACT_SIGN_PROVIDER_INVALID = new ErrorCode(1_020_000_021, "合同签署适配器返回结果无效");
+    ErrorCode CONTRACT_SIGN_METHOD_UNSUPPORTED = new ErrorCode(1_020_000_022, "当前签署适配器不支持所选签署方式");
 
     // ========== 线索管理 1-020-001-000 ==========
     ErrorCode CLUE_NOT_EXISTS = new ErrorCode(1_020_001_000, "线索不存在");

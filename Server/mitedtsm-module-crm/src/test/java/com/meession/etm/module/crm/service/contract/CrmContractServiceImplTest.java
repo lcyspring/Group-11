@@ -45,6 +45,10 @@ import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTRACT_DELE
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTRACT_PRODUCT_ROW_NOT_BELONGS;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTRACT_SIGN_CONTACT_CUSTOMER_MISMATCH;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTRACT_UPDATE_FAIL_NOT_EDITABLE;
+import static com.meession.etm.module.crm.enums.contract.CrmContractLifecycleEnums.ACTION_CANCEL;
+import static com.meession.etm.module.crm.enums.contract.CrmContractLifecycleEnums.ACTION_CREATE;
+import static com.meession.etm.module.crm.enums.contract.CrmContractLifecycleEnums.ACTION_SUBMIT;
+import static com.meession.etm.module.crm.enums.contract.CrmContractLifecycleEnums.ACTION_UPDATE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -80,6 +84,8 @@ class CrmContractServiceImplTest {
     private AdminUserApi adminUserApi;
     @Mock
     private BpmProcessInstanceApi bpmProcessInstanceApi;
+    @Mock
+    private CrmContractLifecycleService contractLifecycleService;
 
     @InjectMocks
     private CrmContractServiceImpl service;
@@ -150,6 +156,7 @@ class CrmContractServiceImplTest {
         assertNull(savedProduct.getId()); // 商机产品行 444 不能复用为合同产品行编号
         assertEquals("商机成交产品", savedProduct.getProductNameSnapshot());
         assertEquals(new BigDecimal("88.00"), savedProduct.getProductPrice());
+        verify(contractLifecycleService).recordChange(99L, ACTION_CREATE, 1, 30L, "创建合同");
     }
 
     @Test
@@ -215,6 +222,7 @@ class CrmContractServiceImplTest {
         assertEquals(new BigDecimal("88.00"), saved.getProductPrice());
         assertEquals(new BigDecimal("210.00"), saved.getTotalPrice());
         verify(productService, never()).validProductList(any());
+        verify(contractLifecycleService).recordChange(7L, ACTION_UPDATE, 1, null, "修改合同");
     }
 
     @Test
@@ -314,6 +322,7 @@ class CrmContractServiceImplTest {
         verify(contractMapper).updateById(captor.capture());
         assertEquals("process-2", captor.getValue().getProcessInstanceId());
         assertEquals(CrmAuditStatusEnum.PROCESS.getStatus(), captor.getValue().getAuditStatus());
+        verify(contractLifecycleService).recordChange(7L, ACTION_SUBMIT, 0, 1L, "提交合同审批");
         CrmPermission permission = CrmContractServiceImpl.class
                 .getMethod("submitContract", Long.class, Long.class)
                 .getAnnotation(CrmPermission.class);
@@ -332,6 +341,7 @@ class CrmContractServiceImplTest {
         service.updateContractAuditStatus(7L, "process-2", BpmProcessInstanceStatusEnum.CANCEL.getStatus());
 
         verify(contractMapper).updateAuditStatusIfProcessing(7L, "process-2", CrmAuditStatusEnum.CANCEL.getStatus());
+        verify(contractLifecycleService).recordChange(7L, ACTION_CANCEL, 0, null, "合同审批状态变更为 40");
     }
 
     @Test

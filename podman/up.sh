@@ -94,6 +94,9 @@ TDENGINE_PORT="$(yaml_port tdengine.port)"
 TDENGINE_FQDN="$(yaml_require tdengine.fqdn)"
 TDENGINE_INITIALIZATION_ATTEMPTS="$(yaml_positive_integer tdengine.initialization_attempts)"
 SPRING_PROFILE="$(yaml_require server.spring_profile)"
+FILE_STORAGE_MODE="$(yaml_require file.storage_mode)"
+FILE_CLIENT_ID="$(yaml_positive_integer file.client_id)"
+FILE_PUBLIC_BASE_URL="$(yaml_require file.public_base_url)"
 
 HEALTH_INTERVAL="$(yaml_positive_integer health.interval_seconds)"
 HEALTH_HTTP_HOST="$(yaml_require health.http_host)"
@@ -536,6 +539,21 @@ apply_mysql_compatibility_migrations() {
     done < "$MYSQL_COMPATIBILITY_MIGRATION_MANIFEST"
 }
 
+apply_runtime_file_storage() {
+    [[ "$FILE_STORAGE_MODE" == "database" ]] || {
+        printf 'file.storage_mode currently supports only database; got: %s\n' "$FILE_STORAGE_MODE" >&2
+        return 2
+    }
+    [[ "$FILE_PUBLIC_BASE_URL" =~ ^https?://[A-Za-z0-9._:/-]+$ ]] || {
+        printf 'file.public_base_url must be a plain HTTP(S) URL; got: %s\n' "$FILE_PUBLIC_BASE_URL" >&2
+        return 2
+    }
+    printf 'Selecting explicit runtime file client %s (%s storage).\n' "$FILE_CLIENT_ID" "$FILE_STORAGE_MODE"
+    podman_cmd exec "$MYSQL_CONTAINER" mysql "-u${MYSQL_USER}" "-p${MYSQL_ROOT_PASSWORD}" \
+        "--database=${MYSQL_DATABASE}" -e \
+        "UPDATE infra_file_config SET master=(id=${FILE_CLIENT_ID}), config=CASE WHEN id=${FILE_CLIENT_ID} THEN JSON_SET(config, '$.domain', '${FILE_PUBLIC_BASE_URL}') ELSE config END WHERE deleted=b'0';"
+}
+
 verify_web_entry_assets() {
     local web_output="$1"
     local entry_html="${web_output}/index.html"
@@ -649,6 +667,7 @@ rebuild_server_only() {
         return 1
     }
     apply_mysql_compatibility_migrations
+    apply_runtime_file_storage
     if container_is_running "$SERVER_CONTAINER"; then
         podman_cmd stop --time "$STOP_TIMEOUT" "$SERVER_CONTAINER"
     fi
@@ -848,6 +867,7 @@ tdengine_init_pid=$!
 wait "$mysql_ready_pid"
 wait "$mysql_schema_ready_pid"
 apply_mysql_compatibility_migrations
+apply_runtime_file_storage
 wait "$redis_ready_pid"
 wait "$rabbitmq_ready_pid"
 wait "$tdengine_init_pid"

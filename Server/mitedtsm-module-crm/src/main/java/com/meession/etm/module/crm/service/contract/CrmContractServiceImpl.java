@@ -59,6 +59,8 @@ import static com.meession.etm.framework.common.exception.util.ServiceExceptionU
 import static com.meession.etm.framework.common.util.collection.CollectionUtils.*;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.*;
 import static com.meession.etm.module.crm.enums.LogRecordConstants.*;
+import static com.meession.etm.module.crm.enums.contract.CrmContractLifecycleEnums.*;
+import static com.meession.etm.framework.security.core.util.SecurityFrameworkUtils.getLoginUserId;
 import static com.meession.etm.module.crm.util.CrmAuditStatusUtils.convertBpmResultToAuditStatus;
 
 /**
@@ -103,6 +105,8 @@ public class CrmContractServiceImpl implements CrmContractService {
     private AdminUserApi adminUserApi;
     @Resource
     private BpmProcessInstanceApi bpmProcessInstanceApi;
+    @Resource
+    private CrmContractLifecycleService contractLifecycleService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -172,6 +176,8 @@ public class CrmContractServiceImpl implements CrmContractService {
                 .setBizType(CrmBizTypeEnum.CRM_CONTRACT.getType()).setBizId(contract.getId())
                 .setLevel(CrmPermissionLevelEnum.OWNER.getLevel()));
 
+        contractLifecycleService.recordChange(contract.getId(), ACTION_CREATE, 1, contract.getOwnerUserId(), "创建合同");
+
         // 4. 记录操作日志上下文
         LogRecordContext.putVariable("contract", contract);
         return contract.getId();
@@ -230,6 +236,10 @@ public class CrmContractServiceImpl implements CrmContractService {
         contractMapper.updateById(updateObj);
         // 2.2 更新合同关联商品
         updateContractProduct(updateReqVO.getId(), oldContractProducts, contractProducts);
+
+        int newVersion = contractLifecycleService.getCurrentVersion(updateReqVO.getId()) + 1;
+        contractLifecycleService.recordChange(updateReqVO.getId(), ACTION_UPDATE, newVersion,
+                getLoginUserId(), "修改合同");
 
         // 3. 记录操作日志上下文
         updateReqVO.setOwnerUserId(oldContract.getOwnerUserId()); // 避免操作日志出现“删除负责人”的情况
@@ -446,11 +456,15 @@ public class CrmContractServiceImpl implements CrmContractService {
         contractMapper.updateById(new CrmContractDO().setId(id).setProcessInstanceId(processInstanceId)
                 .setAuditStatus(CrmAuditStatusEnum.PROCESS.getStatus()));
 
+        contractLifecycleService.recordChange(id, ACTION_SUBMIT,
+                contractLifecycleService.getCurrentVersion(id), userId, "提交合同审批");
+
         // 3. 记录日志
         LogRecordContext.putVariable("contractName", contract.getName());
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateContractAuditStatus(Long id, String processInstanceId, Integer bpmResult) {
         // 1.1 转换 BPM 流程实例终态并校验合同是否存在
         Integer auditStatus = convertBpmResultToAuditStatus(bpmResult);
@@ -471,7 +485,12 @@ public class CrmContractServiceImpl implements CrmContractService {
         // 2. CAS 更新合同审批结果；并发终态事件只有首个生效
         if (contractMapper.updateAuditStatusIfProcessing(id, processInstanceId, auditStatus) == 0) {
             log.warn("[updateContractAuditStatus][合同({})审批状态已被并发事件更新，忽略目标状态({})]", id, auditStatus);
+            return;
         }
+        int action = ObjUtil.equal(auditStatus, CrmAuditStatusEnum.APPROVE.getStatus()) ? ACTION_APPROVE
+                : ObjUtil.equal(auditStatus, CrmAuditStatusEnum.REJECT.getStatus()) ? ACTION_REJECT : ACTION_CANCEL;
+        contractLifecycleService.recordChange(id, action, contractLifecycleService.getCurrentVersion(id), null,
+                "合同审批状态变更为 " + auditStatus);
     }
 
     // ======================= 查询相关 =======================

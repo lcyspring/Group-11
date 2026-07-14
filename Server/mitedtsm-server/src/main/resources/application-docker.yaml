@@ -229,6 +229,8 @@ mitedtsm:
   crm:
     invoice:
       provider: local-ledger # CRM 台账模式；外部税务平台通过 CrmInvoiceProvider 扩展
+    contract-sign:
+      provider: local-record # 线下签署事实；电子签平台通过 CrmContractSignProvider 扩展
   captcha:
     enable: false # 本地环境，暂时关闭图片验证码，方便登录等接口的测试；
   security:
