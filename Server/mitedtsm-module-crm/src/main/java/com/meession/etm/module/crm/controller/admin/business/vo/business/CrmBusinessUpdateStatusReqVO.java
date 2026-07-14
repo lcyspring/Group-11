@@ -5,6 +5,7 @@ import com.meession.etm.module.crm.enums.business.CrmBusinessEndStatusEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Schema(description = "管理后台 - CRM 商机更新状态 Request VO")
@@ -22,9 +23,21 @@ public class CrmBusinessUpdateStatusReqVO {
     @InEnum(value = CrmBusinessEndStatusEnum.class)
     private Integer endStatus;
 
+    @Schema(description = "结束原因；输单或无效时必填", example = "客户预算取消")
+    @Size(max = 500, message = "结束原因不能超过 500 个字符")
+    private String endRemark;
+
     @AssertTrue(message = "变更状态不正确")
     public boolean isStatusValid() {
-        return statusId != null || endStatus != null;
+        return (statusId != null) ^ (endStatus != null);
+    }
+
+    @AssertTrue(message = "输单或无效时结束原因至少需要 10 个字符")
+    public boolean isEndRemarkValid() {
+        if (endStatus == null || CrmBusinessEndStatusEnum.WIN.getStatus().equals(endStatus)) {
+            return true;
+        }
+        return endRemark != null && endRemark.trim().length() >= 10;
     }
 
 }

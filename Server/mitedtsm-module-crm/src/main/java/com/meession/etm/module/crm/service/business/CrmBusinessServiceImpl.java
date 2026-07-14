@@ -17,6 +17,7 @@ import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessStatusDO;
 import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactBusinessDO;
 import com.meession.etm.module.crm.dal.mysql.business.CrmBusinessMapper;
 import com.meession.etm.module.crm.dal.mysql.business.CrmBusinessProductMapper;
+import com.meession.etm.module.crm.enums.business.CrmBusinessEndStatusEnum;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
 import com.meession.etm.module.crm.framework.permission.core.annotations.CrmPermission;
@@ -241,8 +242,14 @@ public class CrmBusinessServiceImpl implements CrmBusinessService {
         }
 
         // 2. 更新商机状态
-        businessMapper.updateById(new CrmBusinessDO().setId(reqVO.getId()).setStatusId(reqVO.getStatusId())
-                .setEndStatus(reqVO.getEndStatus()));
+        String endRemark = reqVO.getEndStatus() != null && !CrmBusinessEndStatusEnum.WIN.getStatus().equals(reqVO.getEndStatus())
+                ? reqVO.getEndRemark().trim() : null;
+        Long newStatusId = reqVO.getStatusId() != null ? reqVO.getStatusId() : business.getStatusId();
+        int updated = businessMapper.updateStatusIfUnchanged(reqVO.getId(), business.getStatusId(), business.getEndStatus(),
+                newStatusId, reqVO.getEndStatus(), endRemark);
+        if (updated == 0) {
+            throw exception(BUSINESS_UPDATE_STATUS_CONCURRENT);
+        }
 
         // 3. 记录操作日志上下文
         LogRecordContext.putVariable("businessName", business.getName());

@@ -43,4 +43,9 @@ public interface CrmStatisticsPortraitService {
      */
     List<CrmStatisticCustomerSourceRespVO> getCustomerSummaryBySource(CrmStatisticsPortraitReqVO reqVO);
 
+    /**
+     * 获取客户成交状态分布。
+     */
+    List<CrmStatisticCustomerDealStatusRespVO> getCustomerSummaryByDealStatus(CrmStatisticsPortraitReqVO reqVO);
+
 }

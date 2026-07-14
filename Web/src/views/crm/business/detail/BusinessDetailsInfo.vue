@@ -21,6 +21,9 @@
             {{ business.statusTypeName }}
           </el-descriptions-item>
           <el-descriptions-item :label="t('crm.business.statusName')">{{ business.statusName }}</el-descriptions-item>
+          <el-descriptions-item v-if="business.endRemark" :label="t('crm.business.endRemark')">
+            {{ business.endRemark }}
+          </el-descriptions-item>
           <el-descriptions-item :label="t('crm.business.remark')">{{ business.remark }}</el-descriptions-item>
         </el-descriptions>
       </el-collapse-item>

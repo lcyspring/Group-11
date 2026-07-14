@@ -270,6 +270,9 @@ export default {
     endStatusLose: '输单',
     endStatusInvalid: '无效',
     endRemark: '结束原因',
+    endRemarkPlaceholder: '请输入输单或无效原因',
+    endRemarkRequired: '输单或无效时必须填写结束原因',
+    endRemarkLength: '结束原因需为 10 至 500 个字符',
     // 占位符
     namePlaceholder: '请输入商机名称',
     customerIdPlaceholder: '请选择客户',
@@ -801,6 +804,7 @@ export default {
       industry: '客户行业分析',
       level: '客户级别分析',
       source: '客户来源分析',
+      dealStatus: '客户状态分析',
       // 表格字段
       index: '序号',
       areaName: '地区',
@@ -810,6 +814,10 @@ export default {
       industryName: '客户行业',
       levelName: '客户级别',
       sourceName: '客户来源',
+      dealStatusName: '成交状态',
+      dealStatusDeal: '已成交',
+      dealStatusUndeal: '未成交',
+      customerPortion: '客户占比(%)',
       // 地图
       allCustomer: '全部客户',
       dealCustomer: '成交客户',

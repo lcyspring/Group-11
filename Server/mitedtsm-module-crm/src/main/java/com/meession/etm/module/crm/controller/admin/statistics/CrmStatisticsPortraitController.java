@@ -3,6 +3,7 @@ package com.meession.etm.module.crm.controller.admin.statistics;
 import com.meession.etm.framework.common.pojo.CommonResult;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticsPortraitReqVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticCustomerAreaRespVO;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticCustomerDealStatusRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticCustomerIndustryRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticCustomerLevelRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticCustomerSourceRespVO;
@@ -56,6 +57,14 @@ public class CrmStatisticsPortraitController {
     @PreAuthorize("@ss.hasPermission('crm:statistics-portrait:query')")
     public CommonResult<List<CrmStatisticCustomerSourceRespVO>> getCustomerSourceSummary(@Valid CrmStatisticsPortraitReqVO reqVO) {
         return success(statisticsPortraitService.getCustomerSummaryBySource(reqVO));
+    }
+
+    @GetMapping("/get-customer-deal-status-summary")
+    @Operation(summary = "获取客户成交状态分布", description = "用于【客户状态分析】页面")
+    @PreAuthorize("@ss.hasPermission('crm:statistics-portrait:query')")
+    public CommonResult<List<CrmStatisticCustomerDealStatusRespVO>> getCustomerDealStatusSummary(
+            @Valid CrmStatisticsPortraitReqVO reqVO) {
+        return success(statisticsPortraitService.getCustomerSummaryByDealStatus(reqVO));
     }
 
 }

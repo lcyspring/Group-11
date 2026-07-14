@@ -1,0 +1,111 @@
+package com.meession.etm.module.crm.service.business;
+
+import com.meession.etm.framework.common.exception.ServiceException;
+import com.meession.etm.module.crm.controller.admin.business.vo.business.CrmBusinessUpdateStatusReqVO;
+import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessDO;
+import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessStatusDO;
+import com.meession.etm.module.crm.dal.mysql.business.CrmBusinessMapper;
+import com.meession.etm.module.crm.enums.business.CrmBusinessEndStatusEnum;
+import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import java.lang.reflect.Proxy;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.BUSINESS_UPDATE_STATUS_CONCURRENT;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+class CrmBusinessServiceImplTest {
+
+    @Test
+    void updateBusinessStatusPersistsTrimmedLostReason() {
+        CrmBusinessServiceImpl service = new CrmBusinessServiceImpl();
+        CrmBusinessDO business = activeBusiness();
+        AtomicReference<Object[]> updateArgs = new AtomicReference<>();
+        ReflectionTestUtils.setField(service, "businessMapper", proxy(CrmBusinessMapper.class,
+                (proxy, method, args) -> {
+                    if (method.getName().equals("selectById")) {
+                        return business;
+                    }
+                    if (method.getName().equals("updateStatusIfUnchanged")) {
+                        updateArgs.set(args);
+                        return 1;
+                    }
+                    throw new AssertionError("未预期的 Mapper 方法: " + method.getName());
+                }));
+        ReflectionTestUtils.setField(service, "businessStatusService", statusService());
+
+        service.updateBusinessStatus(new CrmBusinessUpdateStatusReqVO().setId(business.getId())
+                .setEndStatus(CrmBusinessEndStatusEnum.LOSE.getStatus()).setEndRemark("  客户本年度预算取消无法继续采购  "));
+
+        assertEquals(business.getStatusId(), updateArgs.get()[3]);
+        assertEquals(CrmBusinessEndStatusEnum.LOSE.getStatus(), updateArgs.get()[4]);
+        assertEquals("客户本年度预算取消无法继续采购", updateArgs.get()[5]);
+    }
+
+    @Test
+    void updateBusinessStatusRejectsConcurrentChange() {
+        CrmBusinessServiceImpl service = new CrmBusinessServiceImpl();
+        CrmBusinessDO business = activeBusiness();
+        ReflectionTestUtils.setField(service, "businessMapper", proxy(CrmBusinessMapper.class,
+                (proxy, method, args) -> {
+                    if (method.getName().equals("selectById")) {
+                        return business;
+                    }
+                    if (method.getName().equals("updateStatusIfUnchanged")) {
+                        return 0;
+                    }
+                    throw new AssertionError("未预期的 Mapper 方法: " + method.getName());
+                }));
+
+        ServiceException exception = assertThrows(ServiceException.class,
+                () -> service.updateBusinessStatus(new CrmBusinessUpdateStatusReqVO().setId(business.getId())
+                        .setEndStatus(CrmBusinessEndStatusEnum.WIN.getStatus())));
+
+        assertEquals(BUSINESS_UPDATE_STATUS_CONCURRENT.getCode(), exception.getCode());
+    }
+
+    @Test
+    void wonBusinessDoesNotPersistStaleEndReason() {
+        CrmBusinessServiceImpl service = new CrmBusinessServiceImpl();
+        CrmBusinessDO business = activeBusiness();
+        AtomicReference<Object[]> updateArgs = new AtomicReference<>();
+        ReflectionTestUtils.setField(service, "businessMapper", proxy(CrmBusinessMapper.class,
+                (proxy, method, args) -> {
+                    if (method.getName().equals("selectById")) {
+                        return business;
+                    }
+                    if (method.getName().equals("updateStatusIfUnchanged")) {
+                        updateArgs.set(args);
+                        return 1;
+                    }
+                    throw new AssertionError("未预期的 Mapper 方法: " + method.getName());
+                }));
+        ReflectionTestUtils.setField(service, "businessStatusService", statusService());
+
+        service.updateBusinessStatus(new CrmBusinessUpdateStatusReqVO().setId(business.getId())
+                .setEndStatus(CrmBusinessEndStatusEnum.WIN.getStatus()).setEndRemark("不应保存"));
+
+        assertEquals(business.getStatusId(), updateArgs.get()[3]);
+        assertNull(updateArgs.get()[5]);
+    }
+
+    private static CrmBusinessDO activeBusiness() {
+        return new CrmBusinessDO().setId(10L).setName("重点商机").setStatusTypeId(20L).setStatusId(30L);
+    }
+
+    private static CrmBusinessStatusService statusService() {
+        return proxy(CrmBusinessStatusService.class, (proxy, method, args) -> {
+            if (method.getName().equals("getBusinessStatus")) {
+                return new CrmBusinessStatusDO().setId(30L).setName("跟进中");
+            }
+            throw new AssertionError("未预期的状态服务方法: " + method.getName());
+        });
+    }
+
+    private static <T> T proxy(Class<T> type, java.lang.reflect.InvocationHandler handler) {
+        return type.cast(Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[]{type}, handler));
+    }
+}

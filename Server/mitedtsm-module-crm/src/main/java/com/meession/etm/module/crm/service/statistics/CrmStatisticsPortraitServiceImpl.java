@@ -109,6 +109,16 @@ public class CrmStatisticsPortraitServiceImpl implements CrmStatisticsPortraitSe
         return portraitMapper.selectCustomerLevelListGroupByLevel(reqVO);
     }
 
+    @Override
+    public List<CrmStatisticCustomerDealStatusRespVO> getCustomerSummaryByDealStatus(CrmStatisticsPortraitReqVO reqVO) {
+        List<Long> userIds = getUserIds(reqVO);
+        if (CollUtil.isEmpty(userIds)) {
+            return Collections.emptyList();
+        }
+        reqVO.setUserIds(userIds);
+        return portraitMapper.selectCustomerDealStatusList(reqVO);
+    }
+
     /**
      * 获取用户编号数组。如果用户编号为空, 则获得部门下的用户编号数组，包括子部门的所有用户编号
      *

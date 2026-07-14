@@ -42,6 +42,13 @@ export interface BusinessVO {
   ]
 }
 
+export interface BusinessUpdateStatusReqVO {
+  id: number
+  statusId?: number
+  endStatus?: number
+  endRemark?: string
+}
+
 // 查询 CRM 商机列表
 export const getBusinessPage = async (params) => {
   return await request.get({ url: `/crm/business/page`, params })
@@ -73,7 +80,7 @@ export const updateBusiness = async (data: BusinessVO) => {
 }
 
 // 修改 CRM 商机状态
-export const updateBusinessStatus = async (data: BusinessVO) => {
+export const updateBusinessStatus = async (data: BusinessUpdateStatusReqVO) => {
   return await request.put({ url: `/crm/business/update-status`, data })
 }
 

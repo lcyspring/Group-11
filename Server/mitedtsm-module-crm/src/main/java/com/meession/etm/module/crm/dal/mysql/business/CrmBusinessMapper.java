@@ -29,6 +29,26 @@ public interface CrmBusinessMapper extends BaseMapperX<CrmBusinessDO> {
                 .set(CrmBusinessDO::getOwnerUserId, ownerUserId));
     }
 
+    default int updateStatusIfUnchanged(Long id, Long oldStatusId, Integer oldEndStatus,
+                                        Long newStatusId, Integer newEndStatus, String endRemark) {
+        LambdaUpdateWrapper<CrmBusinessDO> update = new LambdaUpdateWrapper<CrmBusinessDO>()
+                .eq(CrmBusinessDO::getId, id)
+                .set(CrmBusinessDO::getStatusId, newStatusId)
+                .set(CrmBusinessDO::getEndStatus, newEndStatus)
+                .set(CrmBusinessDO::getEndRemark, endRemark);
+        if (oldStatusId == null) {
+            update.isNull(CrmBusinessDO::getStatusId);
+        } else {
+            update.eq(CrmBusinessDO::getStatusId, oldStatusId);
+        }
+        if (oldEndStatus == null) {
+            update.isNull(CrmBusinessDO::getEndStatus);
+        } else {
+            update.eq(CrmBusinessDO::getEndStatus, oldEndStatus);
+        }
+        return update(update);
+    }
+
     default PageResult<CrmBusinessDO> selectPageByCustomerId(CrmBusinessPageReqVO pageReqVO) {
         return selectPage(pageReqVO, new LambdaQueryWrapperX<CrmBusinessDO>()
                 .eq(CrmBusinessDO::getCustomerId, pageReqVO.getCustomerId()) // 指定客户编号

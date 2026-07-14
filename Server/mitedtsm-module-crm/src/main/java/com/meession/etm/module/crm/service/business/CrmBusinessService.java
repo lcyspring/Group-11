@@ -66,7 +66,7 @@ public interface CrmBusinessService {
      *
      * @param reqVO 更新请求
      */
-    void updateBusinessStatus(CrmBusinessUpdateStatusReqVO reqVO);
+    void updateBusinessStatus(@Valid CrmBusinessUpdateStatusReqVO reqVO);
 
     /**
      * 删除商机

@@ -23,6 +23,16 @@
           />
         </el-select>
       </el-form-item>
+      <el-form-item v-if="requiresEndRemark" :label="t('crm.business.endRemark')" prop="endRemark">
+        <el-input
+          v-model="formData.endRemark"
+          :placeholder="t('crm.business.endRemarkPlaceholder')"
+          :rows="3"
+          maxlength="500"
+          show-word-limit
+          type="textarea"
+        />
+      </el-form-item>
     </el-form>
     <template #footer>
       <el-button @click="submitForm" type="primary" :disabled="formLoading">{{ t('common.confirm') }}</el-button>
@@ -43,13 +53,19 @@ const formData = ref({
   id: undefined,
   statusId: undefined,
   endStatus: undefined,
-  status: undefined
+  status: undefined,
+  endRemark: undefined as string | undefined
 })
 const formRules = reactive({
-  status: [{ required: true, message: t('crm.business.statusRequired'), trigger: 'blur' }]
+  status: [{ required: true, message: t('crm.business.statusRequired'), trigger: 'blur' }],
+  endRemark: [
+    { required: true, message: t('crm.business.endRemarkRequired'), trigger: 'blur' },
+    { min: 10, max: 500, message: t('crm.business.endRemarkLength'), trigger: 'blur' }
+  ]
 })
 const formRef = ref() // 表单 Ref
 const statusList = ref([]) // 商机状态列表
+const requiresEndRemark = computed(() => formData.value.status === -2 || formData.value.status === -3)
 
 /** 打开弹窗 */
 const open = async (business: BusinessApi.BusinessVO) => {
@@ -59,7 +75,8 @@ const open = async (business: BusinessApi.BusinessVO) => {
     id: business.id,
     statusId: business.statusId,
     endStatus: business.endStatus,
-    status: business.endStatus != null ? -business.endStatus : business.statusId
+    status: business.endStatus != null ? -business.endStatus : business.statusId,
+    endRemark: business.endRemark
   }
   // 加载状态列表
   formLoading.value = true
@@ -84,7 +101,8 @@ const submitForm = async () => {
     await BusinessApi.updateBusinessStatus({
       id: formData.value.id,
       statusId: formData.value.status > 0 ? formData.value.status : undefined,
-      endStatus: formData.value.status < 0 ? -formData.value.status : undefined
+      endStatus: formData.value.status < 0 ? -formData.value.status : undefined,
+      endRemark: requiresEndRemark.value ? formData.value.endRemark : undefined
     })
     message.success(t('crm.business.updateStatusSuccess'))
     dialogVisible.value = false
@@ -101,7 +119,8 @@ const resetForm = () => {
     id: undefined,
     statusId: undefined,
     endStatus: undefined,
-    status: undefined
+    status: undefined,
+    endRemark: undefined
   }
   formRef.value?.resetFields()
 }

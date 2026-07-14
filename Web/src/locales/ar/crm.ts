@@ -270,6 +270,9 @@ export default {
     endStatusLose: 'خسارة',
     endStatusInvalid: 'غير صالح',
     endRemark: 'سبب الانتهاء',
+    endRemarkPlaceholder: 'أدخل سبب الخسارة أو الإلغاء',
+    endRemarkRequired: 'سبب الانتهاء مطلوب عند الخسارة أو الإلغاء',
+    endRemarkLength: 'يجب أن يتراوح سبب الانتهاء بين 10 و500 حرف',
     // Placeholder
     namePlaceholder: 'الرجاء إدخال اسم العمل',
     customerIdPlaceholder: 'الرجاء تحديد العميل',
@@ -801,6 +804,7 @@ export default {
       industry: 'توزيع الصناعة',
       level: 'توزيع المستوى',
       source: 'توزيع المصدر',
+      dealStatus: 'تحليل حالة العميل',
       // Table fields
       index: 'رقم',
       areaName: 'المنطقة',
@@ -810,6 +814,10 @@ export default {
       industryName: 'الصناعة',
       levelName: 'المستوى',
       sourceName: 'المصدر',
+      dealStatusName: 'حالة الصفقة',
+      dealStatusDeal: 'تمت الصفقة',
+      dealStatusUndeal: 'لم تتم الصفقة',
+      customerPortion: 'نسبة العملاء (%)',
       // Map
       allCustomer: 'جميع العملاء',
       dealCustomer: 'عملاء الصفقات',

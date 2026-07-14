@@ -270,6 +270,9 @@ export default {
     endStatusLose: 'Lose',
     endStatusInvalid: 'Invalid',
     endRemark: 'End Reason',
+    endRemarkPlaceholder: 'Enter the lost or invalid reason',
+    endRemarkRequired: 'An end reason is required for lost or invalid business',
+    endRemarkLength: 'The end reason must be between 10 and 500 characters',
     // Placeholder
     namePlaceholder: 'Please enter business name',
     customerIdPlaceholder: 'Please select customer',
@@ -801,6 +804,7 @@ export default {
       industry: 'Industry Distribution',
       level: 'Level Distribution',
       source: 'Source Distribution',
+      dealStatus: 'Customer Status Analysis',
       // Table fields
       index: 'No.',
       areaName: 'Area',
@@ -810,6 +814,10 @@ export default {
       industryName: 'Industry',
       levelName: 'Level',
       sourceName: 'Source',
+      dealStatusName: 'Deal Status',
+      dealStatusDeal: 'Deal',
+      dealStatusUndeal: 'Not Deal',
+      customerPortion: 'Customer Portion(%)',
       // Map
       allCustomer: 'All Customers',
       dealCustomer: 'Deal Customers',

@@ -27,6 +27,12 @@ export interface CrmStatisticCustomerAreaRespVO extends CrmStatisticCustomerBase
   areaPortion: string | number
 }
 
+export interface CrmStatisticCustomerDealStatusRespVO {
+  dealStatus: boolean
+  customerCount: number
+  customerPortion?: string | number
+}
+
 // 客户分析 API
 export const StatisticsPortraitApi = {
   // 1. 获取客户行业统计数据
@@ -54,6 +60,13 @@ export const StatisticsPortraitApi = {
   getCustomerArea: (params: any) => {
     return request.get({
       url: '/crm/statistics-portrait/get-customer-area-summary',
+      params
+    })
+  },
+  // 5. 获取客户成交状态分布
+  getCustomerDealStatus: (params: any) => {
+    return request.get({
+      url: '/crm/statistics-portrait/get-customer-deal-status-summary',
       params
     })
   }
