@@ -3,8 +3,11 @@ import request from '@/config/axios'
 export interface ReceivablePlanVO {
   id: number
   period: number
-  receivableId: number
+  receivableId?: number
   price: number
+  receivedPrice: number
+  unreceivedPrice: number
+  status: number
   returnTime: Date
   remindDays: number
   returnType: number
@@ -23,8 +26,15 @@ export interface ReceivablePlanVO {
   receivable?: {
     price: number
     returnTime: Date
+    auditStatus: number
   }
 }
+
+export const ReceivablePlanStatus = {
+  PENDING: 0,
+  OVERDUE: 10,
+  RECEIVED: 20
+} as const
 
 // 查询回款计划列表
 export const getReceivablePlanPage = async (params) => {

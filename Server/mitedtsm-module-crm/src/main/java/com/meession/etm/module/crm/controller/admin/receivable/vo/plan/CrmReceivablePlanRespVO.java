@@ -61,6 +61,18 @@ public class CrmReceivablePlanRespVO {
     @Schema(description = "回款信息")
     private CrmReceivableRespVO receivable;
 
+    @Schema(description = "已生效回款金额", requiredMode = Schema.RequiredMode.REQUIRED, example = "500")
+    @ExcelProperty("已回款金额")
+    private BigDecimal receivedPrice;
+
+    @Schema(description = "未回款金额", requiredMode = Schema.RequiredMode.REQUIRED, example = "400")
+    @ExcelProperty("未回款金额")
+    private BigDecimal unreceivedPrice;
+
+    @Schema(description = "执行状态：0 待回款、10 已逾期、20 已回款", requiredMode = Schema.RequiredMode.REQUIRED)
+    @ExcelProperty("执行状态")
+    private Integer status;
+
     @Schema(description = "提前几天提醒", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
     @ExcelProperty("提前几天提醒")
     private Integer remindDays;

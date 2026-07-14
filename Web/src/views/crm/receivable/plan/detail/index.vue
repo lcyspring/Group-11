@@ -1,7 +1,7 @@
 <template>
   <ReceivablePlanDetailsHeader v-loading="loading" :receivable-plan="receivablePlan">
     <el-button
-      v-if="permissionListRef?.validateWrite"
+      v-if="permissionListRef?.validateWrite && !receivablePlan.receivableId"
       @click="openForm('update', receivablePlan.id)"
     >
       {{ t('common.edit') }}

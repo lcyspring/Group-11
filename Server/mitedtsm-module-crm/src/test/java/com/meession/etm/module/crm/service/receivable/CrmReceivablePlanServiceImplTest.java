@@ -21,8 +21,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.RECEIVABLE_PLAN_CREATE_FAIL_CONTRACT_NOT_APPROVE;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.RECEIVABLE_PLAN_DELETE_FAIL_LINKED;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.RECEIVABLE_PLAN_EXISTS_RECEIVABLE;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.RECEIVABLE_PLAN_PRICE_EXCEEDS_CONTRACT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.never;
@@ -72,7 +76,9 @@ class CrmReceivablePlanServiceImplTest {
     @Test
     void createReceivablePlanAcceptsApprovedContract() {
         when(contractService.validateContract(20L)).thenReturn(new CrmContractDO()
-                .setId(20L).setCustomerId(30L).setAuditStatus(CrmAuditStatusEnum.APPROVE.getStatus()));
+                .setId(20L).setCustomerId(30L).setTotalPrice(new BigDecimal("100.00"))
+                .setAuditStatus(CrmAuditStatusEnum.APPROVE.getStatus()));
+        when(receivablePlanMapper.selectListByContractId(20L)).thenReturn(List.of());
         doAnswer(invocation -> {
             ((CrmReceivablePlanDO) invocation.getArgument(0)).setId(70L);
             return 1;
@@ -84,6 +90,45 @@ class CrmReceivablePlanServiceImplTest {
         verify(receivablePlanMapper).insert(captor.capture());
         assertEquals(1, captor.getValue().getPeriod());
         assertEquals(30L, captor.getValue().getCustomerId());
+    }
+
+    @Test
+    void createReceivablePlanRejectsTotalAboveContract() {
+        when(contractService.validateContract(20L)).thenReturn(new CrmContractDO()
+                .setId(20L).setCustomerId(30L).setTotalPrice(new BigDecimal("100.00"))
+                .setAuditStatus(CrmAuditStatusEnum.APPROVE.getStatus()));
+        when(receivablePlanMapper.selectListByContractId(20L)).thenReturn(List.of(
+                new CrmReceivablePlanDO().setId(60L).setPrice(new BigDecimal("60.00"))));
+
+        ServiceException exception = assertThrows(ServiceException.class,
+                () -> service.createReceivablePlan(request()));
+
+        assertEquals(RECEIVABLE_PLAN_PRICE_EXCEEDS_CONTRACT.getCode(), exception.getCode());
+        verify(receivablePlanMapper, never()).insert(any(CrmReceivablePlanDO.class));
+    }
+
+    @Test
+    void deleteReceivablePlanRejectsLinkedReceivable() {
+        when(receivablePlanMapper.selectByIdForUpdate(70L)).thenReturn(
+                new CrmReceivablePlanDO().setId(70L).setReceivableId(80L));
+
+        ServiceException exception = assertThrows(ServiceException.class,
+                () -> service.deleteReceivablePlan(70L));
+
+        assertEquals(RECEIVABLE_PLAN_DELETE_FAIL_LINKED.getCode(), exception.getCode());
+        verify(receivablePlanMapper, never()).deleteById(70L);
+    }
+
+    @Test
+    void linkReceivableRejectsConcurrentDuplicate() {
+        when(receivablePlanMapper.selectByIdForUpdate(70L)).thenReturn(
+                new CrmReceivablePlanDO().setId(70L).setReceivableId(80L));
+
+        ServiceException exception = assertThrows(ServiceException.class,
+                () -> service.updateReceivablePlanReceivableId(70L, 81L));
+
+        assertEquals(RECEIVABLE_PLAN_EXISTS_RECEIVABLE.getCode(), exception.getCode());
+        verify(receivablePlanMapper, never()).updateById(any(CrmReceivablePlanDO.class));
     }
 
     private static CrmReceivablePlanSaveReqVO request() {

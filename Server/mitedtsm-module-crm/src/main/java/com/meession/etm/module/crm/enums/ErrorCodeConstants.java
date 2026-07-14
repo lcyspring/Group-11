@@ -70,6 +70,10 @@ public interface ErrorCodeConstants {
     ErrorCode RECEIVABLE_PLAN_EXISTS_RECEIVABLE = new ErrorCode(1_020_006_001, "回款计划已经有对应的回款，不能使用");
     ErrorCode RECEIVABLE_PLAN_CREATE_FAIL_CONTRACT_NOT_APPROVE = new ErrorCode(1_020_005_001,
             "创建回款计划失败，原因：合同不是审核通过状态");
+    ErrorCode RECEIVABLE_PLAN_PRICE_EXCEEDS_CONTRACT = new ErrorCode(1_020_005_002,
+            "保存回款计划失败，计划总额超出合同金额，目前剩余可计划：{} 元");
+    ErrorCode RECEIVABLE_PLAN_DELETE_FAIL_LINKED = new ErrorCode(1_020_005_003,
+            "删除回款计划失败，原因：已经有关联回款");
 
     // ========== 客户管理 1_020_006_000 ==========
     ErrorCode CUSTOMER_NOT_EXISTS = new ErrorCode(1_020_006_000, "客户不存在");

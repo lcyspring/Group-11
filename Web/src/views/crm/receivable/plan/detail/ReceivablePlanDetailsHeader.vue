@@ -4,7 +4,9 @@
       <div>
         <el-col>
           <el-row>
-            <span class="text-xl font-bold">{{ t('receivablePlan.period') }} {{ receivablePlan.period }}</span>
+            <span class="text-xl font-bold"
+              >{{ t('receivablePlan.period') }} {{ receivablePlan.period }}</span
+            >
           </el-row>
         </el-col>
       </div>
@@ -19,7 +21,9 @@
       <el-descriptions-item :label="t('receivablePlan.customerName')">
         {{ receivablePlan.customerName }}
       </el-descriptions-item>
-      <el-descriptions-item :label="t('receivablePlan.contractNo')">{{ receivablePlan.contractNo }}</el-descriptions-item>
+      <el-descriptions-item :label="t('receivablePlan.contractNo')">{{
+        receivablePlan.contractNo
+      }}</el-descriptions-item>
       <el-descriptions-item :label="t('receivablePlan.price')">
         {{ erpPriceInputFormatter(receivablePlan.price) }}
       </el-descriptions-item>
@@ -27,10 +31,10 @@
         {{ formatDate(receivablePlan.returnTime) }}
       </el-descriptions-item>
       <el-descriptions-item :label="t('receivablePlan.receivablePrice')">
-        <el-text v-if="receivablePlan.receivable">
-          {{ erpPriceInputFormatter(receivablePlan.receivable.price) }}
-        </el-text>
-        <el-text v-else>{{ erpPriceInputFormatter(0) }}</el-text>
+        {{ erpPriceInputFormatter(receivablePlan.receivedPrice) }}
+      </el-descriptions-item>
+      <el-descriptions-item :label="t('common.status')">
+        <el-tag :type="statusType">{{ statusLabel }}</el-tag>
       </el-descriptions-item>
     </el-descriptions>
   </ContentWrap>
@@ -42,4 +46,16 @@ import { erpPriceInputFormatter } from '@/utils'
 
 const { t } = useI18n('crm') // 国际化
 const { receivablePlan } = defineProps<{ receivablePlan: ReceivablePlanApi.ReceivablePlanVO }>()
+const statusType = computed(() => {
+  if (receivablePlan.status === ReceivablePlanApi.ReceivablePlanStatus.RECEIVED) return 'success'
+  if (receivablePlan.status === ReceivablePlanApi.ReceivablePlanStatus.OVERDUE) return 'danger'
+  return 'warning'
+})
+const statusLabel = computed(() => {
+  if (receivablePlan.status === ReceivablePlanApi.ReceivablePlanStatus.RECEIVED)
+    return t('receivablePlan.statusReceived')
+  if (receivablePlan.status === ReceivablePlanApi.ReceivablePlanStatus.OVERDUE)
+    return t('receivablePlan.statusOverdue')
+  return t('receivablePlan.statusPending')
+})
 </script>

@@ -9,9 +9,25 @@
 
   <!-- 列表 -->
   <ContentWrap class="mt-10px">
-    <el-table v-loading="loading" :data="list" :show-overflow-tooltip="true" :stripe="true" :table-layout="'auto'">
-      <el-table-column align="center" :label="t('receivablePlan.customerName')" prop="customerName" min-width="150" />
-      <el-table-column align="center" :label="t('receivablePlan.contractNo')" prop="contractNo" min-width="200" />
+    <el-table
+      v-loading="loading"
+      :data="list"
+      :show-overflow-tooltip="true"
+      :stripe="true"
+      :table-layout="'auto'"
+    >
+      <el-table-column
+        align="center"
+        :label="t('receivablePlan.customerName')"
+        prop="customerName"
+        min-width="150"
+      />
+      <el-table-column
+        align="center"
+        :label="t('receivablePlan.contractNo')"
+        prop="contractNo"
+        min-width="200"
+      />
       <el-table-column align="center" :label="t('receivablePlan.period')" prop="period" />
       <el-table-column
         align="center"
@@ -27,7 +43,27 @@
         prop="returnTime"
         min-width="180"
       />
-      <el-table-column align="center" :label="t('receivablePlan.remindDays')" prop="remindDays" min-width="150" />
+      <el-table-column align="center" :label="t('common.status')" prop="status" min-width="100">
+        <template #default="scope">
+          <el-tag
+            :type="
+              scope.row.status === ReceivablePlanApi.ReceivablePlanStatus.RECEIVED
+                ? 'success'
+                : scope.row.status === ReceivablePlanApi.ReceivablePlanStatus.OVERDUE
+                  ? 'danger'
+                  : 'warning'
+            "
+          >
+            {{ getStatusLabel(scope.row.status) }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column
+        align="center"
+        :label="t('receivablePlan.remindDays')"
+        prop="remindDays"
+        min-width="150"
+      />
       <el-table-column
         :formatter="dateFormatter2"
         align="center"
@@ -35,7 +71,11 @@
         prop="remindTime"
         min-width="180"
       />
-      <el-table-column :label="t('receivablePlan.ownerUserName')" prop="ownerUserName" min-width="120" />
+      <el-table-column
+        :label="t('receivablePlan.ownerUserName')"
+        prop="ownerUserName"
+        min-width="120"
+      />
       <el-table-column align="center" :label="t('receivablePlan.remark')" prop="remark" />
       <el-table-column align="center" fixed="right" :label="t('common.action')" min-width="200">
         <template #default="scope">
@@ -52,6 +92,7 @@
             v-hasPermi="['crm:receivable-plan:update']"
             link
             type="primary"
+            :disabled="Boolean(scope.row.receivableId)"
             @click="openForm('update', scope.row.id)"
           >
             {{ t('common.edit') }}
@@ -60,6 +101,7 @@
             v-hasPermi="['crm:receivable-plan:delete']"
             link
             type="danger"
+            :disabled="Boolean(scope.row.receivableId)"
             @click="handleDelete(scope.row.id)"
           >
             {{ t('common.delete') }}
@@ -96,6 +138,14 @@ const { t } = useI18n('crm') // 国际化
 const loading = ref(true) // 列表的加载中
 const total = ref(0) // 列表的总页数
 const list = ref([]) // 列表的数据
+
+const getStatusLabel = (status: number) => {
+  if (status === ReceivablePlanApi.ReceivablePlanStatus.RECEIVED)
+    return t('receivablePlan.statusReceived')
+  if (status === ReceivablePlanApi.ReceivablePlanStatus.OVERDUE)
+    return t('receivablePlan.statusOverdue')
+  return t('receivablePlan.statusPending')
+}
 const queryParams = reactive({
   pageNo: 1,
   pageSize: 10,

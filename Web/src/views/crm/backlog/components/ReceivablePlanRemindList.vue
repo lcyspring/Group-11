@@ -29,8 +29,20 @@
   </ContentWrap>
 
   <ContentWrap>
-    <el-table v-loading="loading" :data="list" :stripe="true" :show-overflow-tooltip="true" :table-layout="'auto'">
-      <el-table-column align="center" fixed="left" :label="t('receivablePlan.customerName')" prop="customerName" min-width="150">
+    <el-table
+      v-loading="loading"
+      :data="list"
+      :stripe="true"
+      :show-overflow-tooltip="true"
+      :table-layout="'auto'"
+    >
+      <el-table-column
+        align="center"
+        fixed="left"
+        :label="t('receivablePlan.customerName')"
+        prop="customerName"
+        min-width="150"
+      >
         <template #default="scope">
           <el-link
             :underline="false"
@@ -41,7 +53,12 @@
           </el-link>
         </template>
       </el-table-column>
-      <el-table-column align="center" :label="t('receivablePlan.contractNo')" prop="contractNo" min-width="200" />
+      <el-table-column
+        align="center"
+        :label="t('receivablePlan.contractNo')"
+        prop="contractNo"
+        min-width="200"
+      />
       <el-table-column align="center" :label="t('receivablePlan.period')" prop="period">
         <template #default="scope">
           <el-link :underline="false" type="primary" @click="openDetail(scope.row.id)">
@@ -63,7 +80,19 @@
         prop="returnTime"
         min-width="180"
       />
-      <el-table-column align="center" :label="t('receivablePlan.remindDays')" prop="remindDays" min-width="150" />
+      <el-table-column align="center" :label="t('common.status')" prop="status" min-width="110">
+        <template #default="scope">
+          <el-tag :type="getStatusType(scope.row.status)">{{
+            getStatusLabel(scope.row.status)
+          }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column
+        align="center"
+        :label="t('receivablePlan.remindDays')"
+        prop="remindDays"
+        min-width="150"
+      />
       <el-table-column
         align="center"
         :label="t('receivablePlan.remindTime')"
@@ -71,44 +100,54 @@
         min-width="180"
         :formatter="dateFormatter2"
       />
-      <el-table-column align="center" :label="t('receivablePlan.returnType')" prop="returnType" min-width="130">
+      <el-table-column
+        align="center"
+        :label="t('receivablePlan.returnType')"
+        prop="returnType"
+        min-width="130"
+      >
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.CRM_RECEIVABLE_RETURN_TYPE" :value="scope.row.returnType" />
         </template>
       </el-table-column>
       <el-table-column align="center" :label="t('receivablePlan.remark')" prop="remark" />
-      <el-table-column :label="t('receivablePlan.ownerUserName')" prop="ownerUserName" min-width="120" />
       <el-table-column
-        align="center"
-        :label="t('receivablePlan.receivablePrice')"
-        prop="receivable.price"
-        min-width="160"
-      >
-        <template #default="scope">
-          <el-text v-if="scope.row.receivable">
-            {{ erpPriceInputFormatter(scope.row.receivable.price) }}
-          </el-text>
-          <el-text v-else>{{ erpPriceInputFormatter(0) }}</el-text>
-        </template>
-      </el-table-column>
-      <el-table-column
-        align="center"
-        :label="t('statistics.customer.dealCycleByUser')"
-        prop="receivable.returnTime"
-        min-width="180"
-        :formatter="dateFormatter2"
+        :label="t('receivablePlan.ownerUserName')"
+        prop="ownerUserName"
+        min-width="120"
       />
       <el-table-column
         align="center"
         :label="t('receivablePlan.receivablePrice')"
-        prop="receivable.price"
+        prop="receivedPrice"
         min-width="160"
       >
         <template #default="scope">
-          <el-text v-if="scope.row.receivable">
-            {{ erpPriceInputFormatter(scope.row.price - scope.row.receivable.price) }}
-          </el-text>
-          <el-text v-else>{{ erpPriceInputFormatter(scope.row.price) }}</el-text>
+          <el-text>{{ erpPriceInputFormatter(scope.row.receivedPrice) }}</el-text>
+        </template>
+      </el-table-column>
+      <el-table-column
+        align="center"
+        :label="t('receivable.returnTime')"
+        prop="receivable.returnTime"
+        min-width="180"
+      >
+        <template #default="scope">
+          {{
+            scope.row.status === ReceivablePlanApi.ReceivablePlanStatus.RECEIVED
+              ? formatDate(scope.row.receivable?.returnTime, 'YYYY-MM-DD')
+              : '-'
+          }}
+        </template>
+      </el-table-column>
+      <el-table-column
+        align="center"
+        :label="t('receivablePlan.unreceivedPrice')"
+        prop="unreceivedPrice"
+        min-width="160"
+      >
+        <template #default="scope">
+          <el-text>{{ erpPriceInputFormatter(scope.row.unreceivedPrice) }}</el-text>
         </template>
       </el-table-column>
       <el-table-column
@@ -125,7 +164,12 @@
         prop="createTime"
         min-width="180"
       />
-      <el-table-column align="center" :label="t('common.creator')" prop="creatorName" min-width="100" />
+      <el-table-column
+        align="center"
+        :label="t('common.creator')"
+        prop="creatorName"
+        min-width="100"
+      />
       <el-table-column align="center" fixed="right" :label="t('common.action')" min-width="180">
         <template #default="scope">
           <el-button
@@ -155,7 +199,7 @@
 
 <script setup lang="ts">
 import { DICT_TYPE } from '@/utils/dict'
-import { dateFormatter, dateFormatter2 } from '@/utils/formatTime'
+import { dateFormatter, dateFormatter2, formatDate } from '@/utils/formatTime'
 import * as ReceivablePlanApi from '@/api/crm/receivable/plan'
 import { RECEIVABLE_REMIND_TYPE } from './common'
 import { erpPriceInputFormatter, erpPriceTableColumnFormatter } from '@/utils'
@@ -173,6 +217,20 @@ const queryParams = reactive({
   remindType: 1
 })
 const queryFormRef = ref() // 搜索的表单
+
+const getStatusType = (status: number) => {
+  if (status === ReceivablePlanApi.ReceivablePlanStatus.RECEIVED) return 'success'
+  if (status === ReceivablePlanApi.ReceivablePlanStatus.OVERDUE) return 'danger'
+  return 'warning'
+}
+
+const getStatusLabel = (status: number) => {
+  if (status === ReceivablePlanApi.ReceivablePlanStatus.RECEIVED)
+    return t('receivablePlan.statusReceived')
+  if (status === ReceivablePlanApi.ReceivablePlanStatus.OVERDUE)
+    return t('receivablePlan.statusOverdue')
+  return t('receivablePlan.statusPending')
+}
 /** 查询列表 */
 const getList = async () => {
   loading.value = true
