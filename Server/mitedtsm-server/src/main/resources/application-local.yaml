@@ -67,7 +67,7 @@ spring:
           lazy: true # 开启懒加载，保证启动速度
           url: jdbc:mysql://127.0.0.1:3306/mitedtsm_database?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true&nullCatalogMeansCurrent=true
           username: root
-          password: 123456
+          password: 1234
         tdengine: # IoT 数据库（需要 IoT 物联网再开启噢！）
           lazy: true # 开启懒加载，保证启动速度
           url: jdbc:TAOS-WS://localhost:6041/mitedtsm_database?varcharAsString=true
