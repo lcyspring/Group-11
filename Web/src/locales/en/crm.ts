@@ -804,6 +804,18 @@ export default {
       annualActual: 'Annual Actual',
       annualCompletionRate: 'Annual Completion Rate',
       targetActualAxis: 'Target / Actual',
+      targetManagement: 'Manage Targets',
+      targetScope: 'Target Scope',
+      companyTarget: 'Company',
+      departmentTarget: 'Department',
+      userTarget: 'Individual',
+      targetNotConfigured: 'No target is configured for this scope, year and metric',
+      monthTarget: 'Month {month}',
+      quarterTarget: 'Quarter {quarter}',
+      amountTargetUnit: 'CNY',
+      countTargetUnit: 'Count',
+      targetValueInvalid:
+        'Targets must be non-negative; amounts allow 2 decimals and counts must be integers',
       // Table fields
       index: 'No.',
       ownerUserName: 'Employee',

@@ -33,9 +33,9 @@ class CrmPerformanceTargetControllerTest {
 
         CrmPerformanceTargetRespVO target = result.getData().get(0);
         assertEquals(12, target.getMonthlyTargets().size());
-        assertEquals(List.of(new BigDecimal("60"), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO),
+        assertEquals(List.of("60", "0", "0", "0"),
                 target.getQuarterlyTargets());
-        assertEquals(new BigDecimal("60"), target.getAnnualTarget());
+        assertEquals("60", target.getAnnualTarget());
     }
 
     private static CrmPerformanceTargetDO target(Integer month, String value) {

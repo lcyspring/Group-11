@@ -22,6 +22,24 @@ export interface StatisticsTargetCompletionSummaryRespVO {
   monthlyList: StatisticsTargetCompletionRespVO[]
 }
 
+export interface PerformanceTargetRespVO {
+  scopeType: number
+  scopeId: number
+  targetYear: number
+  targetType: number
+  monthlyTargets: string[]
+  quarterlyTargets: string[]
+  annualTarget: string
+}
+
+export interface PerformanceTargetSaveReqVO {
+  scopeType: number
+  scopeId: number
+  targetYear: number
+  targetType: number
+  monthlyTargets: string[]
+}
+
 // 排行 API
 export const StatisticsPerformanceApi = {
   // 员工获得合同金额统计
@@ -52,4 +70,17 @@ export const StatisticsPerformanceApi = {
       params
     })
   }
+}
+
+export const PerformanceTargetApi = {
+  getList: (params: { scopeType: number; scopeId: number; targetYear: number }) =>
+    request.get({ url: '/crm/performance-target/list', params }),
+  save: (data: PerformanceTargetSaveReqVO) =>
+    request.put({ url: '/crm/performance-target/save', data }),
+  delete: (params: {
+    scopeType: number
+    scopeId: number
+    targetYear: number
+    targetType: number
+  }) => request.delete({ url: '/crm/performance-target/delete', params })
 }

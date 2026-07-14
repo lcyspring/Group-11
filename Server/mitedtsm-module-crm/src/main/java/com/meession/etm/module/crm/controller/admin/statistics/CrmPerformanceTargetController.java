@@ -85,9 +85,9 @@ public class CrmPerformanceTargetController {
                 .setScopeId(reqVO.getScopeId())
                 .setTargetYear(reqVO.getTargetYear())
                 .setTargetType(targetType)
-                .setMonthlyTargets(monthlyTargets)
-                .setQuarterlyTargets(quarterlyTargets)
-                .setAnnualTarget(monthlyTargets.stream().reduce(BigDecimal.ZERO, BigDecimal::add));
+                .setMonthlyTargets(monthlyTargets.stream().map(BigDecimal::toPlainString).toList())
+                .setQuarterlyTargets(quarterlyTargets.stream().map(BigDecimal::toPlainString).toList())
+                .setAnnualTarget(monthlyTargets.stream().reduce(BigDecimal.ZERO, BigDecimal::add).toPlainString());
     }
 
 }
