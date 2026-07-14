@@ -12,6 +12,7 @@ import com.meession.etm.framework.common.util.number.NumberUtils;
 import com.meession.etm.framework.common.util.object.BeanUtils;
 import com.meession.etm.framework.excel.core.util.ExcelUtils;
 import com.meession.etm.framework.ip.core.utils.AreaUtils;
+import com.meession.etm.framework.security.core.service.SecurityFrameworkService;
 import com.meession.etm.module.crm.controller.admin.customer.vo.customer.*;
 import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
@@ -20,6 +21,7 @@ import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerOwnerRecor
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerPoolConfigDO;
 import com.meession.etm.module.crm.service.contact.CrmContactService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerPoolConfigService;
+import com.meession.etm.module.crm.service.customer.CrmCustomer360Service;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
 import com.meession.etm.module.system.api.dept.DeptApi;
 import com.meession.etm.module.system.api.dept.dto.DeptRespDTO;
@@ -60,6 +62,8 @@ public class CrmCustomerController {
     @Resource
     private CrmCustomerService customerService;
     @Resource
+    private CrmCustomer360Service customer360Service;
+    @Resource
     private CrmContactService contactService;
     @Resource
     private CrmCustomerPoolConfigService customerPoolConfigService;
@@ -68,6 +72,8 @@ public class CrmCustomerController {
     private DeptApi deptApi;
     @Resource
     private AdminUserApi adminUserApi;
+    @Resource
+    private SecurityFrameworkService securityFrameworkService;
 
     @PostMapping("/create")
     @Operation(summary = "创建客户")
@@ -157,6 +163,16 @@ public class CrmCustomerController {
         }
         // 2. 拼接数据
         return success(new PageResult<>(buildCustomerDetailList(pageResult.getList()), pageResult.getTotal()));
+    }
+
+    @GetMapping("/360-summary")
+    @Operation(summary = "获得客户 360 只读聚合摘要")
+    @Parameter(name = "customerId", description = "客户编号", required = true, example = "1024")
+    @PreAuthorize("@ss.hasPermission('crm:customer:query')")
+    public CommonResult<CrmCustomer360SummaryRespVO> getCustomer360Summary(
+            @RequestParam("customerId") Long customerId) {
+        boolean queryAllWorkOrders = securityFrameworkService.hasPermission("crm:work-order:query-all");
+        return success(customer360Service.getSummary(customerId, getLoginUserId(), queryAllWorkOrders));
     }
 
     @GetMapping("/duplicate-check")

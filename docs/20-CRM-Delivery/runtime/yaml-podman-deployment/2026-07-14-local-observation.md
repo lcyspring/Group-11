@@ -30,6 +30,8 @@ rootless Podman，应用产物由 Ubuntu 26.04 构建容器生成。
 | 客服工单闭环 | `/admin-api/crm/work-order/*` | 创建、开始、完结、轨迹、通知和待办通过 |
 | 工单统计 | `/admin-api/crm/statistics-work-order/*` | 五个接口均 `code=0` |
 | 客户 360 工单记录 | `/admin-api/crm/work-order/page?customerId=17` | `code=0`，返回 2 条匹配工单 |
+| 客户 360 统一摘要 | `/admin-api/crm/customer/360-summary?customerId=17` | `code=0`，合同/回款/发票/附件净额正确 |
+| 客户 360 发票过滤 | `/admin-api/crm/invoice/page?customerId=17` | `code=0`，3 条记录均属于客户 17 |
 | 工单手工分派 | `/admin-api/crm/work-order/assign` | `W-202607-0003` 从用户 100 分派至 145，轨迹和通知通过 |
 | CRM 发票生命周期 | `/admin-api/crm/invoice/*` | 草稿、开具、部分/全部红冲、红票作废恢复、超额拒绝和轨迹通过 |
 | Pod | `mitedtsm-rootless` | 运行中 |
@@ -86,3 +88,7 @@ bash ./down.sh ./config/runtime-local.yaml
 - CRM 当前回归 204/204，JaCoCo 行覆盖率 37.47%，客户生命周期目录 ESLint 0 警告。
 - 客户四态状态命令、历史查询和画像统计已在更新后的 8080/8081 真实服务通过；流失空原因
   返回 `1020006020`，画像返回生命周期状态 10 和数量 1。
+- 客户 360 摘要已在更新后的 Server 验证：合同 3、发票 3、合同附件 1、合同额 16016.00、
+  已确认回款 16016.000000；参与人范围工单为 3，OA 任务明确标记未接入。
+- CRM 当前回归 208/208；JaCoCo 指令 40.08%、分支 37.32%、行 37.91%、方法 25.61%；
+  客户 360 专项 ESLint 0 警告，Web/Server Ubuntu 26.04 构建与热替换通过。

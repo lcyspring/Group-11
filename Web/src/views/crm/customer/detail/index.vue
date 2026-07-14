@@ -37,6 +37,7 @@
       {{ t('putPool') }}
     </el-button>
   </CustomerDetailsHeader>
+  <Customer360Summary v-if="customerId" ref="summaryRef" :customer-id="customerId" />
   <el-col>
     <el-tabs>
       <el-tab-pane :label="t('followUpTab')">
@@ -77,6 +78,9 @@
       </el-tab-pane>
       <el-tab-pane :label="t('workOrderTab')" lazy>
         <WorkOrderList :customer-id="customer.id!" />
+      </el-tab-pane>
+      <el-tab-pane v-if="canQueryInvoice" :label="t('invoiceTab')" lazy>
+        <CustomerInvoiceList :customer-id="customer.id!" />
       </el-tab-pane>
       <el-tab-pane :label="t('operateLogTab')">
         <OperateLogV2 :log-list="logList" />
@@ -150,6 +154,9 @@ import CustomerDistributeForm from '@/views/crm/customer/pool/CustomerDistribute
 import CustomerOwnerRecordList from './CustomerOwnerRecordList.vue'
 import CustomerLifecycleRecordList from './CustomerLifecycleRecordList.vue'
 import WorkOrderList from '@/views/crm/workorder/components/WorkOrderList.vue'
+import CustomerInvoiceList from '@/views/crm/invoice/components/CustomerInvoiceList.vue'
+import Customer360Summary from './Customer360Summary.vue'
+import { checkPermi } from '@/utils/permission'
 
 defineOptions({ name: 'CrmCustomerDetail' })
 
@@ -163,6 +170,8 @@ const { push, currentRoute } = useRouter() // 路由
 const permissionListRef = ref<InstanceType<typeof PermissionList>>() // 团队成员列表 Ref
 const ownerRecordListRef = ref<InstanceType<typeof CustomerOwnerRecordList>>() // 归属记录 Ref
 const lifecycleRecordListRef = ref<InstanceType<typeof CustomerLifecycleRecordList>>()
+const summaryRef = ref<InstanceType<typeof Customer360Summary>>()
+const canQueryInvoice = checkPermi(['crm:invoice:query'])
 
 /** 获取详情 */
 const customer = ref<CustomerApi.CustomerVO>({} as CustomerApi.CustomerVO) // 客户详情
@@ -220,6 +229,7 @@ const submitLifecycleStatus = async () => {
     message.success(t('updateLifecycleStatusSuccess'))
     await getCustomer()
     await lifecycleRecordListRef.value?.getList()
+    await summaryRef.value?.loadData()
   } finally {
     lifecycleSubmitting.value = false
   }

@@ -1,0 +1,37 @@
+schema_version: 1
+
+image:
+  base: docker.io/library/ubuntu:26.04
+  name: localhost/mitedtsm-build-ubuntu:26.04
+  rebuild: false
+
+toolchain:
+  pnpm_version: 11.3.0
+
+build:
+  server: false
+  init_service: false
+  web: true
+  clean: false
+  crm_tests: false
+  crm_coverage: false
+  ci: true
+  maven_threads: 4
+  pnpm_frozen_lockfile: true
+
+network:
+  use_host_proxy: false
+
+web:
+  baidu_analytics_code: disabled
+  test_script: lint:crm-customer-360
+
+cache:
+  maven_volume: mitedtsm-build-maven-cache
+  pnpm_store_volume: mitedtsm-build-pnpm-store
+  pnpm_store_path: /pnpm-store
+  web_node_modules_volume: mitedtsm-build-web-node-modules
+
+runtime:
+  memory: 8g
+  cpus: 4

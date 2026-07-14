@@ -49,6 +49,7 @@
 | `crm-work-order-minimum-closure/` | 客服工单状态机、权限、轨迹、通知、待办和运行闭环 |
 | `crm-work-order-statistics/` | 工单汇总、状态、类型、处理人和创建/完结趋势统计 |
 | `customer-360-work-orders/` | 客户 360 工单分页、详情入口和对象范围复用 |
+| `customer-360-read-model/` | 客户 360 聚合口径、权限范围、真实 SQL、专项构建和覆盖率 |
 | `crm-work-order-dispatch/` | 待处理工单分派、并发保护、轨迹通知和多维视图筛选 |
 | `crm-invoice-lifecycle/` | 发票草稿、开具、红冲、作废、金额守恒、Provider 幂等和前端状态机 |
 | `crm-contract-lifecycle/` | 合同附件、实际签署、Provider 能力、作废、幂等和不可变轨迹 |

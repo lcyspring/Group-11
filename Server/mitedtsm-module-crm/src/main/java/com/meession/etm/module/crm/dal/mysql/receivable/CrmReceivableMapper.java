@@ -71,13 +71,19 @@ public interface CrmReceivableMapper extends BaseMapperX<CrmReceivableDO> {
         CrmPermissionUtils.appendPermissionCondition(query, CrmBizTypeEnum.CRM_RECEIVABLE.getType(),
                 CrmReceivableDO::getId, userId, pageReqVO.getSceneType());
         // 拼接自身的查询条件
-        query.selectAll(CrmReceivableDO.class)
-                .eqIfPresent(CrmReceivableDO::getNo, pageReqVO.getNo())
+        query.selectAll(CrmReceivableDO.class);
+        appendPageFilter(query, pageReqVO);
+        return selectJoinPage(pageReqVO, CrmReceivableDO.class, query);
+    }
+
+    static void appendPageFilter(MPJLambdaWrapperX<CrmReceivableDO> query,
+                                 CrmReceivablePageReqVO pageReqVO) {
+        query.eqIfPresent(CrmReceivableDO::getNo, pageReqVO.getNo())
                 .eqIfPresent(CrmReceivableDO::getPlanId, pageReqVO.getPlanId())
                 .eqIfPresent(CrmReceivableDO::getContractId, pageReqVO.getContractId())
+                .eqIfPresent(CrmReceivableDO::getCustomerId, pageReqVO.getCustomerId())
                 .eqIfPresent(CrmReceivableDO::getAuditStatus, pageReqVO.getAuditStatus())
                 .orderByDesc(CrmReceivableDO::getId);
-        return selectJoinPage(pageReqVO, CrmReceivableDO.class, query);
     }
 
     default Long selectCountByAudit(Long userId) {

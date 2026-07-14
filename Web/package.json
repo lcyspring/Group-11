@@ -12,6 +12,7 @@
     "lint:crm-invoice": "eslint --max-warnings=0 --ext .ts,.vue src/api/crm/invoice src/views/crm/invoice",
     "lint:crm-contract-lifecycle": "eslint --max-warnings=0 --ext .ts,.vue src/api/crm/contract/lifecycle.ts src/views/crm/contract/detail/ContractLifecyclePanel.vue src/views/crm/contract/detail/index.vue",
     "lint:crm-customer-lifecycle": "eslint --max-warnings=0 --ext .ts,.vue src/api/crm/customer/index.ts src/api/crm/statistics/portrait.ts src/views/crm/customer src/views/crm/statistics/portrait/components/PortraitCustomerDealStatus.vue",
+    "lint:crm-customer-360": "eslint --max-warnings=0 --ext .ts,.vue src/api/crm/customer/index.ts src/views/crm/customer/detail src/views/crm/invoice/components/CustomerInvoiceList.vue",
     "build:local": "node --max_old_space_size=4096 ./node_modules/vite/bin/vite.js build",
     "build:dev": "node --max_old_space_size=4096 ./node_modules/vite/bin/vite.js build --mode dev",
     "build:test": "node --max_old_space_size=4096 ./node_modules/vite/bin/vite.js build --mode test",

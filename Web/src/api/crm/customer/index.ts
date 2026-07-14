@@ -57,6 +57,24 @@ export interface CustomerLifecycleRecordVO {
   changeTime: Date
 }
 
+export interface Customer360SummaryVO {
+  customerId: number
+  contactCount: number
+  businessCount: number
+  mappedOrderCount: number
+  receivablePlanCount: number
+  receivableCount: number
+  invoiceCount: number
+  workOrderCount: number
+  contractAttachmentCount: number
+  contractAmount: number
+  approvedReceivableAmount: number
+  effectiveInvoiceAmount: number
+  outstandingReceivableAmount: number
+  uninvoicedAmount: number
+  taskSupported: boolean
+}
+
 export interface CustomerDuplicateVO {
   id: number
   name: string
@@ -104,6 +122,13 @@ export const getFollowCustomerCount = async () => {
 // 查询客户详情
 export const getCustomer = async (id: number) => {
   return await request.get({ url: `/crm/customer/get?id=` + id })
+}
+
+export const getCustomer360Summary = async (customerId: number) => {
+  return await request.get<Customer360SummaryVO>({
+    url: '/crm/customer/360-summary',
+    params: { customerId }
+  })
 }
 
 // 查询当前用户可见的疑似重复客户
