@@ -25,6 +25,7 @@ yaml_config_init "$1"
 
 POD_NAME="$(yaml_require deployment.pod_name)"
 STOP_TIMEOUT="$(yaml_positive_integer deployment.stop_timeout_seconds)"
+SERVER_CONTAINER="$(yaml_require container.server)"
 SHUTDOWN_MODE="$(yaml_require operation.shutdown_mode)"
 REMOVE_VOLUMES="$(yaml_bool operation.remove_volumes_on_down)"
 VOLUMES=(
@@ -62,6 +63,11 @@ esac
 
 if podman pod inspect "$POD_NAME" >/dev/null 2>&1; then
     printf 'Stopping Pod %s gracefully (timeout: %ss).\n' "$POD_NAME" "$STOP_TIMEOUT"
+    # Spring shutdown hooks may require MySQL/RabbitMQ, so stop the app first.
+    if [[ "$(podman inspect --format '{{.State.Running}}' "$SERVER_CONTAINER" 2>/dev/null)" == "true" ]]; then
+        printf 'Stopping application server before infrastructure.\n'
+        podman stop --time "$STOP_TIMEOUT" "$SERVER_CONTAINER"
+    fi
     if ! podman pod stop --time "$STOP_TIMEOUT" "$POD_NAME"; then
         printf 'Graceful stop failed; forcibly removing Pod %s.\n' "$POD_NAME" >&2
         podman pod rm --force "$POD_NAME"

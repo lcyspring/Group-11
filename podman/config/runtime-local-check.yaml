@@ -70,6 +70,7 @@ mysql:
   character_set: utf8mb4
   collation: utf8mb4_unicode_ci
   authentication_plugin: mysql_native_password
+  timezone: Asia/Shanghai
 
 rabbitmq:
   username: rabbit

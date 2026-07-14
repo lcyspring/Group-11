@@ -85,6 +85,7 @@ MYSQL_ROOT_PASSWORD="$(yaml_require mysql.root_password)"
 MYSQL_CHARACTER_SET="$(yaml_require mysql.character_set)"
 MYSQL_COLLATION="$(yaml_require mysql.collation)"
 MYSQL_AUTHENTICATION_PLUGIN="$(yaml_require mysql.authentication_plugin)"
+MYSQL_TIMEZONE="$(yaml_require mysql.timezone)"
 RABBITMQ_USERNAME="$(yaml_require rabbitmq.username)"
 RABBITMQ_PASSWORD="$(yaml_require rabbitmq.password)"
 TDENGINE_HOST="$(yaml_require tdengine.host)"
@@ -703,6 +704,11 @@ ensure_volume "$TDENGINE_VOLUME"
 
 if podman_cmd pod inspect "$POD_NAME" >/dev/null 2>&1; then
     printf 'Replacing existing Pod %s gracefully (timeout: %ss).\n' "$POD_NAME" "$STOP_TIMEOUT"
+    # Keep databases and brokers available while Spring executes shutdown hooks.
+    if container_is_running "$SERVER_CONTAINER"; then
+        printf 'Stopping application server before infrastructure.\n'
+        podman_cmd stop --time "$STOP_TIMEOUT" "$SERVER_CONTAINER"
+    fi
     if ! podman_cmd pod stop --time "$STOP_TIMEOUT" "$POD_NAME"; then
         printf 'Graceful stop failed; forcibly removing Pod %s.\n' "$POD_NAME" >&2
         podman_cmd pod rm --force "$POD_NAME"
@@ -723,6 +729,7 @@ podman_cmd run -d --replace --name "$MYSQL_CONTAINER" --pod "$POD_NAME" --pull=n
     --volume "${MYSQL_VOLUME}:/var/lib/mysql" \
     --env "MYSQL_DATABASE=${MYSQL_DATABASE}" \
     --env "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}" \
+    --env "TZ=${MYSQL_TIMEZONE}" \
     "$MYSQL_IMAGE" \
     "--character-set-server=${MYSQL_CHARACTER_SET}" \
     "--collation-server=${MYSQL_COLLATION}" \
