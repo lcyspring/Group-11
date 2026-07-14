@@ -26,8 +26,8 @@ export interface CrmStatisticsFollowUpSummaryByDateRespVO {
 
 export interface CrmStatisticsFollowUpSummaryByUserRespVO {
   ownerUserName: string
-  followupRecordCount: number
-  followupCustomerCount: number
+  followUpRecordCount: number
+  followUpCustomerCount: number
 }
 
 export interface CrmStatisticsFollowUpSummaryByTypeRespVO {
@@ -40,12 +40,21 @@ export interface CrmStatisticsCustomerContractSummaryRespVO {
   contractName: string
   totalPrice: number
   receivablePrice: number
-  customerType: string
-  customerSource: string
+  industryId: number
+  source: number
+  ownerUserId: number
   ownerUserName: string
+  creator: string
   creatorUserName: string
   createTime: Date
   orderDate: Date
+}
+
+export interface CrmStatisticsCustomerDealTopRespVO {
+  customerId: number
+  customerName: string
+  contractCount: number
+  contractAmount: number | string
 }
 
 export interface CrmStatisticsPoolSummaryByDateRespVO {
@@ -124,6 +133,13 @@ export const StatisticsCustomerApi = {
   getContractSummary: (params: any) => {
     return request.get({
       url: '/crm/statistics-customer/get-contract-summary',
+      params
+    })
+  },
+  // 4.2 客户成交金额 TOP10
+  getCustomerDealTop10: (params: any) => {
+    return request.get({
+      url: '/crm/statistics-customer/get-customer-deal-top10',
       params
     })
   },

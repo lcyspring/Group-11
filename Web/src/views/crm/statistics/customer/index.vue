@@ -112,6 +112,10 @@
       <el-tab-pane :label="t('customer.conversion')" lazy name="conversionStat">
         <CustomerConversionStat ref="conversionStatRef" :query-params="queryParams" />
       </el-tab-pane>
+      <!-- 客户成交金额 TOP10 -->
+      <el-tab-pane :label="t('customer.dealTop10')" lazy name="dealTop10">
+        <CustomerDealTop10 ref="dealTop10Ref" :query-params="queryParams" />
+      </el-tab-pane>
       <!-- 公海客户分析 -->
       <el-tab-pane :label="t('customer.poolSummary')" lazy name="poolSummary">
         <CustomerPoolSummary ref="customerPoolSummaryRef" :query-params="queryParams" />
@@ -138,6 +142,7 @@ import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import { beginOfDay, defaultShortcuts, endOfDay, formatDate } from '@/utils/formatTime'
 import { defaultProps, handleTree } from '@/utils/tree'
 import CustomerConversionStat from './components/CustomerConversionStat.vue'
+import CustomerDealTop10 from './components/CustomerDealTop10.vue'
 import CustomerDealCycleByUser from './components/CustomerDealCycleByUser.vue'
 import CustomerDealCycleByArea from './components/CustomerDealCycleByArea.vue'
 import CustomerDealCycleByProduct from './components/CustomerDealCycleByProduct.vue'
@@ -177,10 +182,11 @@ const customerSummaryRef = ref() // 1. 客户总量分析
 const followUpSummaryRef = ref() // 2. 客户跟进次数分析
 const followUpTypeRef = ref() // 3. 客户跟进方式分析
 const conversionStatRef = ref() // 4. 客户转化率分析
-const customerPoolSummaryRef = ref() // 5. 客户公海分析
-const dealCycleByUserRef = ref() // 6. 成交周期分析(按员工)
-const dealCycleByAreaRef = ref() // 7. 成交周期分析(按地区)
-const dealCycleByProductRef = ref() // 8. 成交周期分析(按产品)
+const dealTop10Ref = ref() // 5. 客户成交金额 TOP10
+const customerPoolSummaryRef = ref() // 6. 客户公海分析
+const dealCycleByUserRef = ref() // 7. 成交周期分析(按员工)
+const dealCycleByAreaRef = ref() // 8. 成交周期分析(按地区)
+const dealCycleByProductRef = ref() // 9. 成交周期分析(按产品)
 
 /** 搜索按钮操作 */
 const handleQuery = () => {
@@ -196,6 +202,9 @@ const handleQuery = () => {
       break
     case 'conversionStat': // 客户转化率分析
       conversionStatRef.value?.loadData?.()
+      break
+    case 'dealTop10': // 客户成交金额 TOP10
+      dealTop10Ref.value?.loadData?.()
       break
     case 'poolSummary': // 公海客户分析
       customerPoolSummaryRef.value?.loadData?.()

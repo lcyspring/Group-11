@@ -60,6 +60,11 @@ public interface CrmStatisticsCustomerService {
     List<CrmStatisticsCustomerContractSummaryRespVO> getContractSummary(CrmStatisticsCustomerReqVO reqVO);
 
     /**
+     * 获取客户成交金额 TOP10。
+     */
+    List<CrmStatisticsCustomerDealTopRespVO> getCustomerDealTop10(CrmStatisticsCustomerReqVO reqVO);
+
+    /**
      * 公海客户分析(按日期)
      *
      * @param reqVO 请求参数

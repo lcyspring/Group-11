@@ -684,6 +684,7 @@ export default {
       followUpSummary: '客户跟进次数分析',
       followUpType: '客户跟进方式分析',
       conversion: '客户转化率分析',
+      dealTop10: '客户成交 TOP10',
       poolSummary: '公海客户分析',
       dealCycleByArea: '地区客户成交周期分析',
       dealCycleByProduct: '产品客户成交周期分析',
@@ -707,6 +708,9 @@ export default {
       industryId: '客户行业',
       creatorUserName: '创建人',
       orderDate: '下单日期',
+      rank: '排名',
+      contractCount: '成交合同数',
+      dealAmount: '成交金额（元）',
       // 图表
       newCustomerCount: '新增客户数',
       dealCustomerCount: '成交客户数',

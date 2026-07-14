@@ -68,6 +68,14 @@ public class CrmStatisticsCustomerController {
         return success(customerService.getContractSummary(reqVO));
     }
 
+    @GetMapping("/get-customer-deal-top10")
+    @Operation(summary = "获取客户成交金额 TOP10", description = "按审批通过合同金额降序排列")
+    @PreAuthorize("@ss.hasPermission('crm:statistics-customer:query')")
+    public CommonResult<List<CrmStatisticsCustomerDealTopRespVO>> getCustomerDealTop10(
+            @Valid CrmStatisticsCustomerReqVO reqVO) {
+        return success(customerService.getCustomerDealTop10(reqVO));
+    }
+
     @GetMapping("/get-pool-summary-by-date")
     @Operation(summary = "获取公海客户分析(按日期)")
     @PreAuthorize("@ss.hasPermission('crm:statistics-customer:query')")

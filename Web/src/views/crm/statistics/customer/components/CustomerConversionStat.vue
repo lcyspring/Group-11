@@ -66,6 +66,7 @@
 <script setup lang="ts">
 import {
   StatisticsCustomerApi,
+  CrmStatisticsCustomerContractSummaryRespVO,
   CrmStatisticsCustomerSummaryByDateRespVO
 } from '@/api/crm/statistics/customer'
 import { EChartsOption } from 'echarts'
@@ -80,7 +81,7 @@ const { t } = useI18n('crm.statistics') // 国际化
 const props = defineProps<{ queryParams: any }>() // 搜索参数
 
 const loading = ref(false) // 加载中
-const list = ref<CrmStatisticsCustomerSummaryByDateRespVO[]>([]) // 列表的数据
+const list = ref<CrmStatisticsCustomerContractSummaryRespVO[]>([]) // 列表的数据
 
 /** 柱状图配置：纵向 */
 const echartsOption = reactive<EChartsOption>({

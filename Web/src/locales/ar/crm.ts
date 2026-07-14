@@ -684,6 +684,7 @@ export default {
       followUpSummary: 'ملخص المتابعة',
       followUpType: 'نوع المتابعة',
       conversion: 'تحويل العملاء',
+      dealTop10: 'أفضل 10 عملاء حسب الصفقات',
       poolSummary: 'ملخص مجموعة العملاء',
       dealCycleByArea: 'دورة الصفقة حسب المنطقة',
       dealCycleByProduct: 'دورة الصفقة حسب المنتج',
@@ -707,6 +708,9 @@ export default {
       industryId: 'الصناعة',
       creatorUserName: 'المنشئ',
       orderDate: 'تاريخ الطلب',
+      rank: 'الترتيب',
+      contractCount: 'عقود الصفقات',
+      dealAmount: 'مبلغ الصفقة',
       // Chart
       newCustomerCount: 'عملاء جدد',
       dealCustomerCount: 'عملاء الصفقات',

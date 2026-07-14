@@ -684,6 +684,7 @@ export default {
       followUpSummary: 'Follow Up Summary',
       followUpType: 'Follow Up Type',
       conversion: 'Customer Conversion',
+      dealTop10: 'Customer Deal TOP10',
       poolSummary: 'Customer Pool Summary',
       dealCycleByArea: 'Deal Cycle by Area',
       dealCycleByProduct: 'Deal Cycle by Product',
@@ -707,6 +708,9 @@ export default {
       industryId: 'Industry',
       creatorUserName: 'Creator',
       orderDate: 'Order Date',
+      rank: 'Rank',
+      contractCount: 'Deal Contracts',
+      dealAmount: 'Deal Amount',
       // Chart
       newCustomerCount: 'New Customers',
       dealCustomerCount: 'Deal Customers',

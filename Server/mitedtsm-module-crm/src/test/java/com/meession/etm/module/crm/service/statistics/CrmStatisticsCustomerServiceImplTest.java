@@ -1,6 +1,7 @@
 package com.meession.etm.module.crm.service.statistics;
 
 import com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerDealCycleByDateRespVO;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerDealTopRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerReqVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerSummaryByDateRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerSummaryByUserRespVO;
@@ -22,6 +23,23 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class CrmStatisticsCustomerServiceImplTest {
+
+    @Test
+    void getCustomerDealTop10UsesSelectedOwnerScope() {
+        List<CrmStatisticsCustomerDealTopRespVO> expected = List.of(new CrmStatisticsCustomerDealTopRespVO()
+                .setCustomerId(10L).setCustomerName("重点客户").setContractCount(2L)
+                .setContractAmount(new BigDecimal("100000.00")));
+        CrmStatisticsCustomerServiceImpl service = serviceWithMapper((proxy, method, args) -> {
+            if (method.getName().equals("selectCustomerDealTop10")) {
+                CrmStatisticsCustomerReqVO reqVO = (CrmStatisticsCustomerReqVO) args[0];
+                assertEquals(List.of(1L), reqVO.getUserIds());
+                return expected;
+            }
+            throw new AssertionError("未预期的 Mapper 调用 " + method.getName());
+        });
+
+        assertEquals(expected, service.getCustomerDealTop10(request()));
+    }
 
     @Test
     void getCustomerSummaryByDateReturnsServerDefinedDealRate() {

@@ -217,6 +217,29 @@
          ORDER BY customer.create_time, customer.id
     </select>
 
+    <select id="selectCustomerDealTop10"
+            resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerDealTopRespVO">
+        SELECT customer.id AS customerId,
+               customer.name AS customerName,
+               COUNT(contract.id) AS contractCount,
+               COALESCE(SUM(contract.total_price), 0) AS contractAmount
+          FROM crm_customer AS customer
+         INNER JOIN crm_contract AS contract
+            ON contract.customer_id = customer.id
+           AND contract.deleted = 0
+           AND contract.audit_status = ${@com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
+         WHERE customer.deleted = 0
+           AND customer.owner_user_id IN
+                <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+                    #{userId}
+                </foreach>
+           AND contract.order_date BETWEEN #{times[0],javaType=java.time.LocalDateTime}
+               AND #{times[1],javaType=java.time.LocalDateTime}
+         GROUP BY customer.id, customer.name
+         ORDER BY contractAmount DESC, customer.id ASC
+         LIMIT 10
+    </select>
+
     <select id="selectPoolCustomerPutCountByDate"
             resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsPoolSummaryByDateRespVO">
         SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS time,

@@ -200,6 +200,15 @@ public class CrmStatisticsCustomerServiceImpl implements CrmStatisticsCustomerSe
     }
 
     @Override
+    public List<CrmStatisticsCustomerDealTopRespVO> getCustomerDealTop10(CrmStatisticsCustomerReqVO reqVO) {
+        reqVO.setUserIds(getUserIds(reqVO));
+        if (CollUtil.isEmpty(reqVO.getUserIds())) {
+            return Collections.emptyList();
+        }
+        return customerMapper.selectCustomerDealTop10(reqVO);
+    }
+
+    @Override
     public List<CrmStatisticsPoolSummaryByDateRespVO> getPoolSummaryByDate(CrmStatisticsCustomerReqVO reqVO) {
         // 1. 获得用户编号数组
         reqVO.setUserIds(getUserIds(reqVO));

@@ -104,6 +104,11 @@ public interface CrmStatisticsCustomerMapper {
     List<CrmStatisticsCustomerContractSummaryRespVO> selectContractSummary(CrmStatisticsCustomerReqVO reqVO);
 
     /**
+     * 客户成交金额 TOP10。
+     */
+    List<CrmStatisticsCustomerDealTopRespVO> selectCustomerDealTop10(CrmStatisticsCustomerReqVO reqVO);
+
+    /**
      * 跟进次数(按类型)
      *
      * @param reqVO 请求参数
