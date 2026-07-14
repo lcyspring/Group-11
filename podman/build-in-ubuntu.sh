@@ -96,6 +96,7 @@ BUILD_CRM_TESTS="$(normalize_bool "$(config_value build.crm_tests true)")"
 BUILD_CRM_COVERAGE="$(normalize_bool "$(config_value build.crm_coverage true)")"
 BUILD_CI="$(normalize_bool "$(config_value build.ci true)")"
 BAIDU_ANALYTICS_CODE="$(config_value web.baidu_analytics_code '')"
+WEB_TEST_SCRIPT="$(config_value web.test_script '')"
 MAVEN_THREADS="$(config_value build.maven_threads 1C)"
 PNPM_FROZEN_LOCKFILE="$(normalize_bool "$(config_value build.pnpm_frozen_lockfile true)")"
 USE_HOST_PROXY="$(normalize_bool "$(config_value network.use_host_proxy false)")"
@@ -117,6 +118,10 @@ if [[ "$BAIDU_ANALYTICS_CODE" == "disabled" ]]; then
 fi
 if [[ -n "$BAIDU_ANALYTICS_CODE" && ! "$BAIDU_ANALYTICS_CODE" =~ ^[A-Za-z0-9_-]+$ ]]; then
     printf 'web.baidu_analytics_code contains unsupported characters.\n' >&2
+    exit 2
+fi
+if [[ -n "$WEB_TEST_SCRIPT" && ! "$WEB_TEST_SCRIPT" =~ ^[A-Za-z0-9:_-]+$ ]]; then
+    printf 'web.test_script contains unsupported characters.\n' >&2
     exit 2
 fi
 
@@ -188,5 +193,6 @@ podman run "${podman_proxy_args[@]}" --rm --pull=never \
     --env "PNPM_STORE_PATH=$PNPM_STORE_PATH" \
     --env "BUILD_USE_HOST_PROXY=$USE_HOST_PROXY" \
     --env "VITE_APP_BAIDU_CODE=$BAIDU_ANALYTICS_CODE" \
+    --env "WEB_TEST_SCRIPT=$WEB_TEST_SCRIPT" \
     "${proxy_args[@]}" \
     "$BUILD_IMAGE"

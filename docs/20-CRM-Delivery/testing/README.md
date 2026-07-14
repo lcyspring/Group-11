@@ -6,9 +6,9 @@
 
 更新日期：2026-07-14
 
-- Ubuntu 26.04 容器 CRM 自动化：170/170，失败 0、错误 0、跳过 0。
-- JaCoCo clean 基线：指令 34.60%、分支 33.82%、行 32.64%、方法 22.50%。
-- Ubuntu 26.04 容器 CRM 前端纯函数：7/7。
+- Ubuntu 26.04 容器 CRM 自动化：192/192，失败 0、错误 0、跳过 0。
+- JaCoCo clean 基线：指令 38.22%、分支 35.86%、行 36.05%、方法 24.53%。
+- Ubuntu 26.04 容器 CRM 前端纯函数：统计 7/7，发票 3/3。
 - 原始报告：`Server/mitedtsm-module-crm/target/site/jacoco/`，属于构建产物，不提交。
 
 ## 目录索引
@@ -49,6 +49,7 @@
 | `crm-work-order-statistics/` | 工单汇总、状态、类型、处理人和创建/完结趋势统计 |
 | `customer-360-work-orders/` | 客户 360 工单分页、详情入口和对象范围复用 |
 | `crm-work-order-dispatch/` | 待处理工单分派、并发保护、轨迹通知和多维视图筛选 |
+| `crm-invoice-lifecycle/` | 发票草稿、开具、红冲、作废、金额守恒、Provider 幂等和前端状态机 |
 
 运行入口统一为：
 

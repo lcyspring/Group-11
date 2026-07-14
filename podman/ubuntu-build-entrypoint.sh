@@ -118,21 +118,37 @@ if [[ "$BUILD_CRM_TESTS" == "true" ]]; then
     fi
 fi
 
-if [[ "$BUILD_WEB" == "true" ]]; then
-    printf 'Building Web inside Ubuntu 26.04.\n'
-    rm -rf /workspace/Web/dist-prod
+if [[ "$BUILD_WEB" == "true" || -n "${WEB_TEST_SCRIPT:-}" ]]; then
+    if [[ "$BUILD_WEB" == "true" ]]; then
+        printf 'Building Web inside Ubuntu 26.04.\n'
+        rm -rf /workspace/Web/dist-prod
+    else
+        printf 'Testing Web inside Ubuntu 26.04.\n'
+    fi
     install_args=(--dir /workspace/Web --store-dir "$PNPM_STORE_PATH" install)
     if [[ "$PNPM_FROZEN_LOCKFILE" == "true" ]]; then
         install_args+=(--frozen-lockfile)
     fi
     if [[ "$BUILD_CI" == "true" ]]; then
         run_without_proxy env CI=true pnpm "${install_args[@]}"
-        run_without_proxy env -u VITE_BASE_URL CI=true pnpm --dir /workspace/Web run build:prod
+        if [[ -n "${WEB_TEST_SCRIPT:-}" ]]; then
+            run_without_proxy env CI=true pnpm --dir /workspace/Web run "$WEB_TEST_SCRIPT"
+        fi
+        if [[ "$BUILD_WEB" == "true" ]]; then
+            run_without_proxy env -u VITE_BASE_URL CI=true pnpm --dir /workspace/Web run build:prod
+        fi
     else
         run_without_proxy pnpm "${install_args[@]}"
-        run_without_proxy env -u VITE_BASE_URL pnpm --dir /workspace/Web run build:prod
+        if [[ -n "${WEB_TEST_SCRIPT:-}" ]]; then
+            run_without_proxy pnpm --dir /workspace/Web run "$WEB_TEST_SCRIPT"
+        fi
+        if [[ "$BUILD_WEB" == "true" ]]; then
+            run_without_proxy env -u VITE_BASE_URL pnpm --dir /workspace/Web run build:prod
+        fi
     fi
-    require_file /workspace/Web/dist-prod/index.html
+    if [[ "$BUILD_WEB" == "true" ]]; then
+        require_file /workspace/Web/dist-prod/index.html
+    fi
 fi
 
 printf 'Ubuntu 26.04 build completed successfully.\n'

@@ -30,6 +30,9 @@ public class CrmNoRedisDAO {
      */
     public static final String RECEIVABLE_PREFIX = "HK";
 
+    /** 发票申请号前缀。 */
+    public static final String INVOICE_PREFIX = "FP";
+
     /** 客服工单编号前缀。 */
     public static final String WORK_ORDER_PREFIX = "W-";
 

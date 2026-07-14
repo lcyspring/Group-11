@@ -165,4 +165,25 @@ public interface ErrorCodeConstants {
             "只有工单创建人或具有全量工单权限的调度人员可以分派工单");
     ErrorCode WORK_ORDER_HANDLER_UNCHANGED = new ErrorCode(1_020_015_010, "新处理人不能与当前处理人相同");
 
+    // ========== 发票 1_020_016_000 ==========
+    ErrorCode INVOICE_NOT_EXISTS = new ErrorCode(1_020_016_000, "发票不存在");
+    ErrorCode INVOICE_NO_EXISTS = new ErrorCode(1_020_016_001, "发票申请号已存在，请重试");
+    ErrorCode INVOICE_FISCAL_NO_EXISTS = new ErrorCode(1_020_016_002, "税务发票号码已存在");
+    ErrorCode INVOICE_CONTRACT_NOT_APPROVED = new ErrorCode(1_020_016_003, "只有审批通过的合同可以开票");
+    ErrorCode INVOICE_DRAFT_ONLY = new ErrorCode(1_020_016_004, "只有草稿发票可以编辑或删除");
+    ErrorCode INVOICE_ISSUE_STATUS_INVALID = new ErrorCode(1_020_016_005, "只有草稿发票可以正式开具");
+    ErrorCode INVOICE_AMOUNT_EXCEEDS_CONTRACT = new ErrorCode(1_020_016_006,
+            "开票金额超出合同剩余可开票金额，目前可开票：{} 元");
+    ErrorCode INVOICE_SPECIAL_BUYER_INFO_REQUIRED = new ErrorCode(1_020_016_007,
+            "增值税专用发票必须填写税号、注册地址、注册电话、开户行和银行账号");
+    ErrorCode INVOICE_VOID_STATUS_INVALID = new ErrorCode(1_020_016_008, "当前发票状态不允许作废");
+    ErrorCode INVOICE_VOID_HAS_RED = new ErrorCode(1_020_016_009, "已有有效红票的蓝票不能直接作废");
+    ErrorCode INVOICE_RED_ORIGINAL_INVALID = new ErrorCode(1_020_016_010, "只有有效蓝票可以红冲");
+    ErrorCode INVOICE_RED_AMOUNT_EXCEEDS = new ErrorCode(1_020_016_011,
+            "红冲金额超出原发票剩余可红冲金额，目前可红冲：{} 元");
+    ErrorCode INVOICE_RED_CANNOT_RED = new ErrorCode(1_020_016_012, "红票不能再次红冲");
+    ErrorCode INVOICE_CONCURRENT_CHANGE = new ErrorCode(1_020_016_013, "发票状态已变化，请刷新后重试");
+    ErrorCode INVOICE_PROVIDER_RESULT_INVALID = new ErrorCode(1_020_016_014,
+            "开票适配器返回的幂等标识无效，操作已回滚");
+
 }

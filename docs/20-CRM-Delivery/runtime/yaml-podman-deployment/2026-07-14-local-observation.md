@@ -31,6 +31,7 @@ rootless Podman，应用产物由 Ubuntu 26.04 构建容器生成。
 | 工单统计 | `/admin-api/crm/statistics-work-order/*` | 五个接口均 `code=0` |
 | 客户 360 工单记录 | `/admin-api/crm/work-order/page?customerId=17` | `code=0`，返回 2 条匹配工单 |
 | 工单手工分派 | `/admin-api/crm/work-order/assign` | `W-202607-0003` 从用户 100 分派至 145，轨迹和通知通过 |
+| CRM 发票生命周期 | `/admin-api/crm/invoice/*` | 草稿、开具、部分/全部红冲、红票作废恢复、超额拒绝和轨迹通过 |
 | Pod | `mitedtsm-rootless` | 运行中 |
 | 基础设施 | MySQL、Redis、RabbitMQ、TDengine | 均运行中 |
 | 应用容器 | Server、Web、Mall | 均运行中 |
@@ -75,3 +76,7 @@ bash ./down.sh ./config/runtime-local.yaml
 - CRM 合同产品快照迁移已由 `rebuild-server` 执行并重复运行验证幂等；
 - 运行样例合同 21 在产品改名、改编码、改单位、改价并下架后仍返回成交时快照；
 - CRM 当前回归 173/173，JaCoCo 行覆盖率 33.33%，Web/Server 均通过 Ubuntu 26.04 构建并热替换。
+- CRM 发票后端回归并入当前 192/192 基线；发票前端专项 3/3，目录 ESLint 0 警告；
+- 发票日期契约缺陷 `CRM-INV-BUG-003` 已修复，Ubuntu 26.04 Web 生产产物完成热替换；
+- 合同 13 的运行样本完成金额守恒：100.00 蓝票、红票作废恢复、100.00 全额红冲后净额归零；
+- 16016.01 超合同额度请求返回业务码 `1020016006`，未写入草稿。

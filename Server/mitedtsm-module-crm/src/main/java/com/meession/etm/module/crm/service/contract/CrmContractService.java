@@ -106,6 +106,9 @@ public interface CrmContractService {
      */
     CrmContractDO validateContract(Long id);
 
+    /** 锁定并校验合同，用于串行化合同金额类下游单据。 */
+    CrmContractDO validateContractForUpdate(Long id);
+
     /**
      * 获得合同列表
      *

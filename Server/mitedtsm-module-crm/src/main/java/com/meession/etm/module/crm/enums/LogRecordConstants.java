@@ -160,4 +160,20 @@ public interface LogRecordConstants {
     String CRM_RECEIVABLE_PLAN_DELETE_SUB_TYPE = "删除回款计划";
     String CRM_RECEIVABLE_PLAN_DELETE_SUCCESS = "删除了合同【{getContractById{#receivablePlan.contractId}}】的第【{{#receivablePlan.period}}】期回款计划";
 
+    // ======================= CRM_INVOICE 发票 =======================
+
+    String CRM_INVOICE_TYPE = "CRM 发票";
+    String CRM_INVOICE_CREATE_SUB_TYPE = "创建发票草稿";
+    String CRM_INVOICE_CREATE_SUCCESS = "创建了发票申请【{{#invoice.no}}】";
+    String CRM_INVOICE_UPDATE_SUB_TYPE = "修改发票草稿";
+    String CRM_INVOICE_UPDATE_SUCCESS = "修改了发票申请【{{#invoiceNo}}】";
+    String CRM_INVOICE_DELETE_SUB_TYPE = "删除发票草稿";
+    String CRM_INVOICE_DELETE_SUCCESS = "删除了发票申请【{{#invoiceNo}}】";
+    String CRM_INVOICE_ISSUE_SUB_TYPE = "正式开具发票";
+    String CRM_INVOICE_ISSUE_SUCCESS = "正式开具发票【{{#invoiceNo}}】";
+    String CRM_INVOICE_VOID_SUB_TYPE = "作废发票";
+    String CRM_INVOICE_VOID_SUCCESS = "作废发票【{{#invoiceNo}}】";
+    String CRM_INVOICE_RED_SUB_TYPE = "红冲发票";
+    String CRM_INVOICE_RED_SUCCESS = "为发票【{{#invoiceNo}}】创建红票";
+
 }

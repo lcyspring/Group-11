@@ -13,4 +13,6 @@
 ## 处理
 
 不篡改项目基线文档；在 `docs/20-CRM-Delivery/planning/crm-finance-implementation-status/`
-建立基于代码、表和测试证据的状态表。发票继续标记为未实现并受 ADR-009 阻塞。
+建立基于代码、表和测试证据的状态表。2026-07-14 后续已按 ADR-009 实现真实发票聚合、MySQL
+迁移、前端和专项测试；新证据位于 `features/crm-invoice-lifecycle/` 与
+`testing/crm-invoice-lifecycle/`，不再沿用原模板的“已覆盖”结论。
