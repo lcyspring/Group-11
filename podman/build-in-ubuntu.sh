@@ -95,6 +95,7 @@ BUILD_CLEAN="$(normalize_bool "$(config_value build.clean true)")"
 BUILD_CRM_TESTS="$(normalize_bool "$(config_value build.crm_tests true)")"
 BUILD_CRM_COVERAGE="$(normalize_bool "$(config_value build.crm_coverage true)")"
 BUILD_CI="$(normalize_bool "$(config_value build.ci true)")"
+BAIDU_ANALYTICS_CODE="$(config_value web.baidu_analytics_code '')"
 MAVEN_THREADS="$(config_value build.maven_threads 1C)"
 PNPM_FROZEN_LOCKFILE="$(normalize_bool "$(config_value build.pnpm_frozen_lockfile true)")"
 USE_HOST_PROXY="$(normalize_bool "$(config_value network.use_host_proxy false)")"
@@ -110,6 +111,14 @@ HOST_PROXY_NAME="host.containers.internal"
     printf 'cache.pnpm_store_path must be an absolute container path outside /workspace.\n' >&2
     exit 2
 }
+
+if [[ "$BAIDU_ANALYTICS_CODE" == "disabled" ]]; then
+    BAIDU_ANALYTICS_CODE=""
+fi
+if [[ -n "$BAIDU_ANALYTICS_CODE" && ! "$BAIDU_ANALYTICS_CODE" =~ ^[A-Za-z0-9_-]+$ ]]; then
+    printf 'web.baidu_analytics_code contains unsupported characters.\n' >&2
+    exit 2
+fi
 
 container_proxy_url() {
     local url="${1:-}"
@@ -178,5 +187,6 @@ podman run "${podman_proxy_args[@]}" --rm --pull=never \
     --env "PNPM_FROZEN_LOCKFILE=$PNPM_FROZEN_LOCKFILE" \
     --env "PNPM_STORE_PATH=$PNPM_STORE_PATH" \
     --env "BUILD_USE_HOST_PROXY=$USE_HOST_PROXY" \
+    --env "VITE_APP_BAIDU_CODE=$BAIDU_ANALYTICS_CODE" \
     "${proxy_args[@]}" \
     "$BUILD_IMAGE"

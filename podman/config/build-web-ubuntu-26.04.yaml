@@ -22,6 +22,9 @@ build:
 network:
   use_host_proxy: false
 
+web:
+  baidu_analytics_code: disabled
+
 cache:
   maven_volume: mitedtsm-build-maven-cache
   pnpm_store_volume: mitedtsm-build-pnpm-store

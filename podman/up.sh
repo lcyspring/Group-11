@@ -86,6 +86,7 @@ MYSQL_CHARACTER_SET="$(yaml_require mysql.character_set)"
 MYSQL_COLLATION="$(yaml_require mysql.collation)"
 MYSQL_AUTHENTICATION_PLUGIN="$(yaml_require mysql.authentication_plugin)"
 MYSQL_TIMEZONE="$(yaml_require mysql.timezone)"
+MYSQL_COMPATIBILITY_MIGRATION_FILE="$(yaml_path mysql.compatibility_migration_file)"
 RABBITMQ_USERNAME="$(yaml_require rabbitmq.username)"
 RABBITMQ_PASSWORD="$(yaml_require rabbitmq.password)"
 TDENGINE_HOST="$(yaml_require tdengine.host)"
@@ -503,6 +504,15 @@ require_mall_assets() {
     verify_web_entry_assets "${PROJECT_ROOT}/MallFrontend/unpackage/dist/build/web"
 }
 
+apply_mysql_compatibility_migration() {
+    require_file "$MYSQL_COMPATIBILITY_MIGRATION_FILE"
+    printf 'Applying idempotent MySQL compatibility migration: %s\n' \\
+        "$(basename -- "$MYSQL_COMPATIBILITY_MIGRATION_FILE")"
+    podman_cmd exec -i "$MYSQL_CONTAINER" \\
+        mysql "-u${MYSQL_USER}" "-p${MYSQL_ROOT_PASSWORD}" "--database=${MYSQL_DATABASE}" \\
+        < "$MYSQL_COMPATIBILITY_MIGRATION_FILE"
+}
+
 verify_web_entry_assets() {
     local web_output="$1"
     local entry_html="${web_output}/index.html"
@@ -773,6 +783,7 @@ tdengine_init_pid=$!
 
 wait "$mysql_ready_pid"
 wait "$mysql_schema_ready_pid"
+apply_mysql_compatibility_migration
 wait "$redis_ready_pid"
 wait "$rabbitmq_ready_pid"
 wait "$tdengine_init_pid"
