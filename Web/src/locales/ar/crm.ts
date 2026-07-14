@@ -808,7 +808,10 @@ export default {
     // Portrait
     portrait: {
       title: 'صورة العميل',
-      area: 'توزيع المنطقة',
+      area: 'توزيع المقاطعات',
+      city: 'توزيع المدن',
+      province: 'توزيع المقاطعات',
+      country: 'توزيع الدول',
       industry: 'توزيع الصناعة',
       level: 'توزيع المستوى',
       source: 'توزيع المصدر',
@@ -816,6 +819,8 @@ export default {
       // Table fields
       index: 'رقم',
       areaName: 'المنطقة',
+      cityName: 'المدينة',
+      countryName: 'الدولة',
       customerCount: 'عدد العملاء',
       dealCustomerCount: 'عملاء الصفقات',
       dealRate: 'معدل الصفقات (%)',

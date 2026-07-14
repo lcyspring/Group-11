@@ -57,8 +57,24 @@
   <el-col>
     <el-tabs v-model="activeTab">
       <!-- 城市分布分析 -->
-      <el-tab-pane :label="t('portrait.area')" name="customerArea" lazy>
+      <el-tab-pane :label="t('portrait.city')" name="customerCity" lazy>
+        <PortraitCustomerRegion
+          ref="customerCityRef"
+          :query-params="queryParams"
+          region-type="city"
+        />
+      </el-tab-pane>
+      <!-- 省份分布分析 -->
+      <el-tab-pane :label="t('portrait.province')" name="customerArea" lazy>
         <PortraitCustomerArea ref="customerAreaRef" :query-params="queryParams" />
+      </el-tab-pane>
+      <!-- 国家分布分析 -->
+      <el-tab-pane :label="t('portrait.country')" name="customerCountry" lazy>
+        <PortraitCustomerRegion
+          ref="customerCountryRef"
+          :query-params="queryParams"
+          region-type="country"
+        />
       </el-tab-pane>
       <!-- 客户行业分析 -->
       <el-tab-pane :label="t('portrait.industry')" name="customerIndustry" lazy>
@@ -86,6 +102,7 @@ import PortraitCustomerIndustry from './components/PortraitCustomerIndustry.vue'
 import PortraitCustomerLevel from './components/PortraitCustomerLevel.vue'
 import PortraitCustomerSource from './components/PortraitCustomerSource.vue'
 import PortraitCustomerDealStatus from './components/PortraitCustomerDealStatus.vue'
+import PortraitCustomerRegion from './components/PortraitCustomerRegion.vue'
 import { defaultProps, handleTree } from '@/utils/tree'
 import * as DeptApi from '@/api/system/dept'
 import { beginOfDay, defaultShortcuts, endOfDay, formatDate } from '@/utils/formatTime'
@@ -108,8 +125,10 @@ const queryParams = reactive({
 
 const queryFormRef = ref() // 搜索的表单
 const deptList = ref<Tree[]>([]) // 树形结构
-const activeTab = ref('customerArea')
-const customerAreaRef = ref() // 城市分布分析
+const activeTab = ref('customerCity')
+const customerCityRef = ref() // 城市分布分析
+const customerAreaRef = ref() // 省份分布分析
+const customerCountryRef = ref() // 国家分布分析
 const customerIndustryRef = ref() // 客户行业分析
 const customerLevelRef = ref() // 客户级别分析
 const customerSourceRef = ref() // 客户来源分析
@@ -118,8 +137,14 @@ const customerDealStatusRef = ref() // 客户成交状态分析
 /** 搜索按钮操作 */
 const handleQuery = () => {
   switch (activeTab.value) {
-    case 'customerArea': // 城市分布分析
+    case 'customerCity': // 城市分布分析
+      customerCityRef.value?.loadData?.()
+      break
+    case 'customerArea': // 省份分布分析
       customerAreaRef.value?.loadData?.()
+      break
+    case 'customerCountry': // 国家分布分析
+      customerCountryRef.value?.loadData?.()
       break
     case 'customerIndustry': // 客户行业分析
       customerIndustryRef.value?.loadData?.()

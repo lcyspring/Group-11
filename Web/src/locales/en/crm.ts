@@ -808,7 +808,10 @@ export default {
     // Portrait
     portrait: {
       title: 'Customer Portrait',
-      area: 'Area Distribution',
+      area: 'Province Distribution',
+      city: 'City Distribution',
+      province: 'Province Distribution',
+      country: 'Country Distribution',
       industry: 'Industry Distribution',
       level: 'Level Distribution',
       source: 'Source Distribution',
@@ -816,6 +819,8 @@ export default {
       // Table fields
       index: 'No.',
       areaName: 'Area',
+      cityName: 'City',
+      countryName: 'Country',
       customerCount: 'Customer Count',
       dealCustomerCount: 'Deal Customers',
       dealRate: 'Deal Rate(%)',

@@ -63,7 +63,21 @@ export const StatisticsPortraitApi = {
       params
     })
   },
-  // 5. 获取客户成交状态分布
+  // 5. 获取客户城市统计数据
+  getCustomerCity: (params: any) => {
+    return request.get({
+      url: '/crm/statistics-portrait/get-customer-city-summary',
+      params
+    })
+  },
+  // 6. 获取客户国家统计数据
+  getCustomerCountry: (params: any) => {
+    return request.get({
+      url: '/crm/statistics-portrait/get-customer-country-summary',
+      params
+    })
+  },
+  // 7. 获取客户成交状态分布
   getCustomerDealStatus: (params: any) => {
     return request.get({
       url: '/crm/statistics-portrait/get-customer-deal-status-summary',

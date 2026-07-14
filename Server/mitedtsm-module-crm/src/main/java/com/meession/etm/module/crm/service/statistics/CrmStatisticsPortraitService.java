@@ -12,12 +12,22 @@ import java.util.List;
 public interface CrmStatisticsPortraitService {
 
     /**
-     * 获取客户地区统计数据
+     * 获取客户省份统计数据
      *
      * @param reqVO 请求参数
      * @return 统计数据
      */
     List<CrmStatisticCustomerAreaRespVO> getCustomerSummaryByArea(CrmStatisticsPortraitReqVO reqVO);
+
+    /**
+     * 获取客户城市统计数据。
+     */
+    List<CrmStatisticCustomerAreaRespVO> getCustomerSummaryByCity(CrmStatisticsPortraitReqVO reqVO);
+
+    /**
+     * 获取客户国家统计数据。
+     */
+    List<CrmStatisticCustomerAreaRespVO> getCustomerSummaryByCountry(CrmStatisticsPortraitReqVO reqVO);
 
     /**
      * 获取客户行业统计数据

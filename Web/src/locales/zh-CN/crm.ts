@@ -808,7 +808,10 @@ export default {
     // 客户画像
     portrait: {
       title: '客户画像',
-      area: '城市分布分析',
+      area: '省份分布分析',
+      city: '城市分布分析',
+      province: '省份分布分析',
+      country: '国家分布分析',
       industry: '客户行业分析',
       level: '客户级别分析',
       source: '客户来源分析',
@@ -816,6 +819,8 @@ export default {
       // 表格字段
       index: '序号',
       areaName: '地区',
+      cityName: '城市',
+      countryName: '国家',
       customerCount: '客户个数',
       dealCustomerCount: '成交个数',
       dealRate: '成交率(%)',
