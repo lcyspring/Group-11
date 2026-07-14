@@ -394,6 +394,7 @@ export default {
     // Actions
     createContract: 'إنشاء عقد',
     createFromBusiness: 'إنشاء عقد من صفقة رابحة',
+    revise: 'مراجعة',
     submitAudit: 'تقديم للتدقيق',
     viewApproval: 'عرض الموافقة',
     // Messages

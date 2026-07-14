@@ -394,6 +394,7 @@ export default {
     // 操作按钮
     createContract: '创建合同',
     createFromBusiness: '从赢单商机创建合同',
+    revise: '修订',
     submitAudit: '提交审核',
     viewApproval: '查看审批',
     // 提示消息

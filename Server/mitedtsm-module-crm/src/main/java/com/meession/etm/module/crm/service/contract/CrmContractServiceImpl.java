@@ -196,20 +196,28 @@ public class CrmContractServiceImpl implements CrmContractService {
     public void updateContract(CrmContractSaveReqVO updateReqVO) {
         Assert.notNull(updateReqVO.getId(), "合同编号不能为空");
         updateReqVO.setOwnerUserId(null); // 不允许更新的字段
-        // 1.1 校验存在
-        CrmContractDO oldContract = validateContractExists(updateReqVO.getId());
-        // 1.2 只有草稿、审批中，可以编辑；
+        // 1.1 锁定并校验存在，避免编辑和审批回调并发串写
+        CrmContractDO oldContract = validateContractExistsForUpdate(updateReqVO.getId());
+        // 1.2 只有草稿、审核不通过、已取消，可以编辑
         if (!ObjectUtils.equalsAny(oldContract.getAuditStatus(), CrmAuditStatusEnum.DRAFT.getStatus(),
-                CrmAuditStatusEnum.PROCESS.getStatus())) {
-            throw exception(CONTRACT_UPDATE_FAIL_NOT_DRAFT);
+                CrmAuditStatusEnum.REJECT.getStatus(), CrmAuditStatusEnum.CANCEL.getStatus())) {
+            throw exception(CONTRACT_UPDATE_FAIL_NOT_EDITABLE);
         }
-        // 1.3 校验产品项的有效性
+        // 1.3 商机转换合同的来源、客户和负责人不可通过更新接口改写
+        if (oldContract.getSourceBusinessId() != null) {
+            updateReqVO.setBusinessId(oldContract.getBusinessId()).setCustomerId(oldContract.getCustomerId());
+        }
+        // 1.4 校验产品项的有效性
         List<CrmContractProductDO> contractProducts = validateContractProducts(updateReqVO.getProducts());
-        // 1.4 校验关联字段
+        // 1.5 校验关联字段
         validateRelationDataExists(updateReqVO);
 
         // 2.1 更新合同
         CrmContractDO updateObj = BeanUtils.toBean(updateReqVO, CrmContractDO.class);
+        if (ObjectUtils.equalsAny(oldContract.getAuditStatus(), CrmAuditStatusEnum.REJECT.getStatus(),
+                CrmAuditStatusEnum.CANCEL.getStatus())) {
+            updateObj.setAuditStatus(CrmAuditStatusEnum.DRAFT.getStatus());
+        }
         calculateTotalPrice(updateObj, contractProducts);
         contractMapper.updateById(updateObj);
         // 2.2 更新合同关联商品
@@ -284,9 +292,14 @@ public class CrmContractServiceImpl implements CrmContractService {
             success = CRM_CONTRACT_DELETE_SUCCESS)
     @CrmPermission(bizType = CrmBizTypeEnum.CRM_CONTRACT, bizId = "#id", level = CrmPermissionLevelEnum.OWNER)
     public void deleteContract(Long id) {
-        // 1.1 校验存在
-        CrmContractDO contract = validateContractExists(id);
-        // 1.2 如果被 CrmReceivableDO 所使用，则不允许删除
+        // 1.1 锁定并校验存在
+        CrmContractDO contract = validateContractExistsForUpdate(id);
+        // 1.2 仅从未提交审批的草稿允许删除，保留全部审批历史
+        if (ObjUtil.notEqual(contract.getAuditStatus(), CrmAuditStatusEnum.DRAFT.getStatus())
+                || contract.getProcessInstanceId() != null) {
+            throw exception(CONTRACT_DELETE_FAIL_NOT_NEW_DRAFT);
+        }
+        // 1.3 如果被 CrmReceivableDO 所使用，则不允许删除
         if (receivableService.getReceivableCountByContractId(contract.getId()) > 0) {
             throw exception(CONTRACT_DELETE_FAIL);
         }
@@ -302,6 +315,14 @@ public class CrmContractServiceImpl implements CrmContractService {
 
     private CrmContractDO validateContractExists(Long id) {
         CrmContractDO contract = contractMapper.selectById(id);
+        if (contract == null) {
+            throw exception(CONTRACT_NOT_EXISTS);
+        }
+        return contract;
+    }
+
+    private CrmContractDO validateContractExistsForUpdate(Long id) {
+        CrmContractDO contract = contractMapper.selectByIdForUpdate(id);
         if (contract == null) {
             throw exception(CONTRACT_NOT_EXISTS);
         }
@@ -346,9 +367,10 @@ public class CrmContractServiceImpl implements CrmContractService {
     @Transactional(rollbackFor = Exception.class)
     @LogRecord(type = CRM_CONTRACT_TYPE, subType = CRM_CONTRACT_SUBMIT_SUB_TYPE, bizNo = "{{#id}}",
             success = CRM_CONTRACT_SUBMIT_SUCCESS)
+    @CrmPermission(bizType = CrmBizTypeEnum.CRM_CONTRACT, bizId = "#id", level = CrmPermissionLevelEnum.WRITE)
     public void submitContract(Long id, Long userId) {
-        // 1. 校验合同是否在审批
-        CrmContractDO contract = validateContractExists(id);
+        // 1. 锁定合同，防止重复请求创建多个审批流程
+        CrmContractDO contract = validateContractExistsForUpdate(id);
         if (ObjUtil.notEqual(contract.getAuditStatus(), CrmAuditStatusEnum.DRAFT.getStatus())) {
             throw exception(CONTRACT_SUBMIT_FAIL_NOT_DRAFT);
         }
@@ -366,19 +388,27 @@ public class CrmContractServiceImpl implements CrmContractService {
     }
 
     @Override
-    public void updateContractAuditStatus(Long id, Integer bpmResult) {
-        // 1.1 校验合同是否存在
+    public void updateContractAuditStatus(Long id, String processInstanceId, Integer bpmResult) {
+        // 1.1 转换 BPM 流程实例终态并校验合同是否存在
+        Integer auditStatus = convertBpmResultToAuditStatus(bpmResult);
         CrmContractDO contract = validateContractExists(id);
-        // 1.2 只有审批中，可以更新审批结果
-        if (ObjUtil.notEqual(contract.getAuditStatus(), CrmAuditStatusEnum.PROCESS.getStatus())) {
-            log.error("[updateContractAuditStatus][contract({}) 不处于审批中，无法更新审批结果({})]",
-                    contract.getId(), bpmResult);
-            throw exception(CONTRACT_UPDATE_AUDIT_STATUS_FAIL_NOT_PROCESS);
+        // 1.2 重复终态事件直接成功，旧流程或乱序事件不得覆盖当前合同状态
+        if (ObjUtil.equal(contract.getProcessInstanceId(), processInstanceId)
+                && ObjUtil.equal(contract.getAuditStatus(), auditStatus)) {
+            return;
+        }
+        if (ObjUtil.notEqual(contract.getProcessInstanceId(), processInstanceId)
+                || ObjUtil.notEqual(contract.getAuditStatus(), CrmAuditStatusEnum.PROCESS.getStatus())) {
+            log.warn("[updateContractAuditStatus][忽略合同({})的过期或乱序审批事件，当前流程({})、事件流程({})、当前状态({})、目标状态({})]",
+                    contract.getId(), contract.getProcessInstanceId(), processInstanceId,
+                    contract.getAuditStatus(), auditStatus);
+            return;
         }
 
-        // 2. 更新合同审批结果
-        Integer auditStatus = convertBpmResultToAuditStatus(bpmResult);
-        contractMapper.updateById(new CrmContractDO().setId(id).setAuditStatus(auditStatus));
+        // 2. CAS 更新合同审批结果；并发终态事件只有首个生效
+        if (contractMapper.updateAuditStatusIfProcessing(id, processInstanceId, auditStatus) == 0) {
+            log.warn("[updateContractAuditStatus][合同({})审批状态已被并发事件更新，忽略目标状态({})]", id, auditStatus);
+        }
     }
 
     // ======================= 查询相关 =======================

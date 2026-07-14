@@ -1,6 +1,7 @@
 package com.meession.etm.module.crm.dal.mysql.contract;
 
 import cn.hutool.core.date.LocalDateTimeUtil;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.framework.mybatis.core.mapper.BaseMapperX;
 import com.meession.etm.framework.mybatis.core.query.LambdaQueryWrapperX;
@@ -40,6 +41,20 @@ public interface CrmContractMapper extends BaseMapperX<CrmContractDO> {
         return selectOne(new LambdaQueryWrapperX<CrmContractDO>()
                 .eq(CrmContractDO::getSourceBusinessId, businessId)
                 .last("FOR UPDATE"));
+    }
+
+    default CrmContractDO selectByIdForUpdate(Long id) {
+        return selectOne(new LambdaQueryWrapperX<CrmContractDO>()
+                .eq(CrmContractDO::getId, id)
+                .last("FOR UPDATE"));
+    }
+
+    default int updateAuditStatusIfProcessing(Long id, String processInstanceId, Integer auditStatus) {
+        return update(new LambdaUpdateWrapper<CrmContractDO>()
+                .eq(CrmContractDO::getId, id)
+                .eq(CrmContractDO::getProcessInstanceId, processInstanceId)
+                .eq(CrmContractDO::getAuditStatus, CrmAuditStatusEnum.PROCESS.getStatus())
+                .set(CrmContractDO::getAuditStatus, auditStatus));
     }
 
     default PageResult<CrmContractDO> selectPageByCustomerId(CrmContractPageReqVO pageReqVO) {

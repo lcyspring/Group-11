@@ -1,6 +1,9 @@
 package com.meession.etm.module.crm.service.contract;
 
 import com.meession.etm.framework.common.exception.ServiceException;
+import com.meession.etm.module.bpm.api.task.BpmProcessInstanceApi;
+import com.meession.etm.module.bpm.api.task.dto.BpmProcessInstanceCreateReqDTO;
+import com.meession.etm.module.bpm.enums.task.BpmProcessInstanceStatusEnum;
 import com.meession.etm.module.crm.controller.admin.contract.vo.contract.CrmContractSaveReqVO;
 import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
@@ -8,14 +11,17 @@ import com.meession.etm.module.crm.dal.mysql.contract.CrmContractMapper;
 import com.meession.etm.module.crm.dal.mysql.contract.CrmContractProductMapper;
 import com.meession.etm.module.crm.dal.redis.no.CrmNoRedisDAO;
 import com.meession.etm.module.crm.enums.business.CrmBusinessEndStatusEnum;
+import com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
 import com.meession.etm.module.crm.framework.permission.core.annotations.CrmPermission;
 import com.meession.etm.module.crm.service.business.CrmBusinessService;
+import com.meession.etm.module.crm.service.contact.CrmContactService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
 import com.meession.etm.module.crm.service.permission.CrmPermissionService;
 import com.meession.etm.module.crm.service.permission.bo.CrmPermissionCreateReqBO;
 import com.meession.etm.module.crm.service.product.CrmProductService;
+import com.meession.etm.module.crm.service.receivable.CrmReceivableService;
 import com.meession.etm.module.system.api.user.AdminUserApi;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,7 +37,10 @@ import java.util.Collections;
 
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTRACT_CREATE_FAIL_BUSINESS_NOT_WON;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTRACT_CREATE_BUSINESS_REQUIRES_CONVERSION;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTRACT_DELETE_FAIL_NOT_NEW_DRAFT;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTRACT_UPDATE_FAIL_NOT_EDITABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -58,7 +67,13 @@ class CrmContractServiceImplTest {
     @Mock
     private CrmBusinessService businessService;
     @Mock
+    private CrmContactService contactService;
+    @Mock
+    private CrmReceivableService receivableService;
+    @Mock
     private AdminUserApi adminUserApi;
+    @Mock
+    private BpmProcessInstanceApi bpmProcessInstanceApi;
 
     @InjectMocks
     private CrmContractServiceImpl service;
@@ -144,6 +159,126 @@ class CrmContractServiceImplTest {
         assertEquals(CrmPermissionLevelEnum.WRITE, permission.level());
     }
 
+    @Test
+    void updateContractRejectsProcessingState() {
+        when(contractMapper.selectByIdForUpdate(7L)).thenReturn(contract(7L, CrmAuditStatusEnum.PROCESS, "process-1"));
+
+        ServiceException exception = assertThrows(ServiceException.class,
+                () -> service.updateContract(updateRequest(7L)));
+
+        assertEquals(CONTRACT_UPDATE_FAIL_NOT_EDITABLE.getCode(), exception.getCode());
+        verify(contractMapper, never()).updateById(any(CrmContractDO.class));
+    }
+
+    @Test
+    void updateRejectedContractCreatesRevisionDraftAndPreservesConversionSource() {
+        CrmContractDO oldContract = contract(7L, CrmAuditStatusEnum.REJECT, "process-1")
+                .setSourceBusinessId(10L)
+                .setBusinessId(10L)
+                .setCustomerId(20L)
+                .setOwnerUserId(30L);
+        when(contractMapper.selectByIdForUpdate(7L)).thenReturn(oldContract);
+        when(contractProductMapper.selectListByContractId(7L)).thenReturn(Collections.emptyList());
+        CrmContractSaveReqVO request = updateRequest(7L).setBusinessId(999L).setCustomerId(999L);
+
+        service.updateContract(request);
+
+        ArgumentCaptor<CrmContractDO> captor = ArgumentCaptor.forClass(CrmContractDO.class);
+        verify(contractMapper).updateById(captor.capture());
+        assertEquals(CrmAuditStatusEnum.DRAFT.getStatus(), captor.getValue().getAuditStatus());
+        assertEquals(10L, captor.getValue().getBusinessId());
+        assertEquals(20L, captor.getValue().getCustomerId());
+        assertNull(captor.getValue().getOwnerUserId());
+    }
+
+    @Test
+    void updateCanceledContractCreatesRevisionDraft() {
+        when(contractMapper.selectByIdForUpdate(7L))
+                .thenReturn(contract(7L, CrmAuditStatusEnum.CANCEL, "process-1"));
+        when(contractProductMapper.selectListByContractId(7L)).thenReturn(Collections.emptyList());
+
+        service.updateContract(updateRequest(7L));
+
+        ArgumentCaptor<CrmContractDO> captor = ArgumentCaptor.forClass(CrmContractDO.class);
+        verify(contractMapper).updateById(captor.capture());
+        assertEquals(CrmAuditStatusEnum.DRAFT.getStatus(), captor.getValue().getAuditStatus());
+    }
+
+    @Test
+    void submitRevisedDraftStartsNewProcessAndRequiresWritePermission() throws NoSuchMethodException {
+        when(contractMapper.selectByIdForUpdate(7L))
+                .thenReturn(contract(7L, CrmAuditStatusEnum.DRAFT, "process-1"));
+        when(bpmProcessInstanceApi.createProcessInstance(any(), any(BpmProcessInstanceCreateReqDTO.class)))
+                .thenReturn("process-2");
+
+        service.submitContract(7L, 1L);
+
+        ArgumentCaptor<CrmContractDO> captor = ArgumentCaptor.forClass(CrmContractDO.class);
+        verify(contractMapper).updateById(captor.capture());
+        assertEquals("process-2", captor.getValue().getProcessInstanceId());
+        assertEquals(CrmAuditStatusEnum.PROCESS.getStatus(), captor.getValue().getAuditStatus());
+        CrmPermission permission = CrmContractServiceImpl.class
+                .getMethod("submitContract", Long.class, Long.class)
+                .getAnnotation(CrmPermission.class);
+        assertEquals(CrmBizTypeEnum.CRM_CONTRACT, permission.bizType()[0]);
+        assertEquals("#id", permission.bizId());
+        assertEquals(CrmPermissionLevelEnum.WRITE, permission.level());
+    }
+
+    @Test
+    void updateContractAuditStatusMapsCancelToCrmStatus() {
+        when(contractMapper.selectById(7L))
+                .thenReturn(contract(7L, CrmAuditStatusEnum.PROCESS, "process-2"));
+        when(contractMapper.updateAuditStatusIfProcessing(7L, "process-2", CrmAuditStatusEnum.CANCEL.getStatus()))
+                .thenReturn(1);
+
+        service.updateContractAuditStatus(7L, "process-2", BpmProcessInstanceStatusEnum.CANCEL.getStatus());
+
+        verify(contractMapper).updateAuditStatusIfProcessing(7L, "process-2", CrmAuditStatusEnum.CANCEL.getStatus());
+    }
+
+    @Test
+    void updateContractAuditStatusIsIdempotentForDuplicateEvent() {
+        when(contractMapper.selectById(7L))
+                .thenReturn(contract(7L, CrmAuditStatusEnum.REJECT, "process-2"));
+
+        service.updateContractAuditStatus(7L, "process-2", BpmProcessInstanceStatusEnum.REJECT.getStatus());
+
+        verify(contractMapper, never()).updateAuditStatusIfProcessing(any(), any(), any());
+    }
+
+    @Test
+    void updateContractAuditStatusIgnoresStaleProcess() {
+        when(contractMapper.selectById(7L))
+                .thenReturn(contract(7L, CrmAuditStatusEnum.PROCESS, "process-2"));
+
+        service.updateContractAuditStatus(7L, "process-1", BpmProcessInstanceStatusEnum.APPROVE.getStatus());
+
+        verify(contractMapper, never()).updateAuditStatusIfProcessing(any(), any(), any());
+    }
+
+    @Test
+    void deleteContractRejectsSubmittedHistory() {
+        when(contractMapper.selectByIdForUpdate(7L))
+                .thenReturn(contract(7L, CrmAuditStatusEnum.REJECT, "process-1"));
+
+        ServiceException exception = assertThrows(ServiceException.class, () -> service.deleteContract(7L));
+
+        assertEquals(CONTRACT_DELETE_FAIL_NOT_NEW_DRAFT.getCode(), exception.getCode());
+        verify(contractMapper, never()).deleteById(7L);
+    }
+
+    @Test
+    void deleteContractAllowsNewDraftWithoutProcessHistory() {
+        when(contractMapper.selectByIdForUpdate(7L))
+                .thenReturn(contract(7L, CrmAuditStatusEnum.DRAFT, null));
+
+        service.deleteContract(7L);
+
+        verify(contractMapper).deleteById(7L);
+        verify(crmPermissionService).deletePermission(CrmBizTypeEnum.CRM_CONTRACT.getType(), 7L);
+    }
+
     private static CrmContractSaveReqVO request() {
         return new CrmContractSaveReqVO()
                 .setName("商机合同")
@@ -153,6 +288,18 @@ class CrmContractServiceImplTest {
                 .setOrderDate(LocalDateTime.of(2026, 7, 14, 0, 0))
                 .setDiscountPercent(BigDecimal.ZERO)
                 .setProducts(Collections.emptyList());
+    }
+
+    private static CrmContractSaveReqVO updateRequest(Long id) {
+        return request().setId(id);
+    }
+
+    private static CrmContractDO contract(Long id, CrmAuditStatusEnum auditStatus, String processInstanceId) {
+        return new CrmContractDO()
+                .setId(id)
+                .setName("测试合同")
+                .setAuditStatus(auditStatus.getStatus())
+                .setProcessInstanceId(processInstanceId);
     }
 
     private static CrmBusinessDO business(Integer endStatus) {

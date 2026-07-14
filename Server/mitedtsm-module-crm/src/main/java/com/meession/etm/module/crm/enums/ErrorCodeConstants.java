@@ -11,7 +11,8 @@ public interface ErrorCodeConstants {
 
     // ========== 合同管理 1-020-000-000 ==========
     ErrorCode CONTRACT_NOT_EXISTS = new ErrorCode(1_020_000_000, "合同不存在");
-    ErrorCode CONTRACT_UPDATE_FAIL_NOT_DRAFT = new ErrorCode(1_020_000_001, "合同更新失败，原因：合同不是草稿状态");
+    ErrorCode CONTRACT_UPDATE_FAIL_NOT_EDITABLE = new ErrorCode(1_020_000_001,
+            "合同更新失败，只有草稿、审核不通过或已取消状态可以编辑");
     ErrorCode CONTRACT_SUBMIT_FAIL_NOT_DRAFT = new ErrorCode(1_020_000_002, "合同提交审核失败，原因：合同没处在未提交状态");
     ErrorCode CONTRACT_UPDATE_AUDIT_STATUS_FAIL_NOT_PROCESS = new ErrorCode(1_020_000_003, "更新合同审核状态失败，原因：合同不是审核中状态");
     ErrorCode CONTRACT_NO_EXISTS = new ErrorCode(1_020_000_004, "生成合同序列号重复，请重试");
@@ -21,6 +22,8 @@ public interface ErrorCodeConstants {
             "商机转合同状态已变化，请刷新后重试");
     ErrorCode CONTRACT_CREATE_BUSINESS_REQUIRES_CONVERSION = new ErrorCode(1_020_000_008,
             "关联合同必须通过商机转合同入口创建");
+    ErrorCode CONTRACT_DELETE_FAIL_NOT_NEW_DRAFT = new ErrorCode(1_020_000_009,
+            "删除合同失败，只有从未提交审批的草稿可以删除");
 
     // ========== 线索管理 1-020-001-000 ==========
     ErrorCode CLUE_NOT_EXISTS = new ErrorCode(1_020_001_000, "线索不存在");

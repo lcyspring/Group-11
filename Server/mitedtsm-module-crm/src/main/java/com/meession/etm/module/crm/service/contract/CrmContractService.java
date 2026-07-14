@@ -85,9 +85,10 @@ public interface CrmContractService {
      * 更新合同流程审批结果
      *
      * @param id        合同编号
-     * @param bpmResult BPM 审批结果
+     * @param processInstanceId BPM 流程实例编号
+     * @param bpmResult         BPM 审批结果
      */
-    void updateContractAuditStatus(Long id, Integer bpmResult);
+    void updateContractAuditStatus(Long id, String processInstanceId, Integer bpmResult);
 
     /**
      * 获得合同

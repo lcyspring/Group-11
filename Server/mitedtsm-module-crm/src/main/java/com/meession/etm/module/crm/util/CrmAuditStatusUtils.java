@@ -1,7 +1,7 @@
 package com.meession.etm.module.crm.util;
 
 import cn.hutool.core.lang.Assert;
-import com.meession.etm.module.bpm.enums.task.BpmTaskStatusEnum;
+import com.meession.etm.module.bpm.enums.task.BpmProcessInstanceStatusEnum;
 import com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum;
 
 /**
@@ -17,9 +17,12 @@ public class CrmAuditStatusUtils {
      * @param bpmResult BPM 审批结果
      */
     public static Integer convertBpmResultToAuditStatus(Integer bpmResult) {
-        Integer auditStatus = BpmTaskStatusEnum.APPROVE.getStatus().equals(bpmResult) ? CrmAuditStatusEnum.APPROVE.getStatus()
-                : BpmTaskStatusEnum.REJECT.getStatus().equals(bpmResult) ? CrmAuditStatusEnum.REJECT.getStatus()
-                : BpmTaskStatusEnum.CANCEL.getStatus().equals(bpmResult) ? BpmTaskStatusEnum.CANCEL.getStatus() : null;
+        Integer auditStatus = BpmProcessInstanceStatusEnum.APPROVE.getStatus().equals(bpmResult)
+                ? CrmAuditStatusEnum.APPROVE.getStatus()
+                : BpmProcessInstanceStatusEnum.REJECT.getStatus().equals(bpmResult)
+                ? CrmAuditStatusEnum.REJECT.getStatus()
+                : BpmProcessInstanceStatusEnum.CANCEL.getStatus().equals(bpmResult)
+                ? CrmAuditStatusEnum.CANCEL.getStatus() : null;
         Assert.notNull(auditStatus, "BPM 审批结果({}) 转换失败", bpmResult);
         return auditStatus;
     }

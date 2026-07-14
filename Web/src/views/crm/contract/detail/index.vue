@@ -1,8 +1,11 @@
 <!-- 合同详情页面组件-->
 <template>
   <ContractDetailsHeader v-loading="loading" :contract="contract">
-    <el-button v-if="permissionListRef?.validateWrite" @click="openForm('update', contract.id)">
-      {{ t('common.edit') }}
+    <el-button
+      v-if="permissionListRef?.validateWrite && [0, 30, 40].includes(contract.auditStatus)"
+      @click="openForm('update', contract.id)"
+    >
+      {{ contract.auditStatus === 0 ? t('common.edit') : t('crm.contract.revise') }}
     </el-button>
     <el-button v-if="permissionListRef?.validateOwnerUser" type="primary" @click="transferContract">
       {{ t('crm.customer.transfer') }}

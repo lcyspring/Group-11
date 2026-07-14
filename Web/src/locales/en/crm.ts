@@ -397,6 +397,7 @@ export default {
     // Actions
     createContract: 'Create Contract',
     createFromBusiness: 'Create Contract from Won Business',
+    revise: 'Revise',
     submitAudit: 'Submit Audit',
     viewApproval: 'View Approval',
     // Messages
