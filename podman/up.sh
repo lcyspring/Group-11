@@ -282,6 +282,12 @@ start_web_frontend() {
         "$WEB_IMAGE"
 }
 
+start_mall_frontend() {
+    printf 'Starting Mall frontend container.\n'
+    podman_cmd run -d --replace --name "$MALL_CONTAINER" --pod "$POD_NAME" --pull=never \
+        "$MALL_IMAGE"
+}
+
 wait_for_frontends() {
     wait_for 'Web frontend' "$WEB_ATTEMPTS" host_curl --fail --silent --show-error "http://${HEALTH_HTTP_HOST}:${WEB_PORT}${WEB_HEALTH_PATH}"
     wait_for 'Mall frontend' "$MALL_ATTEMPTS" host_curl --fail --silent --show-error "http://${HEALTH_HTTP_HOST}:${MALL_PORT}${MALL_HEALTH_PATH}"
@@ -395,9 +401,9 @@ show_logs_on_error() {
 
 validate_configuration() {
     case "$START_MODE" in
-        full|check|fast|no-build|frontends-only|rebuild-web) ;;
+        full|check|fast|no-build|frontends-only|rebuild-web|rebuild-mall) ;;
         *)
-            printf 'operation.startup_mode must be full, check, fast, no-build, frontends-only, or rebuild-web; got: %s\n' "$START_MODE" >&2
+            printf 'operation.startup_mode must be full, check, fast, no-build, frontends-only, rebuild-web, or rebuild-mall; got: %s\n' "$START_MODE" >&2
             exit 2
             ;;
     esac
@@ -479,8 +485,7 @@ require_project_assets() {
     require_file "${SCRIPT_DIR}/init/init-mysql.sh"
     require_dir "${PROJECT_ROOT}/database"
     require_web_assets
-    require_dir "${PROJECT_ROOT}/MallFrontend/unpackage/dist/build/web"
-    require_file "${PROJECT_ROOT}/MallFrontend/unpackage/dist/build/web/index.html"
+    require_mall_assets
 }
 
 require_web_assets() {
@@ -488,6 +493,13 @@ require_web_assets() {
     require_dir "${PROJECT_ROOT}/Web/dist-prod"
     require_file "${PROJECT_ROOT}/Web/dist-prod/index.html"
     verify_web_entry_assets "${PROJECT_ROOT}/Web/dist-prod"
+}
+
+require_mall_assets() {
+    require_file "${SCRIPT_DIR}/Containerfile"
+    require_dir "${PROJECT_ROOT}/MallFrontend/unpackage/dist/build/web"
+    require_file "${PROJECT_ROOT}/MallFrontend/unpackage/dist/build/web/index.html"
+    verify_web_entry_assets "${PROJECT_ROOT}/MallFrontend/unpackage/dist/build/web"
 }
 
 verify_web_entry_assets() {
@@ -566,6 +578,17 @@ build_web_image() {
     podman_cmd build --pull=never "${build_args[@]}" --target web --tag "$WEB_IMAGE" --file "${SCRIPT_DIR}/Containerfile" "$PROJECT_ROOT"
 }
 
+build_mall_image() {
+    local -a build_args=(
+        --build-arg "MYSQL_BASE_IMAGE=${MYSQL_BASE_IMAGE}"
+        --build-arg "RUNTIME_BASE_IMAGE=${RUNTIME_BASE_IMAGE}"
+        --build-arg "NGINX_BASE_IMAGE=${NGINX_BASE_IMAGE}"
+    )
+
+    printf 'Packaging current Mall H5 assets without rebuilding Java artifacts.\n'
+    podman_cmd build --pull=never "${build_args[@]}" --target mall --tag "$MALL_IMAGE" --file "${SCRIPT_DIR}/Containerfile" "$PROJECT_ROOT"
+}
+
 rebuild_web_only() {
     podman_cmd pod inspect "$POD_NAME" >/dev/null 2>&1 || {
         printf 'Pod does not exist: %s. Use startup_mode=full first.\n' "$POD_NAME" >&2
@@ -582,6 +605,22 @@ rebuild_web_only() {
     wait_for 'Web frontend' "$WEB_ATTEMPTS" host_curl --fail --silent --show-error "http://${HEALTH_HTTP_HOST}:${WEB_PORT}${WEB_HEALTH_PATH}"
 }
 
+rebuild_mall_only() {
+    podman_cmd pod inspect "$POD_NAME" >/dev/null 2>&1 || {
+        printf 'Pod does not exist: %s. Use startup_mode=full first.\n' "$POD_NAME" >&2
+        return 1
+    }
+    [[ "$(podman_cmd pod inspect --format '{{.State}}' "$POD_NAME")" == "Running" ]] || {
+        printf 'Pod is not running: %s. Use startup_mode=fast or full.\n' "$POD_NAME" >&2
+        return 1
+    }
+
+    ensure_image "$NGINX_BASE_IMAGE" "$(image_archive_path "$NGINX_ARCHIVE")"
+    build_mall_image
+    start_mall_frontend
+    wait_for 'Mall frontend' "$MALL_ATTEMPTS" host_curl --fail --silent --show-error "http://${HEALTH_HTTP_HOST}:${MALL_PORT}${MALL_HEALTH_PATH}"
+}
+
 validate_configuration
 verify_rootless_podman
 configure_proxy
@@ -593,6 +632,8 @@ elif [[ "$START_MODE" == "no-build" ]]; then
     require_runtime_images
 elif [[ "$START_MODE" == "rebuild-web" ]]; then
     require_web_assets
+elif [[ "$START_MODE" == "rebuild-mall" ]]; then
+    require_mall_assets
 fi
 
 if [[ "$START_MODE" == "check" ]]; then
@@ -634,6 +675,12 @@ fi
 
 if [[ "$START_MODE" == "rebuild-web" ]]; then
     rebuild_web_only
+    show_access_urls
+    exit 0
+fi
+
+if [[ "$START_MODE" == "rebuild-mall" ]]; then
+    rebuild_mall_only
     show_access_urls
     exit 0
 fi

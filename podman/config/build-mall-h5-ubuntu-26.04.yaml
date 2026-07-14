@@ -12,6 +12,10 @@ build:
   platform: h5
   clean_output: true
 
+media:
+  legacy_origins: "http://test.yudao.iocoder.cn"
+  legacy_fallback: /static/goods-empty.png
+
 network:
   mode: none
 

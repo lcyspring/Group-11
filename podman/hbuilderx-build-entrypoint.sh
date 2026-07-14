@@ -17,6 +17,8 @@ source /etc/os-release
 PROJECT_DIR="${HBUILDERX_PROJECT_DIR:-/workspace/MallFrontend}"
 PLATFORM="${HBUILDERX_PLATFORM:-h5}"
 CLEAN_OUTPUT="${HBUILDERX_CLEAN_OUTPUT:-true}"
+LEGACY_MEDIA_ORIGINS="${SHOPRO_LEGACY_MEDIA_ORIGINS:?SHOPRO_LEGACY_MEDIA_ORIGINS is required}"
+LEGACY_MEDIA_FALLBACK="${SHOPRO_LEGACY_MEDIA_FALLBACK:?SHOPRO_LEGACY_MEDIA_FALLBACK is required}"
 OUTPUT_DIR="${PROJECT_DIR}/unpackage/dist/build/web"
 NODE=/opt/HBuilderX/plugins/node/node
 UNI_CLI_CONTEXT=/opt/HBuilderX/plugins/uniapp-cli-vite
@@ -65,6 +67,8 @@ printf 'Build OS: Ubuntu 26.04\n'
 printf 'Build engine: HBuilderX uni-app CLI %s (%s)\n' \
     "$("$NODE" -p "require('${UNI_CLI_CONTEXT}/package.json').version")" \
     "$("$NODE" --version)"
+printf 'Checking Mall media URL normalization.\n'
+"$NODE" --experimental-test-coverage --test "${PROJECT_DIR}/sheep/url/legacy-media.test.mjs"
 
 cd -- "$PROJECT_DIR"
 "$NODE" "$UNI_CLI" build

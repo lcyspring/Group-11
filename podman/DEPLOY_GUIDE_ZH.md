@@ -113,10 +113,11 @@ bash ./up.sh ./config/runtime-local.yaml
 - `fast`：启动已有的停止状态 Pod，并补齐缺失前端容器；
 - `frontends-only`：仅替换运行中 Pod 的 Web 和 Mall 容器；
 - `rebuild-web`：只封装当前 `Web/dist-prod/` 并替换 Web；
+- `rebuild-mall`：只封装当前 Mall H5 产物并替换 Mall；
 - `check`：只预检。
 
 后端代码、数据库脚本或产物新旧不确定时使用 `full`。管理端单独变化且后端
-产物确认未变时才使用 `rebuild-web`。
+确认后端产物未变时，管理端使用 `rebuild-web`，商城端使用 `rebuild-mall`。
 
 ## 7. 停止与数据删除
 
@@ -179,6 +180,7 @@ network:
 | Pod 已停止但镜像未变 | 使用 `startup_mode: fast`。 |
 | Pod 已删除但镜像仍有效 | 使用 `startup_mode: no-build`。 |
 | 只更新管理端 | 确认后端产物未变后使用 `startup_mode: rebuild-web`。 |
+| 只更新商城端 | 先通过 Ubuntu 26.04 HBuilderX 容器构建 H5，再使用 `startup_mode: rebuild-mall`。 |
 
 ## 10. 安全检查清单
 

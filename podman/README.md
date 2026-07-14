@@ -24,7 +24,7 @@ The committed configuration uses `operation.startup_mode: check` and
 changing Pod or volume state. Copy it to a local deployment configuration and
 explicitly select a mode before making a stateful operation:
 
-- startup: `full`, `fast`, `no-build`, `frontends-only`, or `rebuild-web`;
+- startup: `full`, `fast`, `no-build`, `frontends-only`, `rebuild-web`, or `rebuild-mall`;
 - shutdown: `stop`;
 - image archives: `save` or `pull-save`;
 - destructive data removal additionally requires
@@ -99,6 +99,7 @@ bash ./up.sh ./config/my-runtime.yaml
 - `fast` starts an existing stopped Pod and missing frontend containers.
 - `frontends-only` replaces only Web and Mall containers in a running Pod.
 - `rebuild-web` packages current `Web/dist-prod/` and replaces only Web.
+- `rebuild-mall` packages current Mall H5 output and replaces only Mall.
 - `check` validates rootless Podman, configuration, artifacts, and offline
   archive prerequisites without loading, pulling, building, or starting.
 

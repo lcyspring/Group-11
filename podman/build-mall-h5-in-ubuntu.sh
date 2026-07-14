@@ -25,6 +25,8 @@ REBUILD_IMAGE="$(yaml_bool image.rebuild)"
 HBUILDERX_SOURCE_DIR="$(yaml_path hbuilderx.source_dir)"
 PLATFORM="$(yaml_require build.platform)"
 CLEAN_OUTPUT="$(yaml_bool build.clean_output)"
+LEGACY_MEDIA_ORIGINS="$(yaml_require media.legacy_origins)"
+LEGACY_MEDIA_FALLBACK="$(yaml_require media.legacy_fallback)"
 NETWORK_MODE="$(yaml_require network.mode)"
 MEMORY="$(yaml_require runtime.memory)"
 CPUS="$(yaml_positive_integer runtime.cpus)"
@@ -38,6 +40,14 @@ case "$PLATFORM" in
 esac
 [[ "$NETWORK_MODE" == "none" ]] || {
     printf 'network.mode must be none; got: %s\n' "$NETWORK_MODE" >&2
+    exit 2
+}
+[[ "$LEGACY_MEDIA_ORIGINS" =~ ^https?://[^[:space:]]+(,https?://[^[:space:]]+)*$ ]] || {
+    printf 'media.legacy_origins must be a comma-separated list of HTTP(S) origins.\n' >&2
+    exit 2
+}
+[[ "$LEGACY_MEDIA_FALLBACK" == /static/* && "$LEGACY_MEDIA_FALLBACK" != *'..'* ]] || {
+    printf 'media.legacy_fallback must be a safe absolute /static/ path.\n' >&2
     exit 2
 }
 
@@ -82,5 +92,7 @@ podman run "${podman_proxy_args[@]}" --rm --pull=never \
     --env "HBUILDERX_PROJECT_DIR=/workspace/MallFrontend" \
     --env "HBUILDERX_PLATFORM=$PLATFORM" \
     --env "HBUILDERX_CLEAN_OUTPUT=$CLEAN_OUTPUT" \
+    --env "SHOPRO_LEGACY_MEDIA_ORIGINS=$LEGACY_MEDIA_ORIGINS" \
+    --env "SHOPRO_LEGACY_MEDIA_FALLBACK=$LEGACY_MEDIA_FALLBACK" \
     --entrypoint /workspace/podman/hbuilderx-build-entrypoint.sh \
     "$BUILD_IMAGE"

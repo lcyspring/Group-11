@@ -17,6 +17,8 @@ if (typeof baseUrl === 'undefined') {
 
 export const apiPath = import.meta.env.SHOPRO_API_PATH;
 export const staticUrl = import.meta.env.SHOPRO_STATIC_URL;
+export const legacyMediaOrigins = import.meta.env.SHOPRO_LEGACY_MEDIA_ORIGINS;
+export const legacyMediaFallback = import.meta.env.SHOPRO_LEGACY_MEDIA_FALLBACK;
 export const tenantId = import.meta.env.SHOPRO_TENANT_ID;
 export const websocketPath = import.meta.env.SHOPRO_WEBSOCKET_PATH;
 export const h5Url = import.meta.env.SHOPRO_H5_URL;
@@ -25,6 +27,8 @@ export default {
   baseUrl,
   apiPath,
   staticUrl,
+  legacyMediaOrigins,
+  legacyMediaFallback,
   tenantId,
   websocketPath,
   h5Url,
