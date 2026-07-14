@@ -111,6 +111,9 @@ public interface ErrorCodeConstants {
     ErrorCode CUSTOMER_PARENT_SELF = new ErrorCode(1_020_006_016, "上级客户不能是客户自身");
     ErrorCode CUSTOMER_PARENT_NOT_EXISTS = new ErrorCode(1_020_006_017, "上级客户不存在或不属于当前租户");
     ErrorCode CUSTOMER_HIERARCHY_CYCLE = new ErrorCode(1_020_006_018, "客户上下级关系不能形成循环");
+    ErrorCode CUSTOMER_LIFECYCLE_STATUS_SAME = new ErrorCode(1_020_006_019, "客户已经处于目标生命周期状态，无需重复更新");
+    ErrorCode CUSTOMER_LIFECYCLE_LOST_REASON_REQUIRED = new ErrorCode(1_020_006_020, "客户转为流失状态时必须填写流失原因");
+    ErrorCode CUSTOMER_LIFECYCLE_STATUS_INVALID = new ErrorCode(1_020_006_021, "无效的客户生命周期状态：{}");
 
     // ========== 权限管理 1_020_007_000 ==========
     ErrorCode CRM_PERMISSION_NOT_EXISTS = new ErrorCode(1_020_007_000, "数据权限不存在");

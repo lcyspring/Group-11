@@ -15,6 +15,7 @@ import com.meession.etm.framework.ip.core.utils.AreaUtils;
 import com.meession.etm.module.crm.controller.admin.customer.vo.customer.*;
 import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerLifecycleRecordDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerOwnerRecordDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerPoolConfigDO;
 import com.meession.etm.module.crm.service.contact.CrmContactService;
@@ -91,8 +92,31 @@ public class CrmCustomerController {
     })
     public CommonResult<Boolean> updateCustomerDealStatus(@RequestParam("id") Long id,
                                                           @RequestParam("dealStatus") Boolean dealStatus) {
-        customerService.updateCustomerDealStatus(id, dealStatus);
+        customerService.updateCustomerDealStatus(id, dealStatus, getLoginUserId());
         return success(true);
+    }
+
+    @PutMapping("/update-lifecycle-status")
+    @Operation(summary = "更新客户生命周期状态")
+    @PreAuthorize("@ss.hasPermission('crm:customer:update')")
+    public CommonResult<Boolean> updateCustomerLifecycleStatus(
+            @Valid @RequestBody CrmCustomerLifecycleUpdateReqVO reqVO) {
+        customerService.updateCustomerLifecycleStatus(reqVO, getLoginUserId());
+        return success(true);
+    }
+
+    @GetMapping("/lifecycle-record-list")
+    @Operation(summary = "获得客户生命周期变更记录")
+    @Parameter(name = "customerId", description = "客户编号", required = true, example = "1024")
+    @PreAuthorize("@ss.hasPermission('crm:customer:query')")
+    public CommonResult<List<CrmCustomerLifecycleRecordRespVO>> getCustomerLifecycleRecordList(
+            @RequestParam("customerId") Long customerId) {
+        List<CrmCustomerLifecycleRecordDO> records = customerService.getCustomerLifecycleRecordList(customerId);
+        Map<Long, AdminUserRespDTO> userMap = adminUserApi.getUserMap(
+                convertSet(records, CrmCustomerLifecycleRecordDO::getOperatorUserId));
+        return success(BeanUtils.toBean(records, CrmCustomerLifecycleRecordRespVO.class, recordVO ->
+                MapUtils.findAndThen(userMap, recordVO.getOperatorUserId(),
+                        user -> recordVO.setOperatorUserName(user.getNickname()))));
     }
 
     @DeleteMapping("/delete")

@@ -1,12 +1,15 @@
 package com.meession.etm.module.crm.service.customer;
 
 import com.meession.etm.module.crm.controller.admin.customer.vo.customer.CrmCustomerDuplicateCheckReqVO;
+import com.meession.etm.module.crm.controller.admin.customer.vo.customer.CrmCustomerLifecycleUpdateReqVO;
 import com.meession.etm.module.crm.controller.admin.customer.vo.customer.CrmCustomerSaveReqVO;
 import com.meession.etm.module.crm.controller.admin.customer.vo.customer.CrmCustomerTransferReqVO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerOwnerRecordDO;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerLifecycleRecordDO;
 import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerMapper;
 import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerOwnerRecordMapper;
+import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerLifecycleRecordMapper;
 import com.meession.etm.module.crm.service.contact.CrmContactService;
 import com.meession.etm.module.crm.service.permission.CrmPermissionService;
 import com.meession.etm.module.crm.service.permission.bo.CrmPermissionCreateReqBO;
@@ -25,6 +28,9 @@ import static com.meession.etm.module.crm.enums.ErrorCodeConstants.*;
 import static com.meession.etm.module.crm.enums.customer.CrmCustomerOwnerRecordTypeEnum.PUT_POOL;
 import static com.meession.etm.module.crm.enums.customer.CrmCustomerOwnerRecordTypeEnum.INITIAL_ASSIGN;
 import static com.meession.etm.module.crm.enums.customer.CrmCustomerOwnerRecordTypeEnum.TRANSFER;
+import static com.meession.etm.module.crm.enums.customer.CrmCustomerLifecycleStatusEnum.DEAL;
+import static com.meession.etm.module.crm.enums.customer.CrmCustomerLifecycleStatusEnum.LOST;
+import static com.meession.etm.module.crm.enums.customer.CrmCustomerLifecycleStatusEnum.POTENTIAL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -140,6 +146,9 @@ class CrmCustomerServiceImplTest {
 
         assertEquals(20L, customerId);
         assertEquals(ownerUserId, insertedCustomer.get().getOwnerUserId());
+        assertEquals(POTENTIAL.getStatus(), insertedCustomer.get().getLifecycleStatus());
+        assertFalse(insertedCustomer.get().getDealStatus());
+        assertTrue(insertedCustomer.get().getLifecycleStatusChangeTime() != null);
         assertEquals(ownerUserId, createdPermission.get().getUserId());
         assertEquals(20L, createdPermission.get().getBizId());
         assertEquals(20L, ownerRecord.get().getCustomerId());
@@ -366,6 +375,78 @@ class CrmCustomerServiceImplTest {
                 }));
 
         assertServiceException(() -> service.deleteCustomer(10L), CUSTOMER_DELETE_FAIL_HAVE_REFERENCE, "下级客户");
+    }
+
+    @Test
+    void lifecycleTransitionSynchronizesCompatibilityFlagAndWritesHistory() {
+        AtomicReference<CrmCustomerLifecycleRecordDO> recordRef = new AtomicReference<>();
+        AtomicBoolean updateCalled = new AtomicBoolean();
+        CrmCustomerDO customer = new CrmCustomerDO().setId(10L).setName("客户")
+                .setLifecycleStatus(POTENTIAL.getStatus()).setDealStatus(false);
+        CrmCustomerServiceImpl service = new CrmCustomerServiceImpl();
+        ReflectionTestUtils.setField(service, "customerMapper", proxy(CrmCustomerMapper.class,
+                (proxy, method, args) -> switch (method.getName()) {
+                    case "selectByIdForUpdate" -> customer;
+                    case "update" -> {
+                        updateCalled.set(true);
+                        yield 1;
+                    }
+                    default -> throw new AssertionError("未预期的 Mapper 调用 " + method.getName());
+                }));
+        ReflectionTestUtils.setField(service, "customerLifecycleRecordMapper",
+                proxy(CrmCustomerLifecycleRecordMapper.class, (proxy, method, args) -> {
+                    if (method.getName().equals("insert")) {
+                        recordRef.set((CrmCustomerLifecycleRecordDO) args[0]);
+                        return 1;
+                    }
+                    throw new AssertionError("未预期的历史 Mapper 调用 " + method.getName());
+                }));
+
+        service.updateCustomerLifecycleStatus(new CrmCustomerLifecycleUpdateReqVO().setId(10L)
+                .setLifecycleStatus(DEAL.getStatus()).setReason("合同签署"), 99L);
+
+        assertTrue(updateCalled.get());
+        assertEquals(10L, recordRef.get().getCustomerId());
+        assertEquals(POTENTIAL.getStatus(), recordRef.get().getFromStatus());
+        assertEquals(DEAL.getStatus(), recordRef.get().getToStatus());
+        assertEquals("合同签署", recordRef.get().getReason());
+        assertEquals(99L, recordRef.get().getOperatorUserId());
+        assertTrue(recordRef.get().getChangeTime() != null);
+    }
+
+    @Test
+    void lifecycleLostStatusRequiresReason() {
+        CrmCustomerServiceImpl service = lifecycleValidationService(
+                new CrmCustomerDO().setId(10L).setLifecycleStatus(POTENTIAL.getStatus()));
+
+        assertServiceException(() -> service.updateCustomerLifecycleStatus(
+                new CrmCustomerLifecycleUpdateReqVO().setId(10L).setLifecycleStatus(LOST.getStatus()), 99L),
+                CUSTOMER_LIFECYCLE_LOST_REASON_REQUIRED);
+    }
+
+    @Test
+    void lifecycleRejectsSameAndInvalidStatus() {
+        CrmCustomerServiceImpl service = lifecycleValidationService(
+                new CrmCustomerDO().setId(10L).setLifecycleStatus(POTENTIAL.getStatus()));
+
+        assertServiceException(() -> service.updateCustomerLifecycleStatus(
+                new CrmCustomerLifecycleUpdateReqVO().setId(10L).setLifecycleStatus(POTENTIAL.getStatus()), 99L),
+                CUSTOMER_LIFECYCLE_STATUS_SAME);
+        assertServiceException(() -> service.updateCustomerLifecycleStatus(
+                new CrmCustomerLifecycleUpdateReqVO().setId(10L).setLifecycleStatus(999), 99L),
+                CUSTOMER_LIFECYCLE_STATUS_INVALID, 999);
+    }
+
+    private static CrmCustomerServiceImpl lifecycleValidationService(CrmCustomerDO customer) {
+        CrmCustomerServiceImpl service = new CrmCustomerServiceImpl();
+        ReflectionTestUtils.setField(service, "customerMapper", proxy(CrmCustomerMapper.class,
+                (proxy, method, args) -> {
+                    if (method.getName().equals("selectByIdForUpdate")) {
+                        return customer;
+                    }
+                    throw new AssertionError("校验失败后不应继续调用 " + method.getName());
+                }));
+        return service;
     }
 
     private static CrmCustomerServiceImpl serviceWithHierarchy(List<CrmCustomerDO> hierarchy) {

@@ -17,6 +17,9 @@ export interface CustomerVO {
   ownerUserDept?: string // 负责人的部门名称
   lockStatus?: boolean
   dealStatus?: boolean
+  lifecycleStatus: CustomerLifecycleStatus
+  lifecycleStatusChangeTime?: Date
+  lifecycleLostReason?: string
   mobile: string // 手机号
   telephone: string // 电话
   qq: string // QQ
@@ -34,6 +37,24 @@ export interface CustomerVO {
   createTime: Date // 创建时间
   updateTime: Date // 更新时间
   duplicateCheckConfirmed?: boolean // 是否已确认疑似重复客户
+}
+
+export enum CustomerLifecycleStatus {
+  POTENTIAL = 10,
+  INTENTIONAL = 20,
+  DEAL = 30,
+  LOST = 40
+}
+
+export interface CustomerLifecycleRecordVO {
+  id: number
+  customerId: number
+  fromStatus: CustomerLifecycleStatus
+  toStatus: CustomerLifecycleStatus
+  reason?: string
+  operatorUserId?: number
+  operatorUserName?: string
+  changeTime: Date
 }
 
 export interface CustomerDuplicateVO {
@@ -102,6 +123,13 @@ export const getCustomerOwnerRecordList = async (customerId: number) => {
   })
 }
 
+export const getCustomerLifecycleRecordList = async (customerId: number) => {
+  return await request.get<CustomerLifecycleRecordVO[]>({
+    url: '/crm/customer/lifecycle-record-list',
+    params: { customerId }
+  })
+}
+
 // 新增客户
 export const createCustomer = async (data: CustomerVO) => {
   return await request.post({ url: `/crm/customer/create`, data })
@@ -115,6 +143,14 @@ export const updateCustomer = async (data: CustomerVO) => {
 // 更新客户的成交状态
 export const updateCustomerDealStatus = async (id: number, dealStatus: boolean) => {
   return await request.put({ url: `/crm/customer/update-deal-status`, params: { id, dealStatus } })
+}
+
+export const updateCustomerLifecycleStatus = async (data: {
+  id: number
+  lifecycleStatus: CustomerLifecycleStatus
+  reason?: string
+}) => {
+  return await request.put({ url: '/crm/customer/update-lifecycle-status', data })
 }
 
 // 删除客户

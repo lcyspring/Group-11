@@ -46,6 +46,12 @@
             {{ formatDate(customer.contactNextTime) }}
           </el-descriptions-item>
           <el-descriptions-item :label="t('remark')">{{ customer.remark }}</el-descriptions-item>
+          <el-descriptions-item :label="t('lifecycleChangeTime')">
+            {{ formatDate(customer.lifecycleStatusChangeTime) }}
+          </el-descriptions-item>
+          <el-descriptions-item v-if="customer.lifecycleLostReason" :label="t('lifecycleLostReason')">
+            {{ customer.lifecycleLostReason }}
+          </el-descriptions-item>
         </el-descriptions>
       </el-collapse-item>
       <el-collapse-item name="systemInfo">

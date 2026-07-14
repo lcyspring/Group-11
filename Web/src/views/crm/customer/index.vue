@@ -121,6 +121,23 @@
             </el-select>
           </el-form-item>
         </el-col>
+        <el-col :span="8">
+          <el-form-item :label="t('lifecycleStatus')" prop="lifecycleStatus">
+            <el-select
+              v-model="queryParams.lifecycleStatus"
+              class="!w-240px"
+              clearable
+              :placeholder="t('lifecycleStatusPlaceholder')"
+            >
+              <el-option
+                v-for="status in lifecycleStatusOptions"
+                :key="status.value"
+                :label="status.label"
+                :value="status.value"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
       </el-row>
       <el-row>
         <el-col :span="24">
@@ -206,9 +223,11 @@
           <dict-tag :type="DICT_TYPE.INFRA_BOOLEAN_STRING" :value="scope.row.lockStatus" />
         </template>
       </el-table-column>
-      <el-table-column align="center" :label="t('dealStatus')" prop="dealStatus">
+      <el-table-column align="center" :label="t('lifecycleStatus')" prop="lifecycleStatus" min-width="120">
         <template #default="scope">
-          <dict-tag :type="DICT_TYPE.INFRA_BOOLEAN_STRING" :value="scope.row.dealStatus" />
+          <el-tag :type="lifecycleStatusTag(scope.row.lifecycleStatus)">
+            {{ lifecycleStatusLabel(scope.row.lifecycleStatus) }}
+          </el-tag>
         </template>
       </el-table-column>
       <el-table-column
@@ -302,6 +321,7 @@ const queryParams = reactive({
   industryId: undefined,
   level: undefined,
   source: undefined,
+  lifecycleStatus: undefined as CustomerApi.CustomerLifecycleStatus | undefined,
   parentCustomerId: undefined as number | undefined,
   pool: undefined
 })
@@ -309,6 +329,19 @@ const parentCustomerName = ref('')
 const queryFormRef = ref() // 搜索的表单
 const exportLoading = ref(false) // 导出的加载中
 const activeName = ref('1') // 列表 tab
+const lifecycleStatusOptions = computed(() => [
+  { value: CustomerApi.CustomerLifecycleStatus.POTENTIAL, label: t('lifecyclePotential') },
+  { value: CustomerApi.CustomerLifecycleStatus.INTENTIONAL, label: t('lifecycleIntentional') },
+  { value: CustomerApi.CustomerLifecycleStatus.DEAL, label: t('lifecycleDeal') },
+  { value: CustomerApi.CustomerLifecycleStatus.LOST, label: t('lifecycleLost') }
+])
+const lifecycleStatusLabel = (status: CustomerApi.CustomerLifecycleStatus) =>
+  lifecycleStatusOptions.value.find((item) => item.value === status)?.label || t('lifecycleUnknown')
+const lifecycleStatusTags: Record<number, 'info' | 'warning' | 'success' | 'danger'> = {
+  10: 'info', 20: 'warning', 30: 'success', 40: 'danger'
+}
+const lifecycleStatusTag = (status: CustomerApi.CustomerLifecycleStatus) =>
+  lifecycleStatusTags[status] || 'info'
 
 /** tab 切换 */
 const handleTabClick = (tab: TabsPaneContext) => {

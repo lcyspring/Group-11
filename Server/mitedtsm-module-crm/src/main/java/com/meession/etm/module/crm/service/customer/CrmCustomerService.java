@@ -4,6 +4,7 @@ import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.module.crm.controller.admin.customer.vo.customer.*;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerOwnerRecordDO;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerLifecycleRecordDO;
 import com.meession.etm.module.crm.service.customer.bo.CrmCustomerCreateReqBO;
 import jakarta.validation.Valid;
 
@@ -43,7 +44,13 @@ public interface CrmCustomerService {
      * @param id         编号
      * @param dealStatus 跟进状态
      */
-    void updateCustomerDealStatus(Long id, Boolean dealStatus);
+    void updateCustomerDealStatus(Long id, Boolean dealStatus, Long operatorUserId);
+
+    /** 更新客户生命周期状态，并写入不可变历史。 */
+    void updateCustomerLifecycleStatus(@Valid CrmCustomerLifecycleUpdateReqVO reqVO, Long operatorUserId);
+
+    /** 获得客户生命周期变更记录，按时间倒序返回。 */
+    List<CrmCustomerLifecycleRecordDO> getCustomerLifecycleRecordList(Long customerId);
 
     /**
      * 更新客户相关的跟进信息

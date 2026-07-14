@@ -93,11 +93,13 @@ class CrmStatisticsPortraitServiceImplTest {
     }
 
     @Test
-    void getCustomerSummaryByDealStatusUsesSelectedOwnerScope() {
+    void getCustomerSummaryByLifecycleStatusUsesSelectedOwnerScope() {
         CrmStatisticsPortraitServiceImpl service = new CrmStatisticsPortraitServiceImpl();
         List<CrmStatisticCustomerDealStatusRespVO> expected = List.of(
-                new CrmStatisticCustomerDealStatusRespVO().setDealStatus(false).setCustomerCount(7L),
-                new CrmStatisticCustomerDealStatusRespVO().setDealStatus(true).setCustomerCount(3L)
+                new CrmStatisticCustomerDealStatusRespVO().setLifecycleStatus(10).setCustomerCount(4L),
+                new CrmStatisticCustomerDealStatusRespVO().setLifecycleStatus(20).setCustomerCount(3L),
+                new CrmStatisticCustomerDealStatusRespVO().setLifecycleStatus(30).setCustomerCount(2L),
+                new CrmStatisticCustomerDealStatusRespVO().setLifecycleStatus(40).setCustomerCount(1L)
         );
         ReflectionTestUtils.setField(service, "portraitMapper", proxy(CrmStatisticsPortraitMapper.class,
                 (proxy, method, args) -> {

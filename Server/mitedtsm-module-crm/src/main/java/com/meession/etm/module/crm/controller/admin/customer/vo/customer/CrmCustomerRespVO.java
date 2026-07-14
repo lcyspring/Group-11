@@ -76,6 +76,18 @@ public class CrmCustomerRespVO {
     @DictFormat(DictTypeConstants.BOOLEAN_STRING)
     private Boolean dealStatus;
 
+    @Schema(description = "客户生命周期状态：10 潜在、20 意向、30 成交、40 流失", example = "20")
+    @ExcelProperty("客户生命周期状态")
+    private Integer lifecycleStatus;
+
+    @Schema(description = "生命周期状态最后变更时间")
+    @ExcelProperty("生命周期状态变更时间")
+    private LocalDateTime lifecycleStatusChangeTime;
+
+    @Schema(description = "流失原因")
+    @ExcelProperty("流失原因")
+    private String lifecycleLostReason;
+
     @Schema(description = "手机", example = "25682")
     @ExcelProperty("手机")
     private String mobile;

@@ -132,6 +132,12 @@ if [ -d "$SQL_NEW_DIR" ]; then
         echo "Executing: new-crm-contract-lifecycle.sql"
         mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < "${SQL_NEW_DIR}/new-crm-contract-lifecycle.sql"
     fi
+
+    # 4.17 执行 CRM 客户四态生命周期和变更历史
+    if [ -f "${SQL_NEW_DIR}/new-crm-customer-lifecycle.sql" ]; then
+        echo "Executing: new-crm-customer-lifecycle.sql"
+        mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < "${SQL_NEW_DIR}/new-crm-customer-lifecycle.sql"
+    fi
 fi
 
 echo "MySQL initialization completed successfully!"

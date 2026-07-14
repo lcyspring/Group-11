@@ -32,5 +32,6 @@
 | CRM-FEATURE-026 | 合同产品名称、编码、单位和目录价不可变成交快照及历史回填 | GAP-OPP-002、GAP-PIM-001、ADR-003 | 子闭环完成 | `docs/20-CRM-Delivery/testing/contract-product-snapshot/` |
 | CRM-FEATURE-027 | 合同发票草稿、正式开具、部分/全部红冲、蓝/红票作废、金额守恒、轨迹和外部适配边界 | GAP-FIN-001/002、REQ-PAY-003、ADR-009 | 子闭环完成 | `docs/20-CRM-Delivery/testing/crm-invoice-lifecycle/` |
 | CRM-FEATURE-028 | 合同规范化附件、实际签署、适配器能力、作废和不可变版本轨迹 | GAP-CTR-001、ADR-002/004/015 | 子闭环完成 | `docs/20-CRM-Delivery/testing/crm-contract-lifecycle/` |
+| CRM-FEATURE-029 | 客户潜在、意向、成交、流失四态命令、历史、筛选和画像统计 | GAP-CUS-003、GAP-RPT-001/002、ADR-018 | 已实现 | `docs/20-CRM-Delivery/testing/customer-four-state-lifecycle/` |
 
-说明：`CRM-FEATURE-005` 只关闭首联系人、重复/并发保护和失败回滚子项；任务、通话、短信等活动迁移规则仍待后续阶段完成。`CRM-FEATURE-007` 基于现有布尔成交字段完成二态基线，原型四态生命周期仍需新增客户状态模型。`CRM-FEATURE-015/016/017` 已建立目标事实源、完成度展示和三层目标维护入口；目标逐级分解合计规则仍待业务签署。`CRM-FEATURE-028` 不宣称已接入外部电子签平台，也不包含正式补充协议的新审批命令。
+说明：`CRM-FEATURE-005` 只关闭首联系人、重复/并发保护和失败回滚子项；任务、通话、短信等活动迁移规则仍待后续阶段完成。`CRM-FEATURE-007` 是历史二态基线，现已由 `CRM-FEATURE-029` 升级为四态模型。`CRM-FEATURE-015/016/017` 已建立目标事实源、完成度展示和三层目标维护入口；目标逐级分解合计规则仍待业务签署。`CRM-FEATURE-028` 不宣称已接入外部电子签平台，也不包含正式补充协议的新审批命令。

@@ -20,7 +20,10 @@ class CrmStatisticsPortraitMapperTest {
             assertTrue(body.contains("deleted = 0"));
             assertTrue(body.contains("owner_user_id IN"));
             assertTrue(body.contains("create_time BETWEEN"));
-            assertTrue(body.contains("GROUP BY deal_status"));
+            assertTrue(body.contains("lifecycle_status AS lifecycleStatus"));
+            assertTrue(body.contains("GROUP BY lifecycle_status"));
+            assertTrue(body.contains("ORDER BY lifecycle_status"));
+            assertTrue(!body.contains("ORDER BY deal_status"));
         }
     }
 

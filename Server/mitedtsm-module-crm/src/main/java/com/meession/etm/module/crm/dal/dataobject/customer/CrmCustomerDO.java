@@ -76,6 +76,14 @@ public class CrmCustomerDO extends BaseDO {
      * 成交状态
      */
     private Boolean dealStatus;
+    /**
+     * 客户生命周期状态：10 潜在、20 意向、30 成交、40 流失。
+     */
+    private Integer lifecycleStatus;
+    /** 生命周期状态最后变更时间。 */
+    private LocalDateTime lifecycleStatusChangeTime;
+    /** 当前为流失客户时的流失原因。 */
+    private String lifecycleLostReason;
 
     /**
      * 手机

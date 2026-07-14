@@ -11,7 +11,7 @@
       <el-table-column align="center" :label="t('portrait.index')" type="index" width="80" />
       <el-table-column align="center" :label="t('portrait.dealStatusName')" min-width="200">
         <template #default="scope">
-          {{ statusLabel(scope.row.dealStatus) }}
+          {{ statusLabel(scope.row.lifecycleStatus) }}
         </template>
       </el-table-column>
       <el-table-column
@@ -45,8 +45,13 @@ const props = defineProps<{ queryParams: any }>()
 const loading = ref(false)
 const list = ref<CrmStatisticCustomerDealStatusRespVO[]>([])
 
-const statusLabel = (dealStatus: boolean) =>
-  dealStatus ? t('portrait.dealStatusDeal') : t('portrait.dealStatusUndeal')
+const statusLabels = computed<Record<number, string>>(() => ({
+  10: t('portrait.lifecyclePotential'),
+  20: t('portrait.lifecycleIntentional'),
+  30: t('portrait.lifecycleDeal'),
+  40: t('portrait.lifecycleLost')
+}))
+const statusLabel = (status: number) => statusLabels.value[status] || t('portrait.lifecycleUnknown')
 
 const echartsOption = reactive<EChartsOption>({
   title: {
@@ -78,7 +83,7 @@ const loadData = async () => {
     })
     if (echartsOption.series?.[0]?.['data']) {
       echartsOption.series[0]['data'] = rows.map((item: CrmStatisticCustomerDealStatusRespVO) => ({
-        name: statusLabel(item.dealStatus),
+        name: statusLabel(item.lifecycleStatus),
         value: item.customerCount
       }))
     }

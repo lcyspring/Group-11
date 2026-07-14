@@ -3,6 +3,7 @@ package com.meession.etm.module.crm.controller.admin.customer.vo.customer;
 import com.meession.etm.framework.common.pojo.PageParam;
 import com.meession.etm.framework.common.validation.InEnum;
 import com.meession.etm.module.crm.enums.common.CrmSceneTypeEnum;
+import com.meession.etm.module.crm.enums.customer.CrmCustomerLifecycleStatusEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -63,5 +64,9 @@ public class CrmCustomerPageReqVO extends PageParam {
 
     @Schema(description = "跟进状态", example = "true")
     private Boolean followUpStatus;
+
+    @Schema(description = "客户生命周期状态：10 潜在、20 意向、30 成交、40 流失", example = "20")
+    @InEnum(CrmCustomerLifecycleStatusEnum.class)
+    private Integer lifecycleStatus;
 
 }

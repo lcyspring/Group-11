@@ -57,6 +57,13 @@ public interface CrmCustomerMapper extends BaseMapperX<CrmCustomerDO> {
                 .last("FOR UPDATE"));
     }
 
+    /** 锁定单个客户，防止并发生命周期命令产生丢失更新或重复历史。 */
+    default CrmCustomerDO selectByIdForUpdate(Long id) {
+        return selectOne(new LambdaQueryWrapper<CrmCustomerDO>()
+                .eq(CrmCustomerDO::getId, id)
+                .last("FOR UPDATE"));
+    }
+
     default int updateOwnerUserIdById(Long id, Long ownerUserId) {
         return update(new LambdaUpdateWrapper<CrmCustomerDO>()
                 .eq(CrmCustomerDO::getId, id)
@@ -89,7 +96,8 @@ public interface CrmCustomerMapper extends BaseMapperX<CrmCustomerDO> {
                 .eqIfPresent(CrmCustomerDO::getIndustryId, pageReqVO.getIndustryId())
                 .eqIfPresent(CrmCustomerDO::getLevel, pageReqVO.getLevel())
                 .eqIfPresent(CrmCustomerDO::getSource, pageReqVO.getSource())
-                .eqIfPresent(CrmCustomerDO::getFollowUpStatus, pageReqVO.getFollowUpStatus());
+                .eqIfPresent(CrmCustomerDO::getFollowUpStatus, pageReqVO.getFollowUpStatus())
+                .eqIfPresent(CrmCustomerDO::getLifecycleStatus, pageReqVO.getLifecycleStatus());
         appendContactNameConditions(query, pageReqVO);
 
         // backlog 查询

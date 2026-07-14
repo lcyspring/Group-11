@@ -38,7 +38,7 @@ export interface CrmStatisticCustomerAreaRespVO extends CrmStatisticCustomerBase
 }
 
 export interface CrmStatisticCustomerDealStatusRespVO {
-  dealStatus: boolean
+  lifecycleStatus: 10 | 20 | 30 | 40
   customerCount: number
   customerPortion?: string | number
 }

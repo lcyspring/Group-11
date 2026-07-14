@@ -18,13 +18,16 @@ import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerLimitConfigDO;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerLifecycleRecordDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerOwnerRecordDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerPoolConfigDO;
 import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerMapper;
+import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerLifecycleRecordMapper;
 import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerOwnerRecordMapper;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.enums.common.CrmSceneTypeEnum;
 import com.meession.etm.module.crm.enums.customer.CrmCustomerOwnerRecordTypeEnum;
+import com.meession.etm.module.crm.enums.customer.CrmCustomerLifecycleStatusEnum;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
 import com.meession.etm.module.crm.framework.permission.core.annotations.CrmPermission;
 import com.meession.etm.module.crm.service.business.CrmBusinessService;
@@ -75,6 +78,8 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
     private CrmCustomerMapper customerMapper;
     @Resource
     private CrmCustomerOwnerRecordMapper customerOwnerRecordMapper;
+    @Resource
+    private CrmCustomerLifecycleRecordMapper customerLifecycleRecordMapper;
 
     @Resource
     private CrmPermissionService permissionService;
@@ -141,7 +146,11 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
      */
     private static CrmCustomerDO initCustomer(Object customer, Long ownerUserId) {
         return BeanUtils.toBean(customer, CrmCustomerDO.class).setOwnerUserId(ownerUserId)
-                .setOwnerTime(LocalDateTime.now());
+                .setOwnerTime(LocalDateTime.now())
+                .setLifecycleStatus(CrmCustomerLifecycleStatusEnum.POTENTIAL.getStatus())
+                .setLifecycleStatusChangeTime(LocalDateTime.now())
+                .setLifecycleLostReason(null)
+                .setDealStatus(false);
     }
 
     @Override
@@ -172,23 +181,74 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     @LogRecord(type = CRM_CUSTOMER_TYPE, subType = CRM_CUSTOMER_UPDATE_DEAL_STATUS_SUB_TYPE, bizNo = "{{#id}}",
             success = CRM_CUSTOMER_UPDATE_DEAL_STATUS_SUCCESS)
     @CrmPermission(bizType = CrmBizTypeEnum.CRM_CUSTOMER, bizId = "#id", level = CrmPermissionLevelEnum.WRITE)
-    public void updateCustomerDealStatus(Long id, Boolean dealStatus) {
-        // 1.1 校验存在
-        CrmCustomerDO customer = validateCustomerExists(id);
-        // 1.2 校验是否重复操作
-        if (Objects.equals(customer.getDealStatus(), dealStatus)) {
-            throw exception(CUSTOMER_UPDATE_DEAL_STATUS_FAIL);
+    public void updateCustomerDealStatus(Long id, Boolean dealStatus, Long operatorUserId) {
+        CrmCustomerLifecycleUpdateReqVO reqVO = new CrmCustomerLifecycleUpdateReqVO().setId(id)
+                .setLifecycleStatus(Boolean.TRUE.equals(dealStatus)
+                        ? CrmCustomerLifecycleStatusEnum.DEAL.getStatus()
+                        : CrmCustomerLifecycleStatusEnum.POTENTIAL.getStatus())
+                .setReason("兼容成交状态接口变更");
+        updateCustomerLifecycleStatus(reqVO, operatorUserId);
+        LogRecordContext.putVariable("dealStatus", dealStatus);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @LogRecord(type = CRM_CUSTOMER_TYPE, subType = CRM_CUSTOMER_UPDATE_LIFECYCLE_STATUS_SUB_TYPE,
+            bizNo = "{{#reqVO.id}}", success = CRM_CUSTOMER_UPDATE_LIFECYCLE_STATUS_SUCCESS)
+    @CrmPermission(bizType = CrmBizTypeEnum.CRM_CUSTOMER, bizId = "#reqVO.id", level = CrmPermissionLevelEnum.WRITE)
+    public void updateCustomerLifecycleStatus(CrmCustomerLifecycleUpdateReqVO reqVO, Long operatorUserId) {
+        CrmCustomerDO customer = customerMapper.selectByIdForUpdate(reqVO.getId());
+        if (customer == null) {
+            throw exception(CUSTOMER_NOT_EXISTS);
+        }
+        Integer fromStatus = normalizeLifecycleStatus(customer);
+        Integer toStatus = reqVO.getLifecycleStatus();
+        if (!CrmCustomerLifecycleStatusEnum.isValid(toStatus)) {
+            throw exception(CUSTOMER_LIFECYCLE_STATUS_INVALID, toStatus);
+        }
+        if (Objects.equals(fromStatus, toStatus)) {
+            throw exception(CUSTOMER_LIFECYCLE_STATUS_SAME);
+        }
+        String reason = StrUtil.trim(reqVO.getReason());
+        if (CrmCustomerLifecycleStatusEnum.isLost(toStatus) && StrUtil.isBlank(reason)) {
+            throw exception(CUSTOMER_LIFECYCLE_LOST_REASON_REQUIRED);
         }
 
-        // 2. 更新客户的成交状态
-        customerMapper.updateById(new CrmCustomerDO().setId(id).setDealStatus(dealStatus));
+        LocalDateTime changeTime = LocalDateTime.now();
+        customerMapper.update(new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<CrmCustomerDO>()
+                .eq(CrmCustomerDO::getId, customer.getId())
+                .set(CrmCustomerDO::getLifecycleStatus, toStatus)
+                .set(CrmCustomerDO::getLifecycleStatusChangeTime, changeTime)
+                .set(CrmCustomerDO::getLifecycleLostReason,
+                        CrmCustomerLifecycleStatusEnum.isLost(toStatus) ? reason : null)
+                .set(CrmCustomerDO::getDealStatus, CrmCustomerLifecycleStatusEnum.isDeal(toStatus)));
+        customerLifecycleRecordMapper.insert(new CrmCustomerLifecycleRecordDO()
+                .setCustomerId(customer.getId()).setFromStatus(fromStatus).setToStatus(toStatus)
+                .setReason(reason).setOperatorUserId(operatorUserId).setChangeTime(changeTime));
 
-        // 3. 记录操作日志上下文
         LogRecordContext.putVariable("customerName", customer.getName());
-        LogRecordContext.putVariable("dealStatus", dealStatus);
+        LogRecordContext.putVariable("lifecycleStatusName",
+                CrmCustomerLifecycleStatusEnum.getNameByStatus(toStatus));
+    }
+
+    private static Integer normalizeLifecycleStatus(CrmCustomerDO customer) {
+        if (customer.getLifecycleStatus() != null) {
+            return customer.getLifecycleStatus();
+        }
+        return Boolean.TRUE.equals(customer.getDealStatus())
+                ? CrmCustomerLifecycleStatusEnum.DEAL.getStatus()
+                : CrmCustomerLifecycleStatusEnum.POTENTIAL.getStatus();
+    }
+
+    @Override
+    @CrmPermission(bizType = CrmBizTypeEnum.CRM_CUSTOMER, bizId = "#customerId", level = CrmPermissionLevelEnum.READ)
+    public List<CrmCustomerLifecycleRecordDO> getCustomerLifecycleRecordList(Long customerId) {
+        validateCustomerExists(customerId);
+        return customerLifecycleRecordMapper.selectListByCustomerId(customerId);
     }
 
     @Override
