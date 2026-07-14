@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>com.meession.etm</groupId>
+        <artifactId>mitedtsm</artifactId>
+        <version>${revision}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>mitedtsm-module-workorder</artifactId>
+    <packaging>jar</packaging>
+
+    <name>${project.artifactId}</name>
+    <description>
+        workorder 包下，工单管理（Work Order Management）。
+        例如说：工单类型、工单CRUD、工单状态流转等等
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.meession.etm</groupId>
+            <artifactId>mitedtsm-module-system</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
+        <!-- 业务组件 -->
+        <dependency>
+            <groupId>com.meession.etm</groupId>
+            <artifactId>mitedtsm-spring-boot-starter-biz-tenant</artifactId>
+        </dependency>
+
+        <!-- Web 相关 -->
+        <dependency>
+            <groupId>com.meession.etm</groupId>
+            <artifactId>mitedtsm-spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.meession.etm</groupId>
+            <artifactId>mitedtsm-spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!-- DB 相关 -->
+        <dependency>
+            <groupId>com.meession.etm</groupId>
+            <artifactId>mitedtsm-spring-boot-starter-mybatis</artifactId>
+        </dependency>
+
+        <!-- 工具类相关 -->
+        <dependency>
+            <groupId>com.meession.etm</groupId>
+            <artifactId>mitedtsm-spring-boot-starter-excel</artifactId>
+        </dependency>
+
+        <!-- Test 测试相关 -->
+        <dependency>
+            <groupId>com.meession.etm</groupId>
+            <artifactId>mitedtsm-spring-boot-starter-test</artifactId>
+        </dependency>
+    </dependencies>
+</project>

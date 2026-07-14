@@ -3832,6 +3832,7 @@ CREATE TABLE `system_tenant`  (
   `package_id` bigint NOT NULL COMMENT '租户套餐编号',
   `expire_time` datetime NOT NULL COMMENT '过期时间',
   `account_count` int NOT NULL COMMENT '账号数量',
+  `currency_code` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'CNY' COMMENT '货币代码',
   `creator` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '创建者',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updater` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '' COMMENT '更新者',
@@ -3844,9 +3845,9 @@ CREATE TABLE `system_tenant`  (
 -- Records of system_tenant
 -- ----------------------------
 BEGIN;
-INSERT INTO `system_tenant` (`id`, `name`, `contact_user_id`, `contact_name`, `contact_mobile`, `status`, `websites`, `package_id`, `expire_time`, `account_count`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES (1, '密讯', NULL, '管理员', '17321315478', 0, 'xxx,127.0.0.1:3000,wxc4598c446f8a9cb3', 0, '2099-02-19 17:14:16', 9999, '1', '2021-01-05 17:03:47', '1', '2025-08-19 05:18:41', b'0');
-INSERT INTO `system_tenant` (`id`, `name`, `contact_user_id`, `contact_name`, `contact_mobile`, `status`, `websites`, `package_id`, `expire_time`, `account_count`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES (121, '小租户', 110, '小王2', '15601691300', 0, 'xxx,123321', 111, '2026-07-10 00:00:00', 30, '1', '2022-02-22 00:56:14', '1', '2025-08-19 21:19:29', b'0');
-INSERT INTO `system_tenant` (`id`, `name`, `contact_user_id`, `contact_name`, `contact_mobile`, `status`, `websites`, `package_id`, `expire_time`, `account_count`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES (122, '测试租户', 113, '密讯', '15601691300', 0, 'xxx,222,333', 111, '2023-04-29 00:00:00', 50, '1', '2022-03-07 21:37:58', '1', '2025-12-21 09:50:00', b'0');
+INSERT INTO `system_tenant` (`id`, `name`, `contact_user_id`, `contact_name`, `contact_mobile`, `status`, `websites`, `package_id`, `expire_time`, `account_count`, `currency_code`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES (1, '密讯', NULL, '管理员', '17321315478', 0, 'xxx,127.0.0.1:3000,wxc4598c446f8a9cb3', 0, '2099-02-19 17:14:16', 9999, 'CNY', '1', '2021-01-05 17:03:47', '1', '2025-08-19 05:18:41', b'0');
+INSERT INTO `system_tenant` (`id`, `name`, `contact_user_id`, `contact_name`, `contact_mobile`, `status`, `websites`, `package_id`, `expire_time`, `account_count`, `currency_code`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES (121, '小租户', 110, '小王2', '15601691300', 0, 'xxx,123321', 111, '2026-07-10 00:00:00', 30, 'CNY', '1', '2022-02-22 00:56:14', '1', '2025-08-19 21:19:29', b'0');
+INSERT INTO `system_tenant` (`id`, `name`, `contact_user_id`, `contact_name`, `contact_mobile`, `status`, `websites`, `package_id`, `expire_time`, `account_count`, `currency_code`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES (122, '测试租户', 113, '密讯', '15601691300', 0, 'xxx,222,333', 111, '2023-04-29 00:00:00', 50, 'CNY', '1', '2022-03-07 21:37:58', '1', '2025-12-21 09:50:00', b'0');
 COMMIT;
 
 -- ----------------------------
@@ -4158,5 +4159,68 @@ INSERT INTO `mitedtsm_demo03_student` (`id`, `name`, `sex`, `birthday`, `descrip
 INSERT INTO `mitedtsm_demo03_student` (`id`, `name`, `sex`, `birthday`, `description`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (5, '大黑', 2, '2023-11-13 00:00:00', '<p>你在教我做事?</p>', '1', '2023-11-16 23:22:46', '1', '2024-09-17 18:55:29', b'0', 1);
 INSERT INTO `mitedtsm_demo03_student` (`id`, `name`, `sex`, `birthday`, `description`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (9, '小花', 1, '2023-11-07 00:00:00', '<p>哈哈哈</p>', '1', '2023-11-17 00:04:47', '1', '2025-04-19 10:49:04', b'0', 1);
 COMMIT;
+
+-- ========== 工单模块 DDL ==========
+
+-- 工单类型表
+DROP TABLE IF EXISTS `wo_work_order_type`;
+CREATE TABLE `wo_work_order_type` (
+    `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '类型名称',
+    `code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '类型编码',
+    `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '类型描述',
+    `sort` int DEFAULT '0' COMMENT '排序',
+    `status` tinyint DEFAULT '0' COMMENT '状态: 0-启用, 1-禁用',
+    `creator` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '创建者',
+    `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updater` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '更新者',
+    `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+    `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户编号',
+    PRIMARY KEY (`id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='工单类型表';
+
+-- 工单表
+DROP TABLE IF EXISTS `wo_work_order`;
+CREATE TABLE `wo_work_order` (
+    `id` bigint NOT NULL AUTO_INCREMENT COMMENT '工单编号',
+    `title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '工单标题',
+    `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT '工单内容/描述',
+    `type_id` bigint DEFAULT NULL COMMENT '工单类型编号',
+    `priority` tinyint DEFAULT '0' COMMENT '优先级: 0-低, 1-中, 2-高, 3-紧急',
+    `status` tinyint DEFAULT '0' COMMENT '工单状态: 0-待处理, 1-处理中, 2-已完成, 3-已关闭, 4-已退回',
+    `handler_user_id` bigint DEFAULT NULL COMMENT '处理人用户编号',
+    `submitter_user_id` bigint DEFAULT NULL COMMENT '发起人用户编号',
+    `result` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT '处理结果/备注',
+    `handle_time` datetime DEFAULT NULL COMMENT '处理时间',
+    `expected_finish_time` datetime DEFAULT NULL COMMENT '预计完成时间',
+    `finish_time` datetime DEFAULT NULL COMMENT '实际完成时间',
+    `customer_id` bigint DEFAULT NULL COMMENT '关联客户编号(可选)',
+    `business_id` bigint DEFAULT NULL COMMENT '关联商机编号(可选)',
+    `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '备注',
+    `creator` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '创建者',
+    `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updater` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '更新者',
+    `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+    `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户编号',
+    PRIMARY KEY (`id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='工单表';
+
+-- ========== 工单模块字典数据 ==========
+
+INSERT INTO `system_dict_type` (`id`, `name`, `type`, `status`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `deleted_time`) VALUES (200, '工单优先级', 'wo_work_order_priority', 0, '工单优先级', '1', NOW(), '1', NOW(), b'0', NULL);
+INSERT INTO `system_dict_type` (`id`, `name`, `type`, `status`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `deleted_time`) VALUES (201, '工单状态', 'wo_work_order_status', 0, '工单状态', '1', NOW(), '1', NOW(), b'0', NULL);
+
+INSERT INTO `system_dict_data` (`id`, `sort`, `label`, `value`, `dict_type`, `status`, `color_type`, `css_class`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES (1600, 0, '低', '0', 'wo_work_order_priority', 0, 'default', '', '', '1', NOW(), '1', NOW(), b'0');
+INSERT INTO `system_dict_data` (`id`, `sort`, `label`, `value`, `dict_type`, `status`, `color_type`, `css_class`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES (1601, 1, '中', '1', 'wo_work_order_priority', 0, 'primary', '', '', '1', NOW(), '1', NOW(), b'0');
+INSERT INTO `system_dict_data` (`id`, `sort`, `label`, `value`, `dict_type`, `status`, `color_type`, `css_class`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES (1602, 2, '高', '2', 'wo_work_order_priority', 0, 'warning', '', '', '1', NOW(), '1', NOW(), b'0');
+INSERT INTO `system_dict_data` (`id`, `sort`, `label`, `value`, `dict_type`, `status`, `color_type`, `css_class`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES (1603, 3, '紧急', '3', 'wo_work_order_priority', 0, 'danger', '', '', '1', NOW(), '1', NOW(), b'0');
+
+INSERT INTO `system_dict_data` (`id`, `sort`, `label`, `value`, `dict_type`, `status`, `color_type`, `css_class`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES (1604, 0, '待处理', '0', 'wo_work_order_status', 0, 'default', '', '', '1', NOW(), '1', NOW(), b'0');
+INSERT INTO `system_dict_data` (`id`, `sort`, `label`, `value`, `dict_type`, `status`, `color_type`, `css_class`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES (1605, 1, '处理中', '1', 'wo_work_order_status', 0, 'primary', '', '', '1', NOW(), '1', NOW(), b'0');
+INSERT INTO `system_dict_data` (`id`, `sort`, `label`, `value`, `dict_type`, `status`, `color_type`, `css_class`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES (1606, 2, '已完成', '2', 'wo_work_order_status', 0, 'success', '', '', '1', NOW(), '1', NOW(), b'0');
+INSERT INTO `system_dict_data` (`id`, `sort`, `label`, `value`, `dict_type`, `status`, `color_type`, `css_class`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES (1607, 3, '已关闭', '3', 'wo_work_order_status', 0, 'info', '', '', '1', NOW(), '1', NOW(), b'0');
+INSERT INTO `system_dict_data` (`id`, `sort`, `label`, `value`, `dict_type`, `status`, `color_type`, `css_class`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES (1608, 4, '已退回', '4', 'wo_work_order_status', 0, 'warning', '', '', '1', NOW(), '1', NOW(), b'0');
 
 SET FOREIGN_KEY_CHECKS = 1;

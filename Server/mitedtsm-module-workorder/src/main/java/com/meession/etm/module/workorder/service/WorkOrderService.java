@@ -1,0 +1,95 @@
+package com.meession.etm.module.workorder.service;
+
+import com.meession.etm.framework.common.pojo.PageResult;
+import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderPageReqVO;
+import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderSaveReqVO;
+import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderUpdateStatusReqVO;
+import com.meession.etm.module.workorder.dal.dataobject.WorkOrderDO;
+import jakarta.validation.Valid;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
+import static com.meession.etm.framework.common.util.collection.CollectionUtils.convertMap;
+
+/**
+ * 工单 Service 接口
+ *
+ * @author fwx
+ */
+public interface WorkOrderService {
+
+    /**
+     * 创建工单
+     *
+     * @param createReqVO 创建信息
+     * @param userId      用户编号
+     * @return 编号
+     */
+    Long createWorkOrder(@Valid WorkOrderSaveReqVO createReqVO, Long userId);
+
+    /**
+     * 更新工单
+     *
+     * @param updateReqVO 更新信息
+     */
+    void updateWorkOrder(@Valid WorkOrderSaveReqVO updateReqVO);
+
+    /**
+     * 更新工单状态
+     *
+     * @param reqVO 更新状态请求
+     */
+    void updateWorkOrderStatus(WorkOrderUpdateStatusReqVO reqVO);
+
+    /**
+     * 删除工单
+     *
+     * @param id 编号
+     */
+    void deleteWorkOrder(Long id);
+
+    /**
+     * 获得工单
+     *
+     * @param id 编号
+     * @return 工单
+     */
+    WorkOrderDO getWorkOrder(Long id);
+
+    /**
+     * 获得工单列表
+     *
+     * @param ids 编号数组
+     * @return 工单列表
+     */
+    List<WorkOrderDO> getWorkOrderList(Collection<Long> ids);
+
+    /**
+     * 获得工单 Map
+     *
+     * @param ids 编号数组
+     * @return 工单 Map
+     */
+    default Map<Long, WorkOrderDO> getWorkOrderMap(Collection<Long> ids) {
+        return convertMap(getWorkOrderList(ids), WorkOrderDO::getId);
+    }
+
+    /**
+     * 获得工单分页
+     *
+     * @param pageReqVO 分页查询
+     * @return 工单分页
+     */
+    PageResult<WorkOrderDO> getWorkOrderPage(WorkOrderPageReqVO pageReqVO);
+
+    /**
+     * 获取指定工单类型的工单数量
+     *
+     * @param typeId 工单类型编号
+     * @return 数量
+     */
+    Long getWorkOrderCountByTypeId(Long typeId);
+
+}
