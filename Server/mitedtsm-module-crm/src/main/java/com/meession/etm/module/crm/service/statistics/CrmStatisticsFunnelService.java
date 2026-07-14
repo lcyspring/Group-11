@@ -27,6 +27,16 @@ public interface CrmStatisticsFunnelService {
     List<CrmStatisticsBusinessStageSummaryRespVO> getBusinessStageSummary(CrmStatisticsBusinessStageReqVO reqVO);
 
     /**
+     * 获得所选阶段及后续活跃商机、赢单商机明细。
+     */
+    PageResult<CrmBusinessDO> getBusinessStagePage(CrmStatisticsBusinessStagePageReqVO pageVO);
+
+    /**
+     * 获得赢单商机明细。
+     */
+    PageResult<CrmBusinessDO> getBusinessWonPage(CrmStatisticsBusinessStageReqVO pageVO);
+
+    /**
      * 获得商机结束状态统计
      *
      * @param reqVO 请求

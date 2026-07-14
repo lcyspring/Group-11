@@ -749,6 +749,7 @@ export default {
       businessCount: 'عدد الأعمال',
       businessTotalPrice: 'إجمالي سعر الأعمال',
       stageConversionRate: 'معدل تحويل المرحلة (%)',
+      stageDetails: 'تفاصيل أعمال المرحلة',
       // Funnel data
       customer: 'عميل',
       business: 'عمل',

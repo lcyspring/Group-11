@@ -52,6 +52,20 @@ export const StatisticFunnelApi = {
       params
     })
   },
+  // 1.2 获取所选阶段及后续阶段的活跃、赢单商机明细
+  getBusinessStagePage: (params: any) => {
+    return request.get({
+      url: '/crm/statistics-funnel/get-business-stage-page',
+      params
+    })
+  },
+  // 1.3 获取赢单商机明细
+  getBusinessWonPage: (params: any) => {
+    return request.get({
+      url: '/crm/statistics-funnel/get-business-won-page',
+      params
+    })
+  },
   // 2. 获取商机结束状态统计
   getBusinessSummaryByEndStatus: (params: any) => {
     return request.get({

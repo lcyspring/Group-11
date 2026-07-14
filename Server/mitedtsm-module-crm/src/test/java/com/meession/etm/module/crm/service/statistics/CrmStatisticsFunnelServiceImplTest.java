@@ -1,12 +1,17 @@
 package com.meession.etm.module.crm.service.statistics;
 
+import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticFunnelSummaryRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessForecastByDateRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessInversionRateSummaryByDateRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessStageReqVO;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessStagePageReqVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessStageSummaryRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsFunnelReqVO;
 import com.meession.etm.module.crm.dal.mysql.statistics.CrmStatisticsFunnelMapper;
+import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessDO;
+import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessStatusDO;
+import com.meession.etm.module.crm.dal.mysql.business.CrmBusinessMapper;
 import com.meession.etm.module.crm.service.business.CrmBusinessStatusService;
 import com.meession.etm.module.system.api.dept.DeptApi;
 import com.meession.etm.module.system.api.user.AdminUserApi;
@@ -23,6 +28,66 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class CrmStatisticsFunnelServiceImplTest {
+
+    @Test
+    void getBusinessStagePageUsesValidatedStageSortAndScopedUsers() {
+        CrmStatisticsFunnelServiceImpl funnelService = new CrmStatisticsFunnelServiceImpl();
+        CrmBusinessDO business = new CrmBusinessDO().setId(100L).setName("重点商机");
+        ReflectionTestUtils.setField(funnelService, "businessStatusService", proxy(CrmBusinessStatusService.class,
+                (proxy, method, args) -> {
+                    if (method.getName().equals("validateBusinessStatus")) {
+                        assertEquals(20L, args[0]);
+                        assertEquals(30L, args[1]);
+                        return new CrmBusinessStatusDO().setId(30L).setTypeId(20L).setSort(40);
+                    }
+                    throw new AssertionError("不应访问其他状态服务方法: " + method.getName());
+                }));
+        ReflectionTestUtils.setField(funnelService, "businessMapper", proxy(CrmBusinessMapper.class,
+                (proxy, method, args) -> {
+                    if (method.getName().equals("selectStagePage")) {
+                        CrmStatisticsBusinessStagePageReqVO request = (CrmStatisticsBusinessStagePageReqVO) args[0];
+                        assertEquals(List.of(10L), request.getUserIds());
+                        assertEquals(40, args[1]);
+                        return new PageResult<>(List.of(business), 1L);
+                    }
+                    throw new AssertionError("不应访问其他商机 Mapper 方法: " + method.getName());
+                }));
+        CrmStatisticsBusinessStagePageReqVO reqVO = stagePageRequest();
+
+        PageResult<CrmBusinessDO> result = funnelService.getBusinessStagePage(reqVO);
+
+        assertAll(
+                () -> assertEquals(1L, result.getTotal()),
+                () -> assertEquals(100L, result.getList().get(0).getId())
+        );
+    }
+
+    @Test
+    void getBusinessWonPageKeepsStatusTypeAndScopedUsers() {
+        CrmStatisticsFunnelServiceImpl funnelService = new CrmStatisticsFunnelServiceImpl();
+        ReflectionTestUtils.setField(funnelService, "businessStatusService", proxy(CrmBusinessStatusService.class,
+                (proxy, method, args) -> {
+                    if (method.getName().equals("validateBusinessStatusType")) {
+                        assertEquals(20L, args[0]);
+                        return null;
+                    }
+                    throw new AssertionError("不应访问其他状态服务方法: " + method.getName());
+                }));
+        ReflectionTestUtils.setField(funnelService, "businessMapper", proxy(CrmBusinessMapper.class,
+                (proxy, method, args) -> {
+                    if (method.getName().equals("selectWonPage")) {
+                        CrmStatisticsBusinessStageReqVO request = (CrmStatisticsBusinessStageReqVO) args[0];
+                        assertEquals(List.of(10L), request.getUserIds());
+                        return PageResult.empty();
+                    }
+                    throw new AssertionError("不应访问其他商机 Mapper 方法: " + method.getName());
+                }));
+        CrmStatisticsBusinessStageReqVO reqVO = stagePageRequest();
+
+        PageResult<CrmBusinessDO> result = funnelService.getBusinessWonPage(reqVO);
+
+        assertEquals(0L, result.getTotal());
+    }
 
     @Test
     void getBusinessStageSummaryBuildsMonotonicCumulativeFunnel() {
@@ -181,6 +246,17 @@ class CrmStatisticsFunnelServiceImplTest {
         return new CrmStatisticsBusinessStageSummaryRespVO()
                 .setStatusId(statusId).setStatusName(statusName).setSort(sort).setEndStatus(endStatus)
                 .setBusinessCount(count).setTotalPrice(new BigDecimal(totalPrice));
+    }
+
+    private static CrmStatisticsBusinessStagePageReqVO stagePageRequest() {
+        CrmStatisticsBusinessStagePageReqVO reqVO = new CrmStatisticsBusinessStagePageReqVO();
+        reqVO.setDeptId(1L).setUserId(10L).setInterval(2).setTimes(new LocalDateTime[]{
+                LocalDateTime.of(2026, 7, 1, 0, 0),
+                LocalDateTime.of(2026, 7, 31, 23, 59, 59)
+        });
+        reqVO.setStatusTypeId(20L);
+        reqVO.setStatusId(30L);
+        return reqVO;
     }
 
     private static <T> T proxy(Class<T> type, java.lang.reflect.InvocationHandler handler) {

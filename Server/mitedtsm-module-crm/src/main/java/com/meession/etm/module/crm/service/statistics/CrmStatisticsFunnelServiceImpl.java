@@ -7,6 +7,8 @@ import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.framework.common.util.date.LocalDateTimeUtils;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.*;
 import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessDO;
+import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessStatusDO;
+import com.meession.etm.module.crm.dal.mysql.business.CrmBusinessMapper;
 import com.meession.etm.module.crm.dal.mysql.statistics.CrmStatisticsFunnelMapper;
 import com.meession.etm.module.crm.enums.business.CrmBusinessEndStatusEnum;
 import com.meession.etm.module.crm.service.business.CrmBusinessService;
@@ -36,6 +38,8 @@ public class CrmStatisticsFunnelServiceImpl implements CrmStatisticsFunnelServic
 
     @Resource
     private CrmStatisticsFunnelMapper funnelMapper;
+    @Resource
+    private CrmBusinessMapper businessMapper;
 
     @Resource
     private AdminUserApi adminUserApi;
@@ -96,6 +100,27 @@ public class CrmStatisticsFunnelServiceImpl implements CrmStatisticsFunnelServic
             previousCount = row.getBusinessCount();
         }
         return rows;
+    }
+
+    @Override
+    public PageResult<CrmBusinessDO> getBusinessStagePage(CrmStatisticsBusinessStagePageReqVO pageVO) {
+        pageVO.setUserIds(getUserIds(pageVO));
+        if (CollUtil.isEmpty(pageVO.getUserIds())) {
+            return PageResult.empty();
+        }
+        CrmBusinessStatusDO status = businessStatusService.validateBusinessStatus(
+                pageVO.getStatusTypeId(), pageVO.getStatusId());
+        return businessMapper.selectStagePage(pageVO, status.getSort());
+    }
+
+    @Override
+    public PageResult<CrmBusinessDO> getBusinessWonPage(CrmStatisticsBusinessStageReqVO pageVO) {
+        pageVO.setUserIds(getUserIds(pageVO));
+        if (CollUtil.isEmpty(pageVO.getUserIds())) {
+            return PageResult.empty();
+        }
+        businessStatusService.validateBusinessStatusType(pageVO.getStatusTypeId());
+        return businessMapper.selectWonPage(pageVO);
     }
 
     @Override

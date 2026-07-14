@@ -46,6 +46,24 @@ public class CrmStatisticsFunnelController {
         return success(funnelService.getBusinessStageSummary(reqVO));
     }
 
+    @GetMapping("/get-business-stage-page")
+    @Operation(summary = "获得商机阶段漏斗明细", description = "查询到达所选阶段且仍活跃或已赢单的商机")
+    @PreAuthorize("@ss.hasPermission('crm:business:query')")
+    public CommonResult<PageResult<CrmBusinessRespVO>> getBusinessStagePage(
+            @Valid CrmStatisticsBusinessStagePageReqVO pageVO) {
+        PageResult<CrmBusinessDO> pageResult = funnelService.getBusinessStagePage(pageVO);
+        return success(new PageResult<>(buildBusinessDetailList(pageResult.getList()), pageResult.getTotal()));
+    }
+
+    @GetMapping("/get-business-won-page")
+    @Operation(summary = "获得漏斗赢单商机明细")
+    @PreAuthorize("@ss.hasPermission('crm:business:query')")
+    public CommonResult<PageResult<CrmBusinessRespVO>> getBusinessWonPage(
+            @Valid CrmStatisticsBusinessStageReqVO pageVO) {
+        PageResult<CrmBusinessDO> pageResult = funnelService.getBusinessWonPage(pageVO);
+        return success(new PageResult<>(buildBusinessDetailList(pageResult.getList()), pageResult.getTotal()));
+    }
+
     @GetMapping("/get-business-summary-by-end-status")
     @Operation(summary = "获取商机结束状态统计", description = "用于【销售漏斗】页面的【销售漏斗分析】")
     @PreAuthorize("@ss.hasPermission('crm:statistics-funnel:query')")

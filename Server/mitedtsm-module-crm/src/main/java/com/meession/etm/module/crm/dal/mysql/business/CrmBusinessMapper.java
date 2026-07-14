@@ -6,7 +6,11 @@ import com.meession.etm.framework.mybatis.core.query.LambdaQueryWrapperX;
 import com.meession.etm.framework.mybatis.core.query.MPJLambdaWrapperX;
 import com.meession.etm.module.crm.controller.admin.business.vo.business.CrmBusinessPageReqVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsFunnelReqVO;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessStagePageReqVO;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessStageReqVO;
 import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessDO;
+import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessStatusDO;
+import com.meession.etm.module.crm.enums.business.CrmBusinessEndStatusEnum;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.util.CrmPermissionUtils;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -97,6 +101,36 @@ public interface CrmBusinessMapper extends BaseMapperX<CrmBusinessDO> {
                 .betweenIfPresent(CrmBusinessDO::getDealTime, pageVO.getTimes())
                 .isNull(CrmBusinessDO::getEndStatus)
                 .isNotNull(CrmBusinessDO::getDealTime)
+                .orderByAsc(CrmBusinessDO::getDealTime)
+                .orderByAsc(CrmBusinessDO::getId));
+    }
+
+    default PageResult<CrmBusinessDO> selectStagePage(CrmStatisticsBusinessStagePageReqVO pageVO,
+                                                       Integer stageSort) {
+        MPJLambdaWrapperX<CrmBusinessDO> query = new MPJLambdaWrapperX<>();
+        query.selectAll(CrmBusinessDO.class)
+                .leftJoin(CrmBusinessStatusDO.class, on -> on
+                        .eq(CrmBusinessStatusDO::getId, CrmBusinessDO::getStatusId)
+                        .eq(CrmBusinessStatusDO::getTypeId, CrmBusinessDO::getStatusTypeId))
+                .eq(CrmBusinessDO::getStatusTypeId, pageVO.getStatusTypeId())
+                .in(CrmBusinessDO::getOwnerUserId, pageVO.getUserIds())
+                .between(CrmBusinessDO::getCreateTime, pageVO.getTimes()[0], pageVO.getTimes()[1])
+                .and(scope -> scope
+                        .and(active -> active.isNull(CrmBusinessDO::getEndStatus)
+                                .ge(CrmBusinessStatusDO::getSort, stageSort))
+                        .or()
+                        .eq(CrmBusinessDO::getEndStatus, CrmBusinessEndStatusEnum.WIN.getStatus()))
+                .orderByAsc(CrmBusinessDO::getDealTime)
+                .orderByAsc(CrmBusinessDO::getId);
+        return selectJoinPage(pageVO, CrmBusinessDO.class, query);
+    }
+
+    default PageResult<CrmBusinessDO> selectWonPage(CrmStatisticsBusinessStageReqVO pageVO) {
+        return selectPage(pageVO, new LambdaQueryWrapperX<CrmBusinessDO>()
+                .eq(CrmBusinessDO::getStatusTypeId, pageVO.getStatusTypeId())
+                .eq(CrmBusinessDO::getEndStatus, CrmBusinessEndStatusEnum.WIN.getStatus())
+                .in(CrmBusinessDO::getOwnerUserId, pageVO.getUserIds())
+                .between(CrmBusinessDO::getCreateTime, pageVO.getTimes()[0], pageVO.getTimes()[1])
                 .orderByAsc(CrmBusinessDO::getDealTime)
                 .orderByAsc(CrmBusinessDO::getId));
     }

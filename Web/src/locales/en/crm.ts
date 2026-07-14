@@ -752,6 +752,7 @@ export default {
       businessCount: 'Business Count',
       businessTotalPrice: 'Business Total Price',
       stageConversionRate: 'Stage Conversion Rate(%)',
+      stageDetails: 'Stage Business Details',
       // Funnel data
       customer: 'Customer',
       business: 'Business',
