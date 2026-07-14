@@ -1,2 +1,13 @@
+# pnpm 10+ requires an explicit allowlist for dependency lifecycle scripts.
 allowBuilds:
-  vue-demi: set this to true or false
+  '@parcel/watcher': true
+  esbuild: true
+  core-js: true
+  vue-demi: true
+  '@swc/core': true
+
+# Force @intlify packages to a single version compatible with vue-i18n@9.14.5
+overrides:
+  '@intlify/core-base': 9.14.5
+  '@intlify/message-compiler': 9.14.5
+  '@intlify/shared': 9.14.5

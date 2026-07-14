@@ -10,13 +10,18 @@ import mpliveMainfestPlugin from './sheep/libs/mplive-manifest-plugin';
 export default (command, mode) => {
 	const env = loadEnv(mode, __dirname, 'SHOPRO_');
 	return {
-		define: {
-			process: JSON.stringify({ env: { UNI_APP_X: 'false' } }),
-		},
 		resolve: {
 			alias: {
 				'@': path.resolve(__dirname, './')
-			}
+			},
+			dedupe: [
+				'@intlify/core-base',
+				'@intlify/message-compiler',
+				'@intlify/runtime',
+				'@intlify/shared',
+				'vue',
+				'vue-i18n'
+			]
 		},
 		envPrefix: "SHOPRO_",
 		plugins: [
