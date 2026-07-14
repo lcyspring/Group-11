@@ -115,5 +115,10 @@ public interface ErrorCodeConstants {
     ErrorCode FOLLOW_UP_RECORD_DELETE_DENIED = new ErrorCode(1_020_013_001, "删除跟进记录失败，原因：没有权限");
 
     // ========== 数据统计 1_020_014_000 ==========
+    ErrorCode PERFORMANCE_TARGET_SCOPE_INVALID = new ErrorCode(1_020_014_000, "业绩目标范围无效");
+    ErrorCode PERFORMANCE_TARGET_COUNT_DECIMAL = new ErrorCode(1_020_014_001, "计数类业绩目标必须是整数");
+    ErrorCode PERFORMANCE_TARGET_CONCURRENT_MODIFICATION = new ErrorCode(1_020_014_002,
+            "业绩目标已被其他操作修改，请刷新后重试");
+    ErrorCode PERFORMANCE_TARGET_TYPE_INVALID = new ErrorCode(1_020_014_003, "业绩目标类型无效");
 
 }

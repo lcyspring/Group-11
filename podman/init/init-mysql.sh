@@ -90,6 +90,12 @@ if [ -d "$SQL_NEW_DIR" ]; then
         echo "Executing: new-crm-customer-hierarchy.sql"
         mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < "${SQL_NEW_DIR}/new-crm-customer-hierarchy.sql"
     fi
+
+    # 4.10 执行 CRM 业绩目标表和维护权限
+    if [ -f "${SQL_NEW_DIR}/new-crm-performance-target.sql" ]; then
+        echo "Executing: new-crm-performance-target.sql"
+        mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < "${SQL_NEW_DIR}/new-crm-performance-target.sql"
+    fi
 fi
 
 echo "MySQL initialization completed successfully!"
