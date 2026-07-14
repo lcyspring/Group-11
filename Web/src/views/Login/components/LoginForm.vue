@@ -139,6 +139,7 @@ import LoginFormTitle from './LoginFormTitle.vue'
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 
 import { useIcon } from '@/hooks/web/useIcon'
+import { Verify } from '@/components/Verifition'
 
 import * as authUtil from '@/utils/auth'
 import { usePermissionStore } from '@/store/modules/permission'

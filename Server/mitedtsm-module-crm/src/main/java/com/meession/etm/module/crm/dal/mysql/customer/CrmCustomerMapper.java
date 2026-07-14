@@ -10,6 +10,7 @@ import com.meession.etm.module.crm.controller.admin.customer.vo.customer.CrmCust
 import com.meession.etm.module.crm.dal.dataobject.clue.CrmClueDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerPoolConfigDO;
+import com.meession.etm.module.crm.service.customer.bo.CrmCustomerPoolRecycleRuleConfig;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.enums.common.CrmSceneTypeEnum;
 import com.meession.etm.module.crm.util.CrmPermissionUtils;
@@ -178,6 +179,58 @@ public interface CrmCustomerMapper extends BaseMapperX<CrmCustomerDO> {
         // 未跟进
         query.eq(CrmClueDO::getFollowUpStatus, false);
         return selectCount(query);
+    }
+
+    default List<CrmCustomerDO> selectListByAutoPoolConfig(CrmCustomerPoolRecycleRuleConfig config) {
+        LambdaQueryWrapper<CrmCustomerDO> query = new LambdaQueryWrapper<>();
+        query.gt(CrmCustomerDO::getOwnerUserId, 0);
+
+        if (config.getExcludeLocked() == null || config.getExcludeLocked()) {
+            query.eq(CrmCustomerDO::getLockStatus, false);
+        }
+        if (config.getExcludeDealed() == null || config.getExcludeDealed()) {
+            query.eq(CrmCustomerDO::getDealStatus, false);
+        }
+
+        Integer contactExpireDays = config.getContactExpireDays() != null ? config.getContactExpireDays() : 30;
+        Integer dealExpireDays = config.getDealExpireDays() != null ? config.getDealExpireDays() : 90;
+
+        LocalDateTime dealExpireTime = LocalDateTime.now().minusDays(dealExpireDays);
+        LocalDateTime contactExpireTime = LocalDateTime.now().minusDays(contactExpireDays);
+
+        query.and(q -> {
+            q.lt(CrmCustomerDO::getOwnerTime, dealExpireTime)
+                    .or(w -> w.lt(CrmCustomerDO::getOwnerTime, contactExpireTime)
+                            .and(p -> p.lt(CrmCustomerDO::getContactLastTime, contactExpireTime)
+                                    .or().isNull(CrmCustomerDO::getContactLastTime)));
+        });
+
+        if (config.getMinCustomerLevel() != null) {
+            query.ge(CrmCustomerDO::getLevel, config.getMinCustomerLevel());
+        }
+
+        return selectList(query);
+    }
+
+    default int updatePoolStatus(Long id, Integer poolStatus, LocalDateTime poolTime,
+                                 String poolReason, Long poolRuleId) {
+        return update(new LambdaUpdateWrapper<CrmCustomerDO>()
+                .eq(CrmCustomerDO::getId, id)
+                .set(CrmCustomerDO::getPoolStatus, poolStatus)
+                .set(CrmCustomerDO::getPoolTime, poolTime)
+                .set(CrmCustomerDO::getPoolReason, poolReason)
+                .set(CrmCustomerDO::getPoolRuleId, poolRuleId));
+    }
+
+    default int updateReceiveInfo(Long id, Long ownerUserId, LocalDateTime ownerTime,
+                                  LocalDateTime lastReceiveTime, LocalDateTime receiveFreezeEndTime) {
+        return update(new LambdaUpdateWrapper<CrmCustomerDO>()
+                .eq(CrmCustomerDO::getId, id)
+                .set(CrmCustomerDO::getOwnerUserId, ownerUserId)
+                .set(CrmCustomerDO::getOwnerTime, ownerTime)
+                .set(CrmCustomerDO::getLastReceiveTime, lastReceiveTime)
+                .set(CrmCustomerDO::getReceiveFreezeEndTime, receiveFreezeEndTime)
+                .set(CrmCustomerDO::getPoolStatus, 0));
     }
 
 }

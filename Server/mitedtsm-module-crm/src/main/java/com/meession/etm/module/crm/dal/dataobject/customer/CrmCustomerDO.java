@@ -124,4 +124,34 @@ public class CrmCustomerDO extends BaseDO {
      */
     private String remark;
 
+    /**
+     * 公海状态：0-非公海 1-公海
+     */
+    private Integer poolStatus;
+
+    /**
+     * 进入公海时间
+     */
+    private LocalDateTime poolTime;
+
+    /**
+     * 最后领取时间
+     */
+    private LocalDateTime lastReceiveTime;
+
+    /**
+     * 领取冻结截止时间
+     */
+    private LocalDateTime receiveFreezeEndTime;
+
+    /**
+     * 进入公海原因
+     */
+    private String poolReason;
+
+    /**
+     * 触发规则编号
+     */
+    private Long poolRuleId;
+
 }
