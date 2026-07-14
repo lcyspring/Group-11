@@ -1,15 +1,21 @@
 # Rootless Podman deployment
 
-This directory is independent from `docker-compose/`. It starts the project
-directly on the real host with one rootless Podman Pod and Podman's default
-Pasta network.
+This is a Podman-only deployment. It starts the project directly on the real
+host with one rootless Podman Pod and Podman's default Pasta network; it never
+uses Docker Engine, the Docker CLI, a Docker socket, or Compose.
+
+The default `docker.io` image references are OCI registry addresses, not a
+runtime dependency on Docker. Podman pulls them directly, or it can load OCI
+archives created by Podman itself for an offline deployment.
 
 中文完整流程请阅读：[Podman 全流程操作指南](DEPLOY_GUIDE_ZH.md)。
 
 ## Layout
 
 - `up.sh`: creates the Pod and starts all services.
-- `down.sh`: stops the Pod; `--volumes` also removes its persistent data.
+- `down.sh`: stops and removes the Pod; `--volumes` also removes its persistent data.
+- `image-archives.sh`: creates portable OCI base-image archives with Podman.
+- `images/`: default location for those ignored offline archives.
 - `Containerfile`: one multi-target Containerfile for MySQL, the server,
   InitService, Web, and Mall images.
 - `nginx/`: Pod-specific frontend configuration. Services in a shared Pod
@@ -57,6 +63,32 @@ build every artifact in one command with
 available with HBuilderX 4.67-alpha+ via `HBUILDERX_PLATFORM=web`; the default
 `h5` platform works with HBuilderX 3.1.5+.
 
+When the repository is on a filesystem without symbolic-link support, such as
+a VMware shared folder mounted at `/mnt/hgfs`, `build-assets.sh` automatically
+stages the Web build on a native local filesystem and copies `Web/dist-prod/`
+back after it succeeds. To choose a staging parent explicitly, use
+`WEB_BUILD_WORKDIR=/tmp bash ./build-assets.sh`.
+
+If the Java artifacts already succeeded and only the management-Web build
+failed, rerun just that stage with `bash ./build-assets.sh --web-only`; it does
+not invoke Maven or rebuild either JAR.
+
+The `Web/build/vite/` directory is Vite configuration source and must be
+tracked in Git. If a checkout reports that `./build/vite` cannot be resolved,
+update the repository before retrying; reinstalling pnpm dependencies cannot
+restore missing source files.
+
+`Web/.env` and `Web/pnpm-lock.yaml` are also required tracked build inputs.
+The asset script installs with `--frozen-lockfile`, so a fresh clone uses the
+same dependency graph as the known-good build instead of silently upgrading
+Vite plugins and other packages. All `VITE_` values are visible in the browser
+bundle and must not contain server-side secrets.
+
+Before invoking Vite, `build-assets.sh` removes the previous `Web/dist-prod/`.
+If the build fails, there is therefore no stale frontend output for `up.sh` to
+package. Both scripts also verify that every hashed asset directly referenced
+by `index.html` exists before an image is built.
+
 The current Mall H5 output is versioned in Git so deployment members can pull
 and use it directly. HBuilderX is only needed when publishing a new Mall H5
 revision; generated Server JARs, management-Web output, and image archives
@@ -66,8 +98,31 @@ After the assets are ready, start the Pod:
 
 ```bash
 cd podman
+bash ./up.sh --check
 bash ./up.sh
 ```
+
+`--check` is safe to run on a new host: it validates the rootless Podman
+environment and application artifacts, but does not load, pull, build, create,
+or start anything.
+
+## Fast restart paths
+
+The normal no-argument command remains the deployment path after application
+assets or SQL have changed. For an unchanged deployment, avoid its image
+packaging work:
+
+```bash
+# `down.sh` removed the Pod, but the existing local runtime images are valid.
+bash ./up.sh --no-build
+
+# The Pod still exists but was stopped, for example after `podman pod stop`.
+bash ./up.sh --fast
+```
+
+`--fast` starts/checks the existing containers without rebuilding or replacing
+them. `--no-build` recreates the Pod from the current local images. Both modes
+keep all named volumes intact; run plain `up.sh` to deploy changed artifacts.
 
 If a previous start reached `Spring Boot server is ready.` but stopped before
 the two Nginx frontends were created, start just those missing containers
@@ -80,6 +135,24 @@ bash ./up.sh --frontends-only
 This recovery mode is also useful after an interrupted terminal session. If it
 cannot start a frontend or reach its port, it prints the last health-check
 error instead of hiding it during retries.
+
+Only when the deployed Server and InitService JARs are confirmed unchanged,
+update a management-Web-only change without a full Pod replacement or the
+Spring Boot startup wait:
+
+```bash
+bash ./build-assets.sh --web-only
+bash ./up.sh --rebuild-web
+```
+
+`--rebuild-web` packages `Web/dist-prod/` and replaces only the Web Nginx
+container. It leaves the Java server, databases, Redis, RabbitMQ, TDengine,
+and Mall container running. After `git pull`, a backend change, or any doubt
+about JAR freshness, use the complete `build-assets.sh` followed by `up.sh`.
+
+The Web Nginx configuration never caches `index.html`, while hashed JS and CSS
+assets remain cacheable. This prevents a browser from combining an old index
+page with a newer `assets/` directory after a frontend deployment.
 
 The required artifacts are:
 
@@ -94,14 +167,28 @@ Linux host use the Pod's published web port and Nginx proxies the request to
 the backend. Do not set it to `http://localhost:8080`, because `localhost`
 would then mean the visitor's own computer.
 
-The script first imports a missing base image from `../docker-images/`. When
-that archive is absent, its default `IMAGE_SOURCE=auto` mode pulls the image
-from its registry instead. It then builds all runtime images from this
+The script first imports a missing base image from `podman/images/`. When that
+OCI archive is absent, its default `IMAGE_SOURCE=auto` mode pulls the image
+directly through Podman. It then builds all runtime images from this
 directory's `Containerfile`.
 
-For a fully offline, reproducible deployment, copy `docker-images/` with the
-project and run `IMAGE_SOURCE=archive bash ./up.sh`. To always fetch current
-registry images, use `IMAGE_SOURCE=pull bash ./up.sh`.
+For a fully offline deployment, run the following on a connected machine with
+Podman, copy `podman/images/` with the project, and then deploy with
+`IMAGE_SOURCE=archive`:
+
+```bash
+cd podman
+bash ./image-archives.sh --pull
+IMAGE_SOURCE=archive bash ./up.sh
+```
+
+To keep archives outside the repository, point both commands at the same
+directory with `IMAGE_ARCHIVE_DIR=/absolute/path/to/archives`. To always fetch
+current registry images, use `IMAGE_SOURCE=pull bash ./up.sh`.
+
+For a transition from the old project archive directory, set
+`IMAGE_ARCHIVE_DIR=../docker-images` explicitly. Podman can load those image
+archives directly; this still does not require Docker to be installed.
 
 ## Network-drive projects
 

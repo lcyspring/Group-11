@@ -25,18 +25,21 @@ export default ({command, mode}: ConfigEnv): UserConfig => {
         root: root,
         // 服务端渲染
         server: {
-            port: env.VITE_PORT, // 端口号
+            port: env.VITE_PORT,
             host: "0.0.0.0",
             open: env.VITE_OPEN === 'true',
-            // 本地跨域代理. 目前注释的原因：暂时没有用途，server 端已经支持跨域
-            // proxy: {
-            //   ['/admin-api']: {
-            //     target: env.VITE_BASE_URL,
-            //     ws: false,
-            //     changeOrigin: true,
-            //     rewrite: (path) => path.replace(new RegExp(`^/admin-api`), ''),
-            //   },
-            // },
+            proxy: {
+                ['/admin-api']: {
+                    target: 'http://127.0.0.1:8080',
+                    ws: false,
+                    changeOrigin: true,
+                },
+                ['/actuator']: {
+                    target: 'http://127.0.0.1:8080',
+                    ws: false,
+                    changeOrigin: true,
+                },
+            },
         },
         // 项目使用的vite插件。 单独提取到build/vite/plugin中管理
         plugins: createVitePlugins(),

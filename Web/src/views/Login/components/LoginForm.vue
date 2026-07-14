@@ -191,14 +191,13 @@ const socialList = [
 
 // 获取验证码
 const getCode = async () => {
-  // 情况一，未开启：则直接登录
-  if (loginData.captchaEnable === 'false') {
-    await handleLogin({})
-  } else {
-    // 情况二，已开启：则展示验证码；只有完成验证码的情况，才进行登录
-    // 弹出验证码
+  // 只有明确开启且验证码组件已挂载时才展示验证码。
+  // 配置缺失时按关闭处理，避免 fresh clone 点击登录后调用空 ref。
+  if (loginData.captchaEnable === 'true' && verify.value) {
     verify.value.show()
+    return
   }
+  await handleLogin({})
 }
 // 获取租户 ID
 const getTenantId = async () => {
@@ -269,7 +268,7 @@ const handleLogin = async (params: any) => {
     }
   } finally {
     loginLoading.value = false
-    loading.value.close()
+    loading.value?.close()
   }
 }
 

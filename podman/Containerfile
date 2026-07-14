@@ -5,11 +5,15 @@
 # pnpm, or any compiler. Runtime containers use named volumes only; they do
 # not bind-mount project files from the host.
 
-FROM docker.io/library/mysql:8.0 AS mysql
+ARG MYSQL_BASE_IMAGE=docker.io/library/mysql:8.0
+ARG RUNTIME_BASE_IMAGE=docker.io/library/eclipse-temurin:17-jdk
+ARG NGINX_BASE_IMAGE=docker.io/library/nginx:stable-alpine
+
+FROM ${MYSQL_BASE_IMAGE} AS mysql
 COPY podman/init/init-mysql.sh /docker-entrypoint-initdb.d/init-mysql.sh
-COPY database/ /docker-init-sql/
+COPY database/ /podman-init-sql/
 RUN chmod 0755 /docker-entrypoint-initdb.d/init-mysql.sh
-FROM docker.io/library/eclipse-temurin:17-jdk AS runtime-base
+FROM ${RUNTIME_BASE_IMAGE} AS runtime-base
 
 ENV TZ=Asia/Shanghai
 
@@ -24,10 +28,10 @@ COPY Server/mitedtsm-server/target/mitedtsm-server.jar app.jar
 ENV JAVA_OPTS="-Xms512m -Xmx512m -Djava.security.egd=file:/dev/./urandom"
 CMD ["sh", "-c", "exec java ${JAVA_OPTS} -jar app.jar --spring.profiles.active=${SPRING_PROFILES_ACTIVE:-local}"]
 
-FROM docker.io/library/nginx:stable-alpine AS web
+FROM ${NGINX_BASE_IMAGE} AS web
 COPY podman/nginx/web.conf /etc/nginx/conf.d/default.conf
 COPY Web/dist-prod/ /usr/share/nginx/html/
 
-FROM docker.io/library/nginx:stable-alpine AS mall
+FROM ${NGINX_BASE_IMAGE} AS mall
 COPY podman/nginx/mall.conf /etc/nginx/conf.d/default.conf
 COPY MallFrontend/unpackage/dist/build/web/ /usr/share/nginx/html/
