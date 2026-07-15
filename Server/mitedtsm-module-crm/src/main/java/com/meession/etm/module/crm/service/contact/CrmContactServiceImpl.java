@@ -335,7 +335,12 @@ public class CrmContactServiceImpl implements CrmContactService {
             throw exception(CONTACT_UPDATE_OWNER_USER_FAIL);
         }
 
-        // 2. 记录操作日志
+        // 2. Keep object permissions aligned with the owner column. Team READ/WRITE permissions are preserved.
+        for (CrmContactDO contact : contacts) {
+            permissionService.replaceOwnerPermission(CrmBizTypeEnum.CRM_CONTACT.getType(), contact.getId(), ownerUserId);
+        }
+
+        // 3. 记录操作日志
         for (CrmContactDO contact : contacts) {
             receiveContactLog(contact, ownerUserId);
         }

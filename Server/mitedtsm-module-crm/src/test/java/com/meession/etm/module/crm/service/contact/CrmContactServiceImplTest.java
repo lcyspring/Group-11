@@ -4,6 +4,7 @@ import com.meession.etm.module.crm.controller.admin.contact.vo.CrmContactSaveReq
 import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.mysql.contact.CrmContactMapper;
+import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.service.contract.CrmContractService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
 import com.meession.etm.module.crm.service.permission.CrmPermissionService;
@@ -28,6 +29,34 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CrmContactServiceImplTest {
+
+    @Test
+    void customerPoolOwnerChangeSynchronizesContactOwnerPermissions() {
+        List<Object[]> permissionCalls = new ArrayList<>();
+        List<CrmContactDO> contacts = List.of(contact(10L, 100L, true), contact(11L, 100L, false));
+        CrmContactMapper mapper = proxy(CrmContactMapper.class, (proxy, method, args) -> switch (method.getName()) {
+            case "selectListByCustomerId" -> contacts;
+            case "updateOwnerUserIdByCustomerId" -> 2;
+            default -> throw new AssertionError("未预期的 Mapper 调用 " + method.getName());
+        });
+        CrmContactServiceImpl service = newService(mapper);
+        ReflectionTestUtils.setField(service, "permissionService", proxy(CrmPermissionService.class,
+                (proxy, method, args) -> {
+                    if (method.getName().equals("replaceOwnerPermission")) {
+                        permissionCalls.add(args.clone());
+                        return null;
+                    }
+                    throw new AssertionError("未预期的权限调用 " + method.getName());
+                }));
+
+        service.updateOwnerUserIdByCustomerId(100L, 9L);
+
+        assertEquals(2, permissionCalls.size());
+        assertEquals(CrmBizTypeEnum.CRM_CONTACT.getType(), permissionCalls.get(0)[0]);
+        assertEquals(10L, permissionCalls.get(0)[1]);
+        assertEquals(9L, permissionCalls.get(0)[2]);
+        assertEquals(11L, permissionCalls.get(1)[1]);
+    }
 
     @Test
     void createRejectsDuplicateMobileAfterCustomerLock() {

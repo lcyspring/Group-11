@@ -263,6 +263,48 @@ public class CrmPermissionServiceImpl implements CrmPermissionService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    public void replaceOwnerPermission(Integer bizType, Long bizId, Long ownerUserId) {
+        List<CrmPermissionDO> permissions = permissionMapper.selectByBizTypeAndBizId(bizType, bizId);
+        List<CrmPermissionDO> ownerPermissions = permissions.stream()
+                .filter(permission -> isOwner(permission.getLevel()))
+                .toList();
+        if (ownerUserId == null) {
+            if (CollUtil.isNotEmpty(ownerPermissions)) {
+                permissionMapper.deleteByIds(convertSet(ownerPermissions, CrmPermissionDO::getId));
+            }
+            return;
+        }
+
+        adminUserApi.validateUserList(Collections.singleton(ownerUserId));
+        CrmPermissionDO targetPermission = CollUtil.findOne(ownerPermissions,
+                permission -> ObjUtil.equal(permission.getUserId(), ownerUserId));
+        if (targetPermission == null) {
+            targetPermission = CollUtil.findOne(permissions,
+                    permission -> ObjUtil.equal(permission.getUserId(), ownerUserId));
+        }
+        Long retainedOwnerPermissionId = null;
+        if (targetPermission == null) {
+            permissionMapper.insert(new CrmPermissionDO().setBizType(bizType).setBizId(bizId)
+                    .setUserId(ownerUserId).setLevel(CrmPermissionLevelEnum.OWNER.getLevel()));
+        } else {
+            retainedOwnerPermissionId = targetPermission.getId();
+            if (!isOwner(targetPermission.getLevel())) {
+                permissionMapper.updateById(new CrmPermissionDO().setId(targetPermission.getId())
+                        .setLevel(CrmPermissionLevelEnum.OWNER.getLevel()));
+            }
+        }
+        Long finalRetainedOwnerPermissionId = retainedOwnerPermissionId;
+        List<Long> staleOwnerPermissionIds = ownerPermissions.stream()
+                .filter(permission -> !ObjUtil.equal(permission.getId(), finalRetainedOwnerPermissionId))
+                .map(CrmPermissionDO::getId)
+                .toList();
+        if (CollUtil.isNotEmpty(staleOwnerPermissionIds)) {
+            permissionMapper.deleteByIds(staleOwnerPermissionIds);
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deletePermission(Integer bizType, Long bizId, Integer level) {
         // 校验存在
         List<CrmPermissionDO> permissions = permissionMapper.selectListByBizTypeAndBizIdAndLevel(

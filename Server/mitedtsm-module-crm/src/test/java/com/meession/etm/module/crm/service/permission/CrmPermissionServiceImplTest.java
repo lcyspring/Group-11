@@ -17,7 +17,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Proxy;
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import static com.meession.etm.framework.test.core.util.AssertUtils.assertServiceException;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CLUE_UPDATE_FAIL_TRANSFORMED;
@@ -25,6 +30,88 @@ import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CRM_PERMISSIO
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CRM_EXPORT_PERMISSION_DENIED;
 
 class CrmPermissionServiceImplTest {
+
+    @Test
+    void replaceOwnerPermissionPromotesTargetAndPreservesTeamPermission() {
+        AtomicReference<CrmPermissionDO> updated = new AtomicReference<>();
+        AtomicReference<Set<Long>> deleted = new AtomicReference<>();
+        List<CrmPermissionDO> permissions = List.of(
+                new CrmPermissionDO().setId(1L).setUserId(1L).setLevel(CrmPermissionLevelEnum.OWNER.getLevel()),
+                new CrmPermissionDO().setId(2L).setUserId(2L).setLevel(CrmPermissionLevelEnum.READ.getLevel()),
+                new CrmPermissionDO().setId(3L).setUserId(3L).setLevel(CrmPermissionLevelEnum.WRITE.getLevel()));
+        CrmPermissionServiceImpl service = new CrmPermissionServiceImpl();
+        ReflectionTestUtils.setField(service, "adminUserApi", proxy(AdminUserApi.class,
+                (proxy, method, args) -> null));
+        ReflectionTestUtils.setField(service, "permissionMapper", proxy(CrmPermissionMapper.class,
+                (proxy, method, args) -> switch (method.getName()) {
+                    case "selectByBizTypeAndBizId" -> permissions;
+                    case "updateById" -> {
+                        updated.set((CrmPermissionDO) args[0]);
+                        yield 1;
+                    }
+                    case "deleteByIds" -> {
+                        Collection<?> ids = (Collection<?>) args[0];
+                        deleted.set(ids.stream().map(id -> (Long) id).collect(java.util.stream.Collectors.toSet()));
+                        yield 1;
+                    }
+                    default -> throw new AssertionError("未预期的 Mapper 调用 " + method.getName());
+                }));
+
+        service.replaceOwnerPermission(CrmBizTypeEnum.CRM_CONTACT.getType(), 10L, 3L);
+
+        assertEquals(3L, updated.get().getId());
+        assertEquals(CrmPermissionLevelEnum.OWNER.getLevel(), updated.get().getLevel());
+        assertEquals(Set.of(1L), deleted.get());
+    }
+
+    @Test
+    void replaceOwnerPermissionWithNullOnlyDeletesOwner() {
+        AtomicReference<Set<Long>> deleted = new AtomicReference<>();
+        List<CrmPermissionDO> permissions = List.of(
+                new CrmPermissionDO().setId(1L).setUserId(1L).setLevel(CrmPermissionLevelEnum.OWNER.getLevel()),
+                new CrmPermissionDO().setId(2L).setUserId(2L).setLevel(CrmPermissionLevelEnum.READ.getLevel()));
+        CrmPermissionServiceImpl service = new CrmPermissionServiceImpl();
+        ReflectionTestUtils.setField(service, "permissionMapper", proxy(CrmPermissionMapper.class,
+                (proxy, method, args) -> switch (method.getName()) {
+                    case "selectByBizTypeAndBizId" -> permissions;
+                    case "deleteByIds" -> {
+                        Collection<?> ids = (Collection<?>) args[0];
+                        deleted.set(ids.stream().map(id -> (Long) id).collect(java.util.stream.Collectors.toSet()));
+                        yield 1;
+                    }
+                    default -> throw new AssertionError("清空负责人不应调用 " + method.getName());
+                }));
+
+        service.replaceOwnerPermission(CrmBizTypeEnum.CRM_CONTACT.getType(), 10L, null);
+
+        assertEquals(Set.of(1L), deleted.get());
+        assertEquals(CrmPermissionLevelEnum.READ.getLevel(), permissions.get(1).getLevel());
+    }
+
+    @Test
+    void replaceOwnerPermissionRemovesDuplicateOwnersForTargetUser() {
+        AtomicReference<Collection<?>> deleted = new AtomicReference<>();
+        List<CrmPermissionDO> permissions = List.of(
+                new CrmPermissionDO().setId(1L).setUserId(9L).setLevel(CrmPermissionLevelEnum.OWNER.getLevel()),
+                new CrmPermissionDO().setId(2L).setUserId(9L).setLevel(CrmPermissionLevelEnum.OWNER.getLevel()),
+                new CrmPermissionDO().setId(3L).setUserId(8L).setLevel(CrmPermissionLevelEnum.WRITE.getLevel()));
+        CrmPermissionServiceImpl service = new CrmPermissionServiceImpl();
+        ReflectionTestUtils.setField(service, "adminUserApi", proxy(AdminUserApi.class,
+                (proxy, method, args) -> null));
+        ReflectionTestUtils.setField(service, "permissionMapper", proxy(CrmPermissionMapper.class,
+                (proxy, method, args) -> switch (method.getName()) {
+                    case "selectByBizTypeAndBizId" -> permissions;
+                    case "deleteByIds" -> {
+                        deleted.set((Collection<?>) args[0]);
+                        yield 1;
+                    }
+                    default -> throw new AssertionError("已有正确 OWNER 时不应调用 " + method.getName());
+                }));
+
+        service.replaceOwnerPermission(CrmBizTypeEnum.CRM_CONTACT.getType(), 10L, 9L);
+
+        assertEquals(Set.of(2L), Set.copyOf(deleted.get()));
+    }
 
     @Test
     void transformedClueRejectsTeamPermissionCreate() {

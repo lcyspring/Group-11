@@ -58,6 +58,12 @@ public interface CrmPermissionService {
     void transferPermission(@Valid CrmPermissionTransferReqBO crmPermissionTransferReqBO);
 
     /**
+     * Synchronize the single owner permission of a business object while preserving team permissions.
+     * A {@code null} owner removes the current owner permission, as required when an object enters a pool.
+     */
+    void replaceOwnerPermission(Integer bizType, Long bizId, Long ownerUserId);
+
+    /**
      * 删除数据权限
      *
      * @param bizType 数据类型，关联 {@link CrmBizTypeEnum}

@@ -82,6 +82,7 @@ class CrmCustomerServiceImplTest {
     @Test
     void putCustomerPoolRecordsPreviousOwner() {
         AtomicReference<CrmCustomerOwnerRecordDO> ownerRecord = new AtomicReference<>();
+        AtomicReference<Object[]> contactOwnerChange = new AtomicReference<>();
         CrmCustomerServiceImpl service = new CrmCustomerServiceImpl();
         ReflectionTestUtils.setField(service, "customerOwnerRecordMapper", proxy(CrmCustomerOwnerRecordMapper.class,
                 (proxy, method, args) -> {
@@ -91,7 +92,12 @@ class CrmCustomerServiceImplTest {
         ReflectionTestUtils.setField(service, "customerMapper", proxy(CrmCustomerMapper.class,
                 (proxy, method, args) -> 1));
         ReflectionTestUtils.setField(service, "contactService", proxy(CrmContactService.class,
-                (proxy, method, args) -> null));
+                (proxy, method, args) -> {
+                    if (method.getName().equals("updateOwnerUserIdByCustomerId")) {
+                        contactOwnerChange.set(args.clone());
+                    }
+                    return null;
+                }));
         ReflectionTestUtils.setField(service, "permissionService", proxy(CrmPermissionService.class,
                 (proxy, method, args) -> null));
         CrmCustomerDO customer = new CrmCustomerDO().setId(20L).setOwnerUserId(100L);
@@ -103,6 +109,8 @@ class CrmCustomerServiceImplTest {
         assertEquals(100L, ownerRecord.get().getPreviousOwnerUserId());
         assertNull(ownerRecord.get().getNewOwnerUserId());
         assertEquals(PUT_POOL.getType(), ownerRecord.get().getType());
+        assertEquals(20L, contactOwnerChange.get()[0]);
+        assertNull(contactOwnerChange.get()[1]);
     }
 
     @Test

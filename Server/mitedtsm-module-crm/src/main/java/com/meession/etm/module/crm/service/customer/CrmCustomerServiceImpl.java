@@ -523,12 +523,13 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
         customerMapper.updateBatch(updateCustomers);
         // 2.3 创建负责人数据权限
         permissionService.createPermissionBatch(createPermissions);
-        // 2.4 记录领取/分配事件，供公海统计使用
+        // 2.4 Restore contact ownership and owner permissions together with the customer assignment.
+        customers.forEach(customer -> contactService.updateOwnerUserIdByCustomerId(customer.getId(), ownerUserId));
+        // 2.5 记录领取/分配事件，供公海统计使用
         customerOwnerRecordMapper.insertBatch(CollectionUtils.convertList(customers, customer ->
                 new CrmCustomerOwnerRecordDO().setCustomerId(customer.getId())
                         .setOwnerUserId(ownerUserId).setPreviousOwnerUserId(null).setNewOwnerUserId(ownerUserId)
                         .setType(TAKE_POOL.getType())));
-        // TODO @芋艿：要不要处理关联的联系人？？？
 
         // 3. 记录操作日志
         AdminUserRespDTO user = null;
@@ -563,22 +564,21 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
 
     @Transactional(rollbackFor = Exception.class) // 需要 protected 修饰，因为需要在事务中调用
     protected void putCustomerPool(CrmCustomerDO customer) {
-        // 1. 记录进入公海事件；后续失败时随事务一起回滚
+        // 1. Clear contact ownership while the current customer owner permission can still authorize the operation.
+        contactService.updateOwnerUserIdByCustomerId(customer.getId(), null);
+
+        // 2. 记录进入公海事件；后续失败时随事务一起回滚
         customerOwnerRecordMapper.insert(new CrmCustomerOwnerRecordDO().setCustomerId(customer.getId())
                 .setOwnerUserId(customer.getOwnerUserId()).setPreviousOwnerUserId(customer.getOwnerUserId())
                 .setNewOwnerUserId(null).setType(PUT_POOL.getType()));
 
-        // 2. 设置负责人为 NULL
+        // 3. 设置负责人为 NULL
         int updateOwnerUserIncr = customerMapper.updateOwnerUserIdById(customer.getId(), null);
         if (updateOwnerUserIncr == 0) {
             throw exception(CUSTOMER_UPDATE_OWNER_USER_FAIL);
         }
 
-        // 3. 联系人的负责人，也要设置为 null。因为：因为领取后，负责人也要关联过来，这块和 receiveCustomer 是对应的
-        contactService.updateOwnerUserIdByCustomerId(customer.getId(), null);
-
         // 4. 删除负责人数据权限
-        // 注意：需要放在 contactService 后面，不然【客户】数据权限已经被删除，无法操作！
         permissionService.deletePermission(CrmBizTypeEnum.CRM_CUSTOMER.getType(), customer.getId(),
                 CrmPermissionLevelEnum.OWNER.getLevel());
     }
