@@ -23,6 +23,12 @@ public interface LogRecordConstants {
     String CRM_CLUE_TRANSLATE_SUCCESS = "将线索【{{#clueName}}】转化为客户";
     String CRM_CLUE_FOLLOW_UP_SUB_TYPE = "线索跟进";
     String CRM_CLUE_FOLLOW_UP_SUCCESS = "线索跟进【{{#clueName}}】";
+    String CRM_CLUE_PUT_PUBLIC_SUB_TYPE = "线索放入公共池";
+    String CRM_CLUE_PUT_PUBLIC_SUCCESS = "将线索【{{#clueName}}】放入了公共线索池";
+    String CRM_CLUE_CLAIM_PUBLIC_SUB_TYPE = "领取公共线索";
+    String CRM_CLUE_CLAIM_PUBLIC_SUCCESS = "领取了公共线索【{{#clueName}}】";
+    String CRM_CLUE_ASSIGN_PUBLIC_SUB_TYPE = "分配公共线索";
+    String CRM_CLUE_ASSIGN_PUBLIC_SUCCESS = "将公共线索【{{#clueName}}】分配给了【{{#ownerUserName}}】";
 
     // ======================= CRM_CUSTOMER 客户 =======================
 

@@ -59,6 +59,27 @@ public class CrmClueDO extends BaseDO {
      */
     private Long ownerUserId;
 
+    /** 当前负责人取得线索的时间；用于未跟进自动回收的稳定起点。 */
+    private LocalDateTime ownerTime;
+
+    /** 池状态：0 在管，1 公共线索。 */
+    private Integer poolStatus;
+
+    /** 本次进入公共线索池的时间。 */
+    private LocalDateTime poolEntryTime;
+
+    /** 本次进入公共线索池前的负责人。 */
+    private Long poolPreviousOwnerUserId;
+
+    /** 本次进入公共线索池的原因编码。 */
+    private String poolReason;
+
+    /** 本次进入公共线索池的原因详情；手工退回时保留用户填写内容。 */
+    private String poolReasonDetail;
+
+    /** 累计进入公共线索池次数。 */
+    private Integer poolCycleCount;
+
     /**
      * 转化状态
      *

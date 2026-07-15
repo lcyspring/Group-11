@@ -6,9 +6,12 @@ import com.meession.etm.module.crm.controller.admin.clue.vo.CrmClueTransformReqV
 import com.meession.etm.module.crm.controller.admin.contact.vo.CrmContactSaveReqVO;
 import com.meession.etm.module.crm.dal.dataobject.clue.CrmClueDO;
 import com.meession.etm.module.crm.dal.mysql.clue.CrmClueMapper;
+import com.meession.etm.module.crm.enums.clue.CrmCluePoolStatusEnum;
 import com.meession.etm.module.crm.service.contact.CrmContactService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
 import com.meession.etm.module.crm.service.followup.CrmFollowUpRecordService;
+import com.meession.etm.module.system.api.user.AdminUserApi;
+import com.meession.etm.module.system.api.user.dto.AdminUserRespDTO;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -126,6 +129,32 @@ class CrmClueServiceImplTest {
         assertEquals(99L, linkedClue.get().getCustomerId());
     }
 
+    @Test
+    void normalUpdateCannotBypassTransferToChangeOwner() {
+        CrmClueServiceImpl service = new CrmClueServiceImpl();
+        AtomicReference<CrmClueDO> updated = new AtomicReference<>();
+        ReflectionTestUtils.setField(service, "clueMapper", proxy(CrmClueMapper.class,
+                (proxy, method, args) -> switch (method.getName()) {
+                    case "selectByIdForUpdate" -> clue();
+                    case "updateById" -> {
+                        updated.set((CrmClueDO) args[0]);
+                        yield 1;
+                    }
+                    default -> throw new AssertionError("未预期的 Mapper 调用 " + method.getName());
+                }));
+        ReflectionTestUtils.setField(service, "adminUserApi", proxy(AdminUserApi.class,
+                (proxy, method, args) -> {
+                    if (method.getName().equals("getUser")) {
+                        return new AdminUserRespDTO().setId(99L);
+                    }
+                    throw new AssertionError("未预期的用户 API 调用 " + method.getName());
+                }));
+
+        service.updateClue(new CrmClueSaveReqVO().setId(10L).setName("更新名称").setOwnerUserId(99L));
+
+        assertEquals(1L, updated.get().getOwnerUserId());
+    }
+
     private static CrmClueTransformReqVO transformReq() {
         return new CrmClueTransformReqVO().setId(10L).setContactName("首联系人")
                 .setContactMobile("13800138000");
@@ -133,6 +162,7 @@ class CrmClueServiceImplTest {
 
     private static CrmClueDO clue() {
         return new CrmClueDO().setId(10L).setName("待转换线索").setTransformStatus(false)
+                .setOwnerUserId(1L).setPoolStatus(CrmCluePoolStatusEnum.OWNED.getStatus())
                 .setTelephone("010-12345678").setWechat("contact-wechat").setEmail("contact@example.com");
     }
 

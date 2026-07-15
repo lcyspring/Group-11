@@ -14,10 +14,15 @@ import com.meession.etm.module.crm.controller.admin.clue.vo.CrmClueRespVO;
 import com.meession.etm.module.crm.controller.admin.clue.vo.CrmClueSaveReqVO;
 import com.meession.etm.module.crm.controller.admin.clue.vo.CrmClueTransferReqVO;
 import com.meession.etm.module.crm.controller.admin.clue.vo.CrmClueTransformReqVO;
+import com.meession.etm.module.crm.controller.admin.clue.vo.publicpool.CrmCluePublicAssignReqVO;
+import com.meession.etm.module.crm.controller.admin.clue.vo.publicpool.CrmCluePublicClaimReqVO;
+import com.meession.etm.module.crm.controller.admin.clue.vo.publicpool.CrmCluePublicPageReqVO;
+import com.meession.etm.module.crm.controller.admin.clue.vo.publicpool.CrmCluePublicPutReqVO;
 import com.meession.etm.module.crm.dal.dataobject.clue.CrmClueDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.service.clue.CrmClueService;
+import com.meession.etm.module.crm.service.clue.CrmCluePublicPoolService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
 import com.meession.etm.module.crm.service.permission.CrmPermissionService;
 import com.meession.etm.module.system.api.dept.DeptApi;
@@ -56,6 +61,8 @@ public class CrmClueController {
 
     @Resource
     private CrmClueService clueService;
+    @Resource
+    private CrmCluePublicPoolService cluePublicPoolService;
     @Resource
     private CrmCustomerService customerService;
     @Resource
@@ -114,6 +121,39 @@ public class CrmClueController {
         return success(new PageResult<>(buildClueDetailList(pageResult.getList()), pageResult.getTotal()));
     }
 
+    @GetMapping("/public-page")
+    @Operation(summary = "获得公共线索分页")
+    @PreAuthorize("@ss.hasPermission('crm:clue-public:query')")
+    public CommonResult<PageResult<CrmClueRespVO>> getPublicCluePage(
+            @Valid CrmCluePublicPageReqVO pageReqVO) {
+        PageResult<CrmClueDO> page = cluePublicPoolService.getPublicPage(pageReqVO);
+        return success(new PageResult<>(buildClueDetailList(page.getList()), page.getTotal()));
+    }
+
+    @PutMapping("/put-public")
+    @Operation(summary = "将负责的线索放入公共线索池")
+    @PreAuthorize("@ss.hasPermission('crm:clue-public:put')")
+    public CommonResult<Boolean> putCluePublic(@Valid @RequestBody CrmCluePublicPutReqVO reqVO) {
+        cluePublicPoolService.putCluePublic(reqVO, getLoginUserId());
+        return success(true);
+    }
+
+    @PutMapping("/claim-public")
+    @Operation(summary = "自助领取公共线索")
+    @PreAuthorize("@ss.hasPermission('crm:clue-public:claim')")
+    public CommonResult<Boolean> claimPublicClues(@Valid @RequestBody CrmCluePublicClaimReqVO reqVO) {
+        cluePublicPoolService.claimPublicClues(reqVO.getClueIds(), getLoginUserId());
+        return success(true);
+    }
+
+    @PutMapping("/assign-public")
+    @Operation(summary = "主管分配公共线索")
+    @PreAuthorize("@ss.hasPermission('crm:clue-public:assign')")
+    public CommonResult<Boolean> assignPublicClues(@Valid @RequestBody CrmCluePublicAssignReqVO reqVO) {
+        cluePublicPoolService.assignPublicClues(reqVO.getClueIds(), reqVO.getOwnerUserId(), getLoginUserId());
+        return success(true);
+    }
+
     @GetMapping("/export-excel")
     @Operation(summary = "导出线索 Excel")
     @PreAuthorize("@ss.hasPermission('crm:clue:export')")
@@ -137,7 +177,8 @@ public class CrmClueController {
                 convertSet(list, CrmClueDO::getCustomerId));
         // 1.2 获取创建人、负责人列表
         Map<Long, AdminUserRespDTO> userMap = adminUserApi.getUserMap(convertListByFlatMap(list,
-                contact -> Stream.of(NumberUtils.parseLong(contact.getCreator()), contact.getOwnerUserId())));
+                contact -> Stream.of(NumberUtils.parseLong(contact.getCreator()), contact.getOwnerUserId(),
+                        contact.getPoolPreviousOwnerUserId())));
         Map<Long, DeptRespDTO> deptMap = deptApi.getDeptMap(convertSet(userMap.values(), AdminUserRespDTO::getDeptId));
         // 2. 转换成 VO
         return BeanUtils.toBean(list, CrmClueRespVO.class, clueVO -> {
@@ -151,6 +192,8 @@ public class CrmClueController {
                 clueVO.setOwnerUserName(user.getNickname());
                 MapUtils.findAndThen(deptMap, user.getDeptId(), dept -> clueVO.setOwnerUserDeptName(dept.getName()));
             });
+            MapUtils.findAndThen(userMap, clueVO.getPoolPreviousOwnerUserId(),
+                    user -> clueVO.setPoolPreviousOwnerUserName(user.getNickname()));
         });
     }
 

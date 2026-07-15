@@ -1,8 +1,11 @@
 package com.meession.etm.module.crm.framework.permission.core.aop;
 
 import com.meession.etm.framework.common.exception.ServiceException;
+import com.meession.etm.module.crm.dal.dataobject.clue.CrmClueDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
+import com.meession.etm.module.crm.dal.mysql.clue.CrmClueMapper;
 import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerMapper;
+import com.meession.etm.module.crm.enums.clue.CrmCluePoolStatusEnum;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.enums.customer.CrmCustomerPoolStatusEnum;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
@@ -29,6 +32,8 @@ class CrmPermissionAspectGarbageTest {
     private CrmAuthorizationService authorizationService;
     @Mock
     private CrmCustomerMapper customerMapper;
+    @Mock
+    private CrmClueMapper clueMapper;
 
     private CrmPermissionAspect aspect;
 
@@ -37,6 +42,7 @@ class CrmPermissionAspectGarbageTest {
         aspect = new CrmPermissionAspect();
         ReflectionTestUtils.setField(aspect, "crmAuthorizationService", authorizationService);
         ReflectionTestUtils.setField(aspect, "crmCustomerMapper", customerMapper);
+        ReflectionTestUtils.setField(aspect, "crmClueMapper", clueMapper);
     }
 
     @Test
@@ -58,6 +64,28 @@ class CrmPermissionAspectGarbageTest {
 
         assertDoesNotThrow(() -> ReflectionTestUtils.invokeMethod(aspect, "validatePermission",
                 CrmBizTypeEnum.CRM_CUSTOMER.getType(), 20L, Collections.emptyList(),
+                CrmPermissionLevelEnum.READ.getLevel()));
+    }
+
+    @Test
+    void explicitPublicClueIsReadableWithoutTeamPermission() {
+        when(clueMapper.selectById(30L)).thenReturn(new CrmClueDO().setId(30L)
+                .setPoolStatus(CrmCluePoolStatusEnum.PUBLIC.getStatus())
+                .setTransformStatus(false).setOwnerUserId(null));
+
+        assertDoesNotThrow(() -> ReflectionTestUtils.invokeMethod(aspect, "validatePermission",
+                CrmBizTypeEnum.CRM_CLUE.getType(), 30L, Collections.emptyList(),
+                CrmPermissionLevelEnum.READ.getLevel()));
+    }
+
+    @Test
+    void orphanOwnedClueIsNotMistakenForPublicClue() {
+        when(clueMapper.selectById(30L)).thenReturn(new CrmClueDO().setId(30L)
+                .setPoolStatus(CrmCluePoolStatusEnum.OWNED.getStatus())
+                .setTransformStatus(false).setOwnerUserId(null));
+
+        assertThrows(ServiceException.class, () -> ReflectionTestUtils.invokeMethod(aspect, "validatePermission",
+                CrmBizTypeEnum.CRM_CLUE.getType(), 30L, Collections.emptyList(),
                 CrmPermissionLevelEnum.READ.getLevel()));
     }
 }

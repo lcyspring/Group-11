@@ -291,10 +291,15 @@ mitedtsm:
         max-batch-size: 5000
         max-batches: 20
       clue:
+        enabled: true
         contact-expire-days: 30
+        max-owned-clues: 100
         daily-claim-limit: 10
         repeat-claim-cooldown-days: 30
+        claim-batch-limit: 100
         auto-pool-batch-size: 500
+        auto-pool-max-batch-size: 5000
+        auto-pool-max-batches: 20
       scheduler:
         enabled: true
         cron: "0 0 2 * * ?"

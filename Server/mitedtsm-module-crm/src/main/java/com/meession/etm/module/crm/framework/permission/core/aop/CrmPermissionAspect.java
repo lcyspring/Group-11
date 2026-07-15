@@ -4,9 +4,12 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.meession.etm.framework.common.util.spring.SpringExpressionUtils;
 import com.meession.etm.framework.web.core.util.WebFrameworkUtils;
+import com.meession.etm.module.crm.dal.dataobject.clue.CrmClueDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.permission.CrmPermissionDO;
+import com.meession.etm.module.crm.dal.mysql.clue.CrmClueMapper;
 import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerMapper;
+import com.meession.etm.module.crm.enums.clue.CrmCluePoolStatusEnum;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.enums.customer.CrmCustomerPoolStatusEnum;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
@@ -46,6 +49,8 @@ public class CrmPermissionAspect {
 
     @Resource
     private CrmCustomerMapper crmCustomerMapper;
+    @Resource
+    private CrmClueMapper crmClueMapper;
 
     @Before("@annotation(crmPermission)")
     public void doBefore(JoinPoint joinPoint, CrmPermission crmPermission) {
@@ -81,7 +86,7 @@ public class CrmPermissionAspect {
             // 1.1 Only the explicit public pool is readable without a team grant. Garbage customers are
             // an administrator quarantine and must never inherit the legacy "no owner means public" rule.
             if (CrmPermissionLevelEnum.isRead(permissionLevel)) {
-                validateCustomerPoolReadAccess(bizType, bizId);
+                validatePublicPoolReadAccess(bizType, bizId);
                 return;
             }
             // 没有数据权限的情况下超出了读权限直接报错，避免后面校验空指针
@@ -104,7 +109,16 @@ public class CrmPermissionAspect {
         throw exception(CRM_PERMISSION_DENIED, CrmBizTypeEnum.getNameByType(bizType));
     }
 
-    private void validateCustomerPoolReadAccess(Integer bizType, Long bizId) {
+    private void validatePublicPoolReadAccess(Integer bizType, Long bizId) {
+        if (Objects.equals(bizType, CrmBizTypeEnum.CRM_CLUE.getType())) {
+            CrmClueDO clue = crmClueMapper.selectById(bizId);
+            if (clue == null || Boolean.TRUE.equals(clue.getTransformStatus())
+                    || !Objects.equals(clue.getPoolStatus(), CrmCluePoolStatusEnum.PUBLIC.getStatus())
+                    || clue.getOwnerUserId() != null) {
+                throw exception(CRM_PERMISSION_DENIED, CrmBizTypeEnum.getNameByType(bizType));
+            }
+            return;
+        }
         if (!Objects.equals(bizType, CrmBizTypeEnum.CRM_CUSTOMER.getType())) {
             return;
         }

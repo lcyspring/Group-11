@@ -49,6 +49,14 @@ public interface ErrorCodeConstants {
     ErrorCode CLUE_NOT_EXISTS = new ErrorCode(1_020_001_000, "线索不存在");
     ErrorCode CLUE_TRANSFORM_FAIL_ALREADY = new ErrorCode(1_020_001_001, "线索已经转化过了，请勿重复转化");
     ErrorCode CLUE_UPDATE_FAIL_TRANSFORMED = new ErrorCode(1_020_001_002, "线索已转化为客户，只能查看");
+    ErrorCode CLUE_PUBLIC_STATE_CHANGED = new ErrorCode(1_020_001_003, "公共线索【{}】状态已变化，请刷新后重试");
+    ErrorCode CLUE_PUBLIC_CLAIM_REQUIRED = new ErrorCode(1_020_001_004, "公共线索必须先领取或由主管分配后才能操作");
+    ErrorCode CLUE_PUBLIC_DAILY_CLAIM_LIMIT = new ErrorCode(1_020_001_005, "今日公共线索领取已达上限（{} 个/天）");
+    ErrorCode CLUE_PUBLIC_REPEAT_CLAIM_COOLDOWN = new ErrorCode(1_020_001_006,
+            "{} 天内不能重复领取公共线索【{}】");
+    ErrorCode CLUE_OWNER_LIMIT_EXCEEDED = new ErrorCode(1_020_001_007, "负责人持有的未转换线索不能超过 {} 个");
+    ErrorCode CLUE_PUBLIC_BATCH_LIMIT = new ErrorCode(1_020_001_008, "单次领取或分配公共线索不能超过 {} 个");
+    ErrorCode CLUE_PUBLIC_OWNER_REQUIRED = new ErrorCode(1_020_001_009, "在管线索必须存在负责人");
 
     // ========== 商机管理 1-020-002-000 ==========
     ErrorCode BUSINESS_NOT_EXISTS = new ErrorCode(1_020_002_000, "商机不存在");

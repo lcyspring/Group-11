@@ -149,7 +149,7 @@
       <el-table-column :label="t('common.action')" align="center" min-width="150" fixed="right">
         <template #default="scope">
           <el-button
-            v-if="!scope.row.transformStatus"
+            v-if="!scope.row.transformStatus && scope.row.poolStatus === 0"
             link
             type="primary"
             @click="openForm('update', scope.row.id)"
@@ -158,13 +158,22 @@
             {{ t('common.edit') }}
           </el-button>
           <el-button
-            v-if="!scope.row.transformStatus"
+            v-if="!scope.row.transformStatus && scope.row.poolStatus === 0"
             link
             type="danger"
             @click="handleDelete(scope.row.id)"
             v-hasPermi="['crm:clue:delete']"
           >
             {{ t('common.delete') }}
+          </el-button>
+          <el-button
+            v-if="!scope.row.transformStatus && scope.row.poolStatus === 0"
+            link
+            type="warning"
+            @click="handlePutPublic(scope.row)"
+            v-hasPermi="['crm:clue-public:put']"
+          >
+            {{ t('clue.putPublic') }}
           </el-button>
         </template>
       </el-table-column>
@@ -261,6 +270,26 @@ const handleDelete = async (id: number) => {
     await ClueApi.deleteClue(id)
     message.success(t('common.delSuccess'))
     // 刷新列表
+    await getList()
+  } catch {}
+}
+
+/** 放入公共线索池 */
+const handlePutPublic = async (row: ClueApi.ClueVO) => {
+  try {
+    const { value } = await ElMessageBox.prompt(
+      t('clue.putPublicReasonPrompt', { name: row.name }),
+      t('clue.putPublic'),
+      {
+        inputValidator: (input: string) => {
+          if (!input?.trim()) return t('clue.putPublicReasonRequired')
+          if (input.trim().length > 500) return t('clue.putPublicReasonTooLong')
+          return true
+        }
+      }
+    )
+    await ClueApi.putCluePublic({ clueId: row.id, reason: value.trim() })
+    message.success(t('clue.putPublicSuccess'))
     await getList()
   } catch {}
 }

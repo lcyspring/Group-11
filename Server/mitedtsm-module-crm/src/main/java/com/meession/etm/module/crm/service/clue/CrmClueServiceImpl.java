@@ -10,11 +10,20 @@ import com.meession.etm.module.crm.controller.admin.clue.vo.CrmClueTransferReqVO
 import com.meession.etm.module.crm.controller.admin.clue.vo.CrmClueTransformReqVO;
 import com.meession.etm.module.crm.controller.admin.contact.vo.CrmContactSaveReqVO;
 import com.meession.etm.module.crm.dal.dataobject.clue.CrmClueDO;
+import com.meession.etm.module.crm.dal.dataobject.clue.CrmClueOwnerRecordDO;
 import com.meession.etm.module.crm.dal.dataobject.followup.CrmFollowUpRecordDO;
 import com.meession.etm.module.crm.dal.mysql.clue.CrmClueMapper;
+import com.meession.etm.module.crm.dal.mysql.clue.CrmClueOwnerRecordMapper;
+import com.meession.etm.module.crm.dal.mysql.clue.CrmClueOwnerCapacityGuardMapper;
+import com.meession.etm.framework.tenant.core.context.TenantContextHolder;
+import com.meession.etm.module.crm.enums.clue.CrmClueOwnerRecordSourceEnum;
+import com.meession.etm.module.crm.enums.clue.CrmClueOwnerRecordTypeEnum;
+import com.meession.etm.module.crm.enums.clue.CrmCluePoolStatusEnum;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
 import com.meession.etm.module.crm.framework.permission.core.annotations.CrmPermission;
+import com.meession.etm.module.crm.framework.pool.CrmPoolPolicyProperties;
+import com.meession.etm.module.crm.framework.pool.CrmPoolTimeProvider;
 import com.meession.etm.module.crm.service.contact.CrmContactService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
 import com.meession.etm.module.crm.service.customer.bo.CrmCustomerCreateReqBO;
@@ -29,6 +38,7 @@ import com.mzt.logapi.service.impl.DiffParseFunction;
 import com.mzt.logapi.starter.annotation.LogRecord;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
@@ -39,9 +49,7 @@ import java.util.Objects;
 import static com.meession.etm.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static com.meession.etm.framework.common.util.collection.CollectionUtils.convertList;
 import static com.meession.etm.framework.common.util.collection.CollectionUtils.singleton;
-import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CLUE_NOT_EXISTS;
-import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CLUE_TRANSFORM_FAIL_ALREADY;
-import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CLUE_UPDATE_FAIL_TRANSFORMED;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.*;
 import static com.meession.etm.module.crm.enums.LogRecordConstants.*;
 import static com.meession.etm.module.system.enums.ErrorCodeConstants.USER_NOT_EXISTS;
 
@@ -56,6 +64,14 @@ public class CrmClueServiceImpl implements CrmClueService {
 
     @Resource
     private CrmClueMapper clueMapper;
+    @Resource
+    private CrmClueOwnerRecordMapper clueOwnerRecordMapper;
+    @Resource
+    private CrmClueOwnerCapacityGuardMapper ownerCapacityGuardMapper;
+    @Resource
+    private CrmPoolPolicyProperties poolPolicyProperties;
+    @Resource
+    private CrmPoolTimeProvider poolTimeProvider;
 
     @Resource
     private CrmCustomerService customerService;
@@ -70,23 +86,47 @@ public class CrmClueServiceImpl implements CrmClueService {
     private AdminUserApi adminUserApi;
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Exception.class, isolation = Isolation.READ_COMMITTED)
     @LogRecord(type = CRM_CLUE_TYPE, subType = CRM_CLUE_CREATE_SUB_TYPE, bizNo = "{{#clue.id}}",
             success = CRM_CLUE_CREATE_SUCCESS)
     public Long createClue(CrmClueSaveReqVO createReqVO) {
         // 1.1 校验关联数据
         validateRelationDataExists(createReqVO);
-        // 1.2 校验负责人是否存在
-        adminUserApi.validateUser(createReqVO.getOwnerUserId());
+        // 1.2 负责人可为空；未指定负责人时线索直接进入显式公共池。
+        if (createReqVO.getOwnerUserId() != null) {
+            adminUserApi.validateUser(createReqVO.getOwnerUserId());
+            validateOwnerCapacity(createReqVO.getOwnerUserId(), 1);
+        }
 
         // 2. 插入线索
         CrmClueDO clue = BeanUtils.toBean(createReqVO, CrmClueDO.class);
+        LocalDateTime now = poolTimeProvider.now();
+        boolean publicPool = clue.getOwnerUserId() == null;
+        clue.setTransformStatus(false).setFollowUpStatus(false)
+                .setPoolStatus(publicPool ? CrmCluePoolStatusEnum.PUBLIC.getStatus()
+                        : CrmCluePoolStatusEnum.OWNED.getStatus())
+                .setOwnerTime(publicPool ? null : now)
+                .setPoolEntryTime(publicPool ? now : null)
+                .setPoolPreviousOwnerUserId(null)
+                .setPoolReason(publicPool ? CrmClueOwnerRecordSourceEnum.CREATE_UNASSIGNED.getSource() : null)
+                .setPoolReasonDetail(null)
+                .setPoolCycleCount(publicPool ? 1 : 0);
         clueMapper.insert(clue);
 
         // 3. 创建数据权限
-        CrmPermissionCreateReqBO createReqBO = new CrmPermissionCreateReqBO().setBizType(CrmBizTypeEnum.CRM_CLUE.getType())
-                .setBizId(clue.getId()).setUserId(clue.getOwnerUserId()).setLevel(CrmPermissionLevelEnum.OWNER.getLevel());
-        crmPermissionService.createPermission(createReqBO);
+        if (!publicPool) {
+            CrmPermissionCreateReqBO createReqBO = new CrmPermissionCreateReqBO()
+                    .setBizType(CrmBizTypeEnum.CRM_CLUE.getType()).setBizId(clue.getId())
+                    .setUserId(clue.getOwnerUserId()).setLevel(CrmPermissionLevelEnum.OWNER.getLevel());
+            crmPermissionService.createPermission(createReqBO);
+        }
+        clueOwnerRecordMapper.insert(new CrmClueOwnerRecordDO().setClueId(clue.getId())
+                .setPreviousOwnerUserId(null).setNewOwnerUserId(clue.getOwnerUserId())
+                .setType((publicPool ? CrmClueOwnerRecordTypeEnum.PUT_POOL
+                        : CrmClueOwnerRecordTypeEnum.INITIAL_ASSIGN).getType())
+                .setSource((publicPool ? CrmClueOwnerRecordSourceEnum.CREATE_UNASSIGNED
+                        : CrmClueOwnerRecordSourceEnum.INITIAL_ASSIGN).getSource())
+                .setReason(publicPool ? "创建时未指定负责人" : null));
 
         // 4. 记录操作日志上下文
         LogRecordContext.putVariable("clue", clue);
@@ -107,6 +147,8 @@ public class CrmClueServiceImpl implements CrmClueService {
 
         // 2. 更新线索
         CrmClueDO updateObj = BeanUtils.toBean(updateReqVO, CrmClueDO.class);
+        // 负责人只能通过转移命令变更，禁止普通更新绕过权限和归属审计。
+        updateObj.setOwnerUserId(oldClue.getOwnerUserId());
         clueMapper.updateById(updateObj);
 
         // 3. 记录操作日志上下文
@@ -134,7 +176,7 @@ public class CrmClueServiceImpl implements CrmClueService {
 
         // 更新线索
         clueMapper.updateById(new CrmClueDO().setId(id).setFollowUpStatus(true).setContactNextTime(contactNextTime)
-                .setContactLastTime(LocalDateTime.now()).setContactLastContent(contactLastContent));
+                .setContactLastTime(poolTimeProvider.now()).setContactLastContent(contactLastContent));
 
         // 3. 记录操作日志上下文
         LogRecordContext.putVariable("clueName", oldClue.getName());
@@ -163,19 +205,28 @@ public class CrmClueServiceImpl implements CrmClueService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Exception.class, isolation = Isolation.READ_COMMITTED)
     @LogRecord(type = CRM_CLUE_TYPE, subType = CRM_CLUE_TRANSFER_SUB_TYPE, bizNo = "{{#reqVO.id}}",
             success = CRM_CLUE_TRANSFER_SUCCESS)
     @CrmPermission(bizType = CrmBizTypeEnum.CRM_CLUE, bizId = "#reqVO.id", level = CrmPermissionLevelEnum.OWNER)
     public void transferClue(CrmClueTransferReqVO reqVO, Long userId) {
         // 1 校验线索是否存在
         CrmClueDO clue = validateClueWritableForUpdate(reqVO.getId());
+        adminUserApi.validateUser(reqVO.getNewOwnerUserId());
+        if (!Objects.equals(clue.getOwnerUserId(), reqVO.getNewOwnerUserId())) {
+            validateOwnerCapacity(reqVO.getNewOwnerUserId(), 1);
+        }
 
         // 2.1 数据权限转移
         crmPermissionService.transferPermission(new CrmPermissionTransferReqBO(userId, CrmBizTypeEnum.CRM_CLUE.getType(),
                         reqVO.getId(), reqVO.getNewOwnerUserId(), reqVO.getOldOwnerPermissionLevel()));
         // 2.2 设置新的负责人
-        clueMapper.updateById(new CrmClueDO().setId(reqVO.getId()).setOwnerUserId(reqVO.getNewOwnerUserId()));
+        clueMapper.updateById(new CrmClueDO().setId(reqVO.getId()).setOwnerUserId(reqVO.getNewOwnerUserId())
+                .setOwnerTime(poolTimeProvider.now()).setPoolStatus(CrmCluePoolStatusEnum.OWNED.getStatus()));
+        clueOwnerRecordMapper.insert(new CrmClueOwnerRecordDO().setClueId(clue.getId())
+                .setPreviousOwnerUserId(clue.getOwnerUserId()).setNewOwnerUserId(reqVO.getNewOwnerUserId())
+                .setType(CrmClueOwnerRecordTypeEnum.TRANSFER.getType())
+                .setSource(CrmClueOwnerRecordSourceEnum.TRANSFER.getSource()));
 
         // 3. 记录转移日志
         LogRecordContext.putVariable("clue", clue);
@@ -195,6 +246,9 @@ public class CrmClueServiceImpl implements CrmClueService {
         // 1.2 存在已经转化的
         if (Boolean.TRUE.equals(clue.getTransformStatus())) {
             throw exception(CLUE_TRANSFORM_FAIL_ALREADY);
+        }
+        if (!isOwned(clue)) {
+            throw exception(CLUE_PUBLIC_CLAIM_REQUIRED);
         }
 
         // 1.3 原子抢占转换权，避免两个并发请求各自创建客户
@@ -240,7 +294,27 @@ public class CrmClueServiceImpl implements CrmClueService {
         if (Boolean.TRUE.equals(clue.getTransformStatus())) {
             throw exception(CLUE_UPDATE_FAIL_TRANSFORMED);
         }
+        if (!isOwned(clue)) {
+            throw exception(CLUE_PUBLIC_CLAIM_REQUIRED);
+        }
         return clue;
+    }
+
+    private void validateOwnerCapacity(Long ownerUserId, int increment) {
+        // The capacity guard makes all increments for one owner wait in order. These callers
+        // use READ_COMMITTED so the count after the wait observes the preceding commit instead
+        // of a MySQL REPEATABLE_READ snapshot created by user/object validation.
+        ownerCapacityGuardMapper.lockOwnerCapacity(TenantContextHolder.getRequiredTenantId(), ownerUserId);
+        long current = clueMapper.selectOwnedCountByUserId(ownerUserId);
+        int maxOwnedClues = poolPolicyProperties.getClue().getMaxOwnedClues();
+        if (current + increment > maxOwnedClues) {
+            throw exception(CLUE_OWNER_LIMIT_EXCEEDED, maxOwnedClues);
+        }
+    }
+
+    private static boolean isOwned(CrmClueDO clue) {
+        return Objects.equals(clue.getPoolStatus(), CrmCluePoolStatusEnum.OWNED.getStatus())
+                && clue.getOwnerUserId() != null;
     }
 
     @Override

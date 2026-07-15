@@ -108,15 +108,34 @@ public class CrmPoolPolicyProperties {
 
     @Data
     public static class Clue {
+        private boolean enabled;
         @Min(1)
+        @Max(3650)
         private int contactExpireDays;
         @Min(1)
+        @Max(100000)
+        private int maxOwnedClues;
+        @Min(1)
+        @Max(1000)
         private int dailyClaimLimit;
         @Min(0)
+        @Max(3650)
         private int repeatClaimCooldownDays;
         @Min(1)
-        @Max(5000)
+        @Max(1000)
+        private int claimBatchLimit;
+        @Min(1)
         private int autoPoolBatchSize;
+        @Min(1)
+        private int autoPoolMaxBatchSize;
+        @Min(1)
+        @Max(100)
+        private int autoPoolMaxBatches;
+
+        @AssertTrue(message = "CRM clue pool batch size must not exceed its YAML safety limit")
+        public boolean isAutoPoolBatchSizeWithinSafetyLimit() {
+            return autoPoolBatchSize <= autoPoolMaxBatchSize;
+        }
     }
 
     @Data

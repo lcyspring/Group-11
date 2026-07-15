@@ -37,6 +37,8 @@
             <el-select
               v-model="formData.ownerUserId"
               :disabled="formType !== 'create'"
+              clearable
+              :placeholder="t('clue.ownerOptionalPlaceholder')"
               class="w-1/1"
             >
               <el-option
@@ -179,8 +181,7 @@ const formData = ref({
   remark: undefined
 })
 const formRules = reactive({
-  name: [{ required: true, message: t('clue.nameRequired'), trigger: 'blur' }],
-  ownerUserId: [{ required: true, message: t('clue.ownerUserRequired'), trigger: 'blur' }]
+  name: [{ required: true, message: t('clue.nameRequired'), trigger: 'blur' }]
 })
 const formRef = ref() // 表单 Ref
 

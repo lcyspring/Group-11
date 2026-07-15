@@ -39,6 +39,22 @@ class CrmPoolPolicyPropertiesTest {
                 violation.getMessage().contains("garbage batch size must not exceed")));
     }
 
+    @Test
+    void validatesClueBatchAndOwnershipLimitsFromYaml() {
+        CrmPoolPolicyProperties.Clue clue = new CrmPoolPolicyProperties.Clue();
+        clue.setContactExpireDays(30);
+        clue.setMaxOwnedClues(100);
+        clue.setDailyClaimLimit(10);
+        clue.setRepeatClaimCooldownDays(30);
+        clue.setClaimBatchLimit(100);
+        clue.setAutoPoolBatchSize(5001);
+        clue.setAutoPoolMaxBatchSize(5000);
+        clue.setAutoPoolMaxBatches(20);
+
+        assertTrue(validator.validate(clue).stream().anyMatch(violation ->
+                violation.getMessage().contains("clue pool batch size must not exceed")));
+    }
+
     private static CrmPoolPolicyProperties.Customer customerPolicy(int batchSize, int maxBatchSize) {
         CrmPoolPolicyProperties.Customer customer = new CrmPoolPolicyProperties.Customer();
         customer.setContactExpireDays(30);
