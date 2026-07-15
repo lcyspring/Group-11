@@ -98,17 +98,17 @@ onBeforeUnmount(() => {
       @show="getList(true)"
     >
       <template #reference>
-        <ElBadge :is-dot="unreadCount > 0" class="item">
-          <button
-            :aria-label="t('system.notify.my')"
-            class="message-trigger"
-            type="button"
-            @focus="getList()"
-            @mouseenter="getList()"
-          >
+        <button
+          :aria-label="t('system.notify.my')"
+          class="message-trigger"
+          type="button"
+          @focus="getList()"
+          @mouseenter="getList()"
+        >
+          <ElBadge :is-dot="unreadCount > 0" class="item">
             <Icon :size="18" icon="ep:bell" :color="color" />
-          </button>
-        </ElBadge>
+          </ElBadge>
+        </button>
       </template>
       <ElTabs v-model="activeName">
         <ElTabPane :label="t('system.notify.my')" name="notice">
@@ -167,8 +167,7 @@ onBeforeUnmount(() => {
   border: 0;
 }
 
-.message,
-.item {
+.message {
   display: flex;
   height: 100%;
   align-items: center;
