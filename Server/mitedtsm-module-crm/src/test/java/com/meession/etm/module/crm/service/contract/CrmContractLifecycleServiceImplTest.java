@@ -16,6 +16,9 @@ import com.meession.etm.module.crm.dal.mysql.contract.CrmContractSigningMapper;
 import com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum;
 import com.meession.etm.module.crm.enums.contract.CrmContractLifecycleEnums;
 import com.meession.etm.module.crm.framework.contract.CrmContractSignProvider;
+import com.meession.etm.module.crm.framework.security.CrmSecurityProperties;
+import com.meession.etm.module.infra.api.file.FileApi;
+import com.meession.etm.module.infra.api.file.dto.FileRespDTO;
 import com.meession.etm.module.system.api.user.AdminUserApi;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,6 +54,10 @@ class CrmContractLifecycleServiceImplTest {
     private CrmContractSignProvider provider;
     @Mock
     private AdminUserApi adminUserApi;
+    @Mock
+    private FileApi fileApi;
+    @Mock
+    private CrmSecurityProperties securityProperties;
     @InjectMocks
     private CrmContractLifecycleServiceImpl service;
 
@@ -58,6 +65,8 @@ class CrmContractLifecycleServiceImplTest {
     void createAttachmentNormalizesShaAndUsesCurrentVersion() {
         when(contractMapper.selectByIdForUpdate(7L)).thenReturn(contract());
         when(changeMapper.selectLatest(7L)).thenReturn(new CrmContractChangeRecordDO().setContractVersion(3));
+        when(securityProperties.getProtectedFileDirectory()).thenReturn("crm-protected/contract");
+        when(fileApi.getFileByUrl("/files/a")).thenReturn(managedFile());
         doAnswer(invocation -> {
             ((CrmContractAttachmentDO) invocation.getArgument(0)).setId(9L);
             return 1;
@@ -72,6 +81,63 @@ class CrmContractLifecycleServiceImplTest {
         verify(attachmentMapper).insert(captor.capture());
         assertEquals(3, captor.getValue().getContractVersion());
         assertEquals(req.getSha256().toLowerCase(), captor.getValue().getSha256());
+        assertEquals("application/pdf", captor.getValue().getContentType());
+        assertEquals(12L, captor.getValue().getFileSize());
+    }
+
+    @Test
+    void createAttachmentRejectsManagedFileFromAnotherContractDirectory() {
+        when(contractMapper.selectByIdForUpdate(7L)).thenReturn(contract());
+        when(securityProperties.getProtectedFileDirectory()).thenReturn("crm-protected/contract");
+        when(fileApi.getFileByUrl("/files/public.pdf"))
+                .thenReturn(managedFile().setPath("crm-protected/contract/8/public.pdf"));
+        CrmContractAttachmentCreateReqVO req = new CrmContractAttachmentCreateReqVO().setContractId(7L)
+                .setCategory(1).setFileName("public.pdf").setFileUrl("/files/public.pdf");
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> service.createAttachment(req, 1L));
+
+        assertEquals(CONTRACT_ATTACHMENT_FILE_NOT_PROTECTED.getCode(), ex.getCode());
+        verify(attachmentMapper, never()).insert(any(CrmContractAttachmentDO.class));
+    }
+
+    @Test
+    void attachmentDownloadRequiresContractBindingAndReadsManagedFile() {
+        when(contractMapper.selectById(7L)).thenReturn(contract());
+        when(attachmentMapper.selectById(9L)).thenReturn(new CrmContractAttachmentDO().setId(9L)
+                .setContractId(7L).setFileName("合同.pdf").setFileUrl("/files/a"));
+        when(fileApi.getFileByUrl("/files/a")).thenReturn(managedFile());
+        when(fileApi.getFileContent(4L, "crm-protected/contract/7/20260715/a.pdf"))
+                .thenReturn(new byte[]{1, 2, 3});
+
+        CrmContractLifecycleService.AttachmentDownload result = service.getAttachmentDownload(7L, 9L);
+
+        assertEquals("合同.pdf", result.fileName());
+        assertEquals("application/pdf", result.contentType());
+        assertArrayEquals(new byte[]{1, 2, 3}, result.content());
+    }
+
+    @Test
+    void attachmentDownloadRejectsAttachmentFromAnotherContract() {
+        when(contractMapper.selectById(7L)).thenReturn(contract());
+        when(attachmentMapper.selectById(9L)).thenReturn(new CrmContractAttachmentDO().setId(9L)
+                .setContractId(8L).setFileUrl("/files/a"));
+
+        ServiceException ex = assertThrows(ServiceException.class,
+                () -> service.getAttachmentDownload(7L, 9L));
+
+        assertEquals(CONTRACT_ATTACHMENT_NOT_BELONGS.getCode(), ex.getCode());
+        verifyNoInteractions(fileApi);
+    }
+
+    @Test
+    void attachmentUploadUsesConfiguredProtectedDirectory() {
+        when(contractMapper.selectById(7L)).thenReturn(contract());
+        when(securityProperties.getProtectedFileDirectory()).thenReturn("crm-protected/contract");
+        when(fileApi.createFile(any(), any(), any(), any())).thenReturn("/files/a");
+
+        assertEquals("/files/a", service.uploadAttachmentFile(
+                7L, new byte[]{1}, "合同.pdf", "application/pdf"));
+        verify(fileApi).createFile(new byte[]{1}, "合同.pdf", "crm-protected/contract/7", "application/pdf");
     }
 
     @Test
@@ -166,5 +232,11 @@ class CrmContractLifecycleServiceImplTest {
         return new CrmContractSignReqVO().setContractId(7L)
                 .setMethod(1).setSignedTime(LocalDateTime.of(2026, 7, 14, 10, 0))
                 .setSignedAttachmentId(9L).setHandlerUserId(1L);
+    }
+
+    private static FileRespDTO managedFile() {
+        return new FileRespDTO().setId(5L).setConfigId(4L).setName("a.pdf")
+                .setPath("crm-protected/contract/7/20260715/a.pdf").setUrl("/files/a")
+                .setType("application/pdf").setSize(12L);
     }
 }

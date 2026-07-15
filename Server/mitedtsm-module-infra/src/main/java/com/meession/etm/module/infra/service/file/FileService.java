@@ -62,6 +62,7 @@ public interface FileService {
      */
     Long createFile(FileCreateReqVO createReqVO);
     FileDO getFile(Long id);
+    FileDO getFileByUrl(String url);
 
     /**
      * 删除文件

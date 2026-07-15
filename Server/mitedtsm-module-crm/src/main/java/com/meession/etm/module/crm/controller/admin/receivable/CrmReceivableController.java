@@ -16,9 +16,11 @@ import com.meession.etm.module.crm.controller.admin.receivable.vo.receivable.Crm
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.receivable.CrmReceivableDO;
+import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.service.contract.CrmContractService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
 import com.meession.etm.module.crm.service.receivable.CrmReceivableService;
+import com.meession.etm.module.crm.service.permission.CrmPermissionService;
 import com.meession.etm.module.system.api.dept.DeptApi;
 import com.meession.etm.module.system.api.dept.dto.DeptRespDTO;
 import com.meession.etm.module.system.api.user.AdminUserApi;
@@ -59,6 +61,8 @@ public class CrmReceivableController {
     private CrmContractService contractService;
     @Resource
     private CrmCustomerService customerService;
+    @Resource
+    private CrmPermissionService permissionService;
 
     @Resource
     private AdminUserApi adminUserApi;
@@ -128,7 +132,10 @@ public class CrmReceivableController {
     public void exportReceivableExcel(@Valid CrmReceivablePageReqVO exportReqVO,
                                       HttpServletResponse response) throws IOException {
         exportReqVO.setPageSize(PAGE_SIZE_NONE);
-        List<CrmReceivableDO> list = receivableService.getReceivablePage(exportReqVO, getLoginUserId()).getList();
+        Long userId = getLoginUserId();
+        List<CrmReceivableDO> list = receivableService.getReceivablePage(exportReqVO, userId).getList();
+        permissionService.validateExportPermission(CrmBizTypeEnum.CRM_RECEIVABLE.getType(),
+                convertSet(list, CrmReceivableDO::getId), userId);
         // 导出 Excel
         ExcelUtils.write(response, "回款.xls", "数据", CrmReceivableRespVO.class,
                 buildReceivableDetailList(list));

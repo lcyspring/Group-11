@@ -20,11 +20,13 @@ import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractProductDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.product.CrmProductDO;
+import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.service.business.CrmBusinessService;
 import com.meession.etm.module.crm.service.contact.CrmContactService;
 import com.meession.etm.module.crm.service.contract.CrmContractService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
 import com.meession.etm.module.crm.service.product.CrmProductService;
+import com.meession.etm.module.crm.service.permission.CrmPermissionService;
 import com.meession.etm.module.crm.service.receivable.CrmReceivableService;
 import com.meession.etm.module.system.api.dept.DeptApi;
 import com.meession.etm.module.system.api.dept.dto.DeptRespDTO;
@@ -72,6 +74,8 @@ public class CrmContractController {
     private CrmProductService productService;
     @Resource
     private CrmReceivableService receivableService;
+    @Resource
+    private CrmPermissionService permissionService;
 
     @Resource
     private AdminUserApi adminUserApi;
@@ -177,7 +181,11 @@ public class CrmContractController {
     @ApiAccessLog(operateType = EXPORT)
     public void exportContractExcel(@Valid CrmContractPageReqVO exportReqVO,
                                     HttpServletResponse response) throws IOException {
-        PageResult<CrmContractDO> pageResult = contractService.getContractPage(exportReqVO, getLoginUserId());
+        exportReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
+        Long userId = getLoginUserId();
+        PageResult<CrmContractDO> pageResult = contractService.getContractPage(exportReqVO, userId);
+        permissionService.validateExportPermission(CrmBizTypeEnum.CRM_CONTRACT.getType(),
+                convertSet(pageResult.getList(), CrmContractDO::getId), userId);
         // 导出 Excel
         ExcelUtils.write(response, "合同.xls", "数据", CrmContractRespVO.class,
                 BeanUtils.toBean(pageResult.getList(), CrmContractRespVO.class));

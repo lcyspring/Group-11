@@ -60,7 +60,7 @@
     <el-table :data="data.attachments" class="mb-16px">
       <el-table-column :label="t('crm.contract.attachmentName')" prop="fileName" min-width="200">
         <template #default="scope">
-          <el-link :href="scope.row.fileUrl" target="_blank" type="primary">
+          <el-link type="primary" @click="downloadAttachment(scope.row)">
             {{ scope.row.fileName }}
           </el-link>
         </template>
@@ -131,7 +131,17 @@
         prop="fileUrl"
         :rules="[{ required: true }]"
       >
-        <UploadFile v-model="attachmentForm.fileUrl" :limit="1" :is-show-tip="false" />
+        <el-upload
+          v-model:file-list="attachmentFiles"
+          :auto-upload="true"
+          :http-request="uploadAttachment"
+          :limit="1"
+          :on-remove="clearUploadedAttachment"
+        >
+          <el-button :loading="attachmentUploading" type="primary">
+            {{ t('common.selectFile') }}
+          </el-button>
+        </el-upload>
       </el-form-item>
     </el-form>
     <template #footer>
@@ -194,7 +204,8 @@ import * as LifecycleApi from '@/api/crm/contract/lifecycle'
 import * as ContractApi from '@/api/crm/contract'
 import * as UserApi from '@/api/system/user'
 import { formatDate } from '@/utils/formatTime'
-import type { FormInstance } from 'element-plus'
+import download from '@/utils/download'
+import type { FormInstance, UploadRequestOptions, UploadUserFile } from 'element-plus'
 const props = defineProps<{ contract: ContractApi.ContractVO }>()
 const { t } = useI18n()
 const message = useMessage()
@@ -237,9 +248,34 @@ const attachmentForm = ref<LifecycleApi.ContractAttachmentCreateReqVO>({
   fileName: '',
   fileUrl: ''
 })
+const attachmentFiles = ref<UploadUserFile[]>([])
+const attachmentUploading = ref(false)
 const openAttachment = () => {
   attachmentForm.value = { contractId: props.contract.id, category: 1, fileName: '', fileUrl: '' }
+  attachmentFiles.value = []
   attachmentVisible.value = true
+}
+const uploadAttachment = async (options: UploadRequestOptions) => {
+  attachmentUploading.value = true
+  try {
+    const response: any = await LifecycleApi.uploadContractAttachment(
+      props.contract.id,
+      options.file,
+      (event) => options.onProgress(event)
+    )
+    if (response.code !== 0) throw response
+    attachmentForm.value.fileUrl = response.data
+    if (!attachmentForm.value.fileName) attachmentForm.value.fileName = options.file.name
+    options.onSuccess(response)
+  } catch (error) {
+    options.onError(error as Error)
+    throw error
+  } finally {
+    attachmentUploading.value = false
+  }
+}
+const clearUploadedAttachment = () => {
+  attachmentForm.value.fileUrl = ''
 }
 const submitAttachment = async () => {
   if (!attachmentFormRef.value || !(await attachmentFormRef.value.validate())) return
@@ -252,6 +288,10 @@ const removeAttachment = async (row: LifecycleApi.ContractAttachmentVO) => {
   await message.delConfirm()
   await LifecycleApi.deleteContractAttachment(props.contract.id, row.id)
   await load()
+}
+const downloadAttachment = async (row: LifecycleApi.ContractAttachmentVO) => {
+  const content = await LifecycleApi.downloadContractAttachment(props.contract.id, row.id)
+  download.file(content, row.fileName, row.contentType)
 }
 const signVisible = ref(false)
 const signFormRef = ref<FormInstance>()

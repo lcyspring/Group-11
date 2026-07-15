@@ -19,10 +19,12 @@ import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerLifecycleRecordDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerOwnerRecordDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerPoolConfigDO;
+import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.service.contact.CrmContactService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerPoolConfigService;
 import com.meession.etm.module.crm.service.customer.CrmCustomer360Service;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
+import com.meession.etm.module.crm.service.permission.CrmPermissionService;
 import com.meession.etm.module.system.api.dept.DeptApi;
 import com.meession.etm.module.system.api.dept.dto.DeptRespDTO;
 import com.meession.etm.module.system.api.user.AdminUserApi;
@@ -74,6 +76,8 @@ public class CrmCustomerController {
     private AdminUserApi adminUserApi;
     @Resource
     private SecurityFrameworkService securityFrameworkService;
+    @Resource
+    private CrmPermissionService permissionService;
 
     @PostMapping("/create")
     @Operation(summary = "创建客户")
@@ -336,7 +340,10 @@ public class CrmCustomerController {
     public void exportCustomerExcel(@Valid CrmCustomerPageReqVO pageVO,
                                     HttpServletResponse response) throws IOException {
         pageVO.setPageSize(PAGE_SIZE_NONE); // 不分页
-        List<CrmCustomerDO> list = customerService.getCustomerPage(pageVO, getLoginUserId()).getList();
+        Long userId = getLoginUserId();
+        List<CrmCustomerDO> list = customerService.getCustomerPage(pageVO, userId).getList();
+        permissionService.validateExportPermission(CrmBizTypeEnum.CRM_CUSTOMER.getType(),
+                convertSet(list, CrmCustomerDO::getId), userId);
         // 导出 Excel
         ExcelUtils.write(response, "客户.xls", "数据", CrmCustomerRespVO.class,
                 buildCustomerDetailList(list));

@@ -10,7 +10,9 @@ import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractSigningDO;
 import java.util.List;
 
 public interface CrmContractLifecycleService {
+    String uploadAttachmentFile(Long contractId, byte[] content, String fileName, String contentType);
     Long createAttachment(CrmContractAttachmentCreateReqVO req, Long userId);
+    AttachmentDownload getAttachmentDownload(Long contractId, Long attachmentId);
     void deleteAttachment(Long contractId, Long attachmentId);
     Long sign(CrmContractSignReqVO req, Long userId);
     void voidSign(CrmContractSignVoidReqVO req, Long userId);
@@ -23,4 +25,7 @@ public interface CrmContractLifecycleService {
     int getCurrentVersion(Long contractId);
 
     void recordChange(Long contractId, Integer actionType, Integer contractVersion, Long userId, String reason);
+
+    record AttachmentDownload(String fileName, String contentType, byte[] content) {
+    }
 }

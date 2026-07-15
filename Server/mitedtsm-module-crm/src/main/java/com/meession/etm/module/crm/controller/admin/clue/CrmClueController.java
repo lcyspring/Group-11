@@ -16,8 +16,10 @@ import com.meession.etm.module.crm.controller.admin.clue.vo.CrmClueTransferReqVO
 import com.meession.etm.module.crm.controller.admin.clue.vo.CrmClueTransformReqVO;
 import com.meession.etm.module.crm.dal.dataobject.clue.CrmClueDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
+import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.service.clue.CrmClueService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
+import com.meession.etm.module.crm.service.permission.CrmPermissionService;
 import com.meession.etm.module.system.api.dept.DeptApi;
 import com.meession.etm.module.system.api.dept.dto.DeptRespDTO;
 import com.meession.etm.module.system.api.user.AdminUserApi;
@@ -56,6 +58,8 @@ public class CrmClueController {
     private CrmClueService clueService;
     @Resource
     private CrmCustomerService customerService;
+    @Resource
+    private CrmPermissionService permissionService;
 
     @Resource
     private AdminUserApi adminUserApi;
@@ -116,7 +120,10 @@ public class CrmClueController {
     @ApiAccessLog(operateType = EXPORT)
     public void exportClueExcel(@Valid CrmCluePageReqVO pageReqVO, HttpServletResponse response) throws IOException {
         pageReqVO.setPageSize(PAGE_SIZE_NONE);
-        List<CrmClueDO> list = clueService.getCluePage(pageReqVO, getLoginUserId()).getList();
+        Long userId = getLoginUserId();
+        List<CrmClueDO> list = clueService.getCluePage(pageReqVO, userId).getList();
+        permissionService.validateExportPermission(CrmBizTypeEnum.CRM_CLUE.getType(),
+                convertSet(list, CrmClueDO::getId), userId);
         // 导出 Excel
         ExcelUtils.write(response, "线索.xls", "数据", CrmClueRespVO.class, buildClueDetailList(list));
     }

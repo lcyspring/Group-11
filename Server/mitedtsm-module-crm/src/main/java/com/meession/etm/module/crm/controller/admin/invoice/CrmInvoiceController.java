@@ -11,9 +11,11 @@ import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.invoice.CrmInvoiceActionRecordDO;
 import com.meession.etm.module.crm.dal.dataobject.invoice.CrmInvoiceDO;
+import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.service.contract.CrmContractService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
 import com.meession.etm.module.crm.service.invoice.CrmInvoiceService;
+import com.meession.etm.module.crm.service.permission.CrmPermissionService;
 import com.meession.etm.module.system.api.user.AdminUserApi;
 import com.meession.etm.module.system.api.user.dto.AdminUserRespDTO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -50,6 +52,8 @@ public class CrmInvoiceController {
     private CrmCustomerService customerService;
     @Resource
     private AdminUserApi adminUserApi;
+    @Resource
+    private CrmPermissionService permissionService;
 
     @PostMapping("/create")
     @Operation(summary = "创建发票草稿")
@@ -138,7 +142,10 @@ public class CrmInvoiceController {
     @ApiAccessLog(operateType = EXPORT)
     public void exportInvoice(@Valid CrmInvoicePageReqVO reqVO, HttpServletResponse response) throws IOException {
         reqVO.setPageSize(PAGE_SIZE_NONE);
-        List<CrmInvoiceDO> list = invoiceService.getInvoicePage(reqVO, getLoginUserId()).getList();
+        Long userId = getLoginUserId();
+        List<CrmInvoiceDO> list = invoiceService.getInvoicePage(reqVO, userId).getList();
+        permissionService.validateExportPermission(CrmBizTypeEnum.CRM_INVOICE.getType(),
+                convertSet(list, CrmInvoiceDO::getId), userId);
         ExcelUtils.write(response, "发票.xls", "发票", CrmInvoiceRespVO.class, buildInvoiceList(list));
     }
 

@@ -94,6 +94,8 @@ BUILD_WEB="$(normalize_bool "$(config_value build.web true)")"
 BUILD_CLEAN="$(normalize_bool "$(config_value build.clean true)")"
 BUILD_CRM_TESTS="$(normalize_bool "$(config_value build.crm_tests true)")"
 BUILD_CRM_COVERAGE="$(normalize_bool "$(config_value build.crm_coverage true)")"
+BUILD_INFRA_TESTS="$(normalize_bool "$(config_value build.infra_tests false)")"
+BUILD_INFRA_COVERAGE="$(normalize_bool "$(config_value build.infra_coverage false)")"
 BUILD_BPM_TESTS="$(normalize_bool "$(config_value build.bpm_tests false)")"
 BUILD_BPM_COVERAGE="$(normalize_bool "$(config_value build.bpm_coverage false)")"
 BUILD_CI="$(normalize_bool "$(config_value build.ci true)")"
@@ -189,6 +191,8 @@ podman run "${podman_proxy_args[@]}" --rm --pull=never \
     --env "BUILD_CLEAN=$BUILD_CLEAN" \
     --env "BUILD_CRM_TESTS=$BUILD_CRM_TESTS" \
     --env "BUILD_CRM_COVERAGE=$BUILD_CRM_COVERAGE" \
+    --env "BUILD_INFRA_TESTS=$BUILD_INFRA_TESTS" \
+    --env "BUILD_INFRA_COVERAGE=$BUILD_INFRA_COVERAGE" \
     --env "BUILD_BPM_TESTS=$BUILD_BPM_TESTS" \
     --env "BUILD_BPM_COVERAGE=$BUILD_BPM_COVERAGE" \
     --env "BUILD_CI=$BUILD_CI" \
@@ -199,4 +203,6 @@ podman run "${podman_proxy_args[@]}" --rm --pull=never \
     --env "VITE_APP_BAIDU_CODE=$BAIDU_ANALYTICS_CODE" \
     --env "WEB_TEST_SCRIPT=$WEB_TEST_SCRIPT" \
     "${proxy_args[@]}" \
-    "$BUILD_IMAGE"
+    --entrypoint /bin/bash \
+    "$BUILD_IMAGE" \
+    /workspace/podman/ubuntu-build-entrypoint.sh

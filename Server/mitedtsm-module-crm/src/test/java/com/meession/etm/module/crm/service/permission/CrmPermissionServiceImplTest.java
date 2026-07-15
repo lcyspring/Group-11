@@ -1,5 +1,6 @@
 package com.meession.etm.module.crm.service.permission;
 
+import com.meession.etm.framework.common.biz.system.permission.PermissionCommonApi;
 import com.meession.etm.module.crm.controller.admin.permission.vo.CrmPermissionSaveReqVO;
 import com.meession.etm.module.crm.controller.admin.permission.vo.CrmPermissionUpdateReqVO;
 import com.meession.etm.module.crm.dal.dataobject.clue.CrmClueDO;
@@ -8,6 +9,8 @@ import com.meession.etm.module.crm.dal.mysql.clue.CrmClueMapper;
 import com.meession.etm.module.crm.dal.mysql.permission.CrmPermissionMapper;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
+import com.meession.etm.module.system.api.user.AdminUserApi;
+import com.meession.etm.module.system.api.user.dto.AdminUserRespDTO;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -17,6 +20,7 @@ import java.util.List;
 import static com.meession.etm.framework.test.core.util.AssertUtils.assertServiceException;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CLUE_UPDATE_FAIL_TRANSFORMED;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CRM_PERMISSION_NOT_EXISTS;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CRM_EXPORT_PERMISSION_DENIED;
 
 class CrmPermissionServiceImplTest {
 
@@ -51,6 +55,48 @@ class CrmPermissionServiceImplTest {
                 .setBizType(CrmBizTypeEnum.CRM_CUSTOMER.getType()).setBizId(20L)
                 .setLevel(CrmPermissionLevelEnum.READ.getLevel());
         assertServiceException(() -> service.updatePermission(reqVO), CRM_PERMISSION_NOT_EXISTS);
+    }
+
+    @Test
+    void exportRejectsReadOnlyCollaborator() {
+        CrmPermissionServiceImpl service = exportService(List.of(new CrmPermissionDO().setBizId(10L)
+                .setUserId(2L).setLevel(CrmPermissionLevelEnum.READ.getLevel())), List.of());
+
+        assertServiceException(() -> service.validateExportPermission(
+                CrmBizTypeEnum.CRM_CUSTOMER.getType(), List.of(10L), 2L), CRM_EXPORT_PERMISSION_DENIED, "客户");
+    }
+
+    @Test
+    void exportAllowsWriteCollaborator() {
+        CrmPermissionServiceImpl service = exportService(List.of(new CrmPermissionDO().setBizId(10L)
+                .setUserId(2L).setLevel(CrmPermissionLevelEnum.WRITE.getLevel())), List.of());
+
+        service.validateExportPermission(CrmBizTypeEnum.CRM_CUSTOMER.getType(), List.of(10L), 2L);
+    }
+
+    @Test
+    void exportAllowsSubordinateOwnerButRejectsUnscopedObject() {
+        CrmPermissionServiceImpl service = exportService(List.of(new CrmPermissionDO().setBizId(10L)
+                .setUserId(3L).setLevel(CrmPermissionLevelEnum.OWNER.getLevel())),
+                List.of(new AdminUserRespDTO().setId(3L)));
+
+        service.validateExportPermission(CrmBizTypeEnum.CRM_CUSTOMER.getType(), List.of(10L), 2L);
+        assertServiceException(() -> service.validateExportPermission(
+                CrmBizTypeEnum.CRM_CUSTOMER.getType(), List.of(10L, 11L), 2L), CRM_EXPORT_PERMISSION_DENIED, "客户");
+    }
+
+    private static CrmPermissionServiceImpl exportService(List<CrmPermissionDO> permissions,
+                                                          List<AdminUserRespDTO> subordinates) {
+        CrmPermissionServiceImpl service = new CrmPermissionServiceImpl();
+        ReflectionTestUtils.setField(service, "permissionCommonApi", proxy(PermissionCommonApi.class,
+                (proxy, method, args) -> false));
+        ReflectionTestUtils.setField(service, "adminUserApi", proxy(AdminUserApi.class,
+                (proxy, method, args) -> method.getName().equals("getUserListBySubordinate")
+                        ? subordinates : null));
+        ReflectionTestUtils.setField(service, "permissionMapper", proxy(CrmPermissionMapper.class,
+                (proxy, method, args) -> method.getName().equals("selectByBizTypeAndBizIds")
+                        ? permissions : null));
+        return service;
     }
 
     @SuppressWarnings("unchecked")

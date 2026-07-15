@@ -40,6 +40,10 @@ public interface ErrorCodeConstants {
     ErrorCode CONTRACT_ATTACHMENT_IMMUTABLE = new ErrorCode(1_020_000_020, "正式合同附件已锁定，不能删除");
     ErrorCode CONTRACT_SIGN_PROVIDER_INVALID = new ErrorCode(1_020_000_021, "合同签署适配器返回结果无效");
     ErrorCode CONTRACT_SIGN_METHOD_UNSUPPORTED = new ErrorCode(1_020_000_022, "当前签署适配器不支持所选签署方式");
+    ErrorCode CONTRACT_ATTACHMENT_FILE_NOT_MANAGED = new ErrorCode(1_020_000_023,
+            "合同附件必须来自系统受管文件存储");
+    ErrorCode CONTRACT_ATTACHMENT_FILE_NOT_PROTECTED = new ErrorCode(1_020_000_024,
+            "合同附件必须通过受保护的合同文件入口上传");
 
     // ========== 线索管理 1-020-001-000 ==========
     ErrorCode CLUE_NOT_EXISTS = new ErrorCode(1_020_001_000, "线索不存在");
@@ -124,6 +128,8 @@ public interface ErrorCodeConstants {
     ErrorCode CRM_PERMISSION_DELETE_SELF_PERMISSION_FAIL_EXIST_OWNER = new ErrorCode(1_020_007_007, "删除数据权限失败，原因：不能删除负责人");
     ErrorCode CRM_PERMISSION_CREATE_FAIL = new ErrorCode(1_020_007_008, "创建数据权限失败，原因：所加用户已有权限");
     ErrorCode CRM_PERMISSION_CREATE_FAIL_EXISTS = new ErrorCode(1_020_007_009, "同时添加数据权限失败，原因：用户【{}】已有模块【{}】数据【{}】的【{}】权限");
+    ErrorCode CRM_EXPORT_PERMISSION_DENIED = new ErrorCode(1_020_007_010,
+            "导出{}失败：所选数据包含仅可查看或无权导出的对象");
 
     // ========== 产品 1_020_008_000 ==========
     ErrorCode PRODUCT_NOT_EXISTS = new ErrorCode(1_020_008_000, "产品不存在");

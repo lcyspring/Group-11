@@ -13,6 +13,9 @@ const download0 = (data: Blob, fileName: string, mineType: string) => {
 }
 
 const download = {
+  file: (data: Blob, fileName: string, mimeType = 'application/octet-stream') => {
+    download0(data, fileName, mimeType)
+  },
   // 下载 Excel 方法
   excel: (data: Blob, fileName: string) => {
     download0(data, fileName, 'application/vnd.ms-excel')

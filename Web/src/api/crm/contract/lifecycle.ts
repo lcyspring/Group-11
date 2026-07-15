@@ -6,7 +6,6 @@ export interface ContractAttachmentVO {
   contractVersion: number
   category: number
   fileName: string
-  fileUrl: string
   contentType?: string
   fileSize?: number
   sha256?: string
@@ -68,6 +67,19 @@ export const getContractLifecycle = (contractId: number) =>
 
 export const createContractAttachment = (data: ContractAttachmentCreateReqVO) =>
   request.post({ url: '/crm/contract-lifecycle/attachment', data })
+
+export const uploadContractAttachment = (contractId: number, file: File, onUploadProgress?: Function) =>
+  request.upload({
+    url: '/crm/contract-lifecycle/attachment/upload',
+    data: { contractId, file },
+    onUploadProgress
+  })
+
+export const downloadContractAttachment = (contractId: number, attachmentId: number) =>
+  request.download({
+    url: '/crm/contract-lifecycle/attachment/download',
+    params: { contractId, attachmentId }
+  })
 
 export const deleteContractAttachment = (contractId: number, attachmentId: number) =>
   request.delete({

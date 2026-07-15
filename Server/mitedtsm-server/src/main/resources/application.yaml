@@ -258,7 +258,12 @@ mitedtsm:
 --- #################### 密讯相关配置 ####################
 
 mitedtsm:
+  infra:
+    file-security:
+      protected-path-prefixes: [crm-protected/]
   crm:
+    security:
+      protected-file-directory: crm-protected/contract
     receivable-refund:
       process-definition-key: crm-receivable-refund-audit
       number-prefix: TK

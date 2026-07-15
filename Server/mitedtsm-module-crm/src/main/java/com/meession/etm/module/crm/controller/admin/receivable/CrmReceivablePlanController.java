@@ -18,10 +18,12 @@ import com.meession.etm.module.crm.dal.dataobject.receivable.CrmReceivableDO;
 import com.meession.etm.module.crm.dal.dataobject.receivable.CrmReceivablePlanDO;
 import com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum;
 import com.meession.etm.module.crm.enums.receivable.CrmReceivablePlanStatusEnum;
+import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.service.contract.CrmContractService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
 import com.meession.etm.module.crm.service.receivable.CrmReceivablePlanService;
 import com.meession.etm.module.crm.service.receivable.CrmReceivableService;
+import com.meession.etm.module.crm.service.permission.CrmPermissionService;
 import com.meession.etm.module.system.api.user.AdminUserApi;
 import com.meession.etm.module.system.api.user.dto.AdminUserRespDTO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -64,6 +66,8 @@ public class CrmReceivablePlanController {
     private CrmContractService contractService;
     @Resource
     private CrmCustomerService customerService;
+    @Resource
+    private CrmPermissionService permissionService;
 
     @Resource
     private AdminUserApi adminUserApi;
@@ -131,7 +135,10 @@ public class CrmReceivablePlanController {
     public void exportReceivablePlanExcel(@Valid CrmReceivablePlanPageReqVO exportReqVO,
                                           HttpServletResponse response) throws IOException {
         exportReqVO.setPageSize(PAGE_SIZE_NONE);
-        List<CrmReceivablePlanDO> list = receivablePlanService.getReceivablePlanPage(exportReqVO, getLoginUserId()).getList();
+        Long userId = getLoginUserId();
+        List<CrmReceivablePlanDO> list = receivablePlanService.getReceivablePlanPage(exportReqVO, userId).getList();
+        permissionService.validateExportPermission(CrmBizTypeEnum.CRM_RECEIVABLE_PLAN.getType(),
+                convertSet(list, CrmReceivablePlanDO::getId), userId);
         // 导出 Excel
         ExcelUtils.write(response, "回款计划.xls", "数据", CrmReceivablePlanRespVO.class,
                 buildReceivableDetailList(list));

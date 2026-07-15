@@ -38,7 +38,6 @@ public class CrmContractLifecycleRespVO {
         private Integer contractVersion;
         private Integer category;
         private String fileName;
-        private String fileUrl;
         private String contentType;
         private Long fileSize;
         private String sha256;

@@ -1,5 +1,6 @@
 package com.meession.etm.module.infra.api.file;
 
+import com.meession.etm.module.infra.api.file.dto.FileRespDTO;
 import jakarta.validation.constraints.NotEmpty;
 
 /**
@@ -51,5 +52,15 @@ public interface FileApi {
      */
     String presignGetUrl(@NotEmpty(message = "URL 不能为空") String url,
                          Integer expirationSeconds);
+
+    /**
+     * Resolve an application-managed file by its canonical URL.
+     */
+    FileRespDTO getFileByUrl(@NotEmpty(message = "URL 不能为空") String url);
+
+    /**
+     * Read managed file content through an authorized business endpoint.
+     */
+    byte[] getFileContent(Long configId, @NotEmpty(message = "文件路径不能为空") String path);
 
 }

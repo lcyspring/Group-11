@@ -16,6 +16,7 @@
     "lint:crm-bpm-governance": "eslint --max-warnings=0 --ext .ts,.vue src/views/crm/backlog/index.vue src/views/crm/backlog/components/BpmTaskBacklogList.vue",
     "lint:crm-statistics-lineage": "eslint --max-warnings=0 --ext .ts,.vue src/api/crm/statistics/metadata.ts src/views/crm/statistics/components/StatisticsLineagePanel.vue src/views/crm/statistics/customer/index.vue src/views/crm/statistics/funnel/index.vue src/views/crm/statistics/performance/index.vue src/views/crm/statistics/portrait/index.vue src/views/crm/statistics/rank/index.vue src/views/crm/statistics/workorder/index.vue",
     "lint:crm-refund": "eslint --max-warnings=0 --ext .ts,.vue src/api/crm/refund src/views/crm/refund",
+    "lint:crm-resource-security": "eslint --max-warnings=0 --ext .ts,.vue src/api/crm/contract/lifecycle.ts src/views/crm/contract/detail/ContractLifecyclePanel.vue src/utils/download.ts",
     "build:local": "node --max_old_space_size=4096 ./node_modules/vite/bin/vite.js build",
     "build:dev": "node --max_old_space_size=4096 ./node_modules/vite/bin/vite.js build --mode dev",
     "build:test": "node --max_old_space_size=4096 ./node_modules/vite/bin/vite.js build --mode test",

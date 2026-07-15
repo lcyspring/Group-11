@@ -24,6 +24,8 @@ import com.meession.etm.module.crm.service.permission.bo.CrmPermissionTransferRe
 import com.meession.etm.module.crm.util.CrmPermissionUtils;
 import com.meession.etm.module.system.api.user.AdminUserApi;
 import com.meession.etm.module.system.api.user.dto.AdminUserRespDTO;
+import com.meession.etm.framework.common.biz.system.permission.PermissionCommonApi;
+import com.meession.etm.module.system.enums.permission.RoleCodeEnum;
 import jakarta.annotation.Resource;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -61,6 +63,8 @@ public class CrmPermissionServiceImpl implements CrmPermissionService {
     private CrmContractService contractService;
     @Resource
     private AdminUserApi adminUserApi;
+    @Resource
+    private PermissionCommonApi permissionCommonApi;
 
 
     @Override
@@ -361,6 +365,29 @@ public class CrmPermissionServiceImpl implements CrmPermissionService {
     public CrmPermissionDO hasAnyPermission(Integer bizType, Long bizId, Long userId) {
         List<CrmPermissionDO> permissionList = permissionMapper.selectByBizTypeAndBizId(bizType, bizId);
         return findFirst(permissionList, permission -> ObjUtil.equal(permission.getUserId(), userId));
+    }
+
+    @Override
+    public void validateExportPermission(Integer bizType, Collection<Long> bizIds, Long userId) {
+        if (CollUtil.isEmpty(bizIds)
+                || permissionCommonApi.hasAnyRoles(userId, RoleCodeEnum.CRM_ADMIN.getCode())) {
+            return;
+        }
+        Set<Long> authorizedUserIds = new HashSet<>();
+        authorizedUserIds.add(userId);
+        authorizedUserIds.addAll(convertSet(adminUserApi.getUserListBySubordinate(userId), AdminUserRespDTO::getId));
+        Map<Long, List<CrmPermissionDO>> permissionMap = convertMultiMap(
+                permissionMapper.selectByBizTypeAndBizIds(bizType, bizIds), CrmPermissionDO::getBizId);
+        boolean denied = bizIds.stream().anyMatch(bizId -> {
+            List<CrmPermissionDO> permissions = permissionMap.get(bizId);
+            return CollUtil.isEmpty(permissions) || !anyMatch(permissions, permission ->
+                    authorizedUserIds.contains(permission.getUserId())
+                            && (CrmPermissionLevelEnum.isOwner(permission.getLevel())
+                            || CrmPermissionLevelEnum.isWrite(permission.getLevel())));
+        });
+        if (denied) {
+            throw exception(CRM_EXPORT_PERMISSION_DENIED, CrmBizTypeEnum.getNameByType(bizType));
+        }
     }
 
 }

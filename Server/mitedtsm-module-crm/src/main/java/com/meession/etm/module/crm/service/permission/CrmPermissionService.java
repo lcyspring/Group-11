@@ -128,4 +128,9 @@ public interface CrmPermissionService {
      */
     boolean hasPermission(Integer bizType, Long bizId, Long userId, CrmPermissionLevelEnum level);
 
+    /**
+     * Export is a privileged read: every selected object requires OWNER or WRITE scope.
+     */
+    void validateExportPermission(Integer bizType, Collection<Long> bizIds, Long userId);
+
 }

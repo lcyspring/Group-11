@@ -118,6 +118,31 @@ SET `name` = CASE `code`
 WHERE `code` IN ('crm-work-order-assigned','crm-work-order-returned','crm-work-order-completed')
   AND `deleted`=b'0';
 
+-- Sent messages contain a mixture of the formerly corrupted template text and
+-- correctly encoded JSON parameters. Rebuild them from stable template codes;
+-- a whole-string charset conversion would destroy the already-correct title.
+UPDATE `system_notify_message`
+SET `template_content` = CASE `template_code`
+  WHEN 'crm-work-order-assigned' THEN CONCAT(
+    '客服工单 ', JSON_UNQUOTE(JSON_EXTRACT(`template_params`, '$.no')), '「',
+    JSON_UNQUOTE(JSON_EXTRACT(`template_params`, '$.title')), '」已分派给你，请及时处理。')
+  WHEN 'crm-work-order-returned' THEN CONCAT(
+    '客服工单 ', JSON_UNQUOTE(JSON_EXTRACT(`template_params`, '$.no')), '「',
+    JSON_UNQUOTE(JSON_EXTRACT(`template_params`, '$.title')), '」已退回，原因：',
+    JSON_UNQUOTE(JSON_EXTRACT(`template_params`, '$.reason')), '。')
+  WHEN 'crm-work-order-completed' THEN CONCAT(
+    '客服工单 ', JSON_UNQUOTE(JSON_EXTRACT(`template_params`, '$.no')), '「',
+    JSON_UNQUOTE(JSON_EXTRACT(`template_params`, '$.title')), '」已完结，请查看处理结果。')
+END
+WHERE `template_code` IN ('crm-work-order-assigned','crm-work-order-returned','crm-work-order-completed')
+  AND `deleted`=b'0'
+  AND JSON_VALID(`template_params`)
+  AND JSON_EXTRACT(`template_params`, '$.no') IS NOT NULL
+  AND JSON_EXTRACT(`template_params`, '$.title') IS NOT NULL
+  AND (`template_code` <> 'crm-work-order-returned'
+    OR JSON_EXTRACT(`template_params`, '$.reason') IS NOT NULL)
+  AND (HEX(`template_content`) LIKE '%C383%' OR HEX(`template_content`) LIKE '%C2%');
+
 -- The source migrations upsert all available translations. The statements below
 -- additionally make this repair safe to run on its own for the four visible pages.
 INSERT INTO `system_menu_i18n` (`menu_id`,`language`,`name`)

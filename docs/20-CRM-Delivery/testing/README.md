@@ -6,8 +6,9 @@
 
 更新日期：2026-07-15
 
-- Ubuntu 26.04 容器 CRM 自动化：224/224，失败 0、错误 0、跳过 0。
-- CRM JaCoCo 基线：指令 41.14%、分支 37.81%、行 38.88%、方法 26.40%。
+- Ubuntu 26.04 容器 CRM 自动化：231/231，失败 0、错误 0、跳过 0。
+- CRM JaCoCo 基线：指令 41.56%、分支 38.53%、行 39.22%、方法 27.23%。
+- Ubuntu 26.04 Infra 文件专项：28/28；模块行覆盖率 8.16%。
 - Ubuntu 26.04 BPM 自动化：54 个，48 通过、6 跳过、失败 0；行覆盖率 8.58%。
 - Ubuntu 26.04 容器 CRM 前端纯函数：统计 7/7，发票 3/3。
 - 原始报告：`Server/mitedtsm-module-crm/target/site/jacoco/`，属于构建产物，不提交。
@@ -58,10 +59,11 @@
 | `bpm-tenant-unified-backlog/` | BPM 租户查询、模型旁路、统一待办、构建和覆盖率 |
 | `statistics-lineage-refresh/` | 六类统计指标血缘、域权限、实时刷新和覆盖率 |
 | `crm-receivable-refund/` | 回款退款/冲销金额守恒、审批状态机、对象权限、动作轨迹和运行验收 |
+| `crm-resource-security/` | 八类导出对象权限、合同受保护附件、公共文件隔离和历史通知乱码 |
 
 运行入口统一为：
 
 ```bash
 cd podman
-bash ./build-in-ubuntu.sh ./config/verify-crm-ubuntu-26.04.yaml
+bash ./build-in-ubuntu.sh ./config/verify-crm-resource-security-ubuntu-26.04.yaml
 ```

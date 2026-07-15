@@ -21,6 +21,9 @@ import com.meession.etm.module.crm.enums.contract.CrmContractLifecycleEnums;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
 import com.meession.etm.module.crm.framework.contract.CrmContractSignProvider;
 import com.meession.etm.module.crm.framework.permission.core.annotations.CrmPermission;
+import com.meession.etm.module.crm.framework.security.CrmSecurityProperties;
+import com.meession.etm.module.infra.api.file.FileApi;
+import com.meession.etm.module.infra.api.file.dto.FileRespDTO;
 import com.meession.etm.module.system.api.user.AdminUserApi;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
@@ -50,6 +53,18 @@ public class CrmContractLifecycleServiceImpl implements CrmContractLifecycleServ
     private CrmContractSignProvider signProvider;
     @Resource
     private AdminUserApi adminUserApi;
+    @Resource
+    private FileApi fileApi;
+    @Resource
+    private CrmSecurityProperties securityProperties;
+
+    @Override
+    @CrmPermission(bizType = CrmBizTypeEnum.CRM_CONTRACT, bizId = "#contractId",
+            level = CrmPermissionLevelEnum.WRITE)
+    public String uploadAttachmentFile(Long contractId, byte[] content, String fileName, String contentType) {
+        requireContract(contractId);
+        return fileApi.createFile(content, fileName, getContractProtectedDirectory(contractId), contentType);
+    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -57,14 +72,27 @@ public class CrmContractLifecycleServiceImpl implements CrmContractLifecycleServ
             level = CrmPermissionLevelEnum.WRITE)
     public Long createAttachment(CrmContractAttachmentCreateReqVO req, Long userId) {
         requireContractForUpdate(req.getContractId());
+        FileRespDTO file = getProtectedManagedFile(req.getFileUrl(), req.getContractId());
         CrmContractAttachmentDO item = new CrmContractAttachmentDO().setContractId(req.getContractId())
                 .setContractVersion(currentVersion(req.getContractId())).setCategory(req.getCategory())
-                .setFileName(req.getFileName()).setFileUrl(req.getFileUrl()).setContentType(req.getContentType())
-                .setFileSize(req.getFileSize()).setSha256(req.getSha256() == null ? null
+                .setFileName(req.getFileName()).setFileUrl(file.getUrl()).setContentType(file.getType())
+                .setFileSize(file.getSize()).setSha256(req.getSha256() == null ? null
                         : req.getSha256().toLowerCase(Locale.ROOT))
                 .setImmutable(false).setUploaderUserId(userId);
         attachmentMapper.insert(item);
         return item.getId();
+    }
+
+    @Override
+    @CrmPermission(bizType = CrmBizTypeEnum.CRM_CONTRACT, bizId = "#contractId",
+            level = CrmPermissionLevelEnum.READ)
+    public AttachmentDownload getAttachmentDownload(Long contractId, Long attachmentId) {
+        requireContract(contractId);
+        CrmContractAttachmentDO attachment = requireAttachment(contractId, attachmentId);
+        FileRespDTO file = fileApi.getFileByUrl(attachment.getFileUrl());
+        return new AttachmentDownload(attachment.getFileName(),
+                StrUtil.blankToDefault(attachment.getContentType(), file.getType()),
+                fileApi.getFileContent(file.getConfigId(), file.getPath()));
     }
 
     @Override
@@ -73,13 +101,7 @@ public class CrmContractLifecycleServiceImpl implements CrmContractLifecycleServ
             level = CrmPermissionLevelEnum.WRITE)
     public void deleteAttachment(Long contractId, Long attachmentId) {
         requireContractForUpdate(contractId);
-        CrmContractAttachmentDO item = attachmentMapper.selectById(attachmentId);
-        if (item == null) {
-            throw exception(CONTRACT_ATTACHMENT_NOT_EXISTS);
-        }
-        if (ObjUtil.notEqual(item.getContractId(), contractId)) {
-            throw exception(CONTRACT_ATTACHMENT_NOT_BELONGS);
-        }
+        CrmContractAttachmentDO item = requireAttachment(contractId, attachmentId);
         if (Boolean.TRUE.equals(item.getImmutable())) {
             throw exception(CONTRACT_ATTACHMENT_IMMUTABLE);
         }
@@ -226,6 +248,35 @@ public class CrmContractLifecycleServiceImpl implements CrmContractLifecycleServ
             throw exception(CONTRACT_NOT_EXISTS);
         }
         return contract;
+    }
+
+    private CrmContractAttachmentDO requireAttachment(Long contractId, Long attachmentId) {
+        CrmContractAttachmentDO item = attachmentMapper.selectById(attachmentId);
+        if (item == null) {
+            throw exception(CONTRACT_ATTACHMENT_NOT_EXISTS);
+        }
+        if (ObjUtil.notEqual(item.getContractId(), contractId)) {
+            throw exception(CONTRACT_ATTACHMENT_NOT_BELONGS);
+        }
+        return item;
+    }
+
+    private FileRespDTO getProtectedManagedFile(String fileUrl, Long contractId) {
+        FileRespDTO file;
+        try {
+            file = fileApi.getFileByUrl(fileUrl);
+        } catch (RuntimeException ex) {
+            throw exception(CONTRACT_ATTACHMENT_FILE_NOT_MANAGED);
+        }
+        String protectedDirectory = getContractProtectedDirectory(contractId);
+        if (!StrUtil.startWith(file.getPath(), protectedDirectory + "/")) {
+            throw exception(CONTRACT_ATTACHMENT_FILE_NOT_PROTECTED);
+        }
+        return file;
+    }
+
+    private String getContractProtectedDirectory(Long contractId) {
+        return StrUtil.removeSuffix(securityProperties.getProtectedFileDirectory(), "/") + "/" + contractId;
     }
 
     private void validateProvider(CrmContractSignProvider.Result result, String requestId) {

@@ -1,7 +1,10 @@
 package com.meession.etm.module.infra.api.file;
 
+import com.meession.etm.framework.common.util.object.BeanUtils;
+import com.meession.etm.module.infra.api.file.dto.FileRespDTO;
 import com.meession.etm.module.infra.service.file.FileService;
 import jakarta.annotation.Resource;
+import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -25,6 +28,17 @@ public class FileApiImpl implements FileApi {
     @Override
     public String presignGetUrl(String url, Integer expirationSeconds) {
         return fileService.presignGetUrl(url, expirationSeconds);
+    }
+
+    @Override
+    public FileRespDTO getFileByUrl(String url) {
+        return BeanUtils.toBean(fileService.getFileByUrl(url), FileRespDTO.class);
+    }
+
+    @Override
+    @SneakyThrows
+    public byte[] getFileContent(Long configId, String path) {
+        return fileService.getFileContent(configId, path);
     }
 
 }
