@@ -1,8 +1,11 @@
 package com.meession.etm.framework.common.util.json.databind;
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -20,8 +23,24 @@ public class TimestampLocalDateTimeDeserializer extends JsonDeserializer<LocalDa
 
     @Override
     public LocalDateTime deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-        // 将 Long 时间戳，转换为 LocalDateTime 对象
-        return LocalDateTime.ofInstant(Instant.ofEpochMilli(p.getValueAsLong()), ZoneId.systemDefault());
+        long timestamp;
+        if (p.currentToken() == JsonToken.VALUE_NUMBER_INT) {
+            timestamp = p.getLongValue();
+        } else if (p.currentToken() == JsonToken.VALUE_STRING) {
+            String value = p.getText().trim();
+            try {
+                // Element Plus value-format="x" sends epoch milliseconds as a JSON string.
+                // Keep that public contract, but never coerce an arbitrary date string to epoch zero.
+                timestamp = Long.parseLong(value);
+            } catch (NumberFormatException ex) {
+                throw InvalidFormatException.from(p,
+                        "expected epoch milliseconds as a number or numeric string", value, LocalDateTime.class);
+            }
+        } else {
+            throw MismatchedInputException.from(p, LocalDateTime.class,
+                    "expected epoch milliseconds as a number or numeric string");
+        }
+        return LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault());
     }
 
 }

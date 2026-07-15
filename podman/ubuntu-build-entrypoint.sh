@@ -70,6 +70,9 @@ BUILD_INFRA_TESTS="$(bool_value "${BUILD_INFRA_TESTS:-false}")"
 BUILD_INFRA_COVERAGE="$(bool_value "${BUILD_INFRA_COVERAGE:-false}")"
 BUILD_BPM_TESTS="$(bool_value "${BUILD_BPM_TESTS:-false}")"
 BUILD_BPM_COVERAGE="$(bool_value "${BUILD_BPM_COVERAGE:-false}")"
+BUILD_COMMON_TESTS="$(bool_value "${BUILD_COMMON_TESTS:-false}")"
+BUILD_COMMON_COVERAGE="$(bool_value "${BUILD_COMMON_COVERAGE:-false}")"
+BUILD_COMMON_TEST_PATTERN="${BUILD_COMMON_TEST_PATTERN:-}"
 PNPM_FROZEN_LOCKFILE="$(bool_value "${PNPM_FROZEN_LOCKFILE:-true}")"
 BUILD_CI="$(bool_value "${BUILD_CI:-true}")"
 PNPM_STORE_PATH="${PNPM_STORE_PATH:-/pnpm-store}"
@@ -84,6 +87,14 @@ if [[ "$BUILD_INFRA_COVERAGE" == "true" && "$BUILD_INFRA_TESTS" != "true" ]]; th
 fi
 if [[ "$BUILD_BPM_COVERAGE" == "true" && "$BUILD_BPM_TESTS" != "true" ]]; then
     printf 'BPM coverage requires BPM tests to be enabled.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_COMMON_COVERAGE" == "true" && "$BUILD_COMMON_TESTS" != "true" ]]; then
+    printf 'Common coverage requires common tests to be enabled.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_COMMON_TESTS" == "true" && ! "$BUILD_COMMON_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?,]+$ ]]; then
+    printf 'BUILD_COMMON_TEST_PATTERN is required for common tests and contains unsupported characters.\n' >&2
     exit 2
 fi
 
@@ -106,6 +117,32 @@ fi
 
 # Run module tests after the clean Server package. Otherwise Server clean removes
 # the JaCoCo and Surefire evidence that this build is expected to preserve.
+if [[ "$BUILD_COMMON_TESTS" == "true" ]]; then
+    printf 'Running framework common tests%s inside Ubuntu 26.04.\n' \
+        "$([[ "$BUILD_COMMON_COVERAGE" == "true" ]] && printf ' with JaCoCo' || true)"
+    rm -f /workspace/Server/mitedtsm-framework/mitedtsm-common/target/jacoco.exec
+    rm -rf /workspace/Server/mitedtsm-framework/mitedtsm-common/target/site/jacoco
+    common_test_args=(
+        -pl mitedtsm-framework/mitedtsm-common
+        -am
+        "-Dtest=${BUILD_COMMON_TEST_PATTERN}"
+        -Dsurefire.failIfNoSpecifiedTests=false
+    )
+    if [[ "$BUILD_COMMON_COVERAGE" == "true" ]]; then
+        common_test_args+=(
+            org.jacoco:jacoco-maven-plugin:0.8.13:prepare-agent
+            test
+            org.jacoco:jacoco-maven-plugin:0.8.13:report
+        )
+    else
+        common_test_args+=(test)
+    fi
+    maven_goal /workspace/Server/pom.xml "${common_test_args[@]}"
+    if [[ "$BUILD_COMMON_COVERAGE" == "true" ]]; then
+        require_file /workspace/Server/mitedtsm-framework/mitedtsm-common/target/site/jacoco/jacoco.csv
+    fi
+fi
+
 if [[ "$BUILD_INFRA_TESTS" == "true" ]]; then
     printf 'Running Infra file tests%s inside Ubuntu 26.04.\n' \
         "$([[ "$BUILD_INFRA_COVERAGE" == "true" ]] && printf ' with JaCoCo' || true)"

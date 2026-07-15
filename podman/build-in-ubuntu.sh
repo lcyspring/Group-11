@@ -98,6 +98,9 @@ BUILD_INFRA_TESTS="$(normalize_bool "$(config_value build.infra_tests false)")"
 BUILD_INFRA_COVERAGE="$(normalize_bool "$(config_value build.infra_coverage false)")"
 BUILD_BPM_TESTS="$(normalize_bool "$(config_value build.bpm_tests false)")"
 BUILD_BPM_COVERAGE="$(normalize_bool "$(config_value build.bpm_coverage false)")"
+BUILD_COMMON_TESTS="$(normalize_bool "$(config_value build.common_tests false)")"
+BUILD_COMMON_COVERAGE="$(normalize_bool "$(config_value build.common_coverage false)")"
+BUILD_COMMON_TEST_PATTERN="$(config_value build.common_test_pattern '')"
 BUILD_CI="$(normalize_bool "$(config_value build.ci true)")"
 BAIDU_ANALYTICS_CODE="$(config_value web.baidu_analytics_code '')"
 WEB_TEST_SCRIPT="$(config_value web.test_script '')"
@@ -126,6 +129,10 @@ if [[ -n "$BAIDU_ANALYTICS_CODE" && ! "$BAIDU_ANALYTICS_CODE" =~ ^[A-Za-z0-9_-]+
 fi
 if [[ -n "$WEB_TEST_SCRIPT" && ! "$WEB_TEST_SCRIPT" =~ ^[A-Za-z0-9:_-]+$ ]]; then
     printf 'web.test_script contains unsupported characters.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_COMMON_TESTS" == "true" && ! "$BUILD_COMMON_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?,]+$ ]]; then
+    printf 'build.common_test_pattern is required for common tests and contains unsupported characters.\n' >&2
     exit 2
 fi
 
@@ -195,6 +202,9 @@ podman run "${podman_proxy_args[@]}" --rm --pull=never \
     --env "BUILD_INFRA_COVERAGE=$BUILD_INFRA_COVERAGE" \
     --env "BUILD_BPM_TESTS=$BUILD_BPM_TESTS" \
     --env "BUILD_BPM_COVERAGE=$BUILD_BPM_COVERAGE" \
+    --env "BUILD_COMMON_TESTS=$BUILD_COMMON_TESTS" \
+    --env "BUILD_COMMON_COVERAGE=$BUILD_COMMON_COVERAGE" \
+    --env "BUILD_COMMON_TEST_PATTERN=$BUILD_COMMON_TEST_PATTERN" \
     --env "BUILD_CI=$BUILD_CI" \
     --env "BUILD_MAVEN_THREADS=$MAVEN_THREADS" \
     --env "PNPM_FROZEN_LOCKFILE=$PNPM_FROZEN_LOCKFILE" \
