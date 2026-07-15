@@ -30,7 +30,7 @@ import {
   StatisticsPerformanceApi,
   StatisticsPerformanceRespVO
 } from '@/api/crm/statistics/performance'
-import { calculateGrowthRate, formatGrowthRate } from '../growthRate'
+import { formatGrowthRate } from '../growthRate'
 
 defineOptions({ name: 'ContractPricePerformance' })
 
@@ -170,16 +170,16 @@ const fetchAndFill = async () => {
     echartsOption.series[1]['data'] = performanceList.map(
       (s: StatisticsPerformanceRespVO) => s.lastMonthCount
     )
-    echartsOption.series[3]['data'] = performanceList.map((s: StatisticsPerformanceRespVO) =>
-      calculateGrowthRate(s.currentMonthCount, s.lastMonthCount)
+    echartsOption.series[3]['data'] = performanceList.map(
+      (s: StatisticsPerformanceRespVO) => s.monthOnMonthRate ?? null
     )
   }
   if (echartsOption.series && echartsOption.series[2] && echartsOption.series[2]['data']) {
     echartsOption.series[2]['data'] = performanceList.map(
       (s: StatisticsPerformanceRespVO) => s.lastYearCount
     )
-    echartsOption.series[4]['data'] = performanceList.map((s: StatisticsPerformanceRespVO) =>
-      calculateGrowthRate(s.currentMonthCount, s.lastYearCount)
+    echartsOption.series[4]['data'] = performanceList.map(
+      (s: StatisticsPerformanceRespVO) => s.yearOnYearRate ?? null
     )
   }
 
@@ -224,8 +224,8 @@ const convertListData = () => {
     tableData[0]['prop' + index] = item.currentMonthCount
     tableData[1]['prop' + index] = item.lastMonthCount
     tableData[2]['prop' + index] = item.lastYearCount
-    tableData[3]['prop' + index] = formatGrowthRate(item.currentMonthCount, item.lastMonthCount)
-    tableData[4]['prop' + index] = formatGrowthRate(item.currentMonthCount, item.lastYearCount)
+    tableData[3]['prop' + index] = formatGrowthRate(item.monthOnMonthRate)
+    tableData[4]['prop' + index] = formatGrowthRate(item.yearOnYearRate)
   })
 }
 

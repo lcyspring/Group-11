@@ -67,9 +67,29 @@ class CrmStatisticsPerformanceServiceImplTest {
                 () -> assertEquals(new BigDecimal("10"), result.get(0).getCurrentMonthCount()),
                 () -> assertEquals(new BigDecimal("2"), result.get(0).getLastMonthCount()),
                 () -> assertEquals(new BigDecimal("3"), result.get(0).getLastYearCount()),
+                () -> assertEquals(new BigDecimal("400.00"), result.get(0).getMonthOnMonthRate()),
+                () -> assertEquals(new BigDecimal("233.33"), result.get(0).getYearOnYearRate()),
                 () -> assertEquals(new BigDecimal("15"), result.get(1).getCurrentMonthCount()),
                 () -> assertEquals(new BigDecimal("10"), result.get(1).getLastMonthCount()),
-                () -> assertEquals(BigDecimal.ZERO, result.get(1).getLastYearCount())
+                () -> assertEquals(BigDecimal.ZERO, result.get(1).getLastYearCount()),
+                () -> assertEquals(new BigDecimal("50.00"), result.get(1).getMonthOnMonthRate()),
+                () -> assertNull(result.get(1).getYearOnYearRate())
+        );
+    }
+
+    @Test
+    void calculateGrowthRateUsesExactDecimalArithmetic() {
+        assertAll(
+                () -> assertEquals(new BigDecimal("20.00"), CrmStatisticsPerformanceServiceImpl
+                        .calculateGrowthRate(new BigDecimal("120"), new BigDecimal("100"))),
+                () -> assertEquals(new BigDecimal("-25.00"), CrmStatisticsPerformanceServiceImpl
+                        .calculateGrowthRate(new BigDecimal("75"), new BigDecimal("100"))),
+                () -> assertEquals(new BigDecimal("-33.33"), CrmStatisticsPerformanceServiceImpl
+                        .calculateGrowthRate(new BigDecimal("2"), new BigDecimal("3"))),
+                () -> assertNull(CrmStatisticsPerformanceServiceImpl
+                        .calculateGrowthRate(new BigDecimal("10"), BigDecimal.ZERO)),
+                () -> assertEquals(new BigDecimal("900719925474099200.00"), CrmStatisticsPerformanceServiceImpl
+                        .calculateGrowthRate(new BigDecimal("9007199254740993"), BigDecimal.ONE))
         );
     }
 

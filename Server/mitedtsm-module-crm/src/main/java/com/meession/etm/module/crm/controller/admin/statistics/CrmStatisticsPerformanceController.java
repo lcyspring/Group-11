@@ -6,6 +6,7 @@ import com.meession.etm.module.crm.controller.admin.statistics.vo.performance.Cr
 import com.meession.etm.module.crm.controller.admin.statistics.vo.performance.CrmStatisticsTargetCompletionReqVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.performance.CrmStatisticsTargetCompletionSummaryRespVO;
 import com.meession.etm.module.crm.service.statistics.CrmStatisticsPerformanceService;
+import com.meession.etm.module.crm.framework.permission.core.annotations.CrmStatisticsDataScope;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,6 +26,7 @@ import static com.meession.etm.framework.common.pojo.CommonResult.success;
 @RestController
 @RequestMapping("/crm/statistics-performance")
 @Validated
+@CrmStatisticsDataScope
 public class CrmStatisticsPerformanceController {
 
     @Resource

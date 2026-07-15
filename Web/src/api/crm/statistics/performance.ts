@@ -2,9 +2,11 @@ import request from '@/config/axios'
 
 export interface StatisticsPerformanceRespVO {
   time: string
-  currentMonthCount: number
-  lastMonthCount: number
-  lastYearCount: number
+  currentMonthCount: number | string
+  lastMonthCount: number | string
+  lastYearCount: number | string
+  monthOnMonthRate: number | string | null
+  yearOnYearRate: number | string | null
 }
 
 export interface StatisticsTargetCompletionRespVO {

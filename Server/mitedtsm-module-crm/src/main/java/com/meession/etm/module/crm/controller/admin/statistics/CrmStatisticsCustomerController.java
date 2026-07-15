@@ -2,6 +2,7 @@ package com.meession.etm.module.crm.controller.admin.statistics;
 
 import com.meession.etm.framework.common.pojo.CommonResult;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.customer.*;
+import com.meession.etm.module.crm.framework.permission.core.annotations.CrmStatisticsDataScope;
 import com.meession.etm.module.crm.service.statistics.CrmStatisticsCustomerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,6 +22,7 @@ import static com.meession.etm.framework.common.pojo.CommonResult.success;
 @RestController
 @RequestMapping("/crm/statistics-customer")
 @Validated
+@CrmStatisticsDataScope
 public class CrmStatisticsCustomerController {
 
     @Resource

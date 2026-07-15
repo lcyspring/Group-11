@@ -13,6 +13,7 @@ import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmSt
 import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticCustomerLevelRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticCustomerSourceRespVO;
 import com.meession.etm.module.crm.service.statistics.CrmStatisticsPortraitService;
+import com.meession.etm.module.crm.framework.permission.core.annotations.CrmStatisticsDataScope;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,6 +33,7 @@ import static com.meession.etm.framework.common.pojo.CommonResult.success;
 @RestController
 @RequestMapping("/crm/statistics-portrait")
 @Validated
+@CrmStatisticsDataScope
 public class CrmStatisticsPortraitController {
 
     @Resource

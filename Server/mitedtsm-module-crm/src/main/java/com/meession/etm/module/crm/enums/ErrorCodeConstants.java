@@ -168,6 +168,8 @@ public interface ErrorCodeConstants {
             "业绩目标范围与部门、人员筛选条件不一致");
     ErrorCode PERFORMANCE_TARGET_PERIOD_INVALID = new ErrorCode(1_020_014_005,
             "业绩目标完成度必须查询同一个完整年度");
+    ErrorCode CRM_STATISTICS_SCOPE_DENIED = new ErrorCode(1_020_014_006,
+            "无权查询所选部门或人员的 CRM 统计数据");
 
     // ========== 客服工单 1_020_015_000 ==========
     ErrorCode WORK_ORDER_NOT_EXISTS = new ErrorCode(1_020_015_000, "客服工单不存在");

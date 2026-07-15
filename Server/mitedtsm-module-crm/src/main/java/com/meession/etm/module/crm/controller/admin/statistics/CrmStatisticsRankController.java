@@ -4,6 +4,7 @@ import com.meession.etm.framework.common.pojo.CommonResult;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.rank.CrmStatisticsRankRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.rank.CrmStatisticsRankReqVO;
 import com.meession.etm.module.crm.service.statistics.CrmStatisticsRankService;
+import com.meession.etm.module.crm.framework.permission.core.annotations.CrmStatisticsDataScope;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -22,6 +23,7 @@ import static com.meession.etm.framework.common.pojo.CommonResult.success;
 @RestController
 @RequestMapping("/crm/statistics-rank")
 @Validated
+@CrmStatisticsDataScope
 public class CrmStatisticsRankController {
 
     @Resource

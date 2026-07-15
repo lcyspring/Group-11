@@ -221,12 +221,26 @@ public class CrmStatisticsPerformanceServiceImpl implements CrmStatisticsPerform
             String currentMonth = String.format("%d%02d", year, month);
             String lastMonth = month == 1 ? String.format("%d%02d", year - 1, 12) : String.format("%d%02d", year, month - 1);
             String lastYear = String.format("%d%02d", year - 1, month);
+            BigDecimal currentValue = performanceMap.getOrDefault(currentMonth, BigDecimal.ZERO);
+            BigDecimal lastMonthValue = performanceMap.getOrDefault(lastMonth, BigDecimal.ZERO);
+            BigDecimal lastYearValue = performanceMap.getOrDefault(lastYear, BigDecimal.ZERO);
             result.add(new CrmStatisticsPerformanceRespVO().setTime(currentMonth)
-                    .setCurrentMonthCount(performanceMap.getOrDefault(currentMonth, BigDecimal.ZERO))
-                    .setLastMonthCount(performanceMap.getOrDefault(lastMonth, BigDecimal.ZERO))
-                    .setLastYearCount(performanceMap.getOrDefault(lastYear, BigDecimal.ZERO)));
+                    .setCurrentMonthCount(currentValue)
+                    .setLastMonthCount(lastMonthValue)
+                    .setLastYearCount(lastYearValue)
+                    .setMonthOnMonthRate(calculateGrowthRate(currentValue, lastMonthValue))
+                    .setYearOnYearRate(calculateGrowthRate(currentValue, lastYearValue)));
         }
         return result;
+    }
+
+    static BigDecimal calculateGrowthRate(BigDecimal currentValue, BigDecimal previousValue) {
+        if (currentValue == null || previousValue == null || previousValue.signum() == 0) {
+            return null;
+        }
+        return currentValue.subtract(previousValue)
+                .multiply(BigDecimal.valueOf(100))
+                .divide(previousValue, 2, RoundingMode.HALF_UP);
     }
 
     /**

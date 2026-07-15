@@ -1,5 +1,6 @@
 package com.meession.etm.module.crm.controller.admin.statistics.vo.performance;
 
+import com.meession.etm.module.crm.controller.admin.statistics.vo.CrmStatisticsScopedReqVO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -13,7 +14,7 @@ import static com.meession.etm.framework.common.util.date.DateUtils.FORMAT_YEAR_
 
 @Schema(description = "管理后台 - CRM 员工业绩统计 Request VO")
 @Data
-public class CrmStatisticsPerformanceReqVO {
+public class CrmStatisticsPerformanceReqVO implements CrmStatisticsScopedReqVO {
 
     @Schema(description = "部门 id", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
     @NotNull(message = "部门 id 不能为空")

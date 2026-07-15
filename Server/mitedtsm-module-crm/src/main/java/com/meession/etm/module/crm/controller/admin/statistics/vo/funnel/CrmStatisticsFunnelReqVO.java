@@ -3,6 +3,7 @@ package com.meession.etm.module.crm.controller.admin.statistics.vo.funnel;
 import com.meession.etm.framework.common.enums.DateIntervalEnum;
 import com.meession.etm.framework.common.pojo.PageParam;
 import com.meession.etm.framework.common.validation.InEnum;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.CrmStatisticsScopedReqVO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -16,7 +17,7 @@ import static com.meession.etm.framework.common.util.date.DateUtils.FORMAT_YEAR_
 
 @Schema(description = "管理后台 - CRM 销售漏斗 Request VO")
 @Data
-public class CrmStatisticsFunnelReqVO extends PageParam {
+public class CrmStatisticsFunnelReqVO extends PageParam implements CrmStatisticsScopedReqVO {
 
     @Schema(description = "部门 id", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
     @NotNull(message = "部门 id 不能为空")

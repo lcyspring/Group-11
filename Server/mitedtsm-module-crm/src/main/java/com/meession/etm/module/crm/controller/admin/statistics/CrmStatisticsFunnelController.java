@@ -7,6 +7,7 @@ import com.meession.etm.module.crm.controller.admin.business.CrmBusinessControll
 import com.meession.etm.module.crm.controller.admin.business.vo.business.CrmBusinessRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.*;
 import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessDO;
+import com.meession.etm.module.crm.framework.permission.core.annotations.CrmStatisticsDataScope;
 import com.meession.etm.module.crm.service.statistics.CrmStatisticsFunnelService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,6 +27,7 @@ import static com.meession.etm.framework.common.pojo.CommonResult.success;
 @RestController
 @RequestMapping("/crm/statistics-funnel")
 @Validated
+@CrmStatisticsDataScope
 public class CrmStatisticsFunnelController {
 
     @Resource
