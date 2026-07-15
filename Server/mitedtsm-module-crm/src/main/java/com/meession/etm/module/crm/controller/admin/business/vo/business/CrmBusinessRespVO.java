@@ -142,6 +142,9 @@ public class CrmBusinessRespVO {
         @Schema(description = "总计价格", requiredMode = Schema.RequiredMode.REQUIRED, example = "123.00")
         private BigDecimal totalPrice;
 
+        @Schema(description = "税率百分比")
+        private BigDecimal taxRatePercent;
+
     }
 
 }

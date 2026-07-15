@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { getAccessToken, removeToken } from '@/utils/auth'
 import { CACHE_KEY, useCache, deleteUserCache } from '@/hooks/web/useCache'
 import { getInfo, loginOut } from '@/api/login'
+import { normalizeRuntimeMediaPayload, normalizeRuntimeMediaUrl } from '@/config/media'
 
 const { wsCache } = useCache()
 
@@ -68,6 +69,7 @@ export const useUserStore = defineStore('admin-user', {
           } catch (error) {}
         }
       }
+      userInfo = normalizeRuntimeMediaPayload(userInfo)
       this.permissions = new Set(userInfo.permissions || []) // 兜底为 [] https://t.zsxq.com/xCJew
       this.roles = userInfo.roles
       this.user = userInfo.user
@@ -78,8 +80,9 @@ export const useUserStore = defineStore('admin-user', {
     async setUserAvatarAction(avatar: string) {
       const userInfo = wsCache.get(CACHE_KEY.USER)
       // NOTE: 是否需要像`setUserInfoAction`一样判断`userInfo != null`
-      this.user.avatar = avatar
-      userInfo.user.avatar = avatar
+      const normalizedAvatar = normalizeRuntimeMediaUrl(avatar)
+      this.user.avatar = normalizedAvatar
+      userInfo.user.avatar = normalizedAvatar
       wsCache.set(CACHE_KEY.USER, userInfo)
     },
     async setUserNicknameAction(nickname: string) {

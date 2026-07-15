@@ -44,6 +44,8 @@ public interface ErrorCodeConstants {
             "合同附件必须来自系统受管文件存储");
     ErrorCode CONTRACT_ATTACHMENT_FILE_NOT_PROTECTED = new ErrorCode(1_020_000_024,
             "合同附件必须通过受保护的合同文件入口上传");
+    ErrorCode CONTRACT_SOURCE_QUOTE_CHANGED = new ErrorCode(1_020_000_025,
+            "合同来源报价已变化，不能用其他报价版本改写合同");
 
     // ========== 线索管理 1-020-001-000 ==========
     ErrorCode CLUE_NOT_EXISTS = new ErrorCode(1_020_001_000, "线索不存在");
@@ -65,6 +67,7 @@ public interface ErrorCodeConstants {
     ErrorCode BUSINESS_UPDATE_STATUS_FAIL_STATUS_EQUALS = new ErrorCode(1_020_002_003, "更新商机状态失败，原因：已经是该状态");
     ErrorCode BUSINESS_UPDATE_STATUS_CONCURRENT = new ErrorCode(1_020_002_004, "商机状态已被其他操作修改，请刷新后重试");
     ErrorCode BUSINESS_UPDATE_STATUS_BACKWARD = new ErrorCode(1_020_002_005, "商机阶段只能向前推进，不能回退");
+    ErrorCode BUSINESS_UPDATE_FAIL_END_STATUS = new ErrorCode(1_020_002_006, "已结束商机不能继续修改");
 
     // ========== 联系人管理 1-020-003-000 ==========
     ErrorCode CONTACT_NOT_EXISTS = new ErrorCode(1_020_003_000, "联系人不存在");
@@ -296,5 +299,23 @@ public interface ErrorCodeConstants {
     ErrorCode SMS_STATUS_INVALID = new ErrorCode(1_020_019_014, "短信方向和状态不一致");
     ErrorCode SMS_FAILURE_REASON_REQUIRED = new ErrorCode(1_020_019_015, "发送失败的短信必须记录失败原因");
     ErrorCode CLUE_CONVERSION_AUDIT_EXISTS = new ErrorCode(1_020_019_016, "线索转换迁移审计已存在");
+
+    // ========== 商机报价版本 1_020_020_000 ==========
+    ErrorCode QUOTE_NOT_EXISTS = new ErrorCode(1_020_020_000, "商机报价不存在");
+    ErrorCode QUOTE_LOCKED_IMMUTABLE = new ErrorCode(1_020_020_001, "当前报价已锁定，请重开新版本后再修改");
+    ErrorCode QUOTE_LOCK_STATUS_INVALID = new ErrorCode(1_020_020_002, "只有当前报价草稿可以锁定");
+    ErrorCode QUOTE_REOPEN_STATUS_INVALID = new ErrorCode(1_020_020_003, "只有当前已锁定报价可以重开");
+    ErrorCode QUOTE_REOPEN_BUSINESS_ENDED = new ErrorCode(1_020_020_004, "已结束商机不能重开报价");
+    ErrorCode QUOTE_CURRENT_NOT_LOCKED = new ErrorCode(1_020_020_005, "商机必须先锁定当前报价才能赢单或转换合同");
+    ErrorCode QUOTE_ITEM_REQUIRED = new ErrorCode(1_020_020_006, "锁定报价至少需要一条产品明细");
+    ErrorCode QUOTE_ITEM_AMOUNT_INVALID = new ErrorCode(1_020_020_007, "报价单价不能为负且数量必须大于 0");
+    ErrorCode QUOTE_DISCOUNT_INVALID = new ErrorCode(1_020_020_008, "报价整单折扣必须在 0 到 100 之间");
+    ErrorCode QUOTE_CURRENCY_UNSUPPORTED = new ErrorCode(1_020_020_009, "报价币种【{}】未在 YAML 汇率表中配置");
+    ErrorCode QUOTE_TAX_RATE_UNSUPPORTED = new ErrorCode(1_020_020_010, "报价税率【{}】未在 YAML 白名单中配置");
+    ErrorCode QUOTE_VERSION_LIMIT = new ErrorCode(1_020_020_011, "报价版本已达到 YAML 上限 {}，不能继续重开");
+    ErrorCode QUOTE_VERSION_CONCURRENT = new ErrorCode(1_020_020_012, "报价版本已被其他请求修改，请刷新后重试");
+    ErrorCode QUOTE_ACTION_REMARK_REQUIRED = new ErrorCode(1_020_020_013, "锁定或重开报价必须填写原因");
+    ErrorCode QUOTE_TERMINATE_STATUS_INVALID = new ErrorCode(1_020_020_014,
+            "只有当前草稿或锁定报价可以随商机终止");
 
 }

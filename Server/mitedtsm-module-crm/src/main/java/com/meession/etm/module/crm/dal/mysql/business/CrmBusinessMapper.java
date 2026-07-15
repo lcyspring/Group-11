@@ -15,6 +15,8 @@ import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.util.CrmPermissionUtils;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.Collection;
 import java.util.List;
@@ -29,6 +31,9 @@ import static com.meession.etm.framework.common.util.collection.CollectionUtils.
  */
 @Mapper
 public interface CrmBusinessMapper extends BaseMapperX<CrmBusinessDO> {
+
+    @Select("SELECT * FROM crm_business WHERE id=#{id} AND deleted=0 FOR UPDATE")
+    CrmBusinessDO selectByIdForUpdate(@Param("id") Long id);
 
     default int updateOwnerUserIdById(Long id, Long ownerUserId) {
         return update(new LambdaUpdateWrapper<CrmBusinessDO>()

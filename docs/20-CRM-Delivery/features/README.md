@@ -47,5 +47,6 @@
 | CRM-FEATURE-041 | 客户垃圾池管理员隔离、手工/自动迁移、恢复、引用保护永久删除及前端状态机 | GAP-CUS-001、ADR-014 | 已实现 | `docs/20-CRM-Delivery/testing/customer-garbage-lifecycle/` |
 | CRM-FEATURE-042 | 公共线索显式状态、自动迁移、领取/分配额度、冷却、容量并发保护及前端状态机 | GAP-LEAD-001/002、ADR-014 | 已实现 | `docs/20-CRM-Delivery/testing/clue-public-pool-lifecycle/` |
 | CRM-FEATURE-043 | 任务、通话、短信活动真源、状态轨迹及线索转客户同事务迁移审计 | GAP-LEAD-002、ADR-014 | 已实现 | `docs/20-CRM-Delivery/testing/clue-activity-migration/` |
+| CRM-FEATURE-044 | 商机报价版本、锁定/重开、币种税率、SKU 版本与合同不可变价格快照 | GAP-OPP-002/003、GAP-PIM-001、ADR-003 | 已实现 | `docs/20-CRM-Delivery/testing/crm-business-quote-versioning/` |
 
-说明：`CRM-FEATURE-005/043` 共同关闭线索转换的首联系人、跟进及任务/通话/短信活动迁移、并发幂等、审计和失败回滚。`CRM-FEATURE-007` 是历史二态基线，现已由 `CRM-FEATURE-029` 升级为四态模型。`CRM-FEATURE-015/016/017` 已建立目标事实源、完成度展示和三层目标维护入口；目标逐级分解合计规则仍待业务签署。`CRM-FEATURE-028` 不宣称已接入外部电子签平台，也不包含正式补充协议的新审批命令。`CRM-FEATURE-030/035` 已聚合退款真源，但不伪造尚未实现的 OA 任务和费用真源。`CRM-FEATURE-033` 已完成真实 BPM 提交、驳回、修订、重提和通过验收。`CRM-FEATURE-034` 的新附件已受保护，历史公开附件仍需物理迁移。客户联系人归属、公海、垃圾池、公共线索和活动迁移分别由 `CRM-FEATURE-039`～`043` 关闭。
+说明：`CRM-FEATURE-005/043` 共同关闭线索转换的首联系人、跟进及任务/通话/短信活动迁移、并发幂等、审计和失败回滚。`CRM-FEATURE-007` 是历史二态基线，现已由 `CRM-FEATURE-029` 升级为四态模型。`CRM-FEATURE-015/016/017` 已建立目标事实源、完成度展示和三层目标维护入口；目标逐级分解合计规则仍待业务签署。`CRM-FEATURE-028` 不宣称已接入外部电子签平台，也不包含正式补充协议的新审批命令。`CRM-FEATURE-030/035` 已聚合退款真源，但不伪造尚未实现的 OA 任务和费用真源。`CRM-FEATURE-033` 已完成真实 BPM 提交、驳回、修订、重提和通过验收。`CRM-FEATURE-034` 的新附件已受保护，历史公开附件仍需物理迁移。客户联系人归属、公海、垃圾池、公共线索、活动迁移和报价版本分别由 `CRM-FEATURE-039`～`044` 关闭。

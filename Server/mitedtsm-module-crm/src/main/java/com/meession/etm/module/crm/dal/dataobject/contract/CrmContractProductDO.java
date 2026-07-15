@@ -53,6 +53,8 @@ public class CrmContractProductDO extends BaseDO {
      * 成交时产品单位快照
      */
     private Integer productUnitSnapshot;
+    private Long productCategoryIdSnapshot;
+    private Integer productVersionSnapshot;
     /**
      * 成交时产品目录价快照，单位：元
      */
@@ -71,5 +73,8 @@ public class CrmContractProductDO extends BaseDO {
      * totalPrice = businessPrice * count
      */
     private BigDecimal totalPrice;
+    private BigDecimal taxRatePercent;
+    private BigDecimal taxAmount;
+    private BigDecimal grossAmount;
 
 }

@@ -34,6 +34,7 @@ import com.meession.etm.module.crm.service.permission.CrmPermissionService;
 import com.meession.etm.module.crm.service.permission.bo.CrmPermissionCreateReqBO;
 import com.meession.etm.module.crm.service.permission.bo.CrmPermissionTransferReqBO;
 import com.meession.etm.module.crm.service.product.CrmProductService;
+import com.meession.etm.module.crm.service.quote.CrmBusinessQuoteService;
 import com.meession.etm.module.crm.service.receivable.CrmReceivableService;
 import com.meession.etm.module.system.api.user.AdminUserApi;
 import com.mzt.logapi.context.LogRecordContext;
@@ -91,6 +92,8 @@ public class CrmContractServiceImpl implements CrmContractService {
     @Resource
     private CrmProductService productService;
     @Resource
+    private CrmBusinessQuoteService quoteService;
+    @Resource
     private CrmCustomerService customerService;
     @Resource
     private CrmBusinessService businessService;
@@ -137,8 +140,15 @@ public class CrmContractServiceImpl implements CrmContractService {
             LogRecordContext.putVariable("contract", existingContract);
             return existingContract.getId();
         }
-        // 1.2 校验产品项的有效性
-        List<CrmContractProductDO> contractProducts = buildContractProducts(createReqVO.getProducts(), null);
+        // 1.2 商机转换只接受当前锁定报价，不信任客户端再次提交的产品、价格、币种或税率。
+        CrmBusinessQuoteService.QuoteSnapshot sourceQuote = createReqVO.getBusinessId() == null
+                ? null : quoteService.requireCurrentLocked(createReqVO.getBusinessId());
+        List<CrmContractProductDO> contractProducts = sourceQuote == null
+                ? buildContractProducts(createReqVO.getProducts(), null)
+                : buildContractProductsFromQuote(sourceQuote);
+        if (sourceQuote != null) {
+            createReqVO.setDiscountPercent(sourceQuote.quote().getDiscountPercent());
+        }
         // 1.3 校验关联字段
         validateRelationDataExists(createReqVO);
         // 1.4 生成序号
@@ -149,8 +159,17 @@ public class CrmContractServiceImpl implements CrmContractService {
 
         // 2.1 插入合同
         CrmContractDO contract = BeanUtils.toBean(createReqVO, CrmContractDO.class).setNo(no)
-                .setSourceBusinessId(createReqVO.getBusinessId());
-        calculateTotalPrice(contract, contractProducts);
+                .setSourceBusinessId(createReqVO.getBusinessId())
+                .setSourceQuoteId(sourceQuote == null ? null : sourceQuote.quote().getId());
+        if (sourceQuote == null) {
+            calculateTotalPrice(contract, contractProducts);
+        } else {
+            var quote = sourceQuote.quote();
+            contract.setTotalProductPrice(quote.getSubtotal()).setTotalPrice(quote.getNetAmount())
+                    .setCurrencyCode(quote.getCurrencyCode()).setBaseCurrencyCode(quote.getBaseCurrencyCode())
+                    .setExchangeRateToBase(quote.getExchangeRateToBase()).setTaxAmount(quote.getTaxAmount())
+                    .setGrossAmount(quote.getGrossAmount()).setBaseGrossAmount(quote.getBaseGrossAmount());
+        }
         try {
             contractMapper.insert(contract);
         } catch (DuplicateKeyException ex) {
@@ -199,6 +218,20 @@ public class CrmContractServiceImpl implements CrmContractService {
         return null;
     }
 
+    private List<CrmContractProductDO> buildContractProductsFromQuote(
+            CrmBusinessQuoteService.QuoteSnapshot snapshot) {
+        return convertList(snapshot.items(), item -> new CrmContractProductDO().setProductId(item.getProductId())
+                .setProductNameSnapshot(item.getProductNameSnapshot())
+                .setProductNoSnapshot(item.getProductNoSnapshot())
+                .setProductUnitSnapshot(item.getProductUnitSnapshot())
+                .setProductCategoryIdSnapshot(item.getProductCategoryIdSnapshot())
+                .setProductVersionSnapshot(item.getProductVersionSnapshot())
+                .setProductPrice(item.getListPrice()).setContractPrice(item.getBusinessPrice())
+                .setCount(item.getCount()).setTotalPrice(item.getLineSubtotal())
+                .setTaxRatePercent(item.getTaxRatePercent()).setTaxAmount(item.getTaxAmount())
+                .setGrossAmount(item.getGrossAmount()));
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     @LogRecord(type = CRM_CONTRACT_TYPE, subType = CRM_CONTRACT_UPDATE_SUB_TYPE, bizNo = "{{#updateReqVO.id}}",
@@ -218,11 +251,18 @@ public class CrmContractServiceImpl implements CrmContractService {
         if (oldContract.getSourceBusinessId() != null) {
             updateReqVO.setBusinessId(oldContract.getBusinessId()).setCustomerId(oldContract.getCustomerId());
         }
-        // 1.4 校验产品项并保留已有产品行的成交快照
+        // 1.4 商机转换合同始终复用原锁定报价，避免修订时用客户端产品行改写报价来源。
         List<CrmContractProductDO> oldContractProducts =
                 contractProductMapper.selectListByContractId(updateReqVO.getId());
-        List<CrmContractProductDO> contractProducts =
-                buildContractProducts(updateReqVO.getProducts(), oldContractProducts);
+        CrmBusinessQuoteService.QuoteSnapshot sourceQuote = oldContract.getSourceQuoteId() == null ? null
+                : quoteService.requireCurrentLocked(oldContract.getSourceBusinessId());
+        if (sourceQuote != null && ObjUtil.notEqual(sourceQuote.quote().getId(), oldContract.getSourceQuoteId())) {
+            throw exception(CONTRACT_SOURCE_QUOTE_CHANGED);
+        }
+        List<CrmContractProductDO> contractProducts = sourceQuote == null
+                ? buildContractProducts(updateReqVO.getProducts(), oldContractProducts)
+                : buildContractProductsFromQuote(sourceQuote);
+        if (sourceQuote != null) updateReqVO.setDiscountPercent(sourceQuote.quote().getDiscountPercent());
         // 1.5 校验关联字段
         validateRelationDataExists(updateReqVO);
 
@@ -232,7 +272,16 @@ public class CrmContractServiceImpl implements CrmContractService {
                 CrmAuditStatusEnum.CANCEL.getStatus())) {
             updateObj.setAuditStatus(CrmAuditStatusEnum.DRAFT.getStatus());
         }
-        calculateTotalPrice(updateObj, contractProducts);
+        if (sourceQuote == null) {
+            calculateTotalPrice(updateObj, contractProducts);
+        } else {
+            var quote = sourceQuote.quote();
+            updateObj.setSourceQuoteId(oldContract.getSourceQuoteId()).setTotalProductPrice(quote.getSubtotal())
+                    .setTotalPrice(quote.getNetAmount()).setCurrencyCode(quote.getCurrencyCode())
+                    .setBaseCurrencyCode(quote.getBaseCurrencyCode()).setExchangeRateToBase(quote.getExchangeRateToBase())
+                    .setTaxAmount(quote.getTaxAmount()).setGrossAmount(quote.getGrossAmount())
+                    .setBaseGrossAmount(quote.getBaseGrossAmount());
+        }
         contractMapper.updateById(updateObj);
         // 2.2 更新合同关联商品
         updateContractProduct(updateReqVO.getId(), oldContractProducts, contractProducts);
@@ -347,8 +396,12 @@ public class CrmContractServiceImpl implements CrmContractService {
                 item.setProductNameSnapshot(currentProduct.getName())
                         .setProductNoSnapshot(currentProduct.getNo())
                         .setProductUnitSnapshot(currentProduct.getUnit())
+                        .setProductCategoryIdSnapshot(currentProduct.getCategoryId())
+                        .setProductVersionSnapshot(currentProduct.getVersion() == null ? 1 : currentProduct.getVersion())
                         .setProductPrice(currentProduct.getPrice());
             }
+            item.setTaxRatePercent(BigDecimal.ZERO).setTaxAmount(BigDecimal.ZERO);
+            item.setGrossAmount(MoneyUtils.priceMultiply(item.getContractPrice(), item.getCount()));
             return item.setTotalPrice(MoneyUtils.priceMultiply(item.getContractPrice(), item.getCount()));
         });
     }

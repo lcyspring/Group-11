@@ -103,6 +103,7 @@ BUILD_COMMON_COVERAGE="$(normalize_bool "$(config_value build.common_coverage fa
 BUILD_COMMON_TEST_PATTERN="$(config_value build.common_test_pattern '')"
 BUILD_CI="$(normalize_bool "$(config_value build.ci true)")"
 BAIDU_ANALYTICS_CODE="$(config_value web.baidu_analytics_code '')"
+WEB_LEGACY_MEDIA_ORIGINS="$(config_value web.legacy_media_origins '')"
 WEB_TEST_SCRIPT="$(config_value web.test_script '')"
 MAVEN_THREADS="$(config_value build.maven_threads 1C)"
 PNPM_FROZEN_LOCKFILE="$(normalize_bool "$(config_value build.pnpm_frozen_lockfile true)")"
@@ -125,6 +126,11 @@ if [[ "$BAIDU_ANALYTICS_CODE" == "disabled" ]]; then
 fi
 if [[ -n "$BAIDU_ANALYTICS_CODE" && ! "$BAIDU_ANALYTICS_CODE" =~ ^[A-Za-z0-9_-]+$ ]]; then
     printf 'web.baidu_analytics_code contains unsupported characters.\n' >&2
+    exit 2
+fi
+if [[ -n "$WEB_LEGACY_MEDIA_ORIGINS" &&
+      ! "$WEB_LEGACY_MEDIA_ORIGINS" =~ ^https?://[^,[:space:]]+(,https?://[^,[:space:]]+)*$ ]]; then
+    printf 'web.legacy_media_origins must be a comma-separated list of HTTP(S) origins.\n' >&2
     exit 2
 fi
 if [[ -n "$WEB_TEST_SCRIPT" && ! "$WEB_TEST_SCRIPT" =~ ^[A-Za-z0-9:_-]+$ ]]; then
@@ -211,6 +217,7 @@ podman run "${podman_proxy_args[@]}" --rm --pull=never \
     --env "PNPM_STORE_PATH=$PNPM_STORE_PATH" \
     --env "BUILD_USE_HOST_PROXY=$USE_HOST_PROXY" \
     --env "VITE_APP_BAIDU_CODE=$BAIDU_ANALYTICS_CODE" \
+    --env "VITE_APP_LEGACY_MEDIA_ORIGINS=$WEB_LEGACY_MEDIA_ORIGINS" \
     --env "WEB_TEST_SCRIPT=$WEB_TEST_SCRIPT" \
     "${proxy_args[@]}" \
     --entrypoint /bin/bash \

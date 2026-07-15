@@ -75,6 +75,15 @@
           </el-form-item>
         </template>
       </el-table-column>
+      <el-table-column :label="t('crm.business.taxRate')" fixed="right" min-width="120">
+        <template #default="{ row, $index }">
+          <el-form-item :prop="`${$index}.taxRatePercent`" :rules="formRules.taxRatePercent" class="mb-0px!">
+            <el-select v-model="row.taxRatePercent" class="!w-100%">
+              <el-option v-for="rate in taxRates" :key="rate" :label="`${rate}%`" :value="rate" />
+            </el-select>
+          </el-form-item>
+        </template>
+      </el-table-column>
       <el-table-column :label="t('crm.business.total')" prop="totalPrice" fixed="right" min-width="140">
         <template #default="{ row, $index }">
           <el-form-item :prop="`${$index}.totalPrice`" class="mb-0px!">
@@ -101,15 +110,18 @@ import { DICT_TYPE } from '@/utils/dict'
 const { t } = useI18n() // 国际化
 
 const props = defineProps<{
-  products: undefined
-  disabled: false
+  products?: any[]
+  disabled?: boolean
+  taxRates: number[]
+  defaultTaxRate: number
 }>()
 const formLoading = ref(false) // 表单的加载中
 const formData = ref([])
 const formRules = reactive({
   productId: [{ required: true, message: t('crm.business.productRequired'), trigger: 'blur' }],
   businessPrice: [{ required: true, message: t('crm.business.businessPriceRequired'), trigger: 'blur' }],
-  count: [{ required: true, message: t('crm.business.countRequired'), trigger: 'blur' }]
+  count: [{ required: true, message: t('crm.business.countRequired'), trigger: 'blur' }],
+  taxRatePercent: [{ required: true, message: t('crm.business.taxRateRequired'), trigger: 'change' }]
 })
 const formRef = ref([]) // 表单 Ref
 const productList = ref<ProductApi.ProductVO[]>([]) // 产品列表
@@ -151,7 +163,8 @@ const handleAdd = () => {
     productNo: undefined, // 产品条码
     productPrice: undefined, // 产品价格
     businessPrice: undefined,
-    count: 1
+    count: 1,
+    taxRatePercent: props.defaultTaxRate
   }
   formData.value.push(row)
 }

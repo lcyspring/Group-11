@@ -58,6 +58,9 @@ public class CrmBusinessSaveReqVO {
     @NotNull(message = "整单折扣不能为空")
     private BigDecimal discountPercent;
 
+    @Schema(description = "报价币种 ISO-4217 代码", example = "CNY")
+    private String currencyCode;
+
     @Schema(description = "备注", example = "随便")
     @DiffLogField(name = "备注")
     private String remark;
@@ -88,7 +91,10 @@ public class CrmBusinessSaveReqVO {
 
         @Schema(description = "产品数量", requiredMode = Schema.RequiredMode.REQUIRED, example = "8911")
         @NotNull(message = "产品数量不能为空")
-        private Integer count;
+        private BigDecimal count;
+
+        @Schema(description = "税率百分比", example = "13.00")
+        private BigDecimal taxRatePercent;
 
     }
 

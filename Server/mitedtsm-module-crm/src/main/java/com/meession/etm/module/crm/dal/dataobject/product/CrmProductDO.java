@@ -70,5 +70,9 @@ public class CrmProductDO extends BaseDO {
      * 关联 AdminUserDO 的 id 字段
      */
     private Long ownerUserId;
+    /**
+     * 产品主数据版本；名称、编码、单位、分类、价格或状态变化时递增。
+     */
+    private Integer version;
 
 }

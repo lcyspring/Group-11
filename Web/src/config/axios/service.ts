@@ -17,6 +17,7 @@ import { resetRouter } from '@/router'
 import { deleteUserCache } from '@/hooks/web/useCache'
 import { ApiEncrypt } from '@/utils/encrypt'
 import { useLocaleStoreWithOut } from '@/store/modules/locale'
+import { normalizeRuntimeMediaPayload } from '@/config/media'
 
 const tenantEnable = import.meta.env.VITE_APP_TENANT_ENABLE
 const { result_code, base_url, request_timeout } = config
@@ -227,6 +228,7 @@ service.interceptors.response.use(
       }
       return Promise.reject('error')
     } else {
+      data.data = normalizeRuntimeMediaPayload(data.data)
       return data
     }
   },

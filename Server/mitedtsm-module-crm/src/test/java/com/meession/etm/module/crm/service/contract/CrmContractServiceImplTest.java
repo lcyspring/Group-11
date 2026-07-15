@@ -10,6 +10,8 @@ import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractProductDO;
 import com.meession.etm.module.crm.dal.dataobject.product.CrmProductDO;
+import com.meession.etm.module.crm.dal.dataobject.quote.CrmBusinessQuoteDO;
+import com.meession.etm.module.crm.dal.dataobject.quote.CrmBusinessQuoteItemDO;
 import com.meession.etm.module.crm.dal.mysql.contract.CrmContractMapper;
 import com.meession.etm.module.crm.dal.mysql.contract.CrmContractProductMapper;
 import com.meession.etm.module.crm.dal.redis.no.CrmNoRedisDAO;
@@ -24,6 +26,7 @@ import com.meession.etm.module.crm.service.customer.CrmCustomerService;
 import com.meession.etm.module.crm.service.permission.CrmPermissionService;
 import com.meession.etm.module.crm.service.permission.bo.CrmPermissionCreateReqBO;
 import com.meession.etm.module.crm.service.product.CrmProductService;
+import com.meession.etm.module.crm.service.quote.CrmBusinessQuoteService;
 import com.meession.etm.module.crm.service.receivable.CrmReceivableService;
 import com.meession.etm.module.system.api.user.AdminUserApi;
 import org.junit.jupiter.api.Test;
@@ -72,6 +75,8 @@ class CrmContractServiceImplTest {
     private CrmPermissionService crmPermissionService;
     @Mock
     private CrmProductService productService;
+    @Mock
+    private CrmBusinessQuoteService quoteService;
     @Mock
     private CrmCustomerService customerService;
     @Mock
@@ -124,9 +129,8 @@ class CrmContractServiceImplTest {
     @Test
     void createContractInheritsBusinessOwnershipAndSetsConversionSource() {
         when(businessService.validateBusiness(10L)).thenReturn(business(CrmBusinessEndStatusEnum.WIN.getStatus()));
+        when(quoteService.requireCurrentLocked(10L)).thenReturn(lockedQuoteSnapshot());
         when(noRedisDAO.generate(CrmNoRedisDAO.CONTRACT_NO_PREFIX)).thenReturn("HT20260714000001");
-        when(productService.validProductList(Collections.singleton(4L)))
-                .thenReturn(Collections.singletonList(product(4L, "商机成交产品", "OPP-SKU", 1, "88.00")));
         doAnswer(invocation -> {
             ((CrmContractDO) invocation.getArgument(0)).setId(99L);
             return 1;
@@ -141,8 +145,15 @@ class CrmContractServiceImplTest {
         CrmContractDO contract = contractCaptor.getValue();
         assertEquals(10L, contract.getBusinessId());
         assertEquals(10L, contract.getSourceBusinessId());
+        assertEquals(70L, contract.getSourceQuoteId());
         assertEquals(20L, contract.getCustomerId());
         assertEquals(30L, contract.getOwnerUserId());
+        assertEquals("CNY", contract.getCurrencyCode());
+        assertEquals("CNY", contract.getBaseCurrencyCode());
+        assertEquals(BigDecimal.ONE, contract.getExchangeRateToBase());
+        assertEquals(new BigDecimal("160.00"), contract.getTotalPrice());
+        assertEquals(new BigDecimal("20.80"), contract.getTaxAmount());
+        assertEquals(new BigDecimal("180.80"), contract.getGrossAmount());
 
         ArgumentCaptor<CrmPermissionCreateReqBO> permissionCaptor =
                 ArgumentCaptor.forClass(CrmPermissionCreateReqBO.class);
@@ -155,13 +166,23 @@ class CrmContractServiceImplTest {
         CrmContractProductDO savedProduct = productCaptor.getValue().iterator().next();
         assertNull(savedProduct.getId()); // 商机产品行 444 不能复用为合同产品行编号
         assertEquals("商机成交产品", savedProduct.getProductNameSnapshot());
+        assertEquals("OPP-SKU", savedProduct.getProductNoSnapshot());
+        assertEquals(1, savedProduct.getProductUnitSnapshot());
+        assertEquals(3, savedProduct.getProductVersionSnapshot());
         assertEquals(new BigDecimal("88.00"), savedProduct.getProductPrice());
+        assertEquals(new BigDecimal("80.00"), savedProduct.getContractPrice());
+        assertEquals(new BigDecimal("2"), savedProduct.getCount());
+        assertEquals(new BigDecimal("13"), savedProduct.getTaxRatePercent());
+        assertEquals(new BigDecimal("20.80"), savedProduct.getTaxAmount());
+        assertEquals(new BigDecimal("180.80"), savedProduct.getGrossAmount());
+        verify(productService, never()).validProductList(any());
         verify(contractLifecycleService).recordChange(99L, ACTION_CREATE, 1, 30L, "创建合同");
     }
 
     @Test
     void createContractReturnsConcurrentWinner() {
         when(businessService.validateBusiness(10L)).thenReturn(business(CrmBusinessEndStatusEnum.WIN.getStatus()));
+        when(quoteService.requireCurrentLocked(10L)).thenReturn(lockedQuoteSnapshot());
         when(noRedisDAO.generate(CrmNoRedisDAO.CONTRACT_NO_PREFIX)).thenReturn("HT20260714000002");
         doThrow(new DuplicateKeyException("duplicate conversion"))
                 .when(contractMapper).insert(any(CrmContractDO.class));
@@ -426,7 +447,7 @@ class CrmContractServiceImplTest {
                 .setProductId(productId)
                 .setProductPrice(new BigDecimal(productPrice))
                 .setContractPrice(new BigDecimal(contractPrice))
-                .setCount(count);
+                .setCount(new BigDecimal(String.valueOf(count)));
     }
 
     private static CrmProductDO product(Long id, String name, String no, Integer unit, String price) {
@@ -440,6 +461,38 @@ class CrmContractServiceImplTest {
         return new CrmContractProductDO().setId(id).setContractId(contractId).setProductId(productId)
                 .setProductNameSnapshot(name).setProductNoSnapshot(no).setProductUnitSnapshot(unit)
                 .setProductPrice(new BigDecimal(productPrice));
+    }
+
+    private static CrmBusinessQuoteService.QuoteSnapshot lockedQuoteSnapshot() {
+        CrmBusinessQuoteDO quote = new CrmBusinessQuoteDO()
+                .setId(70L)
+                .setBusinessId(10L)
+                .setVersionNo(1)
+                .setStatus(10)
+                .setCurrencyCode("CNY")
+                .setBaseCurrencyCode("CNY")
+                .setExchangeRateToBase(BigDecimal.ONE)
+                .setDiscountPercent(BigDecimal.ZERO)
+                .setSubtotal(new BigDecimal("160.00"))
+                .setNetAmount(new BigDecimal("160.00"))
+                .setTaxAmount(new BigDecimal("20.80"))
+                .setGrossAmount(new BigDecimal("180.80"))
+                .setBaseGrossAmount(new BigDecimal("180.80"));
+        CrmBusinessQuoteItemDO item = new CrmBusinessQuoteItemDO()
+                .setProductId(4L)
+                .setProductNameSnapshot("商机成交产品")
+                .setProductNoSnapshot("OPP-SKU")
+                .setProductUnitSnapshot(1)
+                .setProductVersionSnapshot(3)
+                .setListPrice(new BigDecimal("88.00"))
+                .setBusinessPrice(new BigDecimal("80.00"))
+                .setCount(new BigDecimal("2"))
+                .setTaxRatePercent(new BigDecimal("13"))
+                .setLineSubtotal(new BigDecimal("160.00"))
+                .setNetAmount(new BigDecimal("160.00"))
+                .setTaxAmount(new BigDecimal("20.80"))
+                .setGrossAmount(new BigDecimal("180.80"));
+        return new CrmBusinessQuoteService.QuoteSnapshot(quote, Collections.singletonList(item));
     }
 
 }

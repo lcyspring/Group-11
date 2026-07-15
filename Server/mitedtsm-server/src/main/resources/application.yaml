@@ -262,6 +262,19 @@ mitedtsm:
     file-security:
       protected-path-prefixes: [crm-protected/]
   crm:
+    quote:
+      version: 2026-07-15
+      base-currency: CNY
+      default-currency: CNY
+      exchange-rates-to-base:
+        CNY: 1.000000
+        USD: 7.200000
+        EUR: 7.800000
+      allowed-tax-rates: [0, 1, 3, 6, 9, 13]
+      default-tax-rate: 13
+      amount-scale: 6
+      rounding-mode: HALF_UP
+      max-versions-per-business: 50
     activity:
       version: 2026-07-15
       protected-call-recording-directory: crm-protected/call

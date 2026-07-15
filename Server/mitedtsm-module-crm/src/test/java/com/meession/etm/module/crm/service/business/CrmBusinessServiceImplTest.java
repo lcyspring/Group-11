@@ -6,6 +6,7 @@ import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessDO;
 import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessStatusDO;
 import com.meession.etm.module.crm.dal.mysql.business.CrmBusinessMapper;
 import com.meession.etm.module.crm.enums.business.CrmBusinessEndStatusEnum;
+import com.meession.etm.module.crm.service.quote.CrmBusinessQuoteService;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -27,7 +28,7 @@ class CrmBusinessServiceImplTest {
         AtomicReference<Object[]> updateArgs = new AtomicReference<>();
         ReflectionTestUtils.setField(service, "businessMapper", proxy(CrmBusinessMapper.class,
                 (proxy, method, args) -> {
-                    if (method.getName().equals("selectById")) {
+                    if (method.getName().equals("selectByIdForUpdate")) {
                         return business;
                     }
                     if (method.getName().equals("updateStatusIfUnchanged")) {
@@ -37,6 +38,7 @@ class CrmBusinessServiceImplTest {
                     throw new AssertionError("未预期的 Mapper 方法: " + method.getName());
                 }));
         ReflectionTestUtils.setField(service, "businessStatusService", statusService());
+        allowLockedQuote(service);
 
         service.updateBusinessStatus(new CrmBusinessUpdateStatusReqVO().setId(business.getId())
                 .setEndStatus(CrmBusinessEndStatusEnum.LOSE.getStatus()).setEndRemark("  客户本年度预算取消无法继续采购  "));
@@ -52,7 +54,7 @@ class CrmBusinessServiceImplTest {
         CrmBusinessDO business = activeBusiness();
         ReflectionTestUtils.setField(service, "businessMapper", proxy(CrmBusinessMapper.class,
                 (proxy, method, args) -> {
-                    if (method.getName().equals("selectById")) {
+                    if (method.getName().equals("selectByIdForUpdate")) {
                         return business;
                     }
                     if (method.getName().equals("updateStatusIfUnchanged")) {
@@ -60,6 +62,7 @@ class CrmBusinessServiceImplTest {
                     }
                     throw new AssertionError("未预期的 Mapper 方法: " + method.getName());
                 }));
+        allowLockedQuote(service);
 
         ServiceException exception = assertThrows(ServiceException.class,
                 () -> service.updateBusinessStatus(new CrmBusinessUpdateStatusReqVO().setId(business.getId())
@@ -75,7 +78,7 @@ class CrmBusinessServiceImplTest {
         AtomicReference<Object[]> updateArgs = new AtomicReference<>();
         ReflectionTestUtils.setField(service, "businessMapper", proxy(CrmBusinessMapper.class,
                 (proxy, method, args) -> {
-                    if (method.getName().equals("selectById")) {
+                    if (method.getName().equals("selectByIdForUpdate")) {
                         return business;
                     }
                     if (method.getName().equals("updateStatusIfUnchanged")) {
@@ -85,6 +88,7 @@ class CrmBusinessServiceImplTest {
                     throw new AssertionError("未预期的 Mapper 方法: " + method.getName());
                 }));
         ReflectionTestUtils.setField(service, "businessStatusService", statusService());
+        allowLockedQuote(service);
 
         service.updateBusinessStatus(new CrmBusinessUpdateStatusReqVO().setId(business.getId())
                 .setEndStatus(CrmBusinessEndStatusEnum.WIN.getStatus()).setEndRemark("不应保存"));
@@ -99,7 +103,7 @@ class CrmBusinessServiceImplTest {
         CrmBusinessDO business = activeBusiness();
         ReflectionTestUtils.setField(service, "businessMapper", proxy(CrmBusinessMapper.class,
                 (proxy, method, args) -> {
-                    if (method.getName().equals("selectById")) {
+                    if (method.getName().equals("selectByIdForUpdate")) {
                         return business;
                     }
                     throw new AssertionError("未预期的 Mapper 方法: " + method.getName());
@@ -120,7 +124,7 @@ class CrmBusinessServiceImplTest {
         AtomicReference<Object[]> updateArgs = new AtomicReference<>();
         ReflectionTestUtils.setField(service, "businessMapper", proxy(CrmBusinessMapper.class,
                 (proxy, method, args) -> {
-                    if (method.getName().equals("selectById")) {
+                    if (method.getName().equals("selectByIdForUpdate")) {
                         return business;
                     }
                     if (method.getName().equals("updateStatusIfUnchanged")) {
@@ -149,6 +153,15 @@ class CrmBusinessServiceImplTest {
             }
             throw new AssertionError("未预期的状态服务方法: " + method.getName());
         });
+    }
+
+    private static void allowLockedQuote(CrmBusinessServiceImpl service) {
+        ReflectionTestUtils.setField(service, "quoteService", proxy(CrmBusinessQuoteService.class,
+                (proxy, method, args) -> {
+                    if (method.getName().equals("requireCurrentLocked")) return null;
+                    if (method.getName().equals("terminateCurrent")) return null;
+                    throw new AssertionError("未预期的报价服务方法: " + method.getName());
+                }));
     }
 
     private static CrmBusinessStatusService statusTransitionService(int currentSort, int targetSort) {

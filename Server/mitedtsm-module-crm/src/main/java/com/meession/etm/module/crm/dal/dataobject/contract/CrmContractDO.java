@@ -62,6 +62,9 @@ public class CrmContractDO extends BaseDO {
      */
     private Long sourceBusinessId;
 
+    /** 锁定报价来源；仅由商机转换写入。 */
+    private Long sourceQuoteId;
+
     /**
      * 最后跟进时间
      */
@@ -111,6 +114,13 @@ public class CrmContractDO extends BaseDO {
      * 合同总金额，单位：分
      */
     private BigDecimal totalPrice;
+    /** 报价/合同币种快照。 */
+    private String currencyCode;
+    private String baseCurrencyCode;
+    private BigDecimal exchangeRateToBase;
+    private BigDecimal taxAmount;
+    private BigDecimal grossAmount;
+    private BigDecimal baseGrossAmount;
     /**
      * 客户签约人，非必须
      *

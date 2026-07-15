@@ -23,6 +23,7 @@ export interface BusinessVO {
   totalProductPrice: number
   totalPrice: number
   discountPercent: number
+  currencyCode?: string
   remark: string
   creator: string // 创建人
   creatorName?: string // 创建人名称
@@ -39,6 +40,7 @@ export interface BusinessVO {
       businessPrice: number
       count: number
       totalPrice: number
+      taxRatePercent: number
     }
   ]
 }
