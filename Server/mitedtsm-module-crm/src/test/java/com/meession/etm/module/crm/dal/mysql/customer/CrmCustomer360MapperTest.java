@@ -17,6 +17,9 @@ class CrmCustomer360MapperTest {
             assertNotNull(input, "客户 360 Mapper XML 应在测试 classpath 中");
             String xml = new String(input.readAllBytes(), StandardCharsets.UTF_8);
             assertTrue(xml.contains("item.audit_status = 20"));
+            assertTrue(xml.contains("FROM crm_receivable_refund item"));
+            assertTrue(xml.contains("AS refundCount"));
+            assertTrue(xml.contains("AS approvedRefundAmount"));
             assertTrue(xml.contains("item.status IN (10, 20, 30)"));
             assertTrue(xml.contains("item.direction * item.amount"));
             assertTrue(xml.contains("attachment.deleted = 0"));

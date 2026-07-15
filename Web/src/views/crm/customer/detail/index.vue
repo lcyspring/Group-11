@@ -82,6 +82,9 @@
       <el-tab-pane v-if="canQueryInvoice" :label="t('invoiceTab')" lazy>
         <CustomerInvoiceList :customer-id="customer.id!" />
       </el-tab-pane>
+      <el-tab-pane v-if="canQueryRefund" :label="t('refundTab')" lazy>
+        <CustomerRefundList :customer-id="customer.id!" />
+      </el-tab-pane>
       <el-tab-pane :label="t('operateLogTab')">
         <OperateLogV2 :log-list="logList" />
       </el-tab-pane>
@@ -155,6 +158,7 @@ import CustomerOwnerRecordList from './CustomerOwnerRecordList.vue'
 import CustomerLifecycleRecordList from './CustomerLifecycleRecordList.vue'
 import WorkOrderList from '@/views/crm/workorder/components/WorkOrderList.vue'
 import CustomerInvoiceList from '@/views/crm/invoice/components/CustomerInvoiceList.vue'
+import CustomerRefundList from '@/views/crm/refund/components/CustomerRefundList.vue'
 import Customer360Summary from './Customer360Summary.vue'
 import { checkPermi } from '@/utils/permission'
 
@@ -172,6 +176,7 @@ const ownerRecordListRef = ref<InstanceType<typeof CustomerOwnerRecordList>>() /
 const lifecycleRecordListRef = ref<InstanceType<typeof CustomerLifecycleRecordList>>()
 const summaryRef = ref<InstanceType<typeof Customer360Summary>>()
 const canQueryInvoice = checkPermi(['crm:invoice:query'])
+const canQueryRefund = checkPermi(['crm:receivable-refund:query'])
 
 /** 获取详情 */
 const customer = ref<CustomerApi.CustomerVO>({} as CustomerApi.CustomerVO) // 客户详情

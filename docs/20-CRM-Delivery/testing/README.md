@@ -6,8 +6,8 @@
 
 更新日期：2026-07-15
 
-- Ubuntu 26.04 容器 CRM 自动化：231/231，失败 0、错误 0、跳过 0。
-- CRM JaCoCo 基线：指令 41.56%、分支 38.53%、行 39.22%、方法 27.23%。
+- Ubuntu 26.04 容器 CRM 自动化：232/232，失败 0、错误 0、跳过 0。
+- CRM JaCoCo 基线：指令 41.61%、分支 38.60%、行 39.26%、方法 27.23%。
 - Ubuntu 26.04 Infra 文件专项：28/28；模块行覆盖率 8.16%。
 - Ubuntu 26.04 BPM 自动化：54 个，48 通过、6 跳过、失败 0；行覆盖率 8.58%。
 - Ubuntu 26.04 容器 CRM 前端纯函数：统计 7/7，发票 3/3。
@@ -60,10 +60,11 @@
 | `statistics-lineage-refresh/` | 六类统计指标血缘、域权限、实时刷新和覆盖率 |
 | `crm-receivable-refund/` | 回款退款/冲销金额守恒、审批状态机、对象权限、动作轨迹和运行验收 |
 | `crm-resource-security/` | 八类导出对象权限、合同受保护附件、公共文件隔离和历史通知乱码 |
+| `customer-360-refund/` | 退款/冲销审批金额、净回款、待回款和客户明细入口 |
 
 运行入口统一为：
 
 ```bash
 cd podman
-bash ./build-in-ubuntu.sh ./config/verify-crm-resource-security-ubuntu-26.04.yaml
+bash ./build-in-ubuntu.sh ./config/verify-crm-customer-360-refund-ubuntu-26.04.yaml
 ```

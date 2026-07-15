@@ -21,6 +21,7 @@ class CrmCustomer360ServiceImplTest {
                         .setContactCount(2L).setMappedOrderCount(3L)
                         .setContractAmount(new BigDecimal("1000.00"))
                         .setApprovedReceivableAmount(new BigDecimal("400.00"))
+                        .setApprovedRefundAmount(new BigDecimal("50.00"))
                         .setEffectiveInvoiceAmount(new BigDecimal("250.00")));
 
         CrmCustomer360SummaryRespVO result = service.getSummary(7L, 9L, false);
@@ -29,7 +30,9 @@ class CrmCustomer360ServiceImplTest {
         assertEquals(2L, result.getContactCount());
         assertEquals(0L, result.getBusinessCount());
         assertEquals(3L, result.getMappedOrderCount());
-        assertEquals(new BigDecimal("600.00"), result.getOutstandingReceivableAmount());
+        assertEquals(0L, result.getRefundCount());
+        assertEquals(new BigDecimal("350.00"), result.getNetReceivableAmount());
+        assertEquals(new BigDecimal("650.00"), result.getOutstandingReceivableAmount());
         assertEquals(new BigDecimal("750.00"), result.getUninvoicedAmount());
         assertFalse(result.getTaskSupported());
     }
@@ -40,12 +43,28 @@ class CrmCustomer360ServiceImplTest {
                 new CrmCustomer360SummaryRespVO().setCustomerId(8L)
                         .setContractAmount(new BigDecimal("100.00"))
                         .setApprovedReceivableAmount(new BigDecimal("120.00"))
+                        .setApprovedRefundAmount(new BigDecimal("150.00"))
                         .setEffectiveInvoiceAmount(new BigDecimal("130.00")));
 
         CrmCustomer360SummaryRespVO result = service.getSummary(8L, 9L, true);
 
-        assertEquals(BigDecimal.ZERO, result.getOutstandingReceivableAmount());
+        assertEquals(BigDecimal.ZERO, result.getNetReceivableAmount());
+        assertEquals(new BigDecimal("100.00"), result.getOutstandingReceivableAmount());
         assertEquals(BigDecimal.ZERO, result.getUninvoicedAmount());
+    }
+
+    @Test
+    void summaryTreatsMissingRefundAggregateAsZero() {
+        CrmCustomer360ServiceImpl service = service(new AtomicBoolean(),
+                new CrmCustomer360SummaryRespVO().setCustomerId(9L)
+                        .setContractAmount(new BigDecimal("100.00"))
+                        .setApprovedReceivableAmount(new BigDecimal("40.00")));
+
+        CrmCustomer360SummaryRespVO result = service.getSummary(9L, 9L, false);
+
+        assertEquals(BigDecimal.ZERO, result.getApprovedRefundAmount());
+        assertEquals(new BigDecimal("40.00"), result.getNetReceivableAmount());
+        assertEquals(new BigDecimal("60.00"), result.getOutstandingReceivableAmount());
     }
 
     private static CrmCustomer360ServiceImpl service(AtomicBoolean customerValidated,

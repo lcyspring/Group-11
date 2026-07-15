@@ -18,6 +18,7 @@ public class CrmCustomer360SummaryRespVO {
     private Long mappedOrderCount;
     private Long receivablePlanCount;
     private Long receivableCount;
+    private Long refundCount;
     private Long invoiceCount;
     private Long workOrderCount;
     private Long contractAttachmentCount;
@@ -26,6 +27,10 @@ public class CrmCustomer360SummaryRespVO {
     private BigDecimal contractAmount;
     /** 审批通过回款金额。 */
     private BigDecimal approvedReceivableAmount;
+    /** 审批通过退款和业务冲销金额。 */
+    private BigDecimal approvedRefundAmount;
+    /** 审批通过回款减审批通过退款和业务冲销。 */
+    private BigDecimal netReceivableAmount;
     /** 已开具且未作废的蓝票减红票净额。 */
     private BigDecimal effectiveInvoiceAmount;
     private BigDecimal outstandingReceivableAmount;

@@ -32,8 +32,10 @@ public class CrmCustomer360ServiceImpl implements CrmCustomer360Service {
             summary = new CrmCustomer360SummaryRespVO().setCustomerId(customerId);
         }
         normalize(summary);
+        summary.setNetReceivableAmount(nonNegative(
+                summary.getApprovedReceivableAmount().subtract(summary.getApprovedRefundAmount())));
         summary.setOutstandingReceivableAmount(nonNegative(
-                summary.getContractAmount().subtract(summary.getApprovedReceivableAmount())));
+                summary.getContractAmount().subtract(summary.getNetReceivableAmount())));
         summary.setUninvoicedAmount(nonNegative(
                 summary.getContractAmount().subtract(summary.getEffectiveInvoiceAmount())));
         summary.setTaskSupported(false);
@@ -46,11 +48,13 @@ public class CrmCustomer360ServiceImpl implements CrmCustomer360Service {
                 .setMappedOrderCount(orZero(summary.getMappedOrderCount()))
                 .setReceivablePlanCount(orZero(summary.getReceivablePlanCount()))
                 .setReceivableCount(orZero(summary.getReceivableCount()))
+                .setRefundCount(orZero(summary.getRefundCount()))
                 .setInvoiceCount(orZero(summary.getInvoiceCount()))
                 .setWorkOrderCount(orZero(summary.getWorkOrderCount()))
                 .setContractAttachmentCount(orZero(summary.getContractAttachmentCount()))
                 .setContractAmount(orZero(summary.getContractAmount()))
                 .setApprovedReceivableAmount(orZero(summary.getApprovedReceivableAmount()))
+                .setApprovedRefundAmount(orZero(summary.getApprovedRefundAmount()))
                 .setEffectiveInvoiceAmount(orZero(summary.getEffectiveInvoiceAmount()));
     }
 

@@ -64,11 +64,14 @@ export interface Customer360SummaryVO {
   mappedOrderCount: number
   receivablePlanCount: number
   receivableCount: number
+  refundCount: number
   invoiceCount: number
   workOrderCount: number
   contractAttachmentCount: number
   contractAmount: number
   approvedReceivableAmount: number
+  approvedRefundAmount: number
+  netReceivableAmount: number
   effectiveInvoiceAmount: number
   outstandingReceivableAmount: number
   uninvoicedAmount: number

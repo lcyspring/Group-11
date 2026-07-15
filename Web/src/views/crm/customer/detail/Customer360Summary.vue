@@ -35,6 +35,8 @@ const summary = ref<CustomerApi.Customer360SummaryVO>()
 const amountItems = computed(() => [
   { key: 'contract', label: t('summaryContractAmount'), value: Number(summary.value?.contractAmount || 0) },
   { key: 'receivable', label: t('summaryReceivableAmount'), value: Number(summary.value?.approvedReceivableAmount || 0) },
+  { key: 'refund', label: t('summaryRefundAmount'), value: Number(summary.value?.approvedRefundAmount || 0) },
+  { key: 'netReceivable', label: t('summaryNetReceivableAmount'), value: Number(summary.value?.netReceivableAmount || 0) },
   { key: 'outstanding', label: t('summaryOutstandingAmount'), value: Number(summary.value?.outstandingReceivableAmount || 0) },
   { key: 'invoice', label: t('summaryInvoiceAmount'), value: Number(summary.value?.effectiveInvoiceAmount || 0) },
   { key: 'uninvoiced', label: t('summaryUninvoicedAmount'), value: Number(summary.value?.uninvoicedAmount || 0) }
@@ -45,6 +47,7 @@ const countItems = computed(() => [
   { key: 'order', label: t('summaryMappedOrders'), value: summary.value?.mappedOrderCount || 0 },
   { key: 'plan', label: t('summaryPlans'), value: summary.value?.receivablePlanCount || 0 },
   { key: 'receivable', label: t('summaryReceivables'), value: summary.value?.receivableCount || 0 },
+  { key: 'refund', label: t('summaryRefunds'), value: summary.value?.refundCount || 0 },
   { key: 'invoice', label: t('summaryInvoices'), value: summary.value?.invoiceCount || 0 },
   { key: 'workOrder', label: t('summaryWorkOrders'), value: summary.value?.workOrderCount || 0 },
   { key: 'attachment', label: t('summaryContractAttachments'), value: summary.value?.contractAttachmentCount || 0 }

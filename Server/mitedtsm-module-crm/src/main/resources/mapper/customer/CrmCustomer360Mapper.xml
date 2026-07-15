@@ -15,6 +15,8 @@
                 WHERE item.customer_id = c.id AND item.deleted = 0) AS receivablePlanCount,
                (SELECT COUNT(*) FROM crm_receivable item
                 WHERE item.customer_id = c.id AND item.deleted = 0) AS receivableCount,
+               (SELECT COUNT(*) FROM crm_receivable_refund item
+                WHERE item.customer_id = c.id AND item.deleted = 0) AS refundCount,
                (SELECT COUNT(*) FROM crm_invoice item
                 WHERE item.customer_id = c.id AND item.deleted = 0) AS invoiceCount,
                (SELECT COUNT(*) FROM crm_work_order item
@@ -32,6 +34,9 @@
                (SELECT COALESCE(SUM(item.price), 0) FROM crm_receivable item
                 WHERE item.customer_id = c.id AND item.audit_status = 20
                   AND item.deleted = 0) AS approvedReceivableAmount,
+               (SELECT COALESCE(SUM(item.amount), 0) FROM crm_receivable_refund item
+                WHERE item.customer_id = c.id AND item.audit_status = 20
+                  AND item.deleted = 0) AS approvedRefundAmount,
                (SELECT COALESCE(SUM(item.direction * item.amount), 0) FROM crm_invoice item
                 WHERE item.customer_id = c.id AND item.status IN (10, 20, 30)
                   AND item.deleted = 0) AS effectiveInvoiceAmount
