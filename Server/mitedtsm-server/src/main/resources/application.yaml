@@ -262,6 +262,19 @@ mitedtsm:
     file-security:
       protected-path-prefixes: [crm-protected/]
   crm:
+    activity:
+      version: 2026-07-15
+      protected-call-recording-directory: crm-protected/call
+      max-call-duration-seconds: 86400
+      task-overdue:
+        enabled: true
+        cron: "0 0 * * * ?"
+        zone: Asia/Shanghai
+        lock-key: crm:activity:task-overdue
+        lock-lease-seconds: 1800
+        batch-size: 500
+        max-batch-size: 5000
+        max-batches: 20
     authorization:
       # 唯一的 CRM 管理员绕过角色；普通角色仍由功能权限字符和数据范围共同授权。
       admin-role-codes: [crm_admin]

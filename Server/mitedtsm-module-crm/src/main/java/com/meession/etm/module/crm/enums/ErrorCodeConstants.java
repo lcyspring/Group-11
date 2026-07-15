@@ -278,4 +278,23 @@ public interface ErrorCodeConstants {
     ErrorCode REIMBURSEMENT_ATTACHMENT_NOT_MANAGED = new ErrorCode(1_020_018_019, "报销附件必须来自系统受管文件存储");
     ErrorCode REIMBURSEMENT_ATTACHMENT_NOT_PROTECTED = new ErrorCode(1_020_018_020, "报销附件不属于当前报销单的受保护目录");
 
+    // ========== CRM 任务、通话、短信活动 1_020_019_000 ==========
+    ErrorCode ACTIVITY_BIZ_TYPE_INVALID = new ErrorCode(1_020_019_000, "CRM 活动只能关联线索或客户");
+    ErrorCode TASK_NOT_EXISTS = new ErrorCode(1_020_019_001, "CRM 任务不存在");
+    ErrorCode TASK_TYPE_INVALID = new ErrorCode(1_020_019_002, "CRM 任务类型无效");
+    ErrorCode TASK_PRIORITY_INVALID = new ErrorCode(1_020_019_003, "CRM 任务优先级无效");
+    ErrorCode TASK_TIME_INVALID = new ErrorCode(1_020_019_004, "任务截止时间必须晚于当前时间，提醒时间不能晚于截止时间");
+    ErrorCode TASK_EDIT_DENIED = new ErrorCode(1_020_019_005, "只有创建人可以修改未开始的任务");
+    ErrorCode TASK_ASSIGNEE_ONLY = new ErrorCode(1_020_019_006, "只有任务负责人可以开始或处理任务");
+    ErrorCode TASK_TRANSITION_INVALID = new ErrorCode(1_020_019_007, "任务状态已变化或当前状态不允许该操作");
+    ErrorCode TASK_RESULT_REQUIRED = new ErrorCode(1_020_019_008, "未完成或取消任务必须填写原因");
+    ErrorCode CALL_DIRECTION_INVALID = new ErrorCode(1_020_019_009, "通话方向无效");
+    ErrorCode CALL_STATUS_INVALID = new ErrorCode(1_020_019_010, "通话状态无效");
+    ErrorCode CALL_TIME_INVALID = new ErrorCode(1_020_019_011, "接通通话必须有不早于开始时间的结束时间");
+    ErrorCode CALL_RECORDING_PATH_INVALID = new ErrorCode(1_020_019_012, "通话录音必须来自 CRM 受保护目录");
+    ErrorCode SMS_DIRECTION_INVALID = new ErrorCode(1_020_019_013, "短信方向无效");
+    ErrorCode SMS_STATUS_INVALID = new ErrorCode(1_020_019_014, "短信方向和状态不一致");
+    ErrorCode SMS_FAILURE_REASON_REQUIRED = new ErrorCode(1_020_019_015, "发送失败的短信必须记录失败原因");
+    ErrorCode CLUE_CONVERSION_AUDIT_EXISTS = new ErrorCode(1_020_019_016, "线索转换迁移审计已存在");
+
 }

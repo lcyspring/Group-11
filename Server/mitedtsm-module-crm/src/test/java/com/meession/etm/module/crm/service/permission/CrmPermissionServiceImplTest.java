@@ -4,10 +4,14 @@ import com.meession.etm.framework.common.biz.system.permission.PermissionCommonA
 import com.meession.etm.module.crm.controller.admin.permission.vo.CrmPermissionSaveReqVO;
 import com.meession.etm.module.crm.controller.admin.permission.vo.CrmPermissionUpdateReqVO;
 import com.meession.etm.module.crm.dal.dataobject.clue.CrmClueDO;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.permission.CrmPermissionDO;
 import com.meession.etm.module.crm.dal.mysql.clue.CrmClueMapper;
+import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerMapper;
 import com.meession.etm.module.crm.dal.mysql.permission.CrmPermissionMapper;
+import com.meession.etm.module.crm.enums.clue.CrmCluePoolStatusEnum;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
+import com.meession.etm.module.crm.enums.customer.CrmCustomerPoolStatusEnum;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
 import com.meession.etm.module.crm.framework.permission.CrmAuthorizationProperties;
 import com.meession.etm.module.crm.framework.permission.CrmAuthorizationService;
@@ -23,6 +27,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import static com.meession.etm.framework.test.core.util.AssertUtils.assertServiceException;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CLUE_UPDATE_FAIL_TRANSFORMED;
@@ -30,6 +36,42 @@ import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CRM_PERMISSIO
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CRM_EXPORT_PERMISSION_DENIED;
 
 class CrmPermissionServiceImplTest {
+
+    @Test
+    void hasPermissionUsesOwnerWriteReadHierarchy() {
+        CrmPermissionServiceImpl service = permissionCheckService(List.of(
+                new CrmPermissionDO().setUserId(7L).setLevel(CrmPermissionLevelEnum.OWNER.getLevel())));
+
+        assertTrue(service.hasPermission(CrmBizTypeEnum.CRM_CLUE.getType(), 10L, 7L,
+                CrmPermissionLevelEnum.WRITE));
+        assertTrue(service.hasPermission(CrmBizTypeEnum.CRM_CLUE.getType(), 10L, 7L,
+                CrmPermissionLevelEnum.READ));
+    }
+
+    @Test
+    void hasPermissionDoesNotPromoteReadGrantToWrite() {
+        CrmPermissionServiceImpl service = permissionCheckService(List.of(
+                new CrmPermissionDO().setUserId(7L).setLevel(CrmPermissionLevelEnum.READ.getLevel())));
+
+        assertFalse(service.hasPermission(CrmBizTypeEnum.CRM_CLUE.getType(), 10L, 7L,
+                CrmPermissionLevelEnum.WRITE));
+    }
+
+    @Test
+    void hasPermissionAllowsOnlyExplicitPublicObjectsWithoutGrant() {
+        CrmPermissionServiceImpl service = permissionCheckService(List.of());
+        ReflectionTestUtils.setField(service, "clueMapper", proxy(CrmClueMapper.class,
+                (proxy, method, args) -> new CrmClueDO().setId(10L).setTransformStatus(false)
+                        .setPoolStatus(CrmCluePoolStatusEnum.PUBLIC.getStatus()).setOwnerUserId(null)));
+        ReflectionTestUtils.setField(service, "customerMapper", proxy(CrmCustomerMapper.class,
+                (proxy, method, args) -> new CrmCustomerDO().setId(20L)
+                        .setPoolStatus(CrmCustomerPoolStatusEnum.OWNED.getStatus())));
+
+        assertTrue(service.hasPermission(CrmBizTypeEnum.CRM_CLUE.getType(), 10L, 7L,
+                CrmPermissionLevelEnum.READ));
+        assertFalse(service.hasPermission(CrmBizTypeEnum.CRM_CUSTOMER.getType(), 20L, 7L,
+                CrmPermissionLevelEnum.READ));
+    }
 
     @Test
     void replaceOwnerPermissionPromotesTargetAndPreservesTeamPermission() {
@@ -189,6 +231,27 @@ class CrmPermissionServiceImplTest {
         ReflectionTestUtils.setField(service, "permissionMapper", proxy(CrmPermissionMapper.class,
                 (proxy, method, args) -> method.getName().equals("selectByBizTypeAndBizIds")
                         ? permissions : null));
+        return service;
+    }
+
+    private static CrmPermissionServiceImpl permissionCheckService(List<CrmPermissionDO> permissions) {
+        CrmPermissionServiceImpl service = new CrmPermissionServiceImpl();
+        ReflectionTestUtils.setField(service, "permissionMapper", proxy(CrmPermissionMapper.class,
+                (proxy, method, args) -> {
+                    if (method.getName().equals("selectByBizTypeAndBizId")) return permissions;
+                    throw new AssertionError("未预期的权限 Mapper 调用 " + method.getName());
+                }));
+        ReflectionTestUtils.setField(service, "crmAuthorizationService", new CrmAuthorizationService() {
+            @Override
+            public boolean isGranted(Collection<CrmPermissionDO> grants, Long userId, Integer requiredLevel) {
+                CrmPermissionDO direct = grants.stream().filter(item -> item.getUserId().equals(userId)).findFirst().orElse(null);
+                if (direct == null) return false;
+                if (direct.getLevel().equals(CrmPermissionLevelEnum.OWNER.getLevel())) return true;
+                if (requiredLevel.equals(CrmPermissionLevelEnum.READ.getLevel())) return true;
+                return direct.getLevel().equals(CrmPermissionLevelEnum.WRITE.getLevel())
+                        && requiredLevel.equals(CrmPermissionLevelEnum.WRITE.getLevel());
+            }
+        });
         return service;
     }
 

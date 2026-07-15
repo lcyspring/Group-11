@@ -12,8 +12,11 @@ import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
 import com.meession.etm.module.crm.dal.dataobject.permission.CrmPermissionDO;
 import com.meession.etm.module.crm.dal.mysql.clue.CrmClueMapper;
+import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerMapper;
 import com.meession.etm.module.crm.dal.mysql.permission.CrmPermissionMapper;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
+import com.meession.etm.module.crm.enums.clue.CrmCluePoolStatusEnum;
+import com.meession.etm.module.crm.enums.customer.CrmCustomerPoolStatusEnum;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
 import com.meession.etm.module.crm.framework.permission.core.annotations.CrmPermission;
 import com.meession.etm.module.crm.framework.permission.CrmAuthorizationService;
@@ -51,6 +54,8 @@ public class CrmPermissionServiceImpl implements CrmPermissionService {
     private CrmPermissionMapper permissionMapper;
     @Resource
     private CrmClueMapper clueMapper;
+    @Resource
+    private CrmCustomerMapper customerMapper;
     @Resource
     @Lazy // 解决依赖循环
     private CrmContactService contactService;
@@ -404,8 +409,26 @@ public class CrmPermissionServiceImpl implements CrmPermissionService {
     @Override
     public boolean hasPermission(Integer bizType, Long bizId, Long userId, CrmPermissionLevelEnum level) {
         List<CrmPermissionDO> permissionList = permissionMapper.selectByBizTypeAndBizId(bizType, bizId);
-        return anyMatch(permissionList, permission ->
-                ObjUtil.equal(permission.getUserId(), userId) && ObjUtil.equal(permission.getLevel(), level.getLevel()));
+        if (crmAuthorizationService.isGranted(permissionList, userId, level.getLevel())) {
+            return true;
+        }
+        if (!CrmPermissionLevelEnum.isRead(level.getLevel()) || CollUtil.isNotEmpty(permissionList)) {
+            return false;
+        }
+        // Match the aspect's explicit public-pool read rule. Public objects are readable without
+        // a team grant, but transformed clues and garbage/non-public customers remain closed.
+        if (ObjUtil.equal(bizType, CrmBizTypeEnum.CRM_CLUE.getType())) {
+            CrmClueDO clue = clueMapper.selectById(bizId);
+            return clue != null && !Boolean.TRUE.equals(clue.getTransformStatus())
+                    && ObjUtil.equal(clue.getPoolStatus(), CrmCluePoolStatusEnum.PUBLIC.getStatus())
+                    && clue.getOwnerUserId() == null;
+        }
+        if (ObjUtil.equal(bizType, CrmBizTypeEnum.CRM_CUSTOMER.getType())) {
+            var customer = customerMapper.selectById(bizId);
+            return customer != null
+                    && ObjUtil.equal(customer.getPoolStatus(), CrmCustomerPoolStatusEnum.PUBLIC.getStatus());
+        }
+        return false;
     }
 
     public CrmPermissionDO hasAnyPermission(Integer bizType, Long bizId, Long userId) {

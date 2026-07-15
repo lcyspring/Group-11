@@ -46,6 +46,14 @@
       <el-tab-pane :label="t('clue.basicInfoTab')">
         <ClueDetailsInfo :clue="clue" />
       </el-tab-pane>
+      <el-tab-pane :label="t('clue.activityTab')" lazy>
+        <CrmActivityPanel
+          v-if="clueId"
+          :biz-id="clueId"
+          :biz-type="BizTypeEnum.CRM_CLUE"
+          :readonly="clue.transformStatus || clue.poolStatus === 1"
+        />
+      </el-tab-pane>
       <el-tab-pane :label="t('clue.teamMemberTab')">
         <PermissionList
           ref="permissionListRef"
@@ -76,6 +84,7 @@ import ClueDetailsInfo from './ClueDetailsInfo.vue' // 线索明细 - 详细信�
 import PermissionList from '@/views/crm/permission/components/PermissionList.vue' // 团队成员列表（权限）
 import CrmTransferForm from '@/views/crm/permission/components/TransferForm.vue'
 import FollowUpList from '@/views/crm/followup/index.vue'
+import CrmActivityPanel from '@/views/crm/activity/components/CrmActivityPanel.vue'
 import { BizTypeEnum } from '@/api/crm/permission'
 import type { OperateLogVO } from '@/api/system/operatelog'
 import { getOperateLogPage } from '@/api/crm/operateLog'

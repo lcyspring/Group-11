@@ -8,7 +8,7 @@
 | CRM-FEATURE-002 | 每客户唯一首联系人生命周期及客户列表回显 | US-CUS-010/011、GAP-CUS-002 | 已实现 | `docs/20-CRM-Delivery/testing/contact-primary/` |
 | CRM-FEATURE-003 | 联系人手机号必填且同一客户内唯一 | CUS-009、GAP-CUS-002 | 已实现 | `docs/20-CRM-Delivery/testing/contact-mobile-unique/` |
 | CRM-FEATURE-004 | 客户列表按任意联系人及首联系人筛选 | CUS-001、US-CUS-001、GAP-CUS-001 | 已实现 | `docs/20-CRM-Delivery/testing/customer-contact-filter/` |
-| CRM-FEATURE-005 | 线索转客户时显式创建首联系人，并保证并发幂等和失败回滚 | US-LEAD-008、GAP-LEAD-002 | 阶段完成 | `docs/20-CRM-Delivery/testing/clue-primary-contact/` |
+| CRM-FEATURE-005 | 线索转客户时显式创建首联系人，并保证并发幂等和失败回滚 | US-LEAD-008、GAP-LEAD-002 | 已实现 | `docs/20-CRM-Delivery/testing/clue-primary-contact/` |
 | CRM-FEATURE-006 | 已转换线索在字段、归属、跟进和团队权限层面强制只读 | GAP-LEAD-002、GAP-IAM-003 | 已实现 | `docs/20-CRM-Delivery/testing/clue-readonly/` |
 | CRM-FEATURE-007 | 客户已成交/未成交状态分布 | US-RPT-009、GAP-RPT-001/002 | 阶段完成 | `docs/20-CRM-Delivery/testing/customer-deal-status-statistics/` |
 | CRM-FEATURE-008 | 商机输单/无效原因及并发状态保护 | US-OPP-005、GAP-OPP-001 | 子闭环完成 | `docs/20-CRM-Delivery/testing/business-loss-closure/` |
@@ -46,5 +46,6 @@
 | CRM-FEATURE-040 | 客户公海显式状态、保护期、自动回收、领取额度/冷却、通知、配置和列表元数据完整闭环 | GAP-CUS-001、ADR-014 | 已实现 | `docs/20-CRM-Delivery/testing/customer-public-pool-policy/` |
 | CRM-FEATURE-041 | 客户垃圾池管理员隔离、手工/自动迁移、恢复、引用保护永久删除及前端状态机 | GAP-CUS-001、ADR-014 | 已实现 | `docs/20-CRM-Delivery/testing/customer-garbage-lifecycle/` |
 | CRM-FEATURE-042 | 公共线索显式状态、自动迁移、领取/分配额度、冷却、容量并发保护及前端状态机 | GAP-LEAD-001/002、ADR-014 | 已实现 | `docs/20-CRM-Delivery/testing/clue-public-pool-lifecycle/` |
+| CRM-FEATURE-043 | 任务、通话、短信活动真源、状态轨迹及线索转客户同事务迁移审计 | GAP-LEAD-002、ADR-014 | 已实现 | `docs/20-CRM-Delivery/testing/clue-activity-migration/` |
 
-说明：`CRM-FEATURE-005` 只关闭首联系人、重复/并发保护和失败回滚子项；任务、通话、短信等活动迁移规则仍待后续阶段完成。`CRM-FEATURE-007` 是历史二态基线，现已由 `CRM-FEATURE-029` 升级为四态模型。`CRM-FEATURE-015/016/017` 已建立目标事实源、完成度展示和三层目标维护入口；目标逐级分解合计规则仍待业务签署。`CRM-FEATURE-028` 不宣称已接入外部电子签平台，也不包含正式补充协议的新审批命令。`CRM-FEATURE-030/035` 已聚合退款真源，但不伪造尚未实现的 OA 任务和费用真源。`CRM-FEATURE-033` 已完成真实 BPM 提交、驳回、修订、重提和通过验收。`CRM-FEATURE-034` 的新附件已受保护，历史公开附件仍需物理迁移。客户联系人归属、公海、垃圾池和公共线索分别由 `CRM-FEATURE-039`～`042` 关闭。
+说明：`CRM-FEATURE-005/043` 共同关闭线索转换的首联系人、跟进及任务/通话/短信活动迁移、并发幂等、审计和失败回滚。`CRM-FEATURE-007` 是历史二态基线，现已由 `CRM-FEATURE-029` 升级为四态模型。`CRM-FEATURE-015/016/017` 已建立目标事实源、完成度展示和三层目标维护入口；目标逐级分解合计规则仍待业务签署。`CRM-FEATURE-028` 不宣称已接入外部电子签平台，也不包含正式补充协议的新审批命令。`CRM-FEATURE-030/035` 已聚合退款真源，但不伪造尚未实现的 OA 任务和费用真源。`CRM-FEATURE-033` 已完成真实 BPM 提交、驳回、修订、重提和通过验收。`CRM-FEATURE-034` 的新附件已受保护，历史公开附件仍需物理迁移。客户联系人归属、公海、垃圾池、公共线索和活动迁移分别由 `CRM-FEATURE-039`～`043` 关闭。

@@ -24,6 +24,7 @@ import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
 import com.meession.etm.module.crm.framework.permission.core.annotations.CrmPermission;
 import com.meession.etm.module.crm.framework.pool.CrmPoolPolicyProperties;
 import com.meession.etm.module.crm.framework.pool.CrmPoolTimeProvider;
+import com.meession.etm.module.crm.service.activity.CrmActivityService;
 import com.meession.etm.module.crm.service.contact.CrmContactService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
 import com.meession.etm.module.crm.service.customer.bo.CrmCustomerCreateReqBO;
@@ -81,6 +82,8 @@ public class CrmClueServiceImpl implements CrmClueService {
     private CrmPermissionService crmPermissionService;
     @Resource
     private CrmFollowUpRecordService followUpRecordService;
+    @Resource
+    private CrmActivityService activityService;
 
     @Resource
     private AdminUserApi adminUserApi;
@@ -259,7 +262,7 @@ public class CrmClueServiceImpl implements CrmClueService {
         // 2.1 遍历线索(未转化的线索)，创建对应的客户
         Long customerId = customerService.createCustomer(BeanUtils.toBean(clue, CrmCustomerCreateReqBO.class), userId);
         // 2.2 创建首联系人。失败时由外层事务回滚客户及转换状态
-        contactService.createContact(new CrmContactSaveReqVO()
+        Long primaryContactId = contactService.createContact(new CrmContactSaveReqVO()
                 .setName(reqVO.getContactName()).setMobile(reqVO.getContactMobile())
                 .setCustomerId(customerId).setOwnerUserId(userId)
                 .setTelephone(clue.getTelephone()).setWechat(clue.getWechat()).setEmail(clue.getEmail())
@@ -275,6 +278,10 @@ public class CrmClueServiceImpl implements CrmClueService {
                     BeanUtils.toBean(record, CrmFollowUpCreateReqBO.class)
                             .setBizType(CrmBizTypeEnum.CRM_CUSTOMER.getType()).setBizId(customerId)));
         }
+        // 2.5 任务、通话和短信改绑至客户，并保存唯一转换审计。该调用要求复用当前事务，
+        // 任一活动迁移失败都会回滚客户、首联系人、跟进复制及线索转换状态。
+        activityService.migrateClueActivities(clue.getId(), customerId, primaryContactId,
+                followUpRecords == null ? 0 : followUpRecords.size(), userId);
 
         // 3. 记录操作日志上下文
         LogRecordContext.putVariable("clueName", clue.getName());

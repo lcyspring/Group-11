@@ -7,6 +7,8 @@ import com.meession.etm.module.crm.controller.admin.contact.vo.CrmContactSaveReq
 import com.meession.etm.module.crm.dal.dataobject.clue.CrmClueDO;
 import com.meession.etm.module.crm.dal.mysql.clue.CrmClueMapper;
 import com.meession.etm.module.crm.enums.clue.CrmCluePoolStatusEnum;
+import com.meession.etm.module.crm.dal.dataobject.activity.CrmClueConversionRecordDO;
+import com.meession.etm.module.crm.service.activity.CrmActivityService;
 import com.meession.etm.module.crm.service.contact.CrmContactService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
 import com.meession.etm.module.crm.service.followup.CrmFollowUpRecordService;
@@ -80,6 +82,7 @@ class CrmClueServiceImplTest {
         AtomicBoolean claimed = new AtomicBoolean();
         AtomicReference<CrmClueDO> linkedClue = new AtomicReference<>();
         AtomicReference<CrmContactSaveReqVO> createdContact = new AtomicReference<>();
+        AtomicReference<Object[]> migrationArgs = new AtomicReference<>();
         ReflectionTestUtils.setField(service, "clueMapper", proxy(CrmClueMapper.class,
                 (proxy, method, args) -> switch (method.getName()) {
                     case "selectByIdForUpdate" -> clue();
@@ -113,11 +116,20 @@ class CrmClueServiceImplTest {
                 }));
         ReflectionTestUtils.setField(service, "followUpRecordService", proxy(CrmFollowUpRecordService.class,
                 (proxy, method, args) -> Collections.emptyList()));
+        ReflectionTestUtils.setField(service, "activityService", proxy(CrmActivityService.class,
+                (proxy, method, args) -> {
+                    if (!method.getName().equals("migrateClueActivities")) {
+                        throw new AssertionError("未预期的活动调用 " + method.getName());
+                    }
+                    calls.add("activity");
+                    migrationArgs.set(args);
+                    return new CrmClueConversionRecordDO();
+                }));
 
         service.transformClue(transformReq(), 1L);
 
         assertTrue(claimed.get());
-        assertEquals(List.of("claim", "customer", "contact", "link"), calls);
+        assertEquals(List.of("claim", "customer", "contact", "link", "activity"), calls);
         assertEquals("首联系人", createdContact.get().getName());
         assertEquals("13800138000", createdContact.get().getMobile());
         assertEquals(99L, createdContact.get().getCustomerId());
@@ -127,6 +139,11 @@ class CrmClueServiceImplTest {
         assertFalse(createdContact.get().getMaster());
         assertEquals(10L, linkedClue.get().getId());
         assertEquals(99L, linkedClue.get().getCustomerId());
+        assertEquals(10L, migrationArgs.get()[0]);
+        assertEquals(99L, migrationArgs.get()[1]);
+        assertEquals(88L, migrationArgs.get()[2]);
+        assertEquals(0, migrationArgs.get()[3]);
+        assertEquals(1L, migrationArgs.get()[4]);
     }
 
     @Test

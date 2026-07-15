@@ -67,6 +67,14 @@
           :biz-type="BizTypeEnum.CRM_CUSTOMER"
         />
       </el-tab-pane>
+      <el-tab-pane :label="t('activityTab')" lazy>
+        <CrmActivityPanel
+          v-if="customerId"
+          :biz-id="customerId"
+          :biz-type="BizTypeEnum.CRM_CUSTOMER"
+          :readonly="customer.poolStatus !== CustomerApi.CustomerPoolStatus.OWNED"
+        />
+      </el-tab-pane>
       <el-tab-pane :label="t('teamMemberTab')">
         <PermissionList
           ref="permissionListRef"
@@ -174,6 +182,7 @@ import WorkOrderList from '@/views/crm/workorder/components/WorkOrderList.vue'
 import CustomerInvoiceList from '@/views/crm/invoice/components/CustomerInvoiceList.vue'
 import CustomerRefundList from '@/views/crm/refund/components/CustomerRefundList.vue'
 import Customer360Summary from './Customer360Summary.vue'
+import CrmActivityPanel from '@/views/crm/activity/components/CrmActivityPanel.vue'
 import { checkPermi } from '@/utils/permission'
 
 defineOptions({ name: 'CrmCustomerDetail' })

@@ -6,8 +6,8 @@
 
 更新日期：2026-07-15
 
-- Ubuntu 26.04 容器 CRM 自动化：324/324，失败 0、错误 0、跳过 0。
-- CRM JaCoCo 基线：指令 45.26%、分支 43.34%、行 43.38%、方法 31.29%。
+- Ubuntu 26.04 容器 CRM 自动化：354/354，失败 0、错误 0、跳过 0。
+- CRM JaCoCo 基线：指令 47.23%、分支 44.00%、行 45.38%、方法 33.62%。
 - Ubuntu 26.04 Infra 文件专项：28/28；模块行覆盖率 8.16%。
 - Ubuntu 26.04 BPM 自动化：54 个，48 通过、6 跳过、失败 0；行覆盖率 8.58%。
 - Ubuntu 26.04 容器 CRM 前端纯函数：统计 7/7，发票 3/3。
@@ -64,10 +64,11 @@
 | `customer-public-pool-policy/` | 客户公海状态、保护、回收、领取额度/冷却、迁移和运行验收 |
 | `customer-garbage-lifecycle/` | 客户垃圾池管理员隔离、迁移、恢复、永久删除和引用保护 |
 | `clue-public-pool-lifecycle/` | 公共线索状态、迁移、领取/分配、额度、冷却、权限和容量并发保护 |
+| `clue-activity-migration/` | 任务、通话、短信状态轨迹、权限和线索转客户同事务迁移 |
 
 运行入口统一为：
 
 ```bash
 cd podman
-bash ./build-in-ubuntu.sh ./config/verify-crm-customer-360-refund-ubuntu-26.04.yaml
+bash ./build-in-ubuntu.sh ./config/test-crm-ubuntu-26.04.yaml
 ```
