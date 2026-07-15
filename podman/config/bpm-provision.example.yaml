@@ -1,0 +1,28 @@
+schema_version: 1
+
+endpoint:
+  base_url: http://127.0.0.1:8080/admin-api
+  tenant_id: 1
+
+account:
+  username: admin
+  password: CHANGE_ME
+
+approval:
+  role_code: crm_finance_approver
+  role_name: CRM 财务审批人
+  role_sort: 50
+  approver_username: admin
+  permission_codes: bpm:task:query,bpm:task:update,bpm:process-instance:query,crm:reimbursement:query
+
+category:
+  code: CRM_FINANCE
+  name: CRM 财务
+  sort: 50
+
+model:
+  key: crm-reimbursement-audit
+  name: CRM 报销审批
+  description: CRM 财务域报销审批；审批完成只确认 CRM 业务状态，不代表付款或会计入账。
+  form_create_path: /crm/reimbursement/index
+  form_view_path: /crm/reimbursement/index
