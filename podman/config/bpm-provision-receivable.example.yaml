@@ -1,0 +1,29 @@
+schema_version: 1
+
+endpoint:
+  base_url: http://127.0.0.1:8080/admin-api
+  tenant_id: 1
+
+account:
+  username: admin
+  password: CHANGE_ME
+
+approval:
+  role_code: crm_finance_approver
+  role_name: CRM 财务审批人
+  role_sort: 50
+  approver_username: admin
+  permission_codes: bpm:task:query,bpm:task:update,bpm:process-instance:query,crm:receivable:query
+
+category:
+  code: CRM_FINANCE
+  name: CRM 财务
+  sort: 50
+
+model:
+  key: crm-receivable-audit
+  name: CRM 回款审批
+  description: CRM 回款审批；审批通过确认 CRM 回款记录，不代表银行对账或会计入账完成。
+  form_create_path: /crm/receivable/index
+  form_view_path: /crm/receivable/index
+  approval_node_name: 回款审批

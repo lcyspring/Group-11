@@ -26,3 +26,4 @@ model:
   description: CRM 财务域报销审批；审批完成只确认 CRM 业务状态，不代表付款或会计入账。
   form_create_path: /crm/reimbursement/index
   form_view_path: /crm/reimbursement/index
+  approval_node_name: 财务审批

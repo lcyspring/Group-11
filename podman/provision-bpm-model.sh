@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Provision the CRM reimbursement approval model through the managed BPM APIs.
+# Provision one governed CRM approval model through the managed BPM APIs.
 # The only command-line argument is an explicit YAML configuration path.
 
 set -Eeuo pipefail
@@ -41,6 +41,7 @@ MODEL_NAME="$(yaml_require model.name)"
 MODEL_DESCRIPTION="$(yaml_require model.description)"
 FORM_CREATE_PATH="$(yaml_require model.form_create_path)"
 FORM_VIEW_PATH="$(yaml_require model.form_view_path)"
+APPROVAL_NODE_NAME="$(yaml_require model.approval_node_name)"
 
 [[ "$BASE_URL" =~ ^https?://[^[:space:]]+$ ]] || {
     printf 'endpoint.base_url must be an HTTP(S) URL.\n' >&2
@@ -96,7 +97,7 @@ roles="$(api GET '/system/role/simple-list')"
 role_id="$(jq -r --arg code "$ROLE_CODE" '.data[] | select(.code == $code) | .id' <<< "$roles" | head -n 1)"
 if [[ -z "$role_id" ]]; then
     role_payload="$(jq -n --arg name "$ROLE_NAME" --arg code "$ROLE_CODE" --argjson sort "$ROLE_SORT" \
-        '{name:$name,code:$code,sort:$sort,status:0,remark:"CRM reimbursement approval candidate role"}')"
+        '{name:$name,code:$code,sort:$sort,status:0,remark:"Governed CRM approval candidate role"}')"
     role_response="$(api POST '/system/role/create' "$role_payload")"
     role_id="$(jq -r '.data' <<< "$role_response")"
     printf 'Created approval role %s (%s).\n' "$ROLE_CODE" "$role_id"
@@ -155,7 +156,7 @@ merged_menu_ids="$(jq -cn --argjson current "$all_menu_ids" --argjson required "
 if [[ "$merged_menu_ids" != "$(jq -c 'sort' <<< "$all_menu_ids")" ]]; then
     menu_payload="$(jq -n --argjson roleId "$role_id" --argjson menuIds "$merged_menu_ids" '{roleId:$roleId,menuIds:$menuIds}')"
     api POST '/system/permission/assign-role-menu' "$menu_payload" >/dev/null
-    printf 'Assigned required BPM and reimbursement permissions to role %s.\n' "$ROLE_CODE"
+    printf 'Assigned required BPM and CRM object permissions to role %s.\n' "$ROLE_CODE"
 else
     printf 'Approval role %s already has the required permissions.\n' "$ROLE_CODE"
 fi
@@ -170,11 +171,11 @@ else
     printf 'Reusing BPM category %s.\n' "$CATEGORY_CODE"
 fi
 
-simple_model="$(jq -n --arg roleId "$role_id" '
+simple_model="$(jq -n --arg roleId "$role_id" --arg roleName "$ROLE_NAME" --arg nodeName "$APPROVAL_NODE_NAME" '
   {
     id:"StartUserNode",type:10,name:"发起人",showText:"全体成员",
     childNode:{
-      id:"Activity_CrmFinanceApproval",type:11,name:"财务审批",showText:"角色：CRM 财务审批人",
+      id:"Activity_GovernedApproval",type:11,name:$nodeName,showText:("角色：" + $roleName),
       candidateStrategy:10,candidateParam:$roleId,approveType:1,approveMethod:4,
       signEnable:false,reasonRequire:true,
       rejectHandler:{type:1},timeoutHandler:{enable:false},assignEmptyHandler:{type:4},

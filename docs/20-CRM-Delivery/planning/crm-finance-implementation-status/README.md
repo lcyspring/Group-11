@@ -8,11 +8,11 @@
 |---|---|---|---|
 | 财务表结构：回款 | 已有并已完善 | `crm_receivable`、`crm_receivable_plan` | 会计入账/外部对账不在 CRM MVP |
 | 财务表结构：发票 | 子闭环完成 | `crm_invoice`、`crm_invoice_action_record`、CHECK/唯一键/索引 | 税务平台与会计总账不在 CRM 台账边界 |
-| 财务表结构：报销 | 已完成并完成运行迁移 | `crm_expense_category`、`crm_reimbursement`、`crm_reimbursement_item`、`crm_reimbursement_action_record` | 前端入口和真实审批流程定义仍需补齐 |
+| 财务表结构：报销 | 运行闭环完成 | `crm_expense_category`、`crm_reimbursement`、`crm_reimbursement_item`、`crm_reimbursement_action_record` | 银行付款/会计入账不在 CRM MVP |
 | 财务表结构：退款 | 子闭环完成 | `crm_receivable_refund`、`crm_receivable_refund_action_record`、CHECK/唯一键/索引 | 真实 BPM 流程部署和银行/总账适配不在当前运行证据内 |
 | 回款 CRUD 接口 | 子闭环完成 | 两个 Controller、Service、Mapper、前端页面和专项测试 | 银行到账、会计入账与核销不宣称完成 |
 | 发票管理接口 | 子闭环完成 | Controller、Service、Provider、前端、迁移和专项测试 | 外部税务平台适配按需另行实施 |
-| 报销管理接口 | 后端 CRUD 子闭环完成 | 分类、主单、明细、动作轨迹、权限、金额汇总、BPM 接口和 10 个专项测试 | 管理端页面；运行环境尚无 `crm-reimbursement-audit` 流程定义 |
+| 报销管理接口 | 运行闭环完成 | 分类、主单、明细、动作轨迹、权限、金额汇总、管理端和受治理 BPM 定义 | 银行付款/会计入账不在 CRM MVP |
 
 ## 回款已完成边界
 
@@ -38,7 +38,7 @@
 - 原回款、客户、合同、负责人快照及不可变动作轨迹；
 - 审批中与已通过金额共同占用额度，原回款锁内并发复核；
 - 对象权限、字段篡改保护、幂等 BPM 回调和管理端完整入口；
-- 单元、构建和创建/删除/超额拒绝运行验收已经通过；真实审批链等待流程定义部署。
+- 单元、构建、创建/删除/超额拒绝和驳回修订重提审批运行验收已经通过。
 
 ## 报销已完成边界
 
@@ -47,8 +47,8 @@
 - 申请人和部门快照、客户/合同可选关联及一致性校验；
 - 总额由后端精确汇总，禁用分类、越界日期、非正金额和超限金额均拒绝；
 - 草稿、驳回、取消修订规则，对象权限、乐观锁和幂等/乱序回调已实现；
-- 迁移重复执行、Ubuntu 26.04 编译、CRM 264/264 和真实草稿 CRUD 已通过；
-- 当前 Flowable 数据库没有任何已部署流程定义，因此不能把“提交审批”标记为运行验收通过。
+- 迁移重复执行、Ubuntu 26.04 编译、CRM 264/264、真实草稿 CRUD 和管理端构建已通过；
+- `crm-reimbursement-audit` 已由显式 YAML 治理，提交、待办、通过、驳回、取消和修订重提均通过真实验收。
 
 ## 不得混淆
 
