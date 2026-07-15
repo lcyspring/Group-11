@@ -90,6 +90,7 @@
       <el-tab-pane :label="t('crm.customer.myResponsible')" name="1" />
       <el-tab-pane :label="t('crm.customer.myInvolved')" name="2" />
       <el-tab-pane :label="t('crm.customer.subordinateResponsible')" name="3" />
+      <el-tab-pane :label="t('crm.customer.organizationScope')" name="4" />
     </el-tabs>
     <el-table
       v-loading="loading"

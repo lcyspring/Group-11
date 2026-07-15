@@ -9,6 +9,8 @@ import com.meession.etm.module.crm.dal.mysql.clue.CrmClueMapper;
 import com.meession.etm.module.crm.dal.mysql.permission.CrmPermissionMapper;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
+import com.meession.etm.module.crm.framework.permission.CrmAuthorizationProperties;
+import com.meession.etm.module.crm.framework.permission.CrmAuthorizationService;
 import com.meession.etm.module.system.api.user.AdminUserApi;
 import com.meession.etm.module.system.api.user.dto.AdminUserRespDTO;
 import org.junit.jupiter.api.Test;
@@ -75,21 +77,25 @@ class CrmPermissionServiceImplTest {
     }
 
     @Test
-    void exportAllowsSubordinateOwnerButRejectsUnscopedObject() {
+    void exportRejectsSubordinateOwnerWithoutDirectWriteGrant() {
         CrmPermissionServiceImpl service = exportService(List.of(new CrmPermissionDO().setBizId(10L)
                 .setUserId(3L).setLevel(CrmPermissionLevelEnum.OWNER.getLevel())),
                 List.of(new AdminUserRespDTO().setId(3L)));
 
-        service.validateExportPermission(CrmBizTypeEnum.CRM_CUSTOMER.getType(), List.of(10L), 2L);
         assertServiceException(() -> service.validateExportPermission(
-                CrmBizTypeEnum.CRM_CUSTOMER.getType(), List.of(10L, 11L), 2L), CRM_EXPORT_PERMISSION_DENIED, "客户");
+                CrmBizTypeEnum.CRM_CUSTOMER.getType(), List.of(10L), 2L), CRM_EXPORT_PERMISSION_DENIED, "客户");
     }
 
     private static CrmPermissionServiceImpl exportService(List<CrmPermissionDO> permissions,
                                                           List<AdminUserRespDTO> subordinates) {
         CrmPermissionServiceImpl service = new CrmPermissionServiceImpl();
-        ReflectionTestUtils.setField(service, "permissionCommonApi", proxy(PermissionCommonApi.class,
+        CrmAuthorizationService authorizationService = new CrmAuthorizationService();
+        CrmAuthorizationProperties properties = new CrmAuthorizationProperties();
+        properties.setAdminRoleCodes(List.of("crm_admin"));
+        ReflectionTestUtils.setField(authorizationService, "properties", properties);
+        ReflectionTestUtils.setField(authorizationService, "permissionCommonApi", proxy(PermissionCommonApi.class,
                 (proxy, method, args) -> false));
+        ReflectionTestUtils.setField(service, "crmAuthorizationService", authorizationService);
         ReflectionTestUtils.setField(service, "adminUserApi", proxy(AdminUserApi.class,
                 (proxy, method, args) -> method.getName().equals("getUserListBySubordinate")
                         ? subordinates : null));

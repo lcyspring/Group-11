@@ -44,6 +44,7 @@
       <el-tab-pane :label="t('customer.myResponsible')" :name="1" />
       <el-tab-pane :label="t('customer.myInvolved')" :name="2" />
       <el-tab-pane :label="t('customer.subordinateResponsible')" :name="3" />
+      <el-tab-pane :label="t('customer.organizationScope')" :name="4" />
     </el-tabs>
     <el-table v-loading="loading" :data="list" stripe>
       <el-table-column fixed="left" :label="t('refund.no')" min-width="170" prop="no">

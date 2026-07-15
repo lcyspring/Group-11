@@ -180,6 +180,7 @@
       <el-tab-pane :label="t('myResponsible')" name="1" />
       <el-tab-pane :label="t('myInvolved')" name="2" />
       <el-tab-pane :label="t('subordinateResponsible')" name="3" />
+      <el-tab-pane :label="t('organizationScope')" name="4" />
     </el-tabs>
     <el-table v-loading="loading" :data="list" :show-overflow-tooltip="true" :stripe="true" :table-layout="'auto'">
       <el-table-column align="center" fixed="left" :label="t('name')" prop="name" min-width="160">

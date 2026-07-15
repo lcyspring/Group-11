@@ -262,6 +262,9 @@ mitedtsm:
     file-security:
       protected-path-prefixes: [crm-protected/]
   crm:
+    authorization:
+      # 唯一的 CRM 管理员绕过角色；普通角色仍由功能权限字符和数据范围共同授权。
+      admin-role-codes: [crm_admin]
     security:
       protected-file-directory: crm-protected/contract
     receivable-refund:

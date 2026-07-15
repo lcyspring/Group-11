@@ -1,7 +1,6 @@
 package com.meession.etm.module.crm.framework.permission.core.aop;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
 import com.meession.etm.framework.common.util.spring.SpringExpressionUtils;
 import com.meession.etm.framework.web.core.util.WebFrameworkUtils;
@@ -10,9 +9,7 @@ import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
 import com.meession.etm.module.crm.framework.permission.core.annotations.CrmPermission;
 import com.meession.etm.module.crm.service.permission.CrmPermissionService;
-import com.meession.etm.module.crm.util.CrmPermissionUtils;
-import com.meession.etm.module.system.api.user.AdminUserApi;
-import com.meession.etm.module.system.api.user.dto.AdminUserRespDTO;
+import com.meession.etm.module.crm.framework.permission.CrmAuthorizationService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
@@ -41,7 +38,7 @@ public class CrmPermissionAspect {
     private CrmPermissionService crmPermissionService;
 
     @Resource
-    private AdminUserApi adminUserApi;
+    private CrmAuthorizationService crmAuthorizationService;
 
     @Before("@annotation(crmPermission)")
     public void doBefore(JoinPoint joinPoint, CrmPermission crmPermission) {
@@ -67,7 +64,8 @@ public class CrmPermissionAspect {
 
     private void validatePermission(Integer bizType, List<CrmPermissionDO> bizPermissions, Integer permissionLevel) {
         // 1. 如果是超级管理员则直接通过
-        if (CrmPermissionUtils.isCrmAdmin()) {
+        Long userId = getUserId();
+        if (crmAuthorizationService.isCrmAdmin(userId)) {
             return;
         }
         // 特殊：没有数据权限的情况，针对 READ 的特殊处理
@@ -86,57 +84,14 @@ public class CrmPermissionAspect {
         }
 
         // 2. 只考虑自的身权限
-        Long userId = getUserId();
-        CrmPermissionDO userPermission = CollUtil.findOne(bizPermissions, permission -> ObjUtil.equal(permission.getUserId(), userId));
-        if (userPermission != null) {
-            if (isUserPermissionValid(userPermission, permissionLevel)) {
-                return;
-            }
+        if (crmAuthorizationService.isGranted(bizPermissions, userId, permissionLevel)) {
+            return;
         }
 
-        // 3. 考虑下级的权限
-        List<AdminUserRespDTO> subordinateUserIds = adminUserApi.getUserListBySubordinate(userId);
-        for (Long subordinateUserId : convertSet(subordinateUserIds, AdminUserRespDTO::getId)) {
-            CrmPermissionDO subordinatePermission = CollUtil.findOne(bizPermissions,
-                    permission -> ObjUtil.equal(permission.getUserId(), subordinateUserId));
-            if (subordinatePermission != null && isUserPermissionValid(subordinatePermission, permissionLevel)) {
-                return;
-            }
-        }
-
-        // 4. 没有权限，抛出异常
+        // 3. 没有权限，抛出异常
         log.info("[doBefore][userId({}) 要求权限({}) 实际权限({}) 数据校验错误]", // 打个 info 日志，方便后续排查问题、审计
-                userId, permissionLevel, toJsonString(userPermission));
+                userId, permissionLevel, toJsonString(bizPermissions));
         throw exception(CRM_PERMISSION_DENIED, CrmBizTypeEnum.getNameByType(bizType));
-    }
-
-    /**
-     * 校验用户权限是否有效
-     *
-     * @param userPermission   用户拥有的权限
-     * @param permissionLevel  需要的权限级别
-     * @return 是否有效
-     */
-    @SuppressWarnings("RedundantIfStatement")
-    private boolean isUserPermissionValid(CrmPermissionDO userPermission, Integer permissionLevel) {
-        // 2.1 情况一：如果自己是负责人，则默认有所有权限
-        if (CrmPermissionLevelEnum.isOwner(userPermission.getLevel())) {
-            return true;
-        }
-        // 2.2 情况二：校验自己是否有读权限
-        if (CrmPermissionLevelEnum.isRead(permissionLevel)) {
-            if (CrmPermissionLevelEnum.isRead(userPermission.getLevel()) // 校验当前用户是否有读权限
-                    || CrmPermissionLevelEnum.isWrite(userPermission.getLevel())) { // 校验当前用户是否有写权限
-                return true;
-            }
-        }
-        // 2.3 情况三：校验自己是否有写权限
-        if (CrmPermissionLevelEnum.isWrite(permissionLevel)) {
-            if (CrmPermissionLevelEnum.isWrite(userPermission.getLevel())) { // 校验当前用户是否有写权限
-                return true;
-            }
-        }
-        return false;
     }
 
     /**

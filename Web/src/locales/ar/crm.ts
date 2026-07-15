@@ -102,6 +102,7 @@ export default {
     myResponsible: 'مسؤوليتي',
     myInvolved: 'مشاركاتي',
     subordinateResponsible: 'مسؤولية التابعين',
+    organizationScope: 'نطاق المؤسسة',
     // Detail page
     edit: 'تعديل',
     transfer: 'تحويل',

@@ -104,6 +104,7 @@ export default {
     myResponsible: 'My Responsible',
     myInvolved: 'My Involved',
     subordinateResponsible: 'Subordinate Responsible',
+    organizationScope: 'Organization Scope',
     // Detail page
     edit: 'Edit',
     transfer: 'Transfer',

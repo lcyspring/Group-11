@@ -84,6 +84,7 @@
       <el-tab-pane :label="t('customer.myResponsible')" name="1" />
       <el-tab-pane :label="t('customer.myInvolved')" name="2" />
       <el-tab-pane :label="t('customer.subordinateResponsible')" name="3" />
+      <el-tab-pane :label="t('customer.organizationScope')" name="4" />
     </el-tabs>
     <el-table v-loading="loading" :data="list" :stripe="true" :show-overflow-tooltip="true" :table-layout="'auto'">
       <el-table-column :label="t('clue.name')" align="center" prop="name" fixed="left" min-width="160">

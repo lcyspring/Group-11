@@ -16,6 +16,12 @@
     </el-form>
   </ContentWrap>
   <ContentWrap>
+    <el-tabs v-model="sceneType" @tab-change="query">
+      <el-tab-pane :label="t('customer.myResponsible')" :name="1" />
+      <el-tab-pane :label="t('customer.myInvolved')" :name="2" />
+      <el-tab-pane :label="t('customer.subordinateResponsible')" :name="3" />
+      <el-tab-pane :label="t('customer.organizationScope')" :name="4" />
+    </el-tabs>
     <el-table v-loading="loading" :data="list" stripe>
       <el-table-column :label="t('invoice.applicationNo')" prop="no" min-width="170"><template #default="{ row }"><el-link type="primary" :underline="false" @click="detailRef.open(row.id)">{{ row.no }}</el-link></template></el-table-column>
       <el-table-column :label="t('invoice.invoiceNo')" prop="invoiceNo" min-width="150" show-overflow-tooltip />
@@ -63,6 +69,7 @@ const { t } = useI18n('crm'); const message = useMessage()
 const loading = ref(false); const exportLoading = ref(false); const list = ref<InvoiceApi.InvoiceVO[]>([]); const total = ref(0)
 const formRef = ref(); const issueRef = ref(); const redRef = ref(); const voidRef = ref(); const detailRef = ref(); const queryFormRef = ref()
 const customers = ref<CustomerApi.CustomerVO[]>([])
+const sceneType = ref(1)
 const queryParams = reactive({ pageNo: 1, pageSize: 10, no: '', invoiceNo: '', customerId: undefined as number | undefined,
   status: undefined as number | undefined, type: undefined as number | undefined, direction: undefined as number | undefined,
   invoiceDate: undefined as string[] | undefined })
@@ -74,7 +81,7 @@ const statusOptions = computed(() => [
 const statusLabel = (value: number) => statusOptions.value.find(item => item.value === value)?.label || value
 const statusTag = (value: number) => ({ 0: 'info', 10: 'success', 20: 'warning', 30: 'danger', 40: 'info' } as Record<number, any>)[value]
 const money = (value: number) => Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })
-const getList = async () => { loading.value = true; try { const data = await InvoiceApi.getInvoicePage(queryParams); list.value = data.list; total.value = data.total } finally { loading.value = false } }
+const getList = async () => { loading.value = true; try { const data = await InvoiceApi.getInvoicePage({ ...queryParams, sceneType: sceneType.value }); list.value = data.list; total.value = data.total } finally { loading.value = false } }
 const query = () => { queryParams.pageNo = 1; getList() }
 const reset = () => { queryFormRef.value?.resetFields(); Object.assign(queryParams, { pageNo: 1, no: '', invoiceNo: '', customerId: undefined, status: undefined, type: undefined, direction: undefined, invoiceDate: undefined }); getList() }
 const remove = async (row: InvoiceApi.InvoiceVO) => { await message.delConfirm(); await InvoiceApi.deleteInvoice(row.id!); message.success(t('common.delSuccess')); getList() }

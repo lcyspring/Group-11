@@ -2,21 +2,18 @@ package com.meession.etm.module.crm.util;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.extra.spring.SpringUtil;
-import com.meession.etm.framework.common.biz.system.permission.PermissionCommonApi;
 import com.meession.etm.module.crm.dal.dataobject.permission.CrmPermissionDO;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.enums.common.CrmSceneTypeEnum;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
-import com.meession.etm.module.system.api.user.AdminUserApi;
-import com.meession.etm.module.system.api.user.dto.AdminUserRespDTO;
-import com.meession.etm.module.system.enums.permission.RoleCodeEnum;
+import com.meession.etm.module.crm.framework.permission.CrmAuthorizationService;
+import com.meession.etm.module.crm.framework.permission.CrmOwnerReadScope;
 import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.github.yulichang.autoconfigure.MybatisPlusJoinProperties;
 import com.github.yulichang.wrapper.MPJLambdaWrapper;
 
-import java.util.List;
+import java.util.Set;
 
-import static com.meession.etm.framework.common.util.collection.CollectionUtils.convertSet;
 import static com.meession.etm.framework.security.core.util.SecurityFrameworkUtils.getLoginUserId;
 
 /**
@@ -32,8 +29,7 @@ public class CrmPermissionUtils {
      * @return 是/否
      */
     public static boolean isCrmAdmin() {
-        PermissionCommonApi permissionApi = SpringUtil.getBean(PermissionCommonApi.class);
-        return permissionApi.hasAnyRoles(getLoginUserId(), RoleCodeEnum.CRM_ADMIN.getCode());
+        return authorizationService().isCrmAdmin(getLoginUserId());
     }
 
     /**
@@ -62,7 +58,7 @@ public class CrmPermissionUtils {
         }
         // 场景二：我参与的数据（我有读或写权限，并且不是负责人）
         if (CrmSceneTypeEnum.isInvolved(sceneType)) {
-            if (CrmPermissionUtils.isCrmAdmin()) { // 特殊逻辑：如果是超管，直接查询所有，不过滤数据权限
+            if (CrmPermissionUtils.isCrmAdmin()) {
                 return;
             }
             query.innerJoin(CrmPermissionDO.class, on -> on.eq(CrmPermissionDO::getBizType, bizType)
@@ -73,14 +69,29 @@ public class CrmPermissionUtils {
         }
         // 场景三：下属负责的数据（下属是负责人）
         if (CrmSceneTypeEnum.isSubordinate(sceneType)) {
-            AdminUserApi adminUserApi = SpringUtil.getBean(AdminUserApi.class);
-            List<AdminUserRespDTO> subordinateUsers = adminUserApi.getUserListBySubordinate(userId);
-            if (CollUtil.isEmpty(subordinateUsers)) {
+            Set<Long> subordinateOwnerUserIds = authorizationService().resolveReadableSubordinateOwnerUserIds(userId);
+            if (CollUtil.isEmpty(subordinateOwnerUserIds)) {
                 query.eq(ownerUserIdField, -1); // 不返回任何结果
             } else {
-                query.in(ownerUserIdField, convertSet(subordinateUsers, AdminUserRespDTO::getId));
+                query.in(ownerUserIdField, subordinateOwnerUserIds);
             }
         }
+        // 场景四：组织数据范围。组织范围只授予读取，不会被写、删除、转移和导出复用。
+        if (CrmSceneTypeEnum.isOrganization(sceneType)) {
+            CrmOwnerReadScope scope = authorizationService().resolveOwnerReadScope(userId);
+            if (scope.all()) {
+                return;
+            }
+            if (CollUtil.isEmpty(scope.ownerUserIds())) {
+                query.eq(ownerUserIdField, -1);
+            } else {
+                query.in(ownerUserIdField, scope.ownerUserIds());
+            }
+        }
+    }
+
+    private static CrmAuthorizationService authorizationService() {
+        return SpringUtil.getBean(CrmAuthorizationService.class);
     }
 
     static Integer resolveDefaultSceneType(boolean sceneProvided, boolean crmAdmin) {

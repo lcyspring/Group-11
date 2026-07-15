@@ -39,7 +39,7 @@
 | CRM-IAM-BUG-002 | GAP-IAM-003 | P0/安全 | 通用分页省略场景时未追加任何对象范围；普通用户缺省收敛为 OWNER，管理员保留全量，需跨视图时显式合并 | 权限回归 3/3、退款 8/8、CRM 224/224 | 代码关闭/待多角色运行补证 |
 | PODMAN-MIGRATION-BUG-008 | 部署一致性 | P1 | 初始化及兼容迁移 MySQL CLI 未指定 utf8mb4，新增中文被双重编码；统一客户端字符集并按稳定键幂等修复菜单、字典、通知和三语记录 | 6000+ 菜单双重编码特征 0；CRM 224/224；Ubuntu Server/Web build | 已关闭 |
 | CRM-REFUND-FE-BUG-001 | GAP-FIN-001 | P1 | 退款表单把可选回款固定截断为两个场景各 100 条；改为回款编号远程检索、两场景去重并补入当前选中项 | 退款 ESLint 零警告、Ubuntu Web build | 已关闭 |
-| CRM-IAM-BUG-003 | GAP-IAM-003、GAP-SEC-003 | P0/安全 | 列表 READ 权限被直接复用于批量导出；八类对象统一要求管理员或当前用户/下属 OWNER、WRITE，READ-only 和无范围整批拒绝 | 导出权限 3/3、CRM 231/231 | 已关闭 |
+| CRM-IAM-BUG-003 | GAP-IAM-003、GAP-SEC-003 | P0/安全 | 列表 READ 权限被直接复用于批量导出；八类对象统一要求管理员或当前用户直接 OWNER/WRITE，READ-only、组织范围、下属 OWNER 和无范围整批拒绝 | 导出权限 3/3、CRM 239/239 | 已关闭 |
 | CRM-EXPORT-BUG-001 | 导出完整性 | P1 | 联系人把无分页常量误写为页码，合同未取消分页；统一设置 `pageSize=PAGE_SIZE_NONE` 后再执行对象权限校验 | CRM 231/231、Ubuntu Server build | 已关闭 |
 | CRM-FILE-BUG-001 | GAP-IAM-003、GAP-SEC-003 | P0/安全 | 合同生命周期暴露匿名文件 URL 且信任客户端元数据；改为受管保护目录、对象授权上传/下载、附件归属检查及公共路由 404 | 合同 11/11、Infra 28/28、专项 ESLint | 已关闭/历史文件待迁移 |
 | CRM-FILE-BUG-002 | GAP-IAM-003、GAP-SEC-003 | P0/安全 | 公共合同保护目录允许获知临时 URL 后跨合同绑定；按合同 ID 派生专属目录并在绑定时复核 | 合同 11/11；运行跨合同绑定返回 `1020000024` | 已关闭 |
@@ -47,6 +47,9 @@
 | PODMAN-BUILD-BUG-008 | 构建证据 | P1 | 缓存镜像内置旧入口，静默忽略新增 Infra 测试开关；容器改为执行仓库当前入口，镜像只承载 Ubuntu 工具链 | 未重建镜像仍执行 Infra 28/28 并产出 JaCoCo | 已关闭 |
 | CRM-CUSTOMER-360-BUG-002 | GAP-CUS-003、GAP-FIN-001/002、GAP-RPT-002 | P0/财务 | 客户 360 未冲减已审批退款/冲销，错误高估有效回款；新增毛回款、已退款/冲销、净回款并按净额计算待回款 | Service 3/3、Mapper 1/1、CRM 232/232、Web build | 已关闭 |
 | CRM-DATA-BUG-003 | 历史数据一致性 | P1 | 1 条审批通过回款引用已删除客户或合同；新链路已有校验，历史记录缺少权威新归属，不擅自删除或重绑 | 有效对象联查孤儿计数 1 | 待数据治理 |
+| CRM-IAM-BUG-001 | GAP-IAM-003、ADR-013 | P0/权限 | CRM `owner_user_id` 未接入系统角色部门范围；新增统一授权服务，把 ALL/CUSTOM/DEPT/DEPT_AND_CHILD/SELF 转为只读负责人范围 | 授权专项 7/7、CRM 239/239 | 已关闭 |
+| CRM-IAM-BUG-004 | GAP-IAM-003、ADR-012/013 | P0/安全 | 旧切面和导出把下属对象权限隐式提升给上级；下属视图改为组织范围交集，写与导出只认当前用户直接 WRITE/OWNER | 导出负向、授权专项、CRM 239/239 | 已关闭 |
+| CRM-INVOICE-UI-BUG-001 | GAP-FIN-004、GAP-IAM-003 | P1 | 发票后端支持 `sceneType`，前端未提交导致财务角色固定本人范围；补四类归属 Tab 和三语标签 | 专项 ESLint、Web build | 已关闭 |
 
 ## 边界说明
 

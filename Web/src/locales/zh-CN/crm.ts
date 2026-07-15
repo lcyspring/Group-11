@@ -102,6 +102,7 @@ export default {
     myResponsible: '我负责的',
     myInvolved: '我参与的',
     subordinateResponsible: '下属负责的',
+    organizationScope: '组织范围',
     // 详情页
     edit: '编辑',
     transfer: '转移',
