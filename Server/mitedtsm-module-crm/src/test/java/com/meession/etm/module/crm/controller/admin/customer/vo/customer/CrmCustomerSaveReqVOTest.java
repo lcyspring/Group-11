@@ -29,4 +29,23 @@ class CrmCustomerSaveReqVOTest {
                 validator.validate(reqVO).iterator().next().getMessage());
     }
 
+    @Test
+    void customerLevelAcceptsPrototypeGoldAndVipValues() {
+        CrmCustomerSaveReqVO gold = new CrmCustomerSaveReqVO().setName("金牌客户")
+                .setOwnerUserId(1L).setLevel(4);
+        CrmCustomerSaveReqVO vip = new CrmCustomerSaveReqVO().setName("VIP 客户")
+                .setOwnerUserId(1L).setLevel(5);
+
+        assertEquals(0, validator.validate(gold).size());
+        assertEquals(0, validator.validate(vip).size());
+    }
+
+    @Test
+    void customerLevelRejectsValueOutsideFiveLevelModel() {
+        CrmCustomerSaveReqVO invalid = new CrmCustomerSaveReqVO().setName("越界客户")
+                .setOwnerUserId(1L).setLevel(6);
+
+        assertEquals(1, validator.validate(invalid).size());
+    }
+
 }

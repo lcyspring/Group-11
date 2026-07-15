@@ -18,6 +18,12 @@ public class CrmCustomerOwnerRecordRespVO {
     @Schema(description = "变更类型：1 进入公海，2 领取或分配，3 初始分配，4 转移", requiredMode = Schema.RequiredMode.REQUIRED)
     private Integer type;
 
+    @Schema(description = "事件来源编码")
+    private String source;
+
+    @Schema(description = "事件原因")
+    private String reason;
+
     @Schema(description = "变更前负责人编号", example = "100")
     private Long previousOwnerUserId;
 

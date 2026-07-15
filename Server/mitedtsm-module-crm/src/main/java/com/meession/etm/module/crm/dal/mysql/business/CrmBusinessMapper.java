@@ -18,6 +18,9 @@ import org.apache.ibatis.annotations.Mapper;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
+
+import static com.meession.etm.framework.common.util.collection.CollectionUtils.convertSet;
 
 /**
  * 商机 Mapper
@@ -87,6 +90,23 @@ public interface CrmBusinessMapper extends BaseMapperX<CrmBusinessDO> {
         return selectList(new LambdaQueryWrapperX<CrmBusinessDO>()
                 .eq(CrmBusinessDO::getCustomerId, customerId)
                 .eq(CrmBusinessDO::getOwnerUserId, ownerUserId));
+    }
+
+    default Set<Long> selectActiveCustomerIds(Collection<Long> customerIds) {
+        if (customerIds == null || customerIds.isEmpty()) {
+            return Set.of();
+        }
+        return convertSet(selectList(new LambdaQueryWrapperX<CrmBusinessDO>()
+                .select(CrmBusinessDO::getCustomerId)
+                .in(CrmBusinessDO::getCustomerId, customerIds)
+                .isNull(CrmBusinessDO::getEndStatus)
+                .groupBy(CrmBusinessDO::getCustomerId)), CrmBusinessDO::getCustomerId);
+    }
+
+    default boolean existsActiveByCustomerId(Long customerId) {
+        return selectCount(new LambdaQueryWrapperX<CrmBusinessDO>()
+                .eq(CrmBusinessDO::getCustomerId, customerId)
+                .isNull(CrmBusinessDO::getEndStatus)) > 0;
     }
 
     default PageResult<CrmBusinessDO> selectPage(CrmStatisticsFunnelReqVO pageVO) {

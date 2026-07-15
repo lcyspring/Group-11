@@ -16,6 +16,7 @@ import com.meession.etm.module.crm.dal.dataobject.permission.CrmPermissionDO;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.enums.common.CrmSceneTypeEnum;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
+import com.meession.etm.module.crm.enums.customer.CrmCustomerPoolStatusEnum;
 import com.meession.etm.module.crm.util.CrmPermissionUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -70,6 +71,35 @@ public interface CrmCustomerMapper extends BaseMapperX<CrmCustomerDO> {
                 .set(CrmCustomerDO::getOwnerUserId, ownerUserId));
     }
 
+    default int updateToPublicPool(Long id, Long previousOwnerUserId, LocalDateTime poolEntryTime,
+                                   String poolReason) {
+        return update(new LambdaUpdateWrapper<CrmCustomerDO>()
+                .eq(CrmCustomerDO::getId, id)
+                .eq(CrmCustomerDO::getPoolStatus, CrmCustomerPoolStatusEnum.OWNED.getStatus())
+                .isNotNull(CrmCustomerDO::getOwnerUserId)
+                .set(CrmCustomerDO::getOwnerUserId, null)
+                .set(CrmCustomerDO::getPoolStatus, CrmCustomerPoolStatusEnum.PUBLIC.getStatus())
+                .set(CrmCustomerDO::getPoolEntryTime, poolEntryTime)
+                .set(CrmCustomerDO::getPoolPreviousOwnerUserId, previousOwnerUserId)
+                .set(CrmCustomerDO::getPoolReason, poolReason)
+                .set(CrmCustomerDO::getGarbageTime, null)
+                .set(CrmCustomerDO::getGarbageReason, null)
+                .setSql("pool_cycle_count = pool_cycle_count + 1"));
+    }
+
+    default int updateClaimedFromPublicPool(Long id, Long ownerUserId, LocalDateTime ownerTime) {
+        return update(new LambdaUpdateWrapper<CrmCustomerDO>()
+                .eq(CrmCustomerDO::getId, id)
+                .eq(CrmCustomerDO::getPoolStatus, CrmCustomerPoolStatusEnum.PUBLIC.getStatus())
+                .isNull(CrmCustomerDO::getOwnerUserId)
+                .set(CrmCustomerDO::getOwnerUserId, ownerUserId)
+                .set(CrmCustomerDO::getOwnerTime, ownerTime)
+                .set(CrmCustomerDO::getPoolStatus, CrmCustomerPoolStatusEnum.OWNED.getStatus())
+                .set(CrmCustomerDO::getPoolEntryTime, null)
+                .set(CrmCustomerDO::getPoolPreviousOwnerUserId, null)
+                .set(CrmCustomerDO::getPoolReason, null));
+    }
+
     /**
      * 显式更新上级客户编号。不能依赖 updateById，因为 MyBatis 默认会忽略 null，导致无法解除父关系。
      */
@@ -83,8 +113,12 @@ public interface CrmCustomerMapper extends BaseMapperX<CrmCustomerDO> {
         MPJLambdaWrapperX<CrmCustomerDO> query = new MPJLambdaWrapperX<>();
         // 拼接数据权限的查询条件
         if (Boolean.TRUE.equals(pageReqVO.getPool())) {
-            query.isNull(CrmCustomerDO::getOwnerUserId);
+            query.eq(CrmCustomerDO::getPoolStatus, CrmCustomerPoolStatusEnum.PUBLIC.getStatus())
+                    .isNull(CrmCustomerDO::getOwnerUserId)
+                    .orderByDesc(CrmCustomerDO::getPoolEntryTime)
+                    .orderByDesc(CrmCustomerDO::getId);
         } else {
+            query.eq(CrmCustomerDO::getPoolStatus, CrmCustomerPoolStatusEnum.OWNED.getStatus());
             CrmPermissionUtils.appendPermissionCondition(query, CrmBizTypeEnum.CRM_CUSTOMER.getType(),
                     CrmCustomerDO::getId, ownerUserId, pageReqVO.getSceneType());
         }
@@ -236,23 +270,45 @@ public interface CrmCustomerMapper extends BaseMapperX<CrmCustomerDO> {
      *
      * @return 客户列表
      */
-    default List<CrmCustomerDO> selectListByAutoPool(CrmCustomerPoolConfigDO poolConfig) {
+    default List<CrmCustomerDO> selectListByAutoPool(CrmCustomerPoolConfigDO poolConfig, Long afterId,
+                                                     LocalDateTime now, int scanSize, int maxScanSize) {
+        int highValueMultiplier = poolConfig.getHighValueExpireMultiplier();
+        LocalDateTime normalDealExpireTime = now.minusDays(poolConfig.getDealExpireDays());
+        LocalDateTime highDealExpireTime = now.minusDays((long) poolConfig.getDealExpireDays()
+                * highValueMultiplier);
+        LocalDateTime normalContactExpireTime = now.minusDays(poolConfig.getContactExpireDays());
+        LocalDateTime highContactExpireTime = now.minusDays((long) poolConfig.getContactExpireDays()
+                * highValueMultiplier);
         LambdaQueryWrapper<CrmCustomerDO> query = new LambdaQueryWrapper<>();
-        query.gt(CrmCustomerDO::getOwnerUserId, 0);
-        // 未锁定 + 未成交
-        query.eq(CrmCustomerDO::getLockStatus, false).eq(CrmCustomerDO::getDealStatus, false);
-        // 已经超时
-        LocalDateTime dealExpireTime = LocalDateTime.now().minusDays(poolConfig.getDealExpireDays());
-        LocalDateTime contactExpireTime = LocalDateTime.now().minusDays(poolConfig.getContactExpireDays());
-        query.and(q -> {
-            // 情况一：成交超时
-            q.lt(CrmCustomerDO::getOwnerTime, dealExpireTime)
-            // 情况二：跟进超时
-            .or(w -> w.lt(CrmCustomerDO::getOwnerTime, contactExpireTime)
-                    .and(p -> p.lt(CrmCustomerDO::getContactLastTime, contactExpireTime)
-                            .or().isNull(CrmCustomerDO::getContactLastTime)));
-        });
+        query.eq(CrmCustomerDO::getPoolStatus, CrmCustomerPoolStatusEnum.OWNED.getStatus())
+                .gt(CrmCustomerDO::getOwnerUserId, 0)
+                .gt(CrmCustomerDO::getId, afterId)
+                .eq(CrmCustomerDO::getLockStatus, false)
+                .eq(CrmCustomerDO::getDealStatus, false)
+                .and(scope -> scope
+                        .and(high -> high.ge(CrmCustomerDO::getLevel,
+                                        poolConfig.getHighValueLevelThreshold())
+                                .and(expired -> appendExpiredCondition(expired, highDealExpireTime,
+                                        highContactExpireTime)))
+                        .or(normal -> normal
+                                .and(level -> level.isNull(CrmCustomerDO::getLevel)
+                                        .or().lt(CrmCustomerDO::getLevel,
+                                                poolConfig.getHighValueLevelThreshold()))
+                                .and(expired -> appendExpiredCondition(expired, normalDealExpireTime,
+                                        normalContactExpireTime))))
+                .orderByAsc(CrmCustomerDO::getId)
+                .last("LIMIT " + Math.max(1, Math.min(scanSize, maxScanSize)));
         return selectList(query);
+    }
+
+    private static void appendExpiredCondition(LambdaQueryWrapper<CrmCustomerDO> query,
+                                               LocalDateTime dealExpireTime,
+                                               LocalDateTime contactExpireTime) {
+        query.apply("COALESCE(owner_time, create_time) < {0}", dealExpireTime)
+                .or(follow -> follow
+                        .apply("COALESCE(owner_time, create_time) < {0}", contactExpireTime)
+                        .and(last -> last.isNull(CrmCustomerDO::getContactLastTime)
+                                .or().lt(CrmCustomerDO::getContactLastTime, contactExpireTime)));
     }
 
     default Long selectCountByTodayContact(Long ownerUserId) {

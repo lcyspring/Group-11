@@ -137,6 +137,29 @@
           <dict-tag :type="DICT_TYPE.CRM_CUSTOMER_LEVEL" :value="scope.row.level" />
         </template>
       </el-table-column>
+      <el-table-column
+        :formatter="dateFormatter"
+        align="center"
+        :label="t('poolEntryTime')"
+        prop="poolEntryTime"
+        min-width="180"
+      />
+      <el-table-column
+        align="center"
+        :label="t('poolPreviousOwner')"
+        prop="poolPreviousOwnerUserName"
+        min-width="130"
+      >
+        <template #default="scope">
+          {{ scope.row.poolPreviousOwnerUserName || t('unassignedOwner') }}
+        </template>
+      </el-table-column>
+      <el-table-column align="center" :label="t('poolReason')" prop="poolReason" min-width="150">
+        <template #default="scope">
+          {{ poolReasonLabel(scope.row.poolReason) }}
+        </template>
+      </el-table-column>
+      <el-table-column align="center" :label="t('poolCycleCount')" prop="poolCycleCount" min-width="120" />
       <el-table-column align="center" :label="t('industryId')" prop="industryId" min-width="100">
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.CRM_CUSTOMER_INDUSTRY" :value="scope.row.industryId" />
@@ -215,6 +238,17 @@ const queryParams = ref({
 })
 const queryFormRef = ref() // 搜索的表单
 const exportLoading = ref(false) // 导出的加载中
+
+const poolReasonLabel = (reason?: string) => {
+  const keyMap: Record<string, string> = {
+    MANUAL_PUT_POOL: 'poolReasonManual',
+    AUTO_NO_FOLLOW_UP: 'poolReasonNoFollowUp',
+    AUTO_NO_DEAL: 'poolReasonNoDeal',
+    IMPORT_UNASSIGNED: 'poolReasonImportUnassigned',
+    LEGACY_PUBLIC: 'poolReasonLegacy'
+  }
+  return reason && keyMap[reason] ? t(keyMap[reason]) : reason || '-'
+}
 
 /** 查询列表 */
 const getList = async () => {

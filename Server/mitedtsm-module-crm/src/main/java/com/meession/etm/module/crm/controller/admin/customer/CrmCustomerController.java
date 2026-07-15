@@ -7,7 +7,6 @@ import com.meession.etm.framework.common.pojo.CommonResult;
 import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.framework.common.util.collection.CollectionUtils;
 import com.meession.etm.framework.common.util.collection.MapUtils;
-import com.meession.etm.framework.common.util.date.LocalDateTimeUtils;
 import com.meession.etm.framework.common.util.number.NumberUtils;
 import com.meession.etm.framework.common.util.object.BeanUtils;
 import com.meession.etm.framework.excel.core.util.ExcelUtils;
@@ -18,10 +17,8 @@ import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerLifecycleRecordDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerOwnerRecordDO;
-import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerPoolConfigDO;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.service.contact.CrmContactService;
-import com.meession.etm.module.crm.service.customer.CrmCustomerPoolConfigService;
 import com.meession.etm.module.crm.service.customer.CrmCustomer360Service;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
 import com.meession.etm.module.crm.service.permission.CrmPermissionService;
@@ -67,8 +64,6 @@ public class CrmCustomerController {
     private CrmCustomer360Service customer360Service;
     @Resource
     private CrmContactService contactService;
-    @Resource
-    private CrmCustomerPoolConfigService customerPoolConfigService;
 
     @Resource
     private DeptApi deptApi;
@@ -231,7 +226,8 @@ public class CrmCustomerController {
         Map<Long, CrmCustomerDO> parentCustomerMap = customerService.getCustomerMap(parentCustomerIds);
         // 1.3 获取创建人、负责人列表
         Map<Long, AdminUserRespDTO> userMap = adminUserApi.getUserMap(convertSetByFlatMap(list,
-                contact -> Stream.of(NumberUtils.parseLong(contact.getCreator()), contact.getOwnerUserId())));
+                contact -> Stream.of(NumberUtils.parseLong(contact.getCreator()), contact.getOwnerUserId(),
+                        contact.getPoolPreviousOwnerUserId())));
         Map<Long, DeptRespDTO> deptMap = deptApi.getDeptMap(convertSet(userMap.values(), AdminUserRespDTO::getDeptId));
         // 1.4 获取距离进入公海的时间
         Map<Long, Long> poolDayMap = getPoolDayMap(list);
@@ -251,6 +247,8 @@ public class CrmCustomerController {
                 customerVO.setOwnerUserName(user.getNickname());
                 MapUtils.findAndThen(deptMap, user.getDeptId(), dept -> customerVO.setOwnerUserDeptName(dept.getName()));
             });
+            MapUtils.findAndThen(userMap, customerVO.getPoolPreviousOwnerUserId(),
+                    user -> customerVO.setPoolPreviousOwnerUserName(user.getNickname()));
             // 2.4 设置距离进入公海的时间
             if (customerVO.getOwnerUserId() != null) {
                 customerVO.setPoolDay(poolDayMap.get(customerVO.getId()));
@@ -296,31 +294,7 @@ public class CrmCustomerController {
      * @return key 客户编号, value 距离进入公海的时间
      */
     private Map<Long, Long> getPoolDayMap(List<CrmCustomerDO> list) {
-        CrmCustomerPoolConfigDO poolConfig = customerPoolConfigService.getCustomerPoolConfig();
-        if (poolConfig == null || !poolConfig.getEnabled()) {
-            return MapUtil.empty();
-        }
-        list = CollectionUtils.filterList(list, customer -> {
-            // 特殊：如果没负责人，则说明已经在公海，不用计算
-            if (customer.getOwnerUserId() == null) {
-                return false;
-            }
-            // 已成交 or 已锁定，不进入公海
-            return !customer.getDealStatus() && !customer.getLockStatus();
-        });
-        return convertMap(list, CrmCustomerDO::getId, customer -> {
-            // 1.1 未成交放入公海天数
-            long dealExpireDay = poolConfig.getDealExpireDays() - LocalDateTimeUtils.between(customer.getOwnerTime());
-            // 1.2 未跟进放入公海天数
-            LocalDateTime lastTime = customer.getOwnerTime();
-            if (customer.getContactLastTime() != null && customer.getContactLastTime().isAfter(lastTime)) {
-                lastTime = customer.getContactLastTime();
-            }
-            long contactExpireDay = poolConfig.getContactExpireDays() - LocalDateTimeUtils.between(lastTime);
-            // 2. 返回最小的天数
-            long poolDay = Math.min(dealExpireDay, contactExpireDay);
-            return poolDay > 0 ? poolDay : 0;
-        });
+        return customerService.getPoolDayMap(list);
     }
 
     @GetMapping(value = "/simple-list")
@@ -397,7 +371,7 @@ public class CrmCustomerController {
     @Parameter(name = "id", description = "客户编号", required = true, example = "1024")
     @PreAuthorize("@ss.hasPermission('crm:customer:update')")
     public CommonResult<Boolean> putCustomerPool(@RequestParam("id") Long id) {
-        customerService.putCustomerPool(id);
+        customerService.putCustomerPool(id, getLoginUserId());
         return success(true);
     }
 

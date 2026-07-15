@@ -5,21 +5,35 @@ import com.meession.etm.module.crm.controller.admin.customer.vo.customer.CrmCust
 import com.meession.etm.module.crm.controller.admin.customer.vo.customer.CrmCustomerSaveReqVO;
 import com.meession.etm.module.crm.controller.admin.customer.vo.customer.CrmCustomerTransferReqVO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerPoolConfigDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerOwnerRecordDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerLifecycleRecordDO;
+import com.meession.etm.module.crm.dal.mysql.business.CrmBusinessMapper;
+import com.meession.etm.module.crm.dal.mysql.contract.CrmContractMapper;
 import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerMapper;
 import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerOwnerRecordMapper;
 import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerLifecycleRecordMapper;
+import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerPoolClaimCounterMapper;
+import com.meession.etm.module.crm.enums.customer.CrmCustomerOwnerRecordSourceEnum;
+import com.meession.etm.module.crm.enums.customer.CrmCustomerPoolStatusEnum;
+import com.meession.etm.module.crm.framework.pool.CrmPoolPolicyProperties;
+import com.meession.etm.module.crm.framework.pool.CrmPoolTimeProvider;
+import com.meession.etm.framework.tenant.core.context.TenantContextHolder;
 import com.meession.etm.module.crm.service.contact.CrmContactService;
 import com.meession.etm.module.crm.service.permission.CrmPermissionService;
 import com.meession.etm.module.crm.service.permission.bo.CrmPermissionCreateReqBO;
 import com.meession.etm.module.system.api.user.AdminUserApi;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Proxy;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -37,6 +51,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CrmCustomerServiceImplTest {
+
+    @AfterEach
+    void clearTenantContext() {
+        TenantContextHolder.clear();
+    }
 
     @Test
     void duplicateCheckNormalizesConditionsAndReturnsCandidates() {
@@ -100,9 +119,13 @@ class CrmCustomerServiceImplTest {
                 }));
         ReflectionTestUtils.setField(service, "permissionService", proxy(CrmPermissionService.class,
                 (proxy, method, args) -> null));
-        CrmCustomerDO customer = new CrmCustomerDO().setId(20L).setOwnerUserId(100L);
+        ReflectionTestUtils.setField(service, "eventPublisher", proxy(ApplicationEventPublisher.class,
+                (proxy, method, args) -> null));
+        CrmCustomerDO customer = new CrmCustomerDO().setId(20L).setName("客户")
+                .setOwnerUserId(100L).setPoolStatus(CrmCustomerPoolStatusEnum.OWNED.getStatus());
 
-        service.putCustomerPool(customer);
+        service.putCustomerPool(customer, CrmCustomerOwnerRecordSourceEnum.MANUAL_PUT_POOL.getSource(),
+                "手工移入公海", LocalDateTime.of(2026, 7, 15, 12, 0));
 
         assertEquals(20L, ownerRecord.get().getCustomerId());
         assertEquals(100L, ownerRecord.get().getOwnerUserId());
@@ -146,6 +169,8 @@ class CrmCustomerServiceImplTest {
                     ownerRecord.set((CrmCustomerOwnerRecordDO) args[0]);
                     return 1;
                 }));
+        ReflectionTestUtils.setField(service, "poolTimeProvider", poolTimeProvider(
+                LocalDateTime.of(2026, 7, 15, 12, 0)));
         CrmCustomerSaveReqVO reqVO = new CrmCustomerSaveReqVO()
                 .setName("指定负责人客户")
                 .setOwnerUserId(ownerUserId);
@@ -227,6 +252,8 @@ class CrmCustomerServiceImplTest {
                 (proxy, method, args) -> null));
         ReflectionTestUtils.setField(service, "customerOwnerRecordMapper", proxy(CrmCustomerOwnerRecordMapper.class,
                 (proxy, method, args) -> 1));
+        ReflectionTestUtils.setField(service, "poolTimeProvider", poolTimeProvider(
+                LocalDateTime.of(2026, 7, 15, 12, 0)));
 
         service.createCustomer(new CrmCustomerSaveReqVO().setName("分公司")
                 .setParentCustomerId(10L).setOwnerUserId(1L), 1L);
@@ -300,6 +327,96 @@ class CrmCustomerServiceImplTest {
         assertServiceException(() -> service.receiveCustomer(List.of(20L), 1L, true),
                 CUSTOMER_OWNER_EXISTS, "已领取客户");
         assertTrue(lockingReadCalled.get());
+    }
+
+    @Test
+    void poolDayMapAppliesHighValueMultiplierAndOmitsProtectedCustomers() {
+        LocalDateTime now = LocalDateTime.of(2026, 7, 15, 12, 0);
+        CrmCustomerPoolConfigDO config = new CrmCustomerPoolConfigDO().setEnabled(true)
+                .setDealExpireDays(30).setContactExpireDays(30)
+                .setHighValueLevelThreshold(4).setHighValueExpireMultiplier(2)
+                .setProtectActiveBusiness(true).setProtectActiveContract(true);
+        CrmCustomerDO normal = ownedCustomer(10L, now.minusDays(10)).setLevel(2);
+        CrmCustomerDO highValue = ownedCustomer(20L, now.minusDays(10)).setLevel(4);
+        CrmCustomerDO businessProtected = ownedCustomer(30L, now.minusDays(20));
+        CrmCustomerDO contractProtected = ownedCustomer(40L, now.minusDays(20));
+        CrmCustomerDO publicCustomer = new CrmCustomerDO().setId(50L).setPoolStatus(
+                CrmCustomerPoolStatusEnum.PUBLIC.getStatus()).setOwnerUserId(null);
+        CrmCustomerDO lockedCustomer = ownedCustomer(60L, now.minusDays(20)).setLockStatus(true);
+        CrmCustomerDO dealCustomer = ownedCustomer(70L, now.minusDays(20)).setDealStatus(true);
+
+        CrmCustomerServiceImpl service = new CrmCustomerServiceImpl();
+        ReflectionTestUtils.setField(service, "customerPoolConfigService", proxy(CrmCustomerPoolConfigService.class,
+                (proxy, method, args) -> config));
+        ReflectionTestUtils.setField(service, "poolTimeProvider", poolTimeProvider(now));
+        CrmPoolPolicyProperties properties = new CrmPoolPolicyProperties();
+        properties.getCustomer().setProtectedContractAuditStatuses(List.of(0, 10, 20));
+        ReflectionTestUtils.setField(service, "poolPolicyProperties", properties);
+        ReflectionTestUtils.setField(service, "businessMapper", proxy(CrmBusinessMapper.class,
+                (proxy, method, args) -> Set.of(30L)));
+        ReflectionTestUtils.setField(service, "contractMapper", proxy(CrmContractMapper.class,
+                (proxy, method, args) -> Set.of(40L)));
+
+        Map<Long, Long> result = service.getPoolDayMap(List.of(normal, highValue, businessProtected,
+                contractProtected, publicCustomer, lockedCustomer, dealCustomer));
+
+        assertEquals(Map.of(10L, 20L, 20L, 50L), result);
+    }
+
+    @Test
+    void selfClaimRejectsRecentClaimBeforeReservingDailyQuota() {
+        CrmCustomerServiceImpl service = receiveValidationService(publicCustomer(20L), poolConfig());
+        ReflectionTestUtils.setField(service, "customerOwnerRecordMapper", proxy(CrmCustomerOwnerRecordMapper.class,
+                (proxy, method, args) -> method.getName().equals("existsRecentSelfClaim")));
+
+        assertServiceException(() -> service.receiveCustomer(List.of(20L), 7L, true),
+                CUSTOMER_POOL_REPEAT_CLAIM_COOLDOWN, 30, "客户 20");
+    }
+
+    @Test
+    void selfClaimRejectsWhenAtomicDailyQuotaCannotBeReserved() {
+        TenantContextHolder.setTenantId(1L);
+        CrmCustomerServiceImpl service = receiveValidationService(publicCustomer(20L), poolConfig());
+        ReflectionTestUtils.setField(service, "customerOwnerRecordMapper", proxy(CrmCustomerOwnerRecordMapper.class,
+                (proxy, method, args) -> false));
+        ReflectionTestUtils.setField(service, "customerPoolClaimCounterMapper",
+                proxy(CrmCustomerPoolClaimCounterMapper.class, (proxy, method, args) -> 0));
+
+        assertServiceException(() -> service.receiveCustomer(List.of(20L), 7L, true),
+                CUSTOMER_POOL_DAILY_CLAIM_LIMIT, 10);
+    }
+
+    @Test
+    void autoPoolKeepsHighValueCustomerInsideDoubledProtectionPeriod() {
+        LocalDateTime now = LocalDateTime.of(2026, 7, 15, 12, 0);
+        CrmCustomerDO customer = ownedCustomer(20L, now.minusDays(40)).setLevel(4);
+        CrmCustomerServiceImpl service = autoPoolService(customer, now, new AtomicReference<>());
+
+        assertFalse(service.autoPutCustomerPool(20L, poolConfig()));
+    }
+
+    @Test
+    void autoPoolRejectsExpiredCustomerWithActiveBusiness() {
+        LocalDateTime now = LocalDateTime.of(2026, 7, 15, 12, 0);
+        CrmCustomerDO customer = ownedCustomer(20L, now.minusDays(40)).setLevel(3);
+        CrmCustomerServiceImpl service = autoPoolService(customer, now, new AtomicReference<>());
+        ReflectionTestUtils.setField(service, "businessMapper", proxy(CrmBusinessMapper.class,
+                (proxy, method, args) -> true));
+
+        assertFalse(service.autoPutCustomerPool(20L, poolConfig()));
+    }
+
+    @Test
+    void autoPoolMovesExpiredUnprotectedCustomerAndPublishesEvent() {
+        LocalDateTime now = LocalDateTime.of(2026, 7, 15, 12, 0);
+        CrmCustomerDO customer = ownedCustomer(20L, now.minusDays(40)).setLevel(3);
+        AtomicReference<CrmCustomerPutPoolEvent> eventRef = new AtomicReference<>();
+        CrmCustomerServiceImpl service = autoPoolService(customer, now, eventRef);
+
+        assertTrue(service.autoPutCustomerPool(20L, poolConfig()));
+        assertEquals(20L, eventRef.get().customerId());
+        assertEquals(100L, eventRef.get().previousOwnerUserId());
+        assertEquals(CrmCustomerOwnerRecordSourceEnum.AUTO_NO_FOLLOW_UP.getSource(), eventRef.get().source());
     }
 
     @Test
@@ -471,6 +588,87 @@ class CrmCustomerServiceImplTest {
 
     private static <T> T proxy(Class<T> type, java.lang.reflect.InvocationHandler handler) {
         return type.cast(Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[]{type}, handler));
+    }
+
+    private static CrmCustomerDO ownedCustomer(Long id, LocalDateTime ownerTime) {
+        return new CrmCustomerDO().setId(id).setName("客户 " + id).setOwnerUserId(100L)
+                .setOwnerTime(ownerTime).setPoolStatus(CrmCustomerPoolStatusEnum.OWNED.getStatus())
+                .setLockStatus(false).setDealStatus(false);
+    }
+
+    private static CrmCustomerDO publicCustomer(Long id) {
+        return new CrmCustomerDO().setId(id).setName("客户 " + id).setOwnerUserId(null)
+                .setPoolStatus(CrmCustomerPoolStatusEnum.PUBLIC.getStatus())
+                .setLockStatus(false).setDealStatus(false);
+    }
+
+    private static CrmCustomerPoolConfigDO poolConfig() {
+        return new CrmCustomerPoolConfigDO().setEnabled(true)
+                .setDealExpireDays(30).setContactExpireDays(30)
+                .setHighValueLevelThreshold(4).setHighValueExpireMultiplier(2)
+                .setProtectActiveBusiness(true).setProtectActiveContract(true)
+                .setDailyClaimLimit(10).setRepeatClaimCooldownDays(30).setAutoPoolBatchSize(500);
+    }
+
+    private static CrmCustomerServiceImpl receiveValidationService(CrmCustomerDO customer,
+                                                                    CrmCustomerPoolConfigDO config) {
+        CrmCustomerServiceImpl service = new CrmCustomerServiceImpl();
+        ReflectionTestUtils.setField(service, "customerMapper", proxy(CrmCustomerMapper.class,
+                (proxy, method, args) -> {
+                    if (method.getName().equals("selectByIdsForUpdate")) {
+                        return List.of(customer);
+                    }
+                    throw new AssertionError("领取校验失败后不应调用 " + method.getName());
+                }));
+        ReflectionTestUtils.setField(service, "adminUserApi", proxy(AdminUserApi.class,
+                (proxy, method, args) -> null));
+        ReflectionTestUtils.setField(service, "customerPoolConfigService", proxy(CrmCustomerPoolConfigService.class,
+                (proxy, method, args) -> config));
+        ReflectionTestUtils.setField(service, "poolTimeProvider", poolTimeProvider(
+                LocalDateTime.of(2026, 7, 15, 12, 0)));
+        return service;
+    }
+
+    private static CrmCustomerServiceImpl autoPoolService(CrmCustomerDO customer, LocalDateTime now,
+                                                           AtomicReference<CrmCustomerPutPoolEvent> eventRef) {
+        CrmCustomerServiceImpl service = new CrmCustomerServiceImpl();
+        ReflectionTestUtils.setField(service, "customerMapper", proxy(CrmCustomerMapper.class,
+                (proxy, method, args) -> switch (method.getName()) {
+                    case "selectByIdForUpdate" -> customer;
+                    case "updateToPublicPool" -> 1;
+                    default -> throw new AssertionError("未预期的客户 Mapper 调用 " + method.getName());
+                }));
+        ReflectionTestUtils.setField(service, "poolTimeProvider", poolTimeProvider(now));
+        CrmPoolPolicyProperties properties = new CrmPoolPolicyProperties();
+        properties.getCustomer().setProtectedContractAuditStatuses(List.of(0, 10, 20));
+        ReflectionTestUtils.setField(service, "poolPolicyProperties", properties);
+        ReflectionTestUtils.setField(service, "businessMapper", proxy(CrmBusinessMapper.class,
+                (proxy, method, args) -> false));
+        ReflectionTestUtils.setField(service, "contractMapper", proxy(CrmContractMapper.class,
+                (proxy, method, args) -> false));
+        ReflectionTestUtils.setField(service, "contactService", proxy(CrmContactService.class,
+                (proxy, method, args) -> null));
+        ReflectionTestUtils.setField(service, "customerOwnerRecordMapper", proxy(CrmCustomerOwnerRecordMapper.class,
+                (proxy, method, args) -> 1));
+        ReflectionTestUtils.setField(service, "permissionService", proxy(CrmPermissionService.class,
+                (proxy, method, args) -> null));
+        ReflectionTestUtils.setField(service, "eventPublisher", proxy(ApplicationEventPublisher.class,
+                (proxy, method, args) -> {
+                    eventRef.set((CrmCustomerPutPoolEvent) args[0]);
+                    return null;
+                }));
+        return service;
+    }
+
+    private static CrmPoolTimeProvider poolTimeProvider(LocalDateTime now) {
+        CrmPoolPolicyProperties properties = new CrmPoolPolicyProperties();
+        properties.getScheduler().setZone("Asia/Shanghai");
+        return new CrmPoolTimeProvider(properties) {
+            @Override
+            public LocalDateTime now() {
+                return now;
+            }
+        };
     }
 
 }

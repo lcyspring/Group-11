@@ -109,6 +109,9 @@ public interface CrmCustomerService {
      */
     PageResult<CrmCustomerDO> getCustomerPage(CrmCustomerPageReqVO pageReqVO, Long userId);
 
+    /** Remaining days before automatic pool entry; protected customers are omitted. */
+    Map<Long, Long> getPoolDayMap(List<CrmCustomerDO> customers);
+
     /**
      * 获得放入公海提醒的客户分页
      *
@@ -157,6 +160,9 @@ public interface CrmCustomerService {
      */
     List<CrmCustomerOwnerRecordDO> getCustomerOwnerRecordList(Long customerId);
 
+    /** Latest public-pool entry event for each requested customer. */
+    Map<Long, CrmCustomerOwnerRecordDO> getLatestPoolRecordMap(Collection<Long> customerIds);
+
     /**
      * 客户转移
      *
@@ -196,9 +202,10 @@ public interface CrmCustomerService {
     /**
      * 客户放入公海
      *
-     * @param id 客户编号
+     * @param id             客户编号
+     * @param operatorUserId 操作人
      */
-    void putCustomerPool(Long id);
+    void putCustomerPool(Long id, Long operatorUserId);
 
     /**
      * 领取公海客户

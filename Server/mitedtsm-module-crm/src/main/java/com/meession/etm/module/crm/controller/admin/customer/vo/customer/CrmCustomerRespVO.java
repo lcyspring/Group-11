@@ -66,6 +66,23 @@ public class CrmCustomerRespVO {
     @ExcelProperty("负责人部门")
     private String ownerUserDeptName;
 
+    @Schema(description = "池状态：0 在管、1 公海、2 垃圾池")
+    private Integer poolStatus;
+    @Schema(description = "本次进入公海时间")
+    private LocalDateTime poolEntryTime;
+    @Schema(description = "本次入池前负责人编号")
+    private Long poolPreviousOwnerUserId;
+    @Schema(description = "本次入池前负责人名称")
+    private String poolPreviousOwnerUserName;
+    @Schema(description = "本次入池原因编码")
+    private String poolReason;
+    @Schema(description = "累计进入公海次数")
+    private Integer poolCycleCount;
+    @Schema(description = "进入垃圾池时间")
+    private LocalDateTime garbageTime;
+    @Schema(description = "垃圾池原因")
+    private String garbageReason;
+
     @Schema(description = "锁定状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "13563")
     @ExcelProperty(value = "锁定状态", converter = DictConvert.class)
     @DictFormat(DictTypeConstants.BOOLEAN_STRING)

@@ -6,6 +6,14 @@ export interface CustomerPoolConfigVO {
   dealExpireDays?: number
   notifyEnabled?: boolean
   notifyDays?: number
+  dailyClaimLimit?: number
+  repeatClaimCooldownDays?: number
+  highValueLevelThreshold?: number
+  highValueExpireMultiplier?: number
+  protectActiveBusiness?: boolean
+  protectActiveContract?: boolean
+  autoPoolBatchSize?: number
+  autoPoolMaxBatchSize?: number
 }
 
 // 获取客户公海规则设置

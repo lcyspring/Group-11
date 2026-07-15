@@ -9,6 +9,7 @@ import com.meession.etm.framework.common.exception.ServiceException;
 import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.framework.common.util.collection.CollectionUtils;
 import com.meession.etm.framework.common.util.object.BeanUtils;
+import com.meession.etm.framework.tenant.core.context.TenantContextHolder;
 import com.meession.etm.module.crm.controller.admin.business.vo.business.CrmBusinessTransferReqVO;
 import com.meession.etm.module.crm.controller.admin.contact.vo.CrmContactTransferReqVO;
 import com.meession.etm.module.crm.controller.admin.contract.vo.contract.CrmContractTransferReqVO;
@@ -24,11 +25,19 @@ import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerPoolConfig
 import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerMapper;
 import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerLifecycleRecordMapper;
 import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerOwnerRecordMapper;
+import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerPoolClaimCounterMapper;
+import com.meession.etm.module.crm.dal.mysql.business.CrmBusinessMapper;
+import com.meession.etm.module.crm.dal.mysql.contract.CrmContractMapper;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.enums.common.CrmSceneTypeEnum;
 import com.meession.etm.module.crm.enums.customer.CrmCustomerOwnerRecordTypeEnum;
 import com.meession.etm.module.crm.enums.customer.CrmCustomerLifecycleStatusEnum;
+import com.meession.etm.module.crm.enums.customer.CrmCustomerOwnerRecordSourceEnum;
+import com.meession.etm.module.crm.enums.customer.CrmCustomerPoolStatusEnum;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
+import com.meession.etm.module.crm.framework.permission.CrmAuthorizationService;
+import com.meession.etm.module.crm.framework.pool.CrmPoolPolicyProperties;
+import com.meession.etm.module.crm.framework.pool.CrmPoolTimeProvider;
 import com.meession.etm.module.crm.framework.permission.core.annotations.CrmPermission;
 import com.meession.etm.module.crm.service.business.CrmBusinessService;
 import com.meession.etm.module.crm.service.contact.CrmContactService;
@@ -45,11 +54,14 @@ import com.mzt.logapi.starter.annotation.LogRecord;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import static com.meession.etm.framework.common.exception.util.ServiceExceptionUtil.exception;
@@ -80,6 +92,12 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
     private CrmCustomerOwnerRecordMapper customerOwnerRecordMapper;
     @Resource
     private CrmCustomerLifecycleRecordMapper customerLifecycleRecordMapper;
+    @Resource
+    private CrmCustomerPoolClaimCounterMapper customerPoolClaimCounterMapper;
+    @Resource
+    private CrmBusinessMapper businessMapper;
+    @Resource
+    private CrmContractMapper contractMapper;
 
     @Resource
     private CrmPermissionService permissionService;
@@ -88,6 +106,14 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
     @Resource
     @Lazy
     private CrmCustomerPoolConfigService customerPoolConfigService;
+    @Resource
+    private CrmPoolPolicyProperties poolPolicyProperties;
+    @Resource
+    private CrmPoolTimeProvider poolTimeProvider;
+    @Resource
+    private CrmAuthorizationService authorizationService;
+    @Resource
+    private ApplicationEventPublisher eventPublisher;
     @Resource
     @Lazy
     private CrmContactService contactService;
@@ -128,7 +154,8 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
                 .setBizId(customer.getId()).setUserId(ownerUserId).setLevel(CrmPermissionLevelEnum.OWNER.getLevel()));
 
         // 4. 记录初始归属，与客户和数据权限在同一事务内提交
-        createOwnerRecord(customer.getId(), null, ownerUserId, INITIAL_ASSIGN);
+        createOwnerRecord(customer.getId(), null, ownerUserId, INITIAL_ASSIGN,
+                CrmCustomerOwnerRecordSourceEnum.INITIAL_ASSIGN.getSource(), null);
 
         // 5. 记录操作日志上下文
         LogRecordContext.putVariable("customer", customer);
@@ -144,11 +171,18 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
      * @param ownerUserId 负责人编号
      * @return 客户信息 DO
      */
-    private static CrmCustomerDO initCustomer(Object customer, Long ownerUserId) {
+    private CrmCustomerDO initCustomer(Object customer, Long ownerUserId) {
+        LocalDateTime now = poolTimeProvider.now();
         return BeanUtils.toBean(customer, CrmCustomerDO.class).setOwnerUserId(ownerUserId)
-                .setOwnerTime(LocalDateTime.now())
+                .setOwnerTime(now)
+                .setPoolStatus(ownerUserId == null ? CrmCustomerPoolStatusEnum.PUBLIC.getStatus()
+                        : CrmCustomerPoolStatusEnum.OWNED.getStatus())
+                .setPoolEntryTime(ownerUserId == null ? now : null)
+                .setPoolReason(ownerUserId == null
+                        ? CrmCustomerOwnerRecordSourceEnum.IMPORT_UNASSIGNED.getSource() : null)
+                .setPoolCycleCount(ownerUserId == null ? 1 : 0)
                 .setLifecycleStatus(CrmCustomerLifecycleStatusEnum.POTENTIAL.getStatus())
-                .setLifecycleStatusChangeTime(LocalDateTime.now())
+                .setLifecycleStatusChangeTime(now)
                 .setLifecycleLostReason(null)
                 .setDealStatus(false);
     }
@@ -312,7 +346,8 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
         }
 
         // 3. 记录转移前后归属。位于关联对象转移之后，任一步失败均整体回滚
-        createOwnerRecord(customer.getId(), customer.getOwnerUserId(), reqVO.getNewOwnerUserId(), TRANSFER);
+        createOwnerRecord(customer.getId(), customer.getOwnerUserId(), reqVO.getNewOwnerUserId(), TRANSFER,
+                CrmCustomerOwnerRecordSourceEnum.TRANSFER.getSource(), null);
 
         // 4. 记录转移日志
         LogRecordContext.putVariable("customer", customer);
@@ -383,7 +418,8 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
                 .setBizId(customer.getId()).setUserId(userId).setLevel(CrmPermissionLevelEnum.OWNER.getLevel())); // 设置当前操作的人为负责人
 
         // 4. 记录初始归属
-        createOwnerRecord(customer.getId(), null, userId, INITIAL_ASSIGN);
+        createOwnerRecord(customer.getId(), null, userId, INITIAL_ASSIGN,
+                CrmCustomerOwnerRecordSourceEnum.INITIAL_ASSIGN.getSource(), null);
 
         // 5. 记录操作日志上下文
         LogRecordContext.putVariable("customer", customer);
@@ -423,7 +459,11 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
                 if (importReqVO.getOwnerUserId() != null) {
                     permissionService.createPermission(new CrmPermissionCreateReqBO().setBizType(CrmBizTypeEnum.CRM_CUSTOMER.getType())
                             .setBizId(customer.getId()).setUserId(importReqVO.getOwnerUserId()).setLevel(CrmPermissionLevelEnum.OWNER.getLevel()));
-                    createOwnerRecord(customer.getId(), null, importReqVO.getOwnerUserId(), INITIAL_ASSIGN);
+                    createOwnerRecord(customer.getId(), null, importReqVO.getOwnerUserId(), INITIAL_ASSIGN,
+                            CrmCustomerOwnerRecordSourceEnum.INITIAL_ASSIGN.getSource(), null);
+                } else {
+                    createOwnerRecord(customer.getId(), null, null, PUT_POOL,
+                            CrmCustomerOwnerRecordSourceEnum.IMPORT_UNASSIGNED.getSource(), "导入时未指定负责人");
                 }
                 // 1.3 记录操作日志
                 getSelf().importCustomerLog(customer, false);
@@ -466,20 +506,24 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
     @Transactional(rollbackFor = Exception.class)
     @LogRecord(type = CRM_CUSTOMER_TYPE, subType = CRM_CUSTOMER_POOL_SUB_TYPE, bizNo = "{{#id}}",
             success = CRM_CUSTOMER_POOL_SUCCESS)
-    @CrmPermission(bizType = CrmBizTypeEnum.CRM_CUSTOMER, bizId = "#id", level = CrmPermissionLevelEnum.OWNER)
-    public void putCustomerPool(Long id) {
-        // 1. 校验存在
-        CrmCustomerDO customer = customerMapper.selectById(id);
+    public void putCustomerPool(Long id, Long operatorUserId) {
+        // 1. Lock before checking state so manual put and claim/transfer cannot cross in flight.
+        CrmCustomerDO customer = customerMapper.selectByIdForUpdate(id);
         if (customer == null) {
             throw exception(CUSTOMER_NOT_EXISTS);
         }
-        // 1.2. 校验是否为公海数据
         validateCustomerOwnerExists(customer, true);
-        // 1.3. 校验客户是否锁定
         validateCustomerIsLocked(customer, true);
+        if (!authorizationService.canPutOwnerCustomerIntoPool(operatorUserId, customer.getOwnerUserId())) {
+            throw exception(CUSTOMER_POOL_MANAGE_DENIED);
+        }
+        CrmCustomerPoolConfigDO config = customerPoolConfigService.getCustomerPoolConfig();
+        LocalDateTime now = poolTimeProvider.now();
+        validatePoolProtection(customer, config, now);
 
-        // 2. 客户放入公海
-        putCustomerPool(customer);
+        // 2. Manual put has no age waiting period, but all structural protection rules still apply.
+        putCustomerPool(customer, CrmCustomerOwnerRecordSourceEnum.MANUAL_PUT_POOL.getSource(),
+                "手工移入公海", now);
 
         // 记录操作日志上下文
         LogRecordContext.putVariable("customerName", customer.getName());
@@ -505,35 +549,38 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
             // 校验成交状态
             validateCustomerDeal(customer);
         });
-        // 1.4  校验负责人是否到达上限
+        CrmCustomerPoolConfigDO poolConfig = customerPoolConfigService.getCustomerPoolConfig();
+        LocalDateTime now = poolTimeProvider.now();
+        boolean selfClaim = Boolean.TRUE.equals(isReceive);
+        if (selfClaim) {
+            validateRepeatClaimCooldown(customers, ownerUserId, poolConfig, now);
+            reserveDailyClaimQuota(ownerUserId, customers.size(), poolConfig, now.toLocalDate());
+        }
+        // 1.4 校验负责人是否到达上限
         validateCustomerExceedOwnerLimit(ownerUserId, customers.size());
 
         // 2. 领取公海数据
-        List<CrmCustomerDO> updateCustomers = new ArrayList<>();
-        List<CrmPermissionCreateReqBO> createPermissions = new ArrayList<>();
         customers.forEach(customer -> {
-            // 2.1. 设置负责人
-            updateCustomers.add(new CrmCustomerDO().setId(customer.getId())
-                    .setOwnerUserId(ownerUserId).setOwnerTime(LocalDateTime.now()));
-            // 2.2. 创建负责人数据权限
-            createPermissions.add(new CrmPermissionCreateReqBO().setBizType(CrmBizTypeEnum.CRM_CUSTOMER.getType())
-                    .setBizId(customer.getId()).setUserId(ownerUserId).setLevel(CrmPermissionLevelEnum.OWNER.getLevel()));
+            if (customerMapper.updateClaimedFromPublicPool(customer.getId(), ownerUserId, now) == 0) {
+                throw exception(CUSTOMER_POOL_STATE_CHANGED, customer.getName());
+            }
+            // Upgrade an existing team grant or create OWNER, while removing stale/duplicate OWNER grants.
+            permissionService.replaceOwnerPermission(CrmBizTypeEnum.CRM_CUSTOMER.getType(),
+                    customer.getId(), ownerUserId);
         });
-        // 2.2 更新客户负责人
-        customerMapper.updateBatch(updateCustomers);
-        // 2.3 创建负责人数据权限
-        permissionService.createPermissionBatch(createPermissions);
         // 2.4 Restore contact ownership and owner permissions together with the customer assignment.
         customers.forEach(customer -> contactService.updateOwnerUserIdByCustomerId(customer.getId(), ownerUserId));
         // 2.5 记录领取/分配事件，供公海统计使用
+        String eventSource = selfClaim ? CrmCustomerOwnerRecordSourceEnum.SELF_CLAIM.getSource()
+                : CrmCustomerOwnerRecordSourceEnum.MANAGER_ASSIGN.getSource();
         customerOwnerRecordMapper.insertBatch(CollectionUtils.convertList(customers, customer ->
                 new CrmCustomerOwnerRecordDO().setCustomerId(customer.getId())
                         .setOwnerUserId(ownerUserId).setPreviousOwnerUserId(null).setNewOwnerUserId(ownerUserId)
-                        .setType(TAKE_POOL.getType())));
+                        .setType(TAKE_POOL.getType()).setSource(eventSource)));
 
         // 3. 记录操作日志
         AdminUserRespDTO user = null;
-        if (!isReceive) {
+        if (!selfClaim) {
             user = adminUserApi.getUser(ownerUserId);
         }
         for (CrmCustomerDO customer : customers) {
@@ -547,40 +594,87 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
         if (poolConfig == null || !poolConfig.getEnabled()) {
             return 0;
         }
-        // 1. 获得需要放到的客户列表
-        List<CrmCustomerDO> customerList = customerMapper.selectListByAutoPool(poolConfig);
-        // 2. 逐个放入公海
+        LocalDateTime now = poolTimeProvider.now();
+        CrmPoolPolicyProperties.Customer customerPolicy = poolPolicyProperties.getCustomer();
+        int maxScanSize = customerPolicy.getAutoPoolMaxBatchSize();
+        int scanSize = Math.min(poolConfig.getAutoPoolBatchSize(), maxScanSize);
+        int maxBatches = customerPolicy.getAutoPoolMaxBatches();
+        long afterId = 0L;
         int count = 0;
-        for (CrmCustomerDO customer : customerList) {
-            try {
-                getSelf().putCustomerPool(customer);
-                count++;
-            } catch (Throwable e) {
-                log.error("[autoPutCustomerPool][客户({}) 放入公海异常]", customer.getId(), e);
+        for (int batch = 0; batch < maxBatches; batch++) {
+            List<CrmCustomerDO> candidates = customerMapper.selectListByAutoPool(
+                    poolConfig, afterId, now, scanSize, maxScanSize);
+            if (CollUtil.isEmpty(candidates)) {
+                break;
+            }
+            afterId = candidates.get(candidates.size() - 1).getId();
+            Set<Long> candidateIds = CollectionUtils.convertSet(candidates, CrmCustomerDO::getId);
+            Set<Long> activeBusinessCustomerIds = Boolean.TRUE.equals(poolConfig.getProtectActiveBusiness())
+                    ? businessMapper.selectActiveCustomerIds(candidateIds) : Set.of();
+            Set<Long> protectedContractCustomerIds = Boolean.TRUE.equals(poolConfig.getProtectActiveContract())
+                    ? contractMapper.selectProtectedCustomerIds(candidateIds,
+                            poolPolicyProperties.getCustomer().getProtectedContractAuditStatuses(), now) : Set.of();
+            for (CrmCustomerDO customer : candidates) {
+                if (activeBusinessCustomerIds.contains(customer.getId())
+                        || protectedContractCustomerIds.contains(customer.getId())) {
+                    continue;
+                }
+                try {
+                    if (getSelf().autoPutCustomerPool(customer.getId(), poolConfig)) {
+                        count++;
+                    }
+                } catch (Throwable e) {
+                    log.error("[autoPutCustomerPool][客户({}) 放入公海异常]", customer.getId(), e);
+                }
+            }
+            if (candidates.size() < scanSize) {
+                break;
             }
         }
         return count;
     }
 
+    @Transactional(rollbackFor = Exception.class)
+    protected boolean autoPutCustomerPool(Long customerId, CrmCustomerPoolConfigDO config) {
+        CrmCustomerDO customer = customerMapper.selectByIdForUpdate(customerId);
+        if (customer == null || !isOwned(customer) || Boolean.TRUE.equals(customer.getLockStatus())
+                || Boolean.TRUE.equals(customer.getDealStatus())) {
+            return false;
+        }
+        LocalDateTime now = poolTimeProvider.now();
+        if (!isAutoPoolExpired(customer, config, now) || isPoolProtected(customer, config, now)) {
+            return false;
+        }
+        String source = resolveAutoPoolSource(customer, config, now);
+        String reason = source.equals(CrmCustomerOwnerRecordSourceEnum.AUTO_NO_FOLLOW_UP.getSource())
+                ? "超过配置天数未跟进" : "超过配置天数未成交";
+        putCustomerPool(customer, source, reason, now);
+        return true;
+    }
+
     @Transactional(rollbackFor = Exception.class) // 需要 protected 修饰，因为需要在事务中调用
-    protected void putCustomerPool(CrmCustomerDO customer) {
+    protected void putCustomerPool(CrmCustomerDO customer, String source, String reason, LocalDateTime now) {
         // 1. Clear contact ownership while the current customer owner permission can still authorize the operation.
         contactService.updateOwnerUserIdByCustomerId(customer.getId(), null);
 
         // 2. 记录进入公海事件；后续失败时随事务一起回滚
         customerOwnerRecordMapper.insert(new CrmCustomerOwnerRecordDO().setCustomerId(customer.getId())
                 .setOwnerUserId(customer.getOwnerUserId()).setPreviousOwnerUserId(customer.getOwnerUserId())
-                .setNewOwnerUserId(null).setType(PUT_POOL.getType()));
+                .setNewOwnerUserId(null).setType(PUT_POOL.getType()).setSource(source).setReason(reason));
 
-        // 3. 设置负责人为 NULL
-        int updateOwnerUserIncr = customerMapper.updateOwnerUserIdById(customer.getId(), null);
+        // 3. Atomically establish explicit PUBLIC state and the current pool-entry snapshot.
+        int updateOwnerUserIncr = customerMapper.updateToPublicPool(customer.getId(), customer.getOwnerUserId(),
+                now, source);
         if (updateOwnerUserIncr == 0) {
-            throw exception(CUSTOMER_UPDATE_OWNER_USER_FAIL);
+            throw exception(CUSTOMER_POOL_STATE_CHANGED, customer.getName());
         }
 
         // 4. 删除负责人数据权限
         permissionService.deletePermission(CrmBizTypeEnum.CRM_CUSTOMER.getType(), customer.getId(),
                 CrmPermissionLevelEnum.OWNER.getLevel());
+
+        eventPublisher.publishEvent(new CrmCustomerPutPoolEvent(customer.getId(), customer.getName(),
+                customer.getOwnerUserId(), source, reason));
     }
 
     @LogRecord(type = CRM_CUSTOMER_TYPE, subType = CRM_CUSTOMER_RECEIVE_SUB_TYPE, bizNo = "{{#customer.id}}",
@@ -600,15 +694,27 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
         return customerOwnerRecordMapper.selectListByCustomerId(customerId);
     }
 
+    @Override
+    public Map<Long, CrmCustomerOwnerRecordDO> getLatestPoolRecordMap(Collection<Long> customerIds) {
+        if (CollUtil.isEmpty(customerIds)) {
+            return Collections.emptyMap();
+        }
+        Map<Long, CrmCustomerOwnerRecordDO> result = new LinkedHashMap<>();
+        customerOwnerRecordMapper.selectLatestPoolRecords(customerIds)
+                .forEach(record -> result.putIfAbsent(record.getCustomerId(), record));
+        return result;
+    }
+
     /**
      * 创建客户归属变更记录。ownerUserId 保留为公海统计兼容字段。
      */
     private void createOwnerRecord(Long customerId, Long previousOwnerUserId, Long newOwnerUserId,
-                                   CrmCustomerOwnerRecordTypeEnum type) {
+                                   CrmCustomerOwnerRecordTypeEnum type, String source, String reason) {
         Long ownerUserId = type == PUT_POOL ? previousOwnerUserId : newOwnerUserId;
         customerOwnerRecordMapper.insert(new CrmCustomerOwnerRecordDO().setCustomerId(customerId)
                 .setOwnerUserId(ownerUserId).setPreviousOwnerUserId(previousOwnerUserId)
-                .setNewOwnerUserId(newOwnerUserId).setType(type.getType()));
+                .setNewOwnerUserId(newOwnerUserId).setType(type.getType())
+                .setSource(source).setReason(reason));
     }
 
     @Override
@@ -638,6 +744,59 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
     @Override
     public PageResult<CrmCustomerDO> getCustomerPage(CrmCustomerPageReqVO pageReqVO, Long userId) {
         return customerMapper.selectPage(pageReqVO, userId);
+    }
+
+    @Override
+    public Map<Long, Long> getPoolDayMap(List<CrmCustomerDO> customers) {
+        CrmCustomerPoolConfigDO config = customerPoolConfigService.getCustomerPoolConfig();
+        if (CollUtil.isEmpty(customers) || config == null || !Boolean.TRUE.equals(config.getEnabled())) {
+            return Collections.emptyMap();
+        }
+        List<CrmCustomerDO> candidates = filterList(customers, customer -> isOwned(customer)
+                && !Boolean.TRUE.equals(customer.getDealStatus())
+                && !Boolean.TRUE.equals(customer.getLockStatus()));
+        if (CollUtil.isEmpty(candidates)) {
+            return Collections.emptyMap();
+        }
+
+        LocalDateTime now = poolTimeProvider.now();
+        Set<Long> candidateIds = CollectionUtils.convertSet(candidates, CrmCustomerDO::getId);
+        Set<Long> activeBusinessCustomerIds = Boolean.TRUE.equals(config.getProtectActiveBusiness())
+                ? businessMapper.selectActiveCustomerIds(candidateIds) : Set.of();
+        Set<Long> protectedContractCustomerIds = Boolean.TRUE.equals(config.getProtectActiveContract())
+                ? contractMapper.selectProtectedCustomerIds(candidateIds,
+                        poolPolicyProperties.getCustomer().getProtectedContractAuditStatuses(), now) : Set.of();
+
+        Map<Long, Long> result = new LinkedHashMap<>();
+        for (CrmCustomerDO customer : candidates) {
+            if (activeBusinessCustomerIds.contains(customer.getId())
+                    || protectedContractCustomerIds.contains(customer.getId())) {
+                continue;
+            }
+            Long remainingDays = calculatePoolRemainingDays(customer, config, now);
+            if (remainingDays != null) {
+                result.put(customer.getId(), remainingDays);
+            }
+        }
+        return result;
+    }
+
+    private static Long calculatePoolRemainingDays(CrmCustomerDO customer, CrmCustomerPoolConfigDO config,
+                                                   LocalDateTime now) {
+        LocalDateTime ownerTime = customer.getOwnerTime() != null ? customer.getOwnerTime() : customer.getCreateTime();
+        if (ownerTime == null) {
+            return null;
+        }
+        int multiplier = customer.getLevel() != null
+                && customer.getLevel() >= config.getHighValueLevelThreshold()
+                ? config.getHighValueExpireMultiplier() : 1;
+        LocalDateTime lastActivityTime = customer.getContactLastTime() != null
+                && customer.getContactLastTime().isAfter(ownerTime) ? customer.getContactLastTime() : ownerTime;
+        LocalDateTime dealDeadline = ownerTime.plusDays((long) config.getDealExpireDays() * multiplier);
+        LocalDateTime contactDeadline = lastActivityTime.plusDays((long) config.getContactExpireDays() * multiplier);
+        LocalDateTime nearestDeadline = dealDeadline.isBefore(contactDeadline) ? dealDeadline : contactDeadline;
+        long remainingSeconds = ChronoUnit.SECONDS.between(now, nearestDeadline);
+        return remainingSeconds <= 0 ? 0L : (remainingSeconds + 86_399L) / 86_400L;
     }
 
     @Override
@@ -758,16 +917,101 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
         validateCustomerExists(id);
     }
 
+    private void validateRepeatClaimCooldown(List<CrmCustomerDO> customers, Long ownerUserId,
+                                             CrmCustomerPoolConfigDO config, LocalDateTime now) {
+        int cooldownDays = config.getRepeatClaimCooldownDays();
+        if (cooldownDays <= 0) {
+            return;
+        }
+        LocalDateTime since = now.minusDays(cooldownDays);
+        for (CrmCustomerDO customer : customers) {
+            if (customerOwnerRecordMapper.existsRecentSelfClaim(customer.getId(), ownerUserId, since)) {
+                throw exception(CUSTOMER_POOL_REPEAT_CLAIM_COOLDOWN, cooldownDays, customer.getName());
+            }
+        }
+    }
+
+    private void reserveDailyClaimQuota(Long ownerUserId, int increment, CrmCustomerPoolConfigDO config,
+                                        LocalDate claimDate) {
+        int claimLimit = config.getDailyClaimLimit();
+        if (increment > claimLimit || customerPoolClaimCounterMapper.reserve(
+                TenantContextHolder.getRequiredTenantId(), ownerUserId, claimDate, increment, claimLimit) == 0) {
+            throw exception(CUSTOMER_POOL_DAILY_CLAIM_LIMIT, claimLimit);
+        }
+    }
+
+    private void validatePoolProtection(CrmCustomerDO customer, CrmCustomerPoolConfigDO config,
+                                        LocalDateTime now) {
+        if (Boolean.TRUE.equals(config.getProtectActiveBusiness())
+                && businessMapper.existsActiveByCustomerId(customer.getId())) {
+            throw exception(CUSTOMER_POOL_ACTIVE_BUSINESS, customer.getName());
+        }
+        if (Boolean.TRUE.equals(config.getProtectActiveContract())
+                && contractMapper.existsProtectedByCustomerId(customer.getId(),
+                        poolPolicyProperties.getCustomer().getProtectedContractAuditStatuses(), now)) {
+            throw exception(CUSTOMER_POOL_ACTIVE_CONTRACT, customer.getName());
+        }
+    }
+
+    private boolean isPoolProtected(CrmCustomerDO customer, CrmCustomerPoolConfigDO config, LocalDateTime now) {
+        return (Boolean.TRUE.equals(config.getProtectActiveBusiness())
+                    && businessMapper.existsActiveByCustomerId(customer.getId()))
+                || (Boolean.TRUE.equals(config.getProtectActiveContract())
+                    && contractMapper.existsProtectedByCustomerId(customer.getId(),
+                        poolPolicyProperties.getCustomer().getProtectedContractAuditStatuses(), now));
+    }
+
+    private static boolean isAutoPoolExpired(CrmCustomerDO customer, CrmCustomerPoolConfigDO config,
+                                             LocalDateTime now) {
+        int multiplier = customer.getLevel() != null
+                && customer.getLevel() >= config.getHighValueLevelThreshold()
+                ? config.getHighValueExpireMultiplier() : 1;
+        LocalDateTime ownerTime = customer.getOwnerTime() != null ? customer.getOwnerTime() : customer.getCreateTime();
+        if (ownerTime == null) {
+            return false;
+        }
+        boolean dealExpired = ownerTime.isBefore(now.minusDays((long) config.getDealExpireDays() * multiplier));
+        LocalDateTime lastActivityTime = customer.getContactLastTime() != null
+                && customer.getContactLastTime().isAfter(ownerTime) ? customer.getContactLastTime() : ownerTime;
+        boolean contactExpired = lastActivityTime.isBefore(
+                now.minusDays((long) config.getContactExpireDays() * multiplier));
+        return dealExpired || contactExpired;
+    }
+
+    private static String resolveAutoPoolSource(CrmCustomerDO customer, CrmCustomerPoolConfigDO config,
+                                                LocalDateTime now) {
+        int multiplier = customer.getLevel() != null
+                && customer.getLevel() >= config.getHighValueLevelThreshold()
+                ? config.getHighValueExpireMultiplier() : 1;
+        LocalDateTime ownerTime = customer.getOwnerTime() != null ? customer.getOwnerTime() : customer.getCreateTime();
+        LocalDateTime lastActivityTime = customer.getContactLastTime() != null
+                && customer.getContactLastTime().isAfter(ownerTime) ? customer.getContactLastTime() : ownerTime;
+        if (lastActivityTime.isBefore(now.minusDays((long) config.getContactExpireDays() * multiplier))) {
+            return CrmCustomerOwnerRecordSourceEnum.AUTO_NO_FOLLOW_UP.getSource();
+        }
+        return CrmCustomerOwnerRecordSourceEnum.AUTO_NO_DEAL.getSource();
+    }
+
+    private static boolean isOwned(CrmCustomerDO customer) {
+        return ObjUtil.equal(customer.getPoolStatus(), CrmCustomerPoolStatusEnum.OWNED.getStatus())
+                || customer.getPoolStatus() == null && customer.getOwnerUserId() != null;
+    }
+
+    private static boolean isPublicPool(CrmCustomerDO customer) {
+        return ObjUtil.equal(customer.getPoolStatus(), CrmCustomerPoolStatusEnum.PUBLIC.getStatus())
+                || customer.getPoolStatus() == null && customer.getOwnerUserId() == null;
+    }
+
     private void validateCustomerOwnerExists(CrmCustomerDO customer, Boolean pool) {
         if (customer == null) { // 防御一下
             throw exception(CUSTOMER_NOT_EXISTS);
         }
         // 校验是否为公海数据
-        if (pool && customer.getOwnerUserId() == null) {
+        if (pool && !isOwned(customer)) {
             throw exception(CUSTOMER_IN_POOL, customer.getName());
         }
         // 负责人已存在
-        if (!pool && customer.getOwnerUserId() != null) {
+        if (!pool && !isPublicPool(customer)) {
             throw exception(CUSTOMER_OWNER_EXISTS, customer.getName());
         }
     }

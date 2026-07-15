@@ -15,6 +15,12 @@ export interface CustomerVO {
   ownerUserId: number // 负责人的用户编号
   ownerUserName?: string // 负责人的用户名称
   ownerUserDept?: string // 负责人的部门名称
+  poolStatus?: number // 0 在管、1 公海、2 垃圾池
+  poolEntryTime?: Date // 本次进入公海时间
+  poolPreviousOwnerUserId?: number // 本次入池前负责人
+  poolPreviousOwnerUserName?: string // 本次入池前负责人名称
+  poolReason?: string // 本次入池原因编码
+  poolCycleCount?: number // 累计进入公海次数
   lockStatus?: boolean
   dealStatus?: boolean
   lifecycleStatus: CustomerLifecycleStatus

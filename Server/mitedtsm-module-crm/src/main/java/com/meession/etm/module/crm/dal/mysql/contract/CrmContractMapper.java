@@ -17,6 +17,10 @@ import org.apache.ibatis.annotations.Mapper;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Collection;
+import java.util.Set;
+
+import static com.meession.etm.framework.common.util.collection.CollectionUtils.convertSet;
 
 /**
  * CRM 合同 Mapper
@@ -139,6 +143,28 @@ public interface CrmContractMapper extends BaseMapperX<CrmContractDO> {
         return selectList(new LambdaQueryWrapperX<CrmContractDO>()
                 .eq(CrmContractDO::getCustomerId, customerId)
                 .eq(CrmContractDO::getOwnerUserId, ownerUserId));
+    }
+
+    default Set<Long> selectProtectedCustomerIds(Collection<Long> customerIds, Collection<Integer> auditStatuses,
+                                                  LocalDateTime now) {
+        if (customerIds == null || customerIds.isEmpty() || auditStatuses == null || auditStatuses.isEmpty()) {
+            return Set.of();
+        }
+        return convertSet(selectList(new LambdaQueryWrapperX<CrmContractDO>()
+                .select(CrmContractDO::getCustomerId)
+                .in(CrmContractDO::getCustomerId, customerIds)
+                .in(CrmContractDO::getAuditStatus, auditStatuses)
+                .and(scope -> scope.ne(CrmContractDO::getAuditStatus, CrmAuditStatusEnum.APPROVE.getStatus())
+                        .or(approved -> approved.eq(CrmContractDO::getAuditStatus,
+                                        CrmAuditStatusEnum.APPROVE.getStatus())
+                                .and(valid -> valid.isNull(CrmContractDO::getEndTime)
+                                        .or().ge(CrmContractDO::getEndTime, now))))
+                .groupBy(CrmContractDO::getCustomerId)), CrmContractDO::getCustomerId);
+    }
+
+    default boolean existsProtectedByCustomerId(Long customerId, Collection<Integer> auditStatuses,
+                                                 LocalDateTime now) {
+        return selectProtectedCustomerIds(List.of(customerId), auditStatuses, now).contains(customerId);
     }
 
 }

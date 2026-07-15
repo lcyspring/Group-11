@@ -91,6 +91,19 @@ public class CrmAuthorizationService {
         return subordinateUserIds;
     }
 
+    /**
+     * Dedicated manager command gate for putting a subordinate customer into the public pool.
+     * It does not turn organization read scope into general write access: the caller must also
+     * hold the existing customer-distribution action permission.
+     */
+    public boolean canPutOwnerCustomerIntoPool(Long operatorUserId, Long ownerUserId) {
+        if (ObjUtil.equal(operatorUserId, ownerUserId) || isCrmAdmin(operatorUserId)) {
+            return true;
+        }
+        return permissionCommonApi.hasAnyPermissions(operatorUserId, "crm:customer:distribute")
+                && resolveOwnerReadScope(operatorUserId).allows(ownerUserId);
+    }
+
     private static boolean satisfies(Integer actualLevel, Integer requiredLevel) {
         if (CrmPermissionLevelEnum.isOwner(actualLevel)) {
             return true;

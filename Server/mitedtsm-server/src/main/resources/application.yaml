@@ -265,6 +265,40 @@ mitedtsm:
     authorization:
       # 唯一的 CRM 管理员绕过角色；普通角色仍由功能权限字符和数据范围共同授权。
       admin-role-codes: [crm_admin]
+    pool-policy:
+      version: 2026-07-15
+      customer:
+        enabled: true
+        contact-expire-days: 30
+        deal-expire-days: 30
+        high-value-level-threshold: 4
+        high-value-expire-multiplier: 2
+        protect-active-business: true
+        protect-active-contract: true
+        protected-contract-audit-statuses: [0, 10, 20]
+        daily-claim-limit: 10
+        repeat-claim-cooldown-days: 30
+        notify-enabled: true
+        notify-days: 2
+        auto-pool-batch-size: 500
+        auto-pool-max-batch-size: 5000
+        auto-pool-max-batches: 20
+      garbage:
+        auto-enabled: true
+        expire-days: 180
+        minimum-pool-cycles: 3
+        batch-size: 500
+      clue:
+        contact-expire-days: 30
+        daily-claim-limit: 10
+        repeat-claim-cooldown-days: 30
+        auto-pool-batch-size: 500
+      scheduler:
+        enabled: true
+        cron: "0 0 2 * * ?"
+        zone: Asia/Shanghai
+        lock-key: crm:pool-policy:scheduler
+        lock-lease-seconds: 1800
     security:
       protected-file-directory: crm-protected/contract
     receivable-refund:

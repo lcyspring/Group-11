@@ -2,7 +2,9 @@ package com.meession.etm.module.crm.dal.dataobject.customer;
 
 import com.meession.etm.framework.mybatis.core.dataobject.BaseDO;
 import com.meession.etm.module.crm.enums.DictTypeConstants;
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.KeySequence;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.*;
@@ -67,6 +69,26 @@ public class CrmCustomerDO extends BaseDO {
      * 成为负责人的时间
      */
     private LocalDateTime ownerTime;
+
+    /** Current pool state: 0 owned, 1 public pool, 2 garbage pool. */
+    private Integer poolStatus;
+    /** Time of the current public/garbage pool entry. */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private LocalDateTime poolEntryTime;
+    /** Owner immediately before the current pool entry. */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Long poolPreviousOwnerUserId;
+    /** Machine-readable reason for the current pool entry. */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String poolReason;
+    /** Number of times the customer has entered the public pool. */
+    private Integer poolCycleCount;
+    /** Time at which the customer entered the garbage pool. */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private LocalDateTime garbageTime;
+    /** Required reason for the current garbage-pool state. */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String garbageReason;
 
     /**
      * 锁定状态

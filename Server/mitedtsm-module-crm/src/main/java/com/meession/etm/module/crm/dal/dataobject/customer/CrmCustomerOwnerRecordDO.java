@@ -46,4 +46,10 @@ public class CrmCustomerOwnerRecordDO extends BaseDO {
     /** 归属变更类型，见 CrmCustomerOwnerRecordTypeEnum。 */
     private Integer type;
 
+    /** Machine-readable source of this immutable ownership event. */
+    private String source;
+
+    /** Optional human-readable reason captured with this event. */
+    private String reason;
+
 }

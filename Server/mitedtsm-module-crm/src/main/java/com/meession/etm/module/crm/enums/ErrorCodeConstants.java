@@ -118,6 +118,20 @@ public interface ErrorCodeConstants {
     ErrorCode CUSTOMER_LIFECYCLE_STATUS_SAME = new ErrorCode(1_020_006_019, "客户已经处于目标生命周期状态，无需重复更新");
     ErrorCode CUSTOMER_LIFECYCLE_LOST_REASON_REQUIRED = new ErrorCode(1_020_006_020, "客户转为流失状态时必须填写流失原因");
     ErrorCode CUSTOMER_LIFECYCLE_STATUS_INVALID = new ErrorCode(1_020_006_021, "无效的客户生命周期状态：{}");
+    ErrorCode CUSTOMER_POOL_ACTIVE_BUSINESS = new ErrorCode(1_020_006_022,
+            "客户【{}】存在进行中的商机，不能移入公海");
+    ErrorCode CUSTOMER_POOL_ACTIVE_CONTRACT = new ErrorCode(1_020_006_023,
+            "客户【{}】存在未完结销售单据，不能移入公海");
+    ErrorCode CUSTOMER_POOL_DAILY_CLAIM_LIMIT = new ErrorCode(1_020_006_024,
+            "今日领取已达上限（{} 个/天），请明日再试");
+    ErrorCode CUSTOMER_POOL_REPEAT_CLAIM_COOLDOWN = new ErrorCode(1_020_006_025,
+            "{} 天内不可重复领取同一客户【{}】");
+    ErrorCode CUSTOMER_POOL_STATE_CHANGED = new ErrorCode(1_020_006_026,
+            "客户【{}】池状态已变化，请刷新后重试");
+    ErrorCode CUSTOMER_POOL_MANAGE_DENIED = new ErrorCode(1_020_006_027,
+            "只能将本人客户或授权范围内的下属客户移入公海");
+    ErrorCode CUSTOMER_POOL_BATCH_SIZE_EXCEEDS_POLICY = new ErrorCode(1_020_006_028,
+            "自动回收批量超过部署安全上限（最多 {} 条）");
 
     // ========== 权限管理 1_020_007_000 ==========
     ErrorCode CRM_PERMISSION_NOT_EXISTS = new ErrorCode(1_020_007_000, "数据权限不存在");
