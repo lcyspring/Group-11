@@ -50,6 +50,7 @@
 | CRM-IAM-BUG-001 | GAP-IAM-003、ADR-013 | P0/权限 | CRM `owner_user_id` 未接入系统角色部门范围；新增统一授权服务，把 ALL/CUSTOM/DEPT/DEPT_AND_CHILD/SELF 转为只读负责人范围 | 授权专项 7/7、CRM 239/239 | 已关闭 |
 | CRM-IAM-BUG-004 | GAP-IAM-003、ADR-012/013 | P0/安全 | 旧切面和导出把下属对象权限隐式提升给上级；下属视图改为组织范围交集，写与导出只认当前用户直接 WRITE/OWNER | 导出负向、授权专项、CRM 239/239 | 已关闭 |
 | CRM-INVOICE-UI-BUG-001 | GAP-FIN-004、GAP-IAM-003 | P1 | 发票后端支持 `sceneType`，前端未提交导致财务角色固定本人范围；补四类归属 Tab 和三语标签 | 专项 ESLint、Web build | 已关闭 |
+| SYSTEM-NOTIFY-FE-BUG-001 | 公共管理端体验 | P1 | 通知请求绑在内部 SVG 点击且无预取、缓存、加载态或并发合并；改为受控弹层、预取与最近成功缓存，并修复伪清未读数和轮询泄漏 | Loader 3/3、专项 ESLint、Ubuntu Web build | 已关闭 |
 
 ## 边界说明
 

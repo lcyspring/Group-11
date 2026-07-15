@@ -30,6 +30,7 @@
     "clean:cache": "npx rimraf node_modules/.cache",
     "test:crm-statistics": "node --import ./scripts/register-typescript-test-loader.mjs --test src/views/crm/statistics/performance/growthRate.test.mjs src/views/crm/statistics/performance/performanceTarget.test.mjs src/views/crm/statistics/customer/dealCycle.test.mjs",
     "verify:crm-statistics-authorized-comparison": "pnpm run test:crm-statistics && eslint --max-warnings=0 --ext .ts,.vue src/api/crm/statistics/performance.ts src/views/crm/statistics/performance",
+    "verify:notification-message": "node --import ./scripts/register-typescript-test-loader.mjs --test src/layout/components/Message/src/notificationLoader.test.mjs && eslint --max-warnings=0 --ext .ts,.vue src/layout/components/Message/src",
     "test:crm-invoice": "node --import ./scripts/register-typescript-test-loader.mjs --test src/views/crm/invoice/constants.test.mjs",
     "lint:eslint": "eslint --fix --ext .js,.ts,.vue ./src",
     "lint:format": "prettier --write --loglevel warn \"src/**/*.{js,ts,json,tsx,css,less,scss,vue,html,md}\"",
