@@ -93,8 +93,17 @@ public class CrmPoolPolicyProperties {
         @Min(1)
         private int minimumPoolCycles;
         @Min(1)
-        @Max(5000)
         private int batchSize;
+        @Min(1)
+        private int maxBatchSize;
+        @Min(1)
+        @Max(100)
+        private int maxBatches;
+
+        @AssertTrue(message = "CRM garbage batch size must not exceed its YAML safety limit")
+        public boolean isBatchSizeWithinSafetyLimit() {
+            return batchSize <= maxBatchSize;
+        }
     }
 
     @Data

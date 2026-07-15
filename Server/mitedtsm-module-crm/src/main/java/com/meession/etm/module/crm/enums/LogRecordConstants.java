@@ -39,6 +39,12 @@ public interface LogRecordConstants {
     String CRM_CUSTOMER_LOCK_SUCCESS = "{{#customer.lockStatus ? '将客户【' + #customer.name + '】解锁' : '将客户【' + #customer.name + '】锁定'}}";
     String CRM_CUSTOMER_POOL_SUB_TYPE = "客户放入公海";
     String CRM_CUSTOMER_POOL_SUCCESS = "将客户【{{#customerName}}】放入了公海";
+    String CRM_CUSTOMER_GARBAGE_SUB_TYPE = "客户转入垃圾池";
+    String CRM_CUSTOMER_GARBAGE_SUCCESS = "将客户【{{#customerName}}】转入了垃圾池";
+    String CRM_CUSTOMER_GARBAGE_RESTORE_SUB_TYPE = "垃圾客户恢复";
+    String CRM_CUSTOMER_GARBAGE_RESTORE_SUCCESS = "将垃圾客户【{{#customerName}}】恢复到了公海";
+    String CRM_CUSTOMER_GARBAGE_DELETE_SUB_TYPE = "垃圾客户永久删除";
+    String CRM_CUSTOMER_GARBAGE_DELETE_SUCCESS = "永久删除了垃圾客户【{{#customerName}}】";
     String CRM_CUSTOMER_RECEIVE_SUB_TYPE = "{{#ownerUserName != null ? '分配客户' : '领取客户'}}";
     String CRM_CUSTOMER_RECEIVE_SUCCESS = "{{#ownerUserName != null ? '将客户【' + #customer.name + '】分配给【' + #ownerUserName + '】' : '领取客户【' + #customer.name + '】'}}";
     String CRM_CUSTOMER_IMPORT_SUB_TYPE = "{{#isUpdate ? '导入并更新客户' : '导入客户'}}";

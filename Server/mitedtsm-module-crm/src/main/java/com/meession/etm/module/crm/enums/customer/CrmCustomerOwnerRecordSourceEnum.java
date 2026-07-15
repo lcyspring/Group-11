@@ -16,7 +16,8 @@ public enum CrmCustomerOwnerRecordSourceEnum {
     IMPORT_UNASSIGNED("IMPORT_UNASSIGNED"),
     SELF_CLAIM("SELF_CLAIM"),
     MANAGER_ASSIGN("MANAGER_ASSIGN"),
-    GARBAGE("GARBAGE"),
+    MANUAL_GARBAGE("MANUAL_GARBAGE"),
+    AUTO_GARBAGE("AUTO_GARBAGE"),
     RESTORE_PUBLIC("RESTORE_PUBLIC");
 
     private final String source;

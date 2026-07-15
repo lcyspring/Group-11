@@ -21,6 +21,8 @@ export interface CustomerVO {
   poolPreviousOwnerUserName?: string // 本次入池前负责人名称
   poolReason?: string // 本次入池原因编码
   poolCycleCount?: number // 累计进入公海次数
+  garbageTime?: Date // 进入垃圾池时间
+  garbageReason?: string // 进入垃圾池原因
   lockStatus?: boolean
   dealStatus?: boolean
   lifecycleStatus: CustomerLifecycleStatus
@@ -50,6 +52,12 @@ export enum CustomerLifecycleStatus {
   INTENTIONAL = 20,
   DEAL = 30,
   LOST = 40
+}
+
+export enum CustomerPoolStatus {
+  OWNED = 0,
+  PUBLIC = 1,
+  GARBAGE = 2
 }
 
 export interface CustomerLifecycleRecordVO {
@@ -106,6 +114,25 @@ export interface CustomerOwnerRecordVO {
 // 查询客户列表
 export const getCustomerPage = async (params) => {
   return await request.get({ url: `/crm/customer/page`, params })
+}
+
+export const getCustomerGarbagePage = async (params) => {
+  return await request.get({ url: '/crm/customer-garbage/page', params })
+}
+
+export const putCustomerGarbage = async (data: { customerId: number; reason: string }) => {
+  return await request.put({ url: '/crm/customer-garbage/put', data })
+}
+
+export const restoreCustomerFromGarbage = async (customerId: number) => {
+  return await request.put({ url: '/crm/customer-garbage/restore', params: { customerId } })
+}
+
+export const permanentlyDeleteGarbageCustomer = async (customerId: number) => {
+  return await request.delete({
+    url: '/crm/customer-garbage/delete-permanently',
+    params: { customerId }
+  })
 }
 
 // 进入公海客户提醒的客户列表

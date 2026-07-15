@@ -326,6 +326,11 @@ public class CrmPermissionServiceImpl implements CrmPermissionService {
     }
 
     @Override
+    public void deletePermissionIfPresent(Integer bizType, Long bizId) {
+        permissionMapper.deletePermission(bizType, bizId);
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public void deletePermissionBatch(Collection<Long> ids, Long userId) {
         List<CrmPermissionDO> permissions = permissionMapper.selectByIds(ids);

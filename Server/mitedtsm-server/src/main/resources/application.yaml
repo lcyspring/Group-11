@@ -288,6 +288,8 @@ mitedtsm:
         expire-days: 180
         minimum-pool-cycles: 3
         batch-size: 500
+        max-batch-size: 5000
+        max-batches: 20
       clue:
         contact-expire-days: 30
         daily-claim-limit: 10

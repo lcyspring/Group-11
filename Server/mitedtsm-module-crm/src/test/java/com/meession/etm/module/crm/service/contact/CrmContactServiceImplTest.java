@@ -5,6 +5,8 @@ import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.mysql.contact.CrmContactMapper;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
+import com.meession.etm.module.crm.enums.customer.CrmCustomerPoolStatusEnum;
+import com.meession.etm.module.crm.framework.permission.CrmAuthorizationService;
 import com.meession.etm.module.crm.service.contract.CrmContractService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
 import com.meession.etm.module.crm.service.permission.CrmPermissionService;
@@ -27,6 +29,8 @@ import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTACT_PRIMA
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class CrmContactServiceImplTest {
 
@@ -301,7 +305,7 @@ class CrmContactServiceImplTest {
                     throw new AssertionError("首联系人拒绝删除后不应查询合同");
                 }));
 
-        assertServiceException(() -> service.deleteContact(10L), CONTACT_PRIMARY_DELETE_FAIL);
+        assertServiceException(() -> service.deleteContact(10L, 1L), CONTACT_PRIMARY_DELETE_FAIL);
 
         assertEquals(List.of("select-contact", "lock:100", "select-contact"), calls);
     }
@@ -327,7 +331,7 @@ class CrmContactServiceImplTest {
             default -> throw new AssertionError("最新首联系人拒绝删除后不应调用 " + method.getName());
         });
 
-        assertServiceException(() -> newService(mapper).deleteContact(10L), CONTACT_PRIMARY_DELETE_FAIL);
+        assertServiceException(() -> newService(mapper).deleteContact(10L, 1L), CONTACT_PRIMARY_DELETE_FAIL);
 
         assertEquals(List.of("snapshot", "lock:100", "current"), calls);
     }
@@ -353,9 +357,54 @@ class CrmContactServiceImplTest {
             default -> throw new AssertionError("客户归属变化后不应调用 " + method.getName());
         });
 
-        assertServiceException(() -> newService(mapper).deleteContact(10L), CONTACT_CONCURRENT_CHANGE);
+        assertServiceException(() -> newService(mapper).deleteContact(10L, 1L), CONTACT_CONCURRENT_CHANGE);
 
         assertEquals(List.of("snapshot:100", "lock:100", "current:200"), calls);
+    }
+
+    @Test
+    void garbageAdminCanDeletePrimaryContactToUnblockPermanentDeletion() {
+        List<String> calls = new ArrayList<>();
+        CrmContactDO primary = contact(10L, 100L, true);
+        CrmContactMapper mapper = proxy(CrmContactMapper.class, (proxy, method, args) -> switch (method.getName()) {
+            case "selectById", "selectByIdForUpdate" -> primary;
+            case "lockCustomerById" -> 100L;
+            case "deleteById" -> {
+                calls.add("delete-contact");
+                yield 1;
+            }
+            default -> throw new AssertionError("未预期的 Mapper 调用 " + method.getName());
+        });
+        CrmContactServiceImpl service = newService(mapper);
+        CrmAuthorizationService authorizationService = mock(CrmAuthorizationService.class);
+        when(authorizationService.isCrmAdmin(9L)).thenReturn(true);
+        ReflectionTestUtils.setField(service, "authorizationService", authorizationService);
+        ReflectionTestUtils.setField(service, "customerService", proxy(CrmCustomerService.class,
+                (proxy, method, args) -> new CrmCustomerDO().setId(100L)
+                        .setPoolStatus(CrmCustomerPoolStatusEnum.GARBAGE.getStatus())));
+        ReflectionTestUtils.setField(service, "contractService", proxy(CrmContractService.class,
+                (proxy, method, args) -> 0L));
+        ReflectionTestUtils.setField(service, "contactBusinessService", proxy(CrmContactBusinessService.class,
+                (proxy, method, args) -> null));
+
+        service.deleteContact(10L, 9L);
+
+        assertEquals(List.of("delete-contact"), calls);
+    }
+
+    @Test
+    void crmAdminStillCannotDeletePrimaryContactOutsideGarbage() {
+        CrmContactDO primary = contact(10L, 100L, true);
+        CrmContactMapper mapper = rejectingLifecycleMapper(primary, new ArrayList<>());
+        CrmContactServiceImpl service = newService(mapper);
+        CrmAuthorizationService authorizationService = mock(CrmAuthorizationService.class);
+        when(authorizationService.isCrmAdmin(9L)).thenReturn(true);
+        ReflectionTestUtils.setField(service, "authorizationService", authorizationService);
+        ReflectionTestUtils.setField(service, "customerService", proxy(CrmCustomerService.class,
+                (proxy, method, args) -> new CrmCustomerDO().setId(100L)
+                        .setPoolStatus(CrmCustomerPoolStatusEnum.PUBLIC.getStatus())));
+
+        assertServiceException(() -> service.deleteContact(10L, 9L), CONTACT_PRIMARY_DELETE_FAIL);
     }
 
     @Test
@@ -461,6 +510,7 @@ class CrmContactServiceImplTest {
         ReflectionTestUtils.setField(service, "customerService", proxy(CrmCustomerService.class,
                 (proxy, method, args) -> method.getName().equals("getCustomer")
                         ? new CrmCustomerDO().setId((Long) args[0]) : null));
+        ReflectionTestUtils.setField(service, "authorizationService", mock(CrmAuthorizationService.class));
         ReflectionTestUtils.setField(service, "adminUserApi", proxy(AdminUserApi.class,
                 (proxy, method, args) -> null));
         ReflectionTestUtils.setField(service, "permissionService", proxy(CrmPermissionService.class,

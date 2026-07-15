@@ -4,8 +4,11 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.meession.etm.framework.common.util.spring.SpringExpressionUtils;
 import com.meession.etm.framework.web.core.util.WebFrameworkUtils;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.permission.CrmPermissionDO;
+import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerMapper;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
+import com.meession.etm.module.crm.enums.customer.CrmCustomerPoolStatusEnum;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
 import com.meession.etm.module.crm.framework.permission.core.annotations.CrmPermission;
 import com.meession.etm.module.crm.service.permission.CrmPermissionService;
@@ -23,6 +26,7 @@ import static com.meession.etm.framework.common.exception.util.ServiceExceptionU
 import static com.meession.etm.framework.common.util.collection.CollectionUtils.*;
 import static com.meession.etm.framework.common.util.json.JsonUtils.toJsonString;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CRM_PERMISSION_DENIED;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CUSTOMER_GARBAGE_ADMIN_REQUIRED;
 
 /**
  * Crm 数据权限校验 AOP 切面
@@ -39,6 +43,9 @@ public class CrmPermissionAspect {
 
     @Resource
     private CrmAuthorizationService crmAuthorizationService;
+
+    @Resource
+    private CrmCustomerMapper crmCustomerMapper;
 
     @Before("@annotation(crmPermission)")
     public void doBefore(JoinPoint joinPoint, CrmPermission crmPermission) {
@@ -59,10 +66,11 @@ public class CrmPermissionAspect {
         // 2. 逐个校验权限
         List<CrmPermissionDO> permissionList = crmPermissionService.getPermissionListByBiz(bizType, bizIds);
         Map<Long, List<CrmPermissionDO>> multiMap = convertMultiMap(permissionList, CrmPermissionDO::getBizId);
-        bizIds.forEach(bizId -> validatePermission(bizType, multiMap.get(bizId), permissionLevel));
+        bizIds.forEach(bizId -> validatePermission(bizType, bizId, multiMap.get(bizId), permissionLevel));
     }
 
-    private void validatePermission(Integer bizType, List<CrmPermissionDO> bizPermissions, Integer permissionLevel) {
+    private void validatePermission(Integer bizType, Long bizId, List<CrmPermissionDO> bizPermissions,
+                                    Integer permissionLevel) {
         // 1. 如果是超级管理员则直接通过
         Long userId = getUserId();
         if (crmAuthorizationService.isCrmAdmin(userId)) {
@@ -70,8 +78,10 @@ public class CrmPermissionAspect {
         }
         // 特殊：没有数据权限的情况，针对 READ 的特殊处理
         if (CollUtil.isEmpty(bizPermissions)) {
-            // 1.1 公海数据，如果没有团队成员，大家也应该有 READ 权限才对
+            // 1.1 Only the explicit public pool is readable without a team grant. Garbage customers are
+            // an administrator quarantine and must never inherit the legacy "no owner means public" rule.
             if (CrmPermissionLevelEnum.isRead(permissionLevel)) {
+                validateCustomerPoolReadAccess(bizType, bizId);
                 return;
             }
             // 没有数据权限的情况下超出了读权限直接报错，避免后面校验空指针
@@ -92,6 +102,21 @@ public class CrmPermissionAspect {
         log.info("[doBefore][userId({}) 要求权限({}) 实际权限({}) 数据校验错误]", // 打个 info 日志，方便后续排查问题、审计
                 userId, permissionLevel, toJsonString(bizPermissions));
         throw exception(CRM_PERMISSION_DENIED, CrmBizTypeEnum.getNameByType(bizType));
+    }
+
+    private void validateCustomerPoolReadAccess(Integer bizType, Long bizId) {
+        if (!Objects.equals(bizType, CrmBizTypeEnum.CRM_CUSTOMER.getType())) {
+            return;
+        }
+        CrmCustomerDO customer = crmCustomerMapper.selectById(bizId);
+        if (customer != null && Objects.equals(customer.getPoolStatus(),
+                CrmCustomerPoolStatusEnum.GARBAGE.getStatus())) {
+            throw exception(CUSTOMER_GARBAGE_ADMIN_REQUIRED);
+        }
+        if (customer == null || !Objects.equals(customer.getPoolStatus(),
+                CrmCustomerPoolStatusEnum.PUBLIC.getStatus())) {
+            throw exception(CRM_PERMISSION_DENIED, CrmBizTypeEnum.getNameByType(bizType));
+        }
     }
 
     /**

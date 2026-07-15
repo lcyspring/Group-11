@@ -201,6 +201,18 @@
         min-width="180"
       />
       <el-table-column align="center" :label="t('common.creator')" prop="creatorName" min-width="100" />
+      <el-table-column :label="t('common.action')" align="center" fixed="right" min-width="130">
+        <template #default="scope">
+          <el-button
+            v-hasPermi="['crm:customer-garbage:manage']"
+            link
+            type="danger"
+            @click="handlePutGarbage(scope.row)"
+          >
+            {{ t('putGarbage') }}
+          </el-button>
+        </template>
+      </el-table-column>
     </el-table>
     <!-- 分页 -->
     <Pagination
@@ -245,9 +257,31 @@ const poolReasonLabel = (reason?: string) => {
     AUTO_NO_FOLLOW_UP: 'poolReasonNoFollowUp',
     AUTO_NO_DEAL: 'poolReasonNoDeal',
     IMPORT_UNASSIGNED: 'poolReasonImportUnassigned',
-    LEGACY_PUBLIC: 'poolReasonLegacy'
+    LEGACY_PUBLIC: 'poolReasonLegacy',
+    RESTORE_PUBLIC: 'poolReasonRestored'
   }
   return reason && keyMap[reason] ? t(keyMap[reason]) : reason || '-'
+}
+
+const handlePutGarbage = async (row: CustomerApi.CustomerVO) => {
+  try {
+    const { value } = await ElMessageBox.prompt(
+      t('putGarbageReasonPrompt', { name: row.name }),
+      t('putGarbage'),
+      {
+        inputType: 'textarea',
+        inputValidator: (reason) => {
+          const normalized = String(reason || '').trim()
+          if (!normalized) return t('putGarbageReasonRequired')
+          if (normalized.length > 500) return t('putGarbageReasonTooLong')
+          return true
+        }
+      }
+    )
+    await CustomerApi.putCustomerGarbage({ customerId: row.id, reason: value.trim() })
+    message.success(t('putGarbageSuccess'))
+    await getList()
+  } catch {}
 }
 
 /** 查询列表 */

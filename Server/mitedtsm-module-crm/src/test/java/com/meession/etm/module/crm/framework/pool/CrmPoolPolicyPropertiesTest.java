@@ -26,6 +26,19 @@ class CrmPoolPolicyPropertiesTest {
                 violation.getMessage().contains("must not exceed its YAML safety limit")));
     }
 
+    @Test
+    void validatesGarbageBatchAgainstYamlSafetyLimit() {
+        CrmPoolPolicyProperties.Garbage garbage = new CrmPoolPolicyProperties.Garbage();
+        garbage.setExpireDays(180);
+        garbage.setMinimumPoolCycles(3);
+        garbage.setBatchSize(5001);
+        garbage.setMaxBatchSize(5000);
+        garbage.setMaxBatches(20);
+
+        assertTrue(validator.validate(garbage).stream().anyMatch(violation ->
+                violation.getMessage().contains("garbage batch size must not exceed")));
+    }
+
     private static CrmPoolPolicyProperties.Customer customerPolicy(int batchSize, int maxBatchSize) {
         CrmPoolPolicyProperties.Customer customer = new CrmPoolPolicyProperties.Customer();
         customer.setContactExpireDays(30);

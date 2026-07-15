@@ -80,6 +80,9 @@ public interface CrmPermissionService {
      */
     void deletePermission(Integer bizType, Long bizId);
 
+    /** Delete all grants when present; pool quarantine must also work for objects with no team grants. */
+    void deletePermissionIfPresent(Integer bizType, Long bizId);
+
     /**
      * 批量删除数据权限
      *

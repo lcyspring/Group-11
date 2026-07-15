@@ -11,9 +11,12 @@ import com.meession.etm.module.crm.controller.admin.contact.vo.CrmContactSaveReq
 import com.meession.etm.module.crm.controller.admin.contact.vo.CrmContactTransferReqVO;
 import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactBusinessDO;
 import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.mysql.contact.CrmContactMapper;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
+import com.meession.etm.module.crm.enums.customer.CrmCustomerPoolStatusEnum;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
+import com.meession.etm.module.crm.framework.permission.CrmAuthorizationService;
 import com.meession.etm.module.crm.framework.permission.core.annotations.CrmPermission;
 import com.meession.etm.module.crm.service.business.CrmBusinessService;
 import com.meession.etm.module.crm.service.contract.CrmContractService;
@@ -58,6 +61,8 @@ public class CrmContactServiceImpl implements CrmContactService {
 
     @Resource
     private CrmCustomerService customerService;
+    @Resource
+    private CrmAuthorizationService authorizationService;
     @Resource
     private CrmPermissionService permissionService;
     @Resource
@@ -169,7 +174,7 @@ public class CrmContactServiceImpl implements CrmContactService {
     @LogRecord(type = CRM_CONTACT_TYPE, subType = CRM_CONTACT_DELETE_SUB_TYPE, bizNo = "{{#id}}",
             success = CRM_CONTACT_DELETE_SUCCESS)
     @CrmPermission(bizType = CrmBizTypeEnum.CRM_CONTACT, bizId = "#id", level = CrmPermissionLevelEnum.OWNER)
-    public void deleteContact(Long id) {
+    public void deleteContact(Long id, Long userId) {
         // 1.1 首次读取并校验存在
         CrmContactDO contact = validateContactExists(id);
         // 1.2 锁定客户并使用当前读重新读取，禁止删除最新的首联系人
@@ -179,7 +184,8 @@ public class CrmContactServiceImpl implements CrmContactService {
             throw exception(CONTACT_CONCURRENT_CHANGE);
         }
         contact = currentContact;
-        if (Boolean.TRUE.equals(contact.getPrimaryContact())) {
+        if (Boolean.TRUE.equals(contact.getPrimaryContact())
+                && !canDeleteGarbagePrimaryContact(contact.getCustomerId(), userId)) {
             throw exception(CONTACT_PRIMARY_DELETE_FAIL);
         }
         // 1.3 校验是否关联合同
@@ -193,10 +199,24 @@ public class CrmContactServiceImpl implements CrmContactService {
         // 4.1 删除商机关联
         contactBusinessService.deleteContactBusinessByContactId(id);
         // 4.2 删除数据权限
-        permissionService.deletePermission(CrmBizTypeEnum.CRM_CONTACT.getType(), id);
+        permissionService.deletePermissionIfPresent(CrmBizTypeEnum.CRM_CONTACT.getType(), id);
 
         // 记录操作日志上下文
         LogRecordContext.putVariable("contactName", contact.getName());
+    }
+
+    /**
+     * A garbage customer must first remove aggregate children before permanent deletion. Only a configured CRM
+     * administrator may bypass the normal "a customer always keeps one primary contact" invariant in that
+     * quarantine state; owned and public customers retain the invariant unchanged.
+     */
+    private boolean canDeleteGarbagePrimaryContact(Long customerId, Long userId) {
+        if (!authorizationService.isCrmAdmin(userId)) {
+            return false;
+        }
+        CrmCustomerDO customer = customerService.getCustomer(customerId);
+        return customer != null && Objects.equals(customer.getPoolStatus(),
+                CrmCustomerPoolStatusEnum.GARBAGE.getStatus());
     }
 
     /**
@@ -436,6 +456,11 @@ public class CrmContactServiceImpl implements CrmContactService {
     @Override
     public Long getContactCountByCustomerId(Long customerId) {
         return contactMapper.selectCount(CrmContactDO::getCustomerId, customerId);
+    }
+
+    @Override
+    public List<CrmContactDO> getContactListByCustomerId(Long customerId) {
+        return contactMapper.selectListByCustomerId(customerId);
     }
 
     @Override

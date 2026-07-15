@@ -8,6 +8,7 @@ import com.meession.etm.framework.mybatis.core.mapper.BaseMapperX;
 import com.meession.etm.framework.mybatis.core.query.LambdaQueryWrapperX;
 import com.meession.etm.framework.mybatis.core.query.MPJLambdaWrapperX;
 import com.meession.etm.module.crm.controller.admin.customer.vo.customer.CrmCustomerPageReqVO;
+import com.meession.etm.module.crm.controller.admin.customer.vo.garbage.CrmCustomerGarbagePageReqVO;
 import com.meession.etm.module.crm.dal.dataobject.clue.CrmClueDO;
 import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
@@ -21,6 +22,8 @@ import com.meession.etm.module.crm.util.CrmPermissionUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Delete;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -99,6 +102,59 @@ public interface CrmCustomerMapper extends BaseMapperX<CrmCustomerDO> {
                 .set(CrmCustomerDO::getPoolPreviousOwnerUserId, null)
                 .set(CrmCustomerDO::getPoolReason, null));
     }
+
+    default int updatePublicToGarbage(Long id, LocalDateTime garbageTime, String reason) {
+        return update(new LambdaUpdateWrapper<CrmCustomerDO>()
+                .eq(CrmCustomerDO::getId, id)
+                .eq(CrmCustomerDO::getPoolStatus, CrmCustomerPoolStatusEnum.PUBLIC.getStatus())
+                .isNull(CrmCustomerDO::getOwnerUserId)
+                .set(CrmCustomerDO::getPoolStatus, CrmCustomerPoolStatusEnum.GARBAGE.getStatus())
+                .set(CrmCustomerDO::getGarbageTime, garbageTime)
+                .set(CrmCustomerDO::getGarbageReason, reason));
+    }
+
+    default int updateGarbageToPublic(Long id, LocalDateTime poolEntryTime, String poolReason) {
+        return update(new LambdaUpdateWrapper<CrmCustomerDO>()
+                .eq(CrmCustomerDO::getId, id)
+                .eq(CrmCustomerDO::getPoolStatus, CrmCustomerPoolStatusEnum.GARBAGE.getStatus())
+                .isNull(CrmCustomerDO::getOwnerUserId)
+                .set(CrmCustomerDO::getPoolStatus, CrmCustomerPoolStatusEnum.PUBLIC.getStatus())
+                .set(CrmCustomerDO::getPoolEntryTime, poolEntryTime)
+                .set(CrmCustomerDO::getPoolReason, poolReason)
+                .set(CrmCustomerDO::getGarbageTime, null)
+                .set(CrmCustomerDO::getGarbageReason, null));
+    }
+
+    default PageResult<CrmCustomerDO> selectGarbagePage(CrmCustomerGarbagePageReqVO pageReqVO) {
+        LambdaQueryWrapperX<CrmCustomerDO> query = new LambdaQueryWrapperX<>();
+        query.likeIfPresent(CrmCustomerDO::getName, pageReqVO.getName())
+                .eqIfPresent(CrmCustomerDO::getMobile, pageReqVO.getMobile())
+                .eqIfPresent(CrmCustomerDO::getLevel, pageReqVO.getLevel())
+                .eqIfPresent(CrmCustomerDO::getSource, pageReqVO.getSource());
+        query.eq(CrmCustomerDO::getPoolStatus, CrmCustomerPoolStatusEnum.GARBAGE.getStatus())
+                .isNull(CrmCustomerDO::getOwnerUserId)
+                .orderByDesc(CrmCustomerDO::getGarbageTime)
+                .orderByDesc(CrmCustomerDO::getId);
+        return selectPage(pageReqVO, query);
+    }
+
+    default List<CrmCustomerDO> selectListByAutoGarbage(Long afterId, LocalDateTime expireBefore,
+                                                        int minimumPoolCycles, int scanSize, int maxScanSize) {
+        return selectList(new LambdaQueryWrapperX<CrmCustomerDO>()
+                .eq(CrmCustomerDO::getPoolStatus, CrmCustomerPoolStatusEnum.PUBLIC.getStatus())
+                .isNull(CrmCustomerDO::getOwnerUserId)
+                .gt(CrmCustomerDO::getId, afterId)
+                .le(CrmCustomerDO::getPoolEntryTime, expireBefore)
+                .ge(CrmCustomerDO::getPoolCycleCount, minimumPoolCycles)
+                .eq(CrmCustomerDO::getLockStatus, false)
+                .eq(CrmCustomerDO::getDealStatus, false)
+                .orderByAsc(CrmCustomerDO::getId)
+                .last("LIMIT " + Math.max(1, Math.min(scanSize, maxScanSize))));
+    }
+
+    @Delete("DELETE FROM crm_customer WHERE id = #{id} AND tenant_id = #{tenantId} " +
+            "AND pool_status = 2 AND owner_user_id IS NULL")
+    int deleteGarbagePermanently(@Param("tenantId") Long tenantId, @Param("id") Long id);
 
     /**
      * 显式更新上级客户编号。不能依赖 updateById，因为 MyBatis 默认会忽略 null，导致无法解除父关系。

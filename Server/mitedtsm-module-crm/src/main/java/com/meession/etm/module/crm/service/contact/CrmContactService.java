@@ -42,9 +42,10 @@ public interface CrmContactService {
     /**
      * 删除联系人
      *
-     * @param id 编号
+     * @param id     编号
+     * @param userId 操作人编号
      */
-    void deleteContact(Long id);
+    void deleteContact(Long id, Long userId);
 
     /**
      * 联系人转移
@@ -167,6 +168,9 @@ public interface CrmContactService {
      * @return 数量
      */
     Long getContactCountByCustomerId(Long customerId);
+
+    /** Internal customer lifecycle query; caller is responsible for customer command authorization. */
+    List<CrmContactDO> getContactListByCustomerId(Long customerId);
 
     /**
      * 获得联系人列表

@@ -26,12 +26,26 @@
     >
       {{ t('lock') }}
     </el-button>
-    <el-button v-if="!customer.ownerUserId" type="primary" @click="handleReceive"> {{ t('receive') }}</el-button>
-    <el-button v-if="!customer.ownerUserId" type="primary" @click="handleDistributeForm">
+    <el-button
+      v-if="customer.poolStatus === CustomerApi.CustomerPoolStatus.PUBLIC"
+      type="primary"
+      @click="handleReceive"
+    >
+      {{ t('receive') }}
+    </el-button>
+    <el-button
+      v-if="customer.poolStatus === CustomerApi.CustomerPoolStatus.PUBLIC"
+      type="primary"
+      @click="handleDistributeForm"
+    >
       {{ t('assign') }}
     </el-button>
     <el-button
-      v-if="customer.ownerUserId && permissionListRef?.validateOwnerUser"
+      v-if="
+        customer.poolStatus === CustomerApi.CustomerPoolStatus.OWNED &&
+        customer.ownerUserId &&
+        permissionListRef?.validateOwnerUser
+      "
       @click="handlePutPool"
     >
       {{ t('putPool') }}

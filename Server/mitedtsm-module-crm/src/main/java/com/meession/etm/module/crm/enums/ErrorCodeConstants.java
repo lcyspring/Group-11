@@ -132,6 +132,14 @@ public interface ErrorCodeConstants {
             "只能将本人客户或授权范围内的下属客户移入公海");
     ErrorCode CUSTOMER_POOL_BATCH_SIZE_EXCEEDS_POLICY = new ErrorCode(1_020_006_028,
             "自动回收批量超过部署安全上限（最多 {} 条）");
+    ErrorCode CUSTOMER_GARBAGE_ADMIN_REQUIRED = new ErrorCode(1_020_006_029,
+            "客户垃圾池仅限 CRM 管理员操作");
+    ErrorCode CUSTOMER_GARBAGE_SOURCE_INVALID = new ErrorCode(1_020_006_030,
+            "只有公海客户可以转入垃圾池");
+    ErrorCode CUSTOMER_GARBAGE_STATE_INVALID = new ErrorCode(1_020_006_031,
+            "客户不在垃圾池或状态已变化，请刷新后重试");
+    ErrorCode CUSTOMER_GARBAGE_DELETE_REFERENCED = new ErrorCode(1_020_006_032,
+            "永久删除失败，客户仍有关联{}，请先解除关联");
 
     // ========== 权限管理 1_020_007_000 ==========
     ErrorCode CRM_PERMISSION_NOT_EXISTS = new ErrorCode(1_020_007_000, "数据权限不存在");
