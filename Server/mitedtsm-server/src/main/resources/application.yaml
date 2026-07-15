@@ -270,6 +270,11 @@ mitedtsm:
     receivable-refund:
       process-definition-key: crm-receivable-refund-audit
       number-prefix: TK
+    reimbursement:
+      process-definition-key: crm-reimbursement-audit
+      number-prefix: BX
+      default-currency: CNY
+      protected-file-directory: crm-protected/reimbursement
     statistics-metadata:
       # CRM 统计当前均为请求时实时聚合；指标口径只能在此处显式声明。
       refresh-mode: REALTIME_QUERY

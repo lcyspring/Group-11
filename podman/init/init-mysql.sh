@@ -142,6 +142,12 @@ if [ -d "$SQL_NEW_DIR" ]; then
         echo "Executing: new-crm-customer-lifecycle.sql"
         mysql_utf8 -uroot -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < "${SQL_NEW_DIR}/new-crm-customer-lifecycle.sql"
     fi
+
+    # 4.18 执行 CRM 报销、费用分类、明细和审批轨迹
+    if [ -f "${SQL_NEW_DIR}/new-crm-reimbursement.sql" ]; then
+        echo "Executing: new-crm-reimbursement.sql"
+        mysql_utf8 -uroot -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < "${SQL_NEW_DIR}/new-crm-reimbursement.sql"
+    fi
 fi
 
 echo "MySQL initialization completed successfully!"

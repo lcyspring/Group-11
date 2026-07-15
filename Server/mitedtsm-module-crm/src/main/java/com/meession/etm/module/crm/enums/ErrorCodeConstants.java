@@ -225,4 +225,27 @@ public interface ErrorCodeConstants {
     ErrorCode RECEIVABLE_REFUND_CONCURRENT_CHANGE = new ErrorCode(1_020_017_007,
             "退款/冲销状态已变化，请刷新后重试");
 
+    // ========== 报销与费用分类 1_020_018_000 ==========
+    ErrorCode REIMBURSEMENT_NOT_EXISTS = new ErrorCode(1_020_018_000, "报销单不存在");
+    ErrorCode REIMBURSEMENT_NO_EXISTS = new ErrorCode(1_020_018_001, "报销编号已存在，请重试");
+    ErrorCode REIMBURSEMENT_ITEM_REQUIRED = new ErrorCode(1_020_018_002, "报销单至少需要一条费用明细");
+    ErrorCode REIMBURSEMENT_ITEM_AMOUNT_INVALID = new ErrorCode(1_020_018_003, "费用明细金额必须大于 0");
+    ErrorCode REIMBURSEMENT_CATEGORY_NOT_EXISTS = new ErrorCode(1_020_018_004, "费用分类不存在");
+    ErrorCode REIMBURSEMENT_CATEGORY_DISABLED = new ErrorCode(1_020_018_005, "费用分类【{}】已停用");
+    ErrorCode REIMBURSEMENT_CATEGORY_CODE_EXISTS = new ErrorCode(1_020_018_006, "费用分类编码已存在");
+    ErrorCode REIMBURSEMENT_CATEGORY_NAME_EXISTS = new ErrorCode(1_020_018_007, "费用分类名称已存在");
+    ErrorCode REIMBURSEMENT_CATEGORY_USED = new ErrorCode(1_020_018_008, "费用分类已被报销明细使用，不能删除");
+    ErrorCode REIMBURSEMENT_CUSTOMER_NOT_EXISTS = new ErrorCode(1_020_018_009, "关联客户不存在");
+    ErrorCode REIMBURSEMENT_CONTRACT_NOT_EXISTS = new ErrorCode(1_020_018_010, "关联合同不存在");
+    ErrorCode REIMBURSEMENT_CONTRACT_CUSTOMER_MISMATCH = new ErrorCode(1_020_018_011, "合同与所选客户不一致");
+    ErrorCode REIMBURSEMENT_DATE_RANGE_INVALID = new ErrorCode(1_020_018_012, "费用开始日期不能晚于结束日期");
+    ErrorCode REIMBURSEMENT_EDIT_STATUS_INVALID = new ErrorCode(1_020_018_013, "当前报销状态不允许编辑");
+    ErrorCode REIMBURSEMENT_DELETE_STATUS_INVALID = new ErrorCode(1_020_018_014, "只有从未提交的新草稿可以删除");
+    ErrorCode REIMBURSEMENT_SUBMIT_STATUS_INVALID = new ErrorCode(1_020_018_015, "只有草稿报销单可以提交审批");
+    ErrorCode REIMBURSEMENT_CONCURRENT_CHANGE = new ErrorCode(1_020_018_016, "报销状态已变化，请刷新后重试");
+    ErrorCode REIMBURSEMENT_ITEM_DATE_INVALID = new ErrorCode(1_020_018_017, "费用发生日期必须在报销日期范围内");
+    ErrorCode REIMBURSEMENT_TOTAL_AMOUNT_INVALID = new ErrorCode(1_020_018_018, "报销总金额超出系统支持范围");
+    ErrorCode REIMBURSEMENT_ATTACHMENT_NOT_MANAGED = new ErrorCode(1_020_018_019, "报销附件必须来自系统受管文件存储");
+    ErrorCode REIMBURSEMENT_ATTACHMENT_NOT_PROTECTED = new ErrorCode(1_020_018_020, "报销附件不属于当前报销单的受保护目录");
+
 }
