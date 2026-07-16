@@ -157,3 +157,23 @@
 | `archive.directory` | OCI tar 与 SHA-256 输出目录 |
 | `archive.*_builder_filename` | 两个编译镜像归档文件名 |
 | `archive.overwrite` | 是否允许覆盖已存在归档 |
+
+## CRM 性能与容量基线配置
+
+| 字段 | 作用 |
+|---|---|
+| `endpoint.base_url/tenant_id` | CRM 管理 API 地址和真实验收租户 |
+| `account.username/password` | 只读负载使用的登录账号；真实密码只在 ignored 本机 YAML |
+| `workload.warmup_requests` | 每个场景正式采样前的预热次数 |
+| `workload.requests_per_scenario` | 每个场景正式计量的请求数 |
+| `workload.concurrency` | 正式采样并发数，不得大于场景请求数 |
+| `workload.timeout_seconds` | 单请求超时秒数 |
+| `workload.page_size` | 客户和商机列表页大小 |
+| `workload.department_id/interval` | 统计部门和时间粒度 |
+| `workload.start_time/end_time` | 统计场景的固定数据时间窗 |
+| `thresholds.max_error_rate_percent` | HTTP 或业务码失败的最大百分比 |
+| `thresholds.max_p95_ms/max_p99_ms` | 延迟分位数上限，单位毫秒 |
+| `thresholds.min_throughput_rps` | 每个场景最低吞吐，单位请求/秒 |
+| `containers.server/mysql/redis` | 采集资源与就绪状态的容器名 |
+| `mysql.user/password/database` | 只读统计数据库表规模所需连接信息 |
+| `evidence.output_dir` | Markdown 和 TSV 证据输出目录，相对 YAML 解析 |

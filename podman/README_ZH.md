@@ -10,6 +10,7 @@
 - [YAML 全字段参考](config/YAML_FIELDS_ZH.md)
 - [配置文件分类](config/README_ZH.md)
 - [镜像归档说明](images/README_ZH.md)
+- [各镜像来源、作用与归档策略](images/README_ZH.md#镜像来源与作用)
 
 ## 日常命令
 
@@ -45,6 +46,7 @@ bash ./podman/up.sh ./podman/config/runtime-local.yaml
 - 专项测试：`verify-*`、`test-*`、`check-*`，用于复现功能验收，不是普通启动配置；
 - 数据保护：`database-backup-check.yaml` 复制为 ignored 本机配置后执行；
 - 编译镜像：`build-image-archives-check.yaml` 复制为 ignored 本机配置后选择 save/load/push。
+- 性能验收：`verify-crm-performance-baseline.example.yaml` 复制为 ignored 本机配置后执行只读负载。
 
 ## 安全边界
 

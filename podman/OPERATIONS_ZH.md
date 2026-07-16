@@ -14,6 +14,7 @@
 | 编译镜像归档/上传 | `build-image-archives.sh <yaml>` | 两个工具链镜像 check/save/load/push |
 | CRM 数据备份 | `database-backup.sh <yaml>` | MySQL 一致性压缩备份和 SHA-256 |
 | CRM 恢复演练 | `database-restore.sh <yaml>` | 隔离库恢复、核心表检查和可选清理 |
+| CRM 性能基线 | `verify-crm-performance-baseline.sh <yaml>` | 五类只读负载、分位数、错误率和吞吐证据 |
 | 配置门禁 | `tests/runtime-config/run.sh <yaml>` | 无状态检查 YAML、manifest、脚本和 Pod 不变性 |
 
 `build-assets.sh` 只给已经安装 JDK/Node/pnpm 的 Ubuntu 26.04 成员宿主机使用；本工作站统一使用
@@ -54,9 +55,12 @@ bash ./podman/up.sh ./podman/config/runtime-local.yaml
 ```bash
 bash ./podman/verify-crm-runtime-security.sh ./podman/config/runtime-local.yaml
 bash ./podman/verify-crm-user-guide.sh ./podman/config/runtime-local.yaml
+bash ./podman/verify-crm-performance-baseline.sh ./podman/config/verify-crm-performance-baseline-local.yaml
 ```
 
 完整字段说明见 `config/YAML_FIELDS_ZH.md`。
+各基础镜像、项目运行镜像和编译工具链镜像的上游来源、构建关系及用途见
+`images/README_ZH.md`，部署前不应仅凭相似镜像名判断来源。
 
 ## 备份与恢复
 
@@ -73,3 +77,6 @@ bash ./podman/verify-crm-user-guide.sh ./podman/config/runtime-local.yaml
 - `verify-*.sh` 与 `config/verify-*`、`test-*`、`check-*` 是结构化测试资产，不用于普通启动；
 - 编译工具链镜像推荐 save，并可在登录 GHCR 后使用 `operation.mode: push` 上传；项目运行镜像仍由
   当前源码产物重建。基础运行镜像只有离线交付才执行 `archive_mode: save/pull-save`。
+
+性能基线不是普通启动步骤。它使用 ignored 本机 YAML 中的真实账号，先预热再并发采样，并按 YAML
+阈值退出。开发机结果用于回退比较，不代表生产容量承诺。
