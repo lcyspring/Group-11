@@ -37,6 +37,7 @@ bash ./podman/up.sh ./podman/config/runtime-local.yaml
 - Mall H5：`MallFrontend/unpackage/dist/build/web/`，本地生成且 Git 忽略，进入独立 Nginx 镜像；
 - 前端不会打进后端 JAR/WAR；
 - Ubuntu Server/Web 与 HBuilderX 编译工具链镜像推荐 save 或上传 OCI 仓库；
+- `ghcr.io/elel-code` 下两个编译工具链镜像当前为 public，pull 无需登录，push 仍需维护者登录；
 - Server/Web/Mall 项目运行镜像推荐由当前源码产物重建。
 
 ## 配置分类
@@ -47,6 +48,7 @@ bash ./podman/up.sh ./podman/config/runtime-local.yaml
 - 数据保护：`database-backup-check.yaml` 复制为 ignored 本机配置后执行；
 - 编译镜像：`build-image-archives-check.yaml` 复制为 ignored 本机配置后选择 save/load/push。
 - 性能验收：`verify-crm-performance-baseline.example.yaml` 复制为 ignored 本机配置后执行只读负载。
+- 可观测诊断：`crm-diagnostics.example.yaml` 复制为 ignored 本机配置，原始包写入 `podman/diagnostics/`。
 
 ## 安全边界
 

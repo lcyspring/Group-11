@@ -177,3 +177,20 @@
 | `containers.server/mysql/redis` | 采集资源与就绪状态的容器名 |
 | `mysql.user/password/database` | 只读统计数据库表规模所需连接信息 |
 | `evidence.output_dir` | Markdown 和 TSV 证据输出目录，相对 YAML 解析 |
+
+## CRM 可观测诊断配置
+
+| 字段 | 作用 |
+|---|---|
+| `deployment.pod_name` | 需要诊断的 rootless Pod 名称 |
+| `endpoint.server_health_url/web_url/mall_url` | 三个对外健康入口 |
+| `endpoint.timeout_seconds/expected_health_status` | HTTP 超时与 Server 期望健康状态 |
+| `collection.log_since` | 最近日志窗口，如 `30m`、`2h` |
+| `collection.output_dir` | ignored 原始诊断目录，相对 YAML 解析 |
+| `containers.*` | MySQL、Redis、RabbitMQ、TDengine、Server、Web、Mall 容器名 |
+| `mysql.user/password/database` | 只读采集连接数、表数与库大小的账号和库名 |
+| `thresholds.min_disk_free_percent` | 项目所在文件系统最低可用百分比 |
+| `thresholds.max_host_memory_used_percent` | 主机最大内存使用百分比 |
+| `thresholds.max_mysql_connection_used_percent` | MySQL 已用连接最大百分比 |
+| `thresholds.max_recent_error_lines` | 日志窗口内 ERROR/FATAL 最大行数 |
+| `thresholds.max_container_restarts` | 单容器允许的最大重启次数 |

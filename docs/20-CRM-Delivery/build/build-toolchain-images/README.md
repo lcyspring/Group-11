@@ -11,6 +11,9 @@
 `ghcr.io/elel-code/group-11-build-ubuntu:26.04` 和
 `ghcr.io/elel-code/group-11-hbuilderx-ubuntu:26.04-5.05`。2026-07-17 已完成两个镜像 push，成员可执行：
 
+两个 GHCR package 当前均为 public，执行 pull 不需要 GitHub 登录；只有维护者 push 新标签时需要
+先完成 `podman login ghcr.io`。
+
 ```bash
 podman pull ghcr.io/elel-code/group-11-build-ubuntu:26.04
 podman pull ghcr.io/elel-code/group-11-hbuilderx-ubuntu:26.04-5.05

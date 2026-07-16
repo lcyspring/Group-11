@@ -12,6 +12,7 @@
 | 数据保护 | `database-backup-check.yaml` | 备份/恢复安全模板 |
 | 编译镜像 | `build-image-archives-check.yaml` | 工具链镜像 check/save/load/push 模板 |
 | CRM 性能基线 | `verify-crm-performance-baseline.example.yaml` | 只读并发负载与阈值共享模板 |
+| CRM 诊断包 | `crm-diagnostics.example.yaml` | SLI 阈值、日志窗口和本机诊断输出模板 |
 
 ## 测试配置
 
@@ -19,6 +20,8 @@
 账号、端点、期望值和 Ubuntu 构建开关，供 Bug/功能回归复现，不作为日常部署入口。
 性能基线先复制共享模板为 ignored 的 `verify-crm-performance-baseline-local.yaml`，再填写真实账号；
 报告写入 CRM 独立证据目录。
+诊断模板复制为 ignored 的 `crm-diagnostics-local.yaml` 后填写真实 MySQL 账号；原始日志包只写入
+ignored 的 `podman/diagnostics/`。
 
 新增配置时应优先复用现有协议，不再为一个布尔值增加命令行参数。完整字段见
 [YAML_FIELDS_ZH.md](YAML_FIELDS_ZH.md)。

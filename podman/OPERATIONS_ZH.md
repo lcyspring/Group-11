@@ -15,6 +15,7 @@
 | CRM 数据备份 | `database-backup.sh <yaml>` | MySQL 一致性压缩备份和 SHA-256 |
 | CRM 恢复演练 | `database-restore.sh <yaml>` | 隔离库恢复、核心表检查和可选清理 |
 | CRM 性能基线 | `verify-crm-performance-baseline.sh <yaml>` | 五类只读负载、分位数、错误率和吞吐证据 |
+| CRM 诊断包 | `collect-crm-diagnostics.sh <yaml>` | 健康、容器、日志、数据库与宿主 SLI 诊断 |
 | 配置门禁 | `tests/runtime-config/run.sh <yaml>` | 无状态检查 YAML、manifest、脚本和 Pod 不变性 |
 
 `build-assets.sh` 只给已经安装 JDK/Node/pnpm 的 Ubuntu 26.04 成员宿主机使用；本工作站统一使用
@@ -80,3 +81,6 @@ bash ./podman/verify-crm-performance-baseline.sh ./podman/config/verify-crm-perf
 
 性能基线不是普通启动步骤。它使用 ignored 本机 YAML 中的真实账号，先预热再并发采样，并按 YAML
 阈值退出。开发机结果用于回退比较，不代表生产容量承诺。
+
+可观测诊断使用 `crm-diagnostics-local.yaml`，正常和阈值失败都会保留本机摘要与压缩包。中文 SLI、
+故障处置和诊断包脱敏规则见 `docs/20-CRM-Delivery/operations/crm-observability/`。
