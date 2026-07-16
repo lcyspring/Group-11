@@ -71,24 +71,26 @@
       <el-table-column :label="t('poolCycleCount')" prop="poolCycleCount" align="center" min-width="120" />
       <el-table-column :label="t('garbageTime')" prop="garbageTime" :formatter="dateFormatter" align="center" min-width="180" />
       <el-table-column :label="t('garbageReason')" prop="garbageReason" align="center" min-width="220" />
-      <el-table-column :label="t('common.action')" align="center" fixed="right" min-width="190">
+      <el-table-column :label="t('common.action')" align="center" fixed="right" width="320">
         <template #default="scope">
-          <el-button
-            v-hasPermi="['crm:customer-garbage:manage']"
-            link
-            type="primary"
-            @click="handleRestore(scope.row)"
-          >
-            {{ t('restoreToPublic') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['crm:customer-garbage:delete']"
-            link
-            type="danger"
-            @click="handlePermanentDelete(scope.row)"
-          >
-            {{ t('permanentDelete') }}
-          </el-button>
+          <div class="garbage-actions">
+            <el-button
+              v-hasPermi="['crm:customer-garbage:manage']"
+              link
+              type="primary"
+              @click="handleRestore(scope.row)"
+            >
+              {{ t('restoreToPublic') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['crm:customer-garbage:delete']"
+              link
+              type="danger"
+              @click="handlePermanentDelete(scope.row)"
+            >
+              {{ t('permanentDelete') }}
+            </el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -105,6 +107,7 @@
 import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import { dateFormatter } from '@/utils/formatTime'
 import * as CustomerApi from '@/api/crm/customer'
+import { customerGarbageRefreshRevision } from './refreshSignal'
 
 defineOptions({ name: 'CrmCustomerGarbage' })
 
@@ -126,15 +129,20 @@ const queryParams = reactive({
 
 const openDetail = (id: number) => push({ name: 'CrmCustomerDetail', params: { id } })
 
-const getList = async () => {
+let listRequest: Promise<void> | undefined
+const getList = () => {
+  if (listRequest) return listRequest
   loading.value = true
-  try {
-    const data = await CustomerApi.getCustomerGarbagePage(queryParams)
-    list.value = data.list
-    total.value = data.total
-  } finally {
-    loading.value = false
-  }
+  listRequest = CustomerApi.getCustomerGarbagePage(queryParams)
+    .then((data) => {
+      list.value = data.list
+      total.value = data.total
+    })
+    .finally(() => {
+      loading.value = false
+      listRequest = undefined
+    })
+  return listRequest
 }
 
 const handleQuery = () => {
@@ -161,5 +169,22 @@ const handlePermanentDelete = async (row: CustomerApi.CustomerVO) => {
   await getList()
 }
 
-onMounted(getList)
+// The page is cached by the layout tabs. Refresh on every activation so a customer
+// moved from the public pool appears without requiring a browser refresh.
+onActivated(getList)
+watch(customerGarbageRefreshRevision, getList)
 </script>
+
+<style scoped>
+.garbage-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  white-space: nowrap;
+}
+
+.garbage-actions :deep(.el-button + .el-button) {
+  margin-left: 0;
+}
+</style>

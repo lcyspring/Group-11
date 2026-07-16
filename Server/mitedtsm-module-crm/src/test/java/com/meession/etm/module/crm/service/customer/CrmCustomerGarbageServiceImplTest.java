@@ -113,7 +113,25 @@ class CrmCustomerGarbageServiceImplTest {
         ServiceException exception = assertThrows(ServiceException.class, () -> service.putCustomerGarbage(
                 new CrmCustomerGarbagePutReqVO().setCustomerId(20L).setReason("无效"), 1L));
 
-        assertEquals(CUSTOMER_POOL_ACTIVE_BUSINESS.getCode(), exception.getCode());
+        assertEquals(CUSTOMER_GARBAGE_ACTIVE_BUSINESS.getCode(), exception.getCode());
+        assertEquals("客户【测试客户】存在进行中的商机，不能转入垃圾池", exception.getMessage());
+        verify(customerMapper, never()).updatePublicToGarbage(any(), any(), any());
+    }
+
+    @Test
+    void manualPutRejectsProtectedContractWithGarbageSpecificMessage() {
+        when(authorizationService.isCrmAdmin(1L)).thenReturn(true);
+        when(customerMapper.selectByIdForUpdate(20L)).thenReturn(publicCustomer());
+        when(poolTimeProvider.now()).thenReturn(NOW);
+        when(businessMapper.existsActiveByCustomerId(20L)).thenReturn(false);
+        when(poolPolicyProperties.getCustomer()).thenReturn(customerPolicy());
+        when(contractMapper.existsProtectedByCustomerId(20L, List.of(0, 10, 20), NOW)).thenReturn(true);
+
+        ServiceException exception = assertThrows(ServiceException.class, () -> service.putCustomerGarbage(
+                new CrmCustomerGarbagePutReqVO().setCustomerId(20L).setReason("无效"), 1L));
+
+        assertEquals(CUSTOMER_GARBAGE_ACTIVE_CONTRACT.getCode(), exception.getCode());
+        assertEquals("客户【测试客户】存在未完结销售单据，不能转入垃圾池", exception.getMessage());
         verify(customerMapper, never()).updatePublicToGarbage(any(), any(), any());
     }
 

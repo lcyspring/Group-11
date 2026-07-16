@@ -218,11 +218,11 @@ public class CrmCustomerGarbageServiceImpl implements CrmCustomerGarbageService 
             throw exception(CUSTOMER_ALREADY_DEAL);
         }
         if (businessMapper.existsActiveByCustomerId(customer.getId())) {
-            throw exception(CUSTOMER_POOL_ACTIVE_BUSINESS, customer.getName());
+            throw exception(CUSTOMER_GARBAGE_ACTIVE_BUSINESS, customer.getName());
         }
         if (contractMapper.existsProtectedByCustomerId(customer.getId(),
                 poolPolicyProperties.getCustomer().getProtectedContractAuditStatuses(), now)) {
-            throw exception(CUSTOMER_POOL_ACTIVE_CONTRACT, customer.getName());
+            throw exception(CUSTOMER_GARBAGE_ACTIVE_CONTRACT, customer.getName());
         }
     }
 

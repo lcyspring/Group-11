@@ -1,6 +1,6 @@
 # CRM 核心链 Bug 报告
 
-更新日期：2026-07-15
+更新日期：2026-07-16
 
 | ID | GAP | 级别 | 根因与处理 | 验证 | 状态 |
 |---|---|---|---|---|---|
@@ -64,6 +64,7 @@
 | CRM-IAM-BUG-005 | GAP-IAM-003 | P0/权限 | 对象权限精确匹配导致 OWNER 不满足 WRITE/READ；统一复用授权等级和公共对象失败关闭规则 | 权限 11/11、真实任务处理、CRM 354/354 | 已关闭 |
 | CRM-CONTRACT-AMENDMENT-BUG-001 | GAP-CTR-001/002 | P0 | 补充协议候选轨迹被错误当作有效版本，创建后提交立即版本冲突；当前版本只读取有效生命周期动作 | 生命周期回归、CRM 426/426、第二轮真实审批生效 | 已关闭 |
 | CRM-CONTRACT-AMENDMENT-BUG-002 | GAP-CTR-001、GAP-IAM-003 | P1/API | `amendmentId` 错放在签署响应，附件响应丢失补充协议归属；字段迁移到 Attachment 并对齐前端类型 | Controller 回归、CRM 426/426、真实附件锁定和归属识别 | 已关闭 |
+| CRM-CUSTOMER-GARBAGE-BUG-006 | GAP-CUS-001 | P1 | 转入垃圾池错误复用公海提示，缓存页不刷新且双操作可能裁切；增加专属错误码、成功失效通知、激活刷新和不换行固定操作列 | Service 9/9、前端专项 3/3、CRM 433/433、Ubuntu Server/Web build | 已关闭 |
 
 ## 边界说明
 

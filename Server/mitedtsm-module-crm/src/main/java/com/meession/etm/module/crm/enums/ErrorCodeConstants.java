@@ -198,6 +198,10 @@ public interface ErrorCodeConstants {
             "客户不在垃圾池或状态已变化，请刷新后重试");
     ErrorCode CUSTOMER_GARBAGE_DELETE_REFERENCED = new ErrorCode(1_020_006_032,
             "永久删除失败，客户仍有关联{}，请先解除关联");
+    ErrorCode CUSTOMER_GARBAGE_ACTIVE_BUSINESS = new ErrorCode(1_020_006_033,
+            "客户【{}】存在进行中的商机，不能转入垃圾池");
+    ErrorCode CUSTOMER_GARBAGE_ACTIVE_CONTRACT = new ErrorCode(1_020_006_034,
+            "客户【{}】存在未完结销售单据，不能转入垃圾池");
 
     // ========== 权限管理 1_020_007_000 ==========
     ErrorCode CRM_PERMISSION_NOT_EXISTS = new ErrorCode(1_020_007_000, "数据权限不存在");

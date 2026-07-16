@@ -68,6 +68,7 @@
 | `customer-360-refund/` | 退款/冲销审批金额、净回款、待回款和客户明细入口 |
 | `customer-public-pool-policy/` | 客户公海状态、保护、回收、领取额度/冷却、迁移和运行验收 |
 | `customer-garbage-lifecycle/` | 客户垃圾池管理员隔离、迁移、恢复、永久删除和引用保护 |
+| `customer-garbage-feedback-refresh/` | 转入垃圾池专属反馈、拒绝零写入和缓存页激活刷新 |
 | `clue-public-pool-lifecycle/` | 公共线索状态、迁移、领取/分配、额度、冷却、权限和容量并发保护 |
 | `clue-activity-migration/` | 任务、通话、短信状态轨迹、权限和线索转客户同事务迁移 |
 | `crm-business-quote-versioning/` | 报价锁定/重开、币种税率、产品版本、合同快照和真实 API 验收 |
