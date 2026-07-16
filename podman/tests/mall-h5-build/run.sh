@@ -78,6 +78,22 @@ asset_count="$(find "$OUTPUT_DIR/assets" -type f | wc -l)"
 }
 pass "output entry and ${asset_count} assets exist"
 
+missing_static_assets=''
+while IFS= read -r asset; do
+    source_asset="${PROJECT_ROOT}/MallFrontend${asset}"
+    built_asset="${OUTPUT_DIR}${asset}"
+    if [[ ! -f "$source_asset" || ! -f "$built_asset" ]]; then
+        missing_static_assets+="${asset}"$'\n'
+    fi
+done < <(rg --no-filename --only-matching "['\"](/static/[^'\"?#]+\.(png|jpg|jpeg|gif|svg|webp|ico))" \
+    "${PROJECT_ROOT}/MallFrontend/sheep/components/s-menu-tools/s-menu-tools.vue" \
+    | sed -E "s/^[\"']//" | sort -u)
+[[ -z "$missing_static_assets" ]] || {
+    printf 'Referenced static assets are missing from source or build output:\n%s' "$missing_static_assets" >&2
+    exit 1
+}
+pass 'shortcut menu static asset references exist in source and H5 build output'
+
 [[ "$(stat -c '%u' "$OUTPUT_DIR/index.html")" == "$(id -u)" ]] || {
     printf 'Mall H5 output is not owned by the current host user.\n' >&2
     exit 1

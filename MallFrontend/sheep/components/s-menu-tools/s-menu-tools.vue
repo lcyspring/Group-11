@@ -68,7 +68,7 @@
     },
     {
       url: '/pages/chat/index',
-      icon: '/static/img/shop/tools/service.png',
+      icon: '/static/img/diy/chat.png',
       title: t('customerService'),
     },
   ];
