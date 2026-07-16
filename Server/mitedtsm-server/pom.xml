@@ -97,6 +97,13 @@
             <version>${revision}</version>
         </dependency>
 
+        <!-- 营销相关模块。默认注释，保证编译速度 -->
+        <dependency>
+            <groupId>com.meession.etm</groupId>
+            <artifactId>mitedtsm-module-marketing</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
         <!-- ERP 相关模块。默认注释，保证编译速度 -->
         <dependency>
             <groupId>com.meession.etm</groupId>
