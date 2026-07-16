@@ -1267,6 +1267,8 @@ export default {
       departmentTarget: 'القسم',
       userTarget: 'فردي',
       targetNotConfigured: 'لم يتم تكوين هدف لهذا النطاق والسنة والمؤشر',
+      targetLoadFailed: 'فشل تحميل أهداف الأداء. تحقق من ترحيلات قاعدة البيانات وحالة الخدمة.',
+      targetRetry: 'إعادة التحميل',
       monthTarget: 'هدف الشهر {month}',
       quarterTarget: 'الربع {quarter}',
       amountTargetUnit: 'يوان',

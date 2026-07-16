@@ -1,8 +1,13 @@
 # Paths are relative to this manifest. Every listed SQL file must be idempotent.
+../../database/new/new-crm-contact-primary.sql
+../../database/new/new-crm-contact-mobile-unique.sql
+../../database/new/new-crm-customer-hierarchy.sql
+../../database/new/new-crm-customer-owner-record.sql
 ../../database/new/new-crm-business-contract-conversion.sql
 ../../database/new/new-crm-contract-product-snapshot.sql
 ../../database/new/new-crm-work-order.sql
 ../../database/new/new-crm-work-order-statistics.sql
+../../database/new/new-crm-performance-target.sql
 ../../database/new/new-crm-invoice.sql
 ../../database/new/new-crm-contract-lifecycle.sql
 ../../database/new/new-crm-contract-amendment.sql

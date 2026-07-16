@@ -1386,6 +1386,8 @@ export default {
       departmentTarget: 'Department',
       userTarget: 'Individual',
       targetNotConfigured: 'No target is configured for this scope, year and metric',
+      targetLoadFailed: 'Failed to load performance targets. Check database migrations and service status.',
+      targetRetry: 'Reload',
       monthTarget: 'Month {month}',
       quarterTarget: 'Quarter {quarter}',
       amountTargetUnit: 'CNY',

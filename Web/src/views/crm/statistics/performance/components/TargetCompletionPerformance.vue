@@ -1,4 +1,16 @@
 <template>
+  <div v-if="loadFailed" class="mb-16px flex items-center gap-8px">
+    <el-alert
+      :closable="false"
+      :title="t('performance.targetLoadFailed')"
+      type="error"
+      show-icon
+    />
+    <el-button type="primary" plain @click="loadData">
+      {{ t('performance.targetRetry') }}
+    </el-button>
+  </div>
+
   <el-card shadow="never">
     <el-form inline>
       <el-form-item :label="t('performance.targetType')">
@@ -67,6 +79,7 @@ defineOptions({ name: 'TargetCompletionPerformance' })
 const { t } = useI18n('crm.statistics')
 const props = defineProps<{ queryParams: any }>()
 const loading = ref(false)
+const loadFailed = ref(false)
 const targetType = ref(1)
 const list = ref<StatisticsTargetCompletionRespVO[]>([])
 const summary = ref<StatisticsTargetCompletionSummaryRespVO>({
@@ -122,6 +135,7 @@ const loadData = async () => {
       scopeType: props.queryParams.userId ? 3 : 2,
       targetType: targetType.value
     })) as StatisticsTargetCompletionSummaryRespVO
+    loadFailed.value = false
     summary.value = data
     list.value = data.monthlyList
     if (echartsOption.xAxis) echartsOption.xAxis['data'] = data.monthlyList.map((row) => row.time)
@@ -129,6 +143,21 @@ const loadData = async () => {
       echartsOption.series[0]['data'] = data.monthlyList.map((row) => row.targetValue)
       echartsOption.series[1]['data'] = data.monthlyList.map((row) => row.actualValue)
       echartsOption.series[2]['data'] = data.monthlyList.map((row) => row.completionRate ?? null)
+    }
+  } catch {
+    loadFailed.value = true
+    summary.value = {
+      targetType: targetType.value,
+      annualTarget: '0',
+      annualActual: '0',
+      monthlyList: []
+    }
+    list.value = []
+    if (echartsOption.xAxis) echartsOption.xAxis['data'] = []
+    if (echartsOption.series) {
+      echartsOption.series[0]['data'] = []
+      echartsOption.series[1]['data'] = []
+      echartsOption.series[2]['data'] = []
     }
   } finally {
     loading.value = false

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { buildQuarterTargets, isValidTargetValue, sumTargetValues } from './performanceTarget.ts'
 
@@ -18,4 +19,22 @@ test('derives four quarters from twelve monthly targets', () => {
     buildQuarterTargets(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'], true),
     ['6', '15', '24', '33']
   )
+})
+
+test('target pages contain handled failure states and explicit retry actions', () => {
+  const management = readFileSync(
+    new URL('./components/PerformanceTargetManagement.vue', import.meta.url),
+    'utf8'
+  )
+  const completion = readFileSync(
+    new URL('./components/TargetCompletionPerformance.vue', import.meta.url),
+    'utf8'
+  )
+
+  for (const source of [management, completion]) {
+    assert.match(source, /v-if="loadFailed"/)
+    assert.match(source, /performance\.targetLoadFailed/)
+    assert.match(source, /performance\.targetRetry/)
+    assert.match(source, /catch \{[\s\S]*?loadFailed\.value = true/)
+  }
 })

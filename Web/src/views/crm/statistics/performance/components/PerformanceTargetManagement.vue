@@ -41,8 +41,20 @@
       </el-form-item>
     </el-form>
 
+    <div v-if="loadFailed" class="mb-16px flex items-center gap-8px">
+      <el-alert
+        :closable="false"
+        :title="t('performance.targetLoadFailed')"
+        type="error"
+        show-icon
+      />
+      <el-button type="primary" plain @click="loadData">
+        {{ t('performance.targetRetry') }}
+      </el-button>
+    </div>
+
     <el-alert
-      v-if="!loading && !targetExists"
+      v-if="!loading && !loadFailed && !targetExists"
       class="mb-16px"
       :closable="false"
       :title="t('performance.targetNotConfigured')"
@@ -78,7 +90,7 @@
         v-if="targetExists"
         v-hasPermi="['crm:performance-target:delete']"
         :loading="submitting"
-        :disabled="scopeId == null"
+        :disabled="scopeId == null || loadFailed"
         type="danger"
         @click="deleteTarget"
       >
@@ -87,7 +99,7 @@
       <el-button
         v-hasPermi="['crm:performance-target:update']"
         :loading="submitting"
-        :disabled="scopeId == null"
+        :disabled="scopeId == null || loadFailed"
         type="primary"
         @click="saveTarget"
       >
@@ -110,6 +122,7 @@ const { t } = useI18n('crm.statistics')
 const message = useMessage()
 const props = defineProps<{ queryParams: any }>()
 const loading = ref(false)
+const loadFailed = ref(false)
 const submitting = ref(false)
 const scopeType = ref(2)
 const scopeId = ref<number | undefined>(props.queryParams.deptId)
@@ -153,7 +166,13 @@ const loadData = async () => {
       scopeId: selectedScopeId,
       targetYear: targetYear.value
     })) as PerformanceTargetRespVO[]
+    loadFailed.value = false
     applySelectedTarget()
+  } catch {
+    loadFailed.value = true
+    targetList.value = []
+    targetExists.value = false
+    monthlyTargets.value = Array(12).fill('0')
   } finally {
     loading.value = false
   }

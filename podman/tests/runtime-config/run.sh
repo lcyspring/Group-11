@@ -54,6 +54,15 @@ bash -n "${PODMAN_DIR}/up.sh"
 bash -n "${PODMAN_DIR}/down.sh"
 bash -n "${PODMAN_DIR}/image-archives.sh"
 bash -n "${PODMAN_DIR}/lib/yaml-config.sh"
+bash -n "${PODMAN_DIR}/verify-crm-receivable-reference-integrity.sh"
+bash -n "${PODMAN_DIR}/verify-crm-performance-target-runtime.sh"
+
+missing_crm_migrations="$(comm -23 \
+    <(find "${PODMAN_DIR}/../database/new" -maxdepth 1 -type f -name 'new-crm-*.sql' -printf '%f\n' | sort) \
+    <(sed -n 's#^.*/\(new-crm-[^/]*\.sql\)$#\1#p' \
+        "${PODMAN_DIR}/config/mysql-compatibility-migrations.manifest" | sort))"
+[[ -z "$missing_crm_migrations" ]] || fail \
+    "CRM compatibility migrations missing from manifest: ${missing_crm_migrations//$'\n'/, }"
 
 yaml_config_init "${SCRIPT_DIR}/fixtures/parser-valid.yaml"
 [[ "$(yaml_require sample.plain)" == "value" ]] || fail 'plain scalar parsing'

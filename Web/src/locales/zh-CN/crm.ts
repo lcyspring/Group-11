@@ -1373,6 +1373,8 @@ export default {
       departmentTarget: '部门目标',
       userTarget: '个人目标',
       targetNotConfigured: '当前范围、年度和指标尚未设置目标，保存后将创建',
+      targetLoadFailed: '业绩目标数据加载失败，请确认数据库迁移和服务状态',
+      targetRetry: '重新加载',
       monthTarget: '{month} 月目标',
       quarterTarget: '第 {quarter} 季度',
       amountTargetUnit: '元',

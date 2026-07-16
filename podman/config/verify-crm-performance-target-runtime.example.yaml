@@ -1,0 +1,26 @@
+schema_version: 1
+
+endpoint:
+  base_url: http://127.0.0.1:8080/admin-api
+  tenant_id: 1
+
+account:
+  username: admin
+  password: CHANGE_ME
+
+mysql:
+  container: mitedtsm-rootless-mysql
+  user: root
+  password: CHANGE_ME
+  database: mitedtsm_database
+
+acceptance:
+  scope_type: 2
+  scope_id: 103
+  department_id: 103
+  target_year: 2026
+  target_type: 1
+  expected_permission_count: 2
+  expected_i18n_count: 6
+  start_time: 2026-01-01 00:00:00
+  end_time: 2026-12-31 23:59:59
