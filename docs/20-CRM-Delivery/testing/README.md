@@ -85,6 +85,10 @@
 | `receivable-contract-candidates/` | 可回款合同权限候选、剩余额度、合同优先选择及运行对账 |
 | `crm-marketing-campaign-management/` | 营销活动真实负责人、完整字段、五态操作和草稿受控删除 |
 | `bpm-orphan-approval-recovery/` | 孤立审批审计恢复、详情顺序加载和 Promise 异常收敛 |
+| `crm-marketing-outreach/` | 合规群发名单、审核、调度、发送、重试和收件人结果完整闭环 |
+| `receivable-form-localization/` | 回款及回款计划负责人标签和客户/合同下拉三语一致性 |
+| `shared-shortcut-date-range/` | 快捷日期状态初始化和 Promise 异常收敛 |
+| `mp-account-empty-state/` | 公众号账号空状态导航、无通知行为和初始化异常收敛 |
 
 运行入口统一为：
 

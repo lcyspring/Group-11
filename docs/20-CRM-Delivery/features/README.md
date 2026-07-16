@@ -56,5 +56,6 @@
 | CRM-FEATURE-050 | 成交周期历史补录负样本保留、四类计数、显式数据质量警告和 YAML 口径 | GAP-RPT-001/002/003 | 已实现 | `docs/20-CRM-Delivery/testing/deal-cycle-data-quality/` |
 | CRM-FEATURE-051 | 回款历史引用四级状态、原始 ID 保留、查询保护及客户统计/财务台账双口径治理 | GAP-FIN-001/002、GAP-RPT-002 | 已实现 | `docs/20-CRM-Delivery/testing/receivable-reference-integrity/` |
 | CRM-FEATURE-052 | 营销活动真实负责人、完整字段维护、五态操作及草稿受控删除闭环 | GAP-MKT-001、ADR-016 | 已实现 | `docs/20-CRM-Delivery/testing/crm-marketing-campaign-management/` |
+| CRM-FEATURE-053 | 合规群发名单、草稿维护、独立审核、计划群发、失败重试和收件人结果闭环 | GAP-MKT-002/003、ADR-016 | 已实现 | `docs/20-CRM-Delivery/testing/crm-marketing-outreach/` |
 
 说明：`CRM-FEATURE-005/043` 共同关闭线索转换的首联系人、跟进及任务/通话/短信活动迁移、并发幂等、审计和失败回滚。`CRM-FEATURE-007` 是历史二态基线，现已由 `CRM-FEATURE-029` 升级为四态模型。`CRM-FEATURE-015/016/017` 已建立目标事实源、完成度展示和三层目标维护入口；目标逐级分解合计规则仍待业务签署。`CRM-FEATURE-028` 负责合同签署事实与基础版本轨迹，正式补充协议独立审批由 `CRM-FEATURE-049` 完成；二者均不宣称接入外部电子签平台。`CRM-FEATURE-030/035` 已聚合退款真源，但不伪造尚未实现的 OA 任务真源。`CRM-FEATURE-033` 已完成真实 BPM 提交、驳回、修订、重提和通过验收。`CRM-FEATURE-034` 的新附件已受保护，历史公开附件仍需物理迁移。客户联系人归属、公海、垃圾池、公共线索、活动迁移、报价版本、ERP 履约和工单协作分别由 `CRM-FEATURE-039`～`046` 关闭。
