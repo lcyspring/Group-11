@@ -12,7 +12,8 @@
 
 ## 当前外部状态
 
-候选目标为 `ghcr.io/lcyspring/...`；当前宿主尚未登录 GHCR，因此上传尚未执行。
+Git remote 所有者候选 `ghcr.io/lcyspring/...` 拒绝当前账号创建包；改用已登录账号自己的
+`ghcr.io/elel-code/...` 命名空间后两个镜像均上传成功。
 
 ## 分支
 

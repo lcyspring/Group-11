@@ -6,4 +6,4 @@
 - OCI save 2/2，归档共 456 MiB；
 - SHA-256/load 2/2；
 - Git ignore 命中归档、checksum 和本机 YAML；
-- GHCR 登录检查返回未登录，push 未执行且未伪报成功。
+- `lcyspring` 命名空间拒绝当前账号创建包；改用已登录的 `elel-code` 命名空间后 push 2/2 成功。
