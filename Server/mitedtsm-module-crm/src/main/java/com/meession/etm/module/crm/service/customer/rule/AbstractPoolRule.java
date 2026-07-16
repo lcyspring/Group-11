@@ -12,7 +12,7 @@ public abstract class AbstractPoolRule implements IPoolRule {
         return getRuleType().equals(rule.getRuleType());
     }
 
-    protected <T> T parseConfig(CrmCustomerPoolRuleDO rule, Class<T> clazz) {
+    public <T> T parseConfig(CrmCustomerPoolRuleDO rule, Class<T> clazz) {
         if (rule.getConfig() == null) {
             try {
                 return clazz.getDeclaredConstructor().newInstance();

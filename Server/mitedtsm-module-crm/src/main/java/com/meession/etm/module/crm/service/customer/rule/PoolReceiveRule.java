@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.time.DayOfWeek;
+import java.time.temporal.TemporalAdjusters;
 
 @Slf4j
 @Component
@@ -61,14 +63,16 @@ public class PoolReceiveRule extends AbstractPoolRule {
     }
 
     public long getWeeklyReceiveCount(Long userId) {
-        LocalDateTime beginOfWeek = LocalDateTimeUtil.beginOfWeek(LocalDateTime.now());
-        LocalDateTime endOfWeek = LocalDateTimeUtil.endOfWeek(LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime beginOfWeek = now.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime endOfWeek = beginOfWeek.plusDays(6).withHour(23).withMinute(59).withSecond(59).withNano(999999999);
         return poolReceiveMapper.selectCountByReceiveUserIdAndPeriod(userId, beginOfWeek, endOfWeek);
     }
 
     public long getMonthlyReceiveCount(Long userId) {
-        LocalDateTime beginOfMonth = LocalDateTimeUtil.beginOfMonth(LocalDateTime.now());
-        LocalDateTime endOfMonth = LocalDateTimeUtil.endOfMonth(LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime beginOfMonth = now.with(TemporalAdjusters.firstDayOfMonth()).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime endOfMonth = now.with(TemporalAdjusters.lastDayOfMonth()).withHour(23).withMinute(59).withSecond(59).withNano(999999999);
         return poolReceiveMapper.selectCountByReceiveUserIdAndPeriod(userId, beginOfMonth, endOfMonth);
     }
 

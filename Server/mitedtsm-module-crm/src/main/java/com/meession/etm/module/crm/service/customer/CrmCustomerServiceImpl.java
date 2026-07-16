@@ -394,7 +394,7 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
         validateCustomerIsLocked(customer, true);
 
         // 2. 客户放入公海
-        putCustomerPool(customer);
+        putCustomerPool(customer, "手动放入公海", null);
 
         // 记录操作日志上下文
         LogRecordContext.putVariable("customerName", customer.getName());
@@ -428,18 +428,21 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
         }
 
         // 2. 领取公海数据
-        List<CrmCustomerDO> updateCustomers = new ArrayList<>();
         List<CrmPermissionCreateReqBO> createPermissions = new ArrayList<>();
         List<CrmCustomerPoolReceiveDO> receiveRecords = new ArrayList<>();
         LocalDateTime now = LocalDateTime.now();
         Integer sourceType = Boolean.TRUE.equals(isReceive)
                 ? CrmCustomerPoolReceiveSourceTypeEnum.MANUAL.getType()
                 : CrmCustomerPoolReceiveSourceTypeEnum.ADMIN.getType();
+        
+        // 获取领取冻结期配置
+        Integer freezeDays = getReceiveFreezeDays();
+        LocalDateTime receiveFreezeEndTime = freezeDays != null && freezeDays > 0 
+                ? now.plusDays(freezeDays) : null;
 
         customers.forEach(customer -> {
-            // 2.1. 设置负责人
-            updateCustomers.add(new CrmCustomerDO().setId(customer.getId())
-                    .setOwnerUserId(ownerUserId).setOwnerTime(now));
+            // 2.1. 更新客户负责人和公海状态
+            customerMapper.updateReceiveInfo(customer.getId(), ownerUserId, now, now, receiveFreezeEndTime);
             // 2.2. 创建负责人数据权限
             createPermissions.add(new CrmPermissionCreateReqBO().setBizType(CrmBizTypeEnum.CRM_CUSTOMER.getType())
                     .setBizId(customer.getId()).setUserId(ownerUserId).setLevel(CrmPermissionLevelEnum.OWNER.getLevel()));
@@ -450,14 +453,13 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
                     .receiveTime(now)
                     .sourceType(sourceType)
                     .build());
+            // 2.4. 更新关联联系人负责人
+            contactService.updateOwnerUserIdByCustomerId(customer.getId(), ownerUserId);
         });
-        // 2.4 更新客户负责人
-        customerMapper.updateBatch(updateCustomers);
         // 2.5 创建负责人数据权限
         permissionService.createPermissionBatch(createPermissions);
         // 2.6 保存领取记录
         poolReceiveMapper.insertBatch(receiveRecords);
-        // TODO @芋艿：要不要处理关联的联系人？？？
 
         // 3. 记录操作日志
         AdminUserRespDTO user = null;
@@ -479,6 +481,17 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
         }
     }
 
+    private Integer getReceiveFreezeDays() {
+        List<CrmCustomerPoolRuleDO> receiveRules = poolRuleMapper.selectReceiveRules();
+        for (CrmCustomerPoolRuleDO rule : receiveRules) {
+            CrmCustomerPoolReceiveRuleConfig config = poolReceiveRule.parseConfig(rule, CrmCustomerPoolReceiveRuleConfig.class);
+            if (config != null && config.getFreezeDays() != null && config.getFreezeDays() > 0) {
+                return config.getFreezeDays();
+            }
+        }
+        return null;
+    }
+
     @Override
     public int autoPutCustomerPool() {
         CrmCustomerPoolConfigDO poolConfig = customerPoolConfigService.getCustomerPoolConfig();
@@ -491,7 +504,8 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
         int count = 0;
         for (CrmCustomerDO customer : customerList) {
             try {
-                getSelf().putCustomerPool(customer);
+                getSelf().putCustomerPool(customer, "自动回收-超时", null);
+                getSelf().autoPutCustomerPoolLog(customer, "自动回收-超时");
                 count++;
             } catch (Throwable e) {
                 log.error("[autoPutCustomerPool][客户({}) 放入公海异常]", customer.getId(), e);
@@ -500,18 +514,26 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
         return count;
     }
 
-    @Transactional(rollbackFor = Exception.class) // 需要 protected 修饰，因为需要在事务中调用
-    protected void putCustomerPool(CrmCustomerDO customer) {
+    @Transactional(rollbackFor = Exception.class)
+    protected void putCustomerPool(CrmCustomerDO customer, String poolReason, Long poolRuleId) {
+        LocalDateTime now = LocalDateTime.now();
+        
         // 1. 设置负责人为 NULL
         int updateOwnerUserIncr = customerMapper.updateOwnerUserIdById(customer.getId(), null);
         if (updateOwnerUserIncr == 0) {
             throw exception(CUSTOMER_UPDATE_OWNER_USER_FAIL);
         }
 
-        // 2. 联系人的负责人，也要设置为 null。因为：因为领取后，负责人也要关联过来，这块和 receiveCustomer 是对应的
+        // 2. 更新公海状态字段
+        int updatePoolStatusIncr = customerMapper.updatePoolStatus(customer.getId(), 1, now, poolReason, poolRuleId);
+        if (updatePoolStatusIncr == 0) {
+            throw exception(CUSTOMER_UPDATE_OWNER_USER_FAIL);
+        }
+
+        // 3. 联系人的负责人，也要设置为 null。因为：因为领取后，负责人也要关联过来，这块和 receiveCustomer 是对应的
         contactService.updateOwnerUserIdByCustomerId(customer.getId(), null);
 
-        // 3. 删除负责人数据权限
+        // 4. 删除负责人数据权限
         // 注意：需要放在 contactService 后面，不然【客户】数据权限已经被删除，无法操作！
         permissionService.deletePermission(CrmBizTypeEnum.CRM_CUSTOMER.getType(), customer.getId(),
                 CrmPermissionLevelEnum.OWNER.getLevel());
@@ -523,6 +545,14 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
         // 记录操作日志上下文
         LogRecordContext.putVariable("customer", customer);
         LogRecordContext.putVariable("ownerUserName", ownerUserName);
+    }
+
+    @LogRecord(type = CRM_CUSTOMER_TYPE, subType = CRM_CUSTOMER_AUTO_POOL_SUB_TYPE, bizNo = "{{#customer.id}}",
+            success = CRM_CUSTOMER_AUTO_POOL_SUCCESS)
+    public void autoPutCustomerPoolLog(CrmCustomerDO customer, String poolReason) {
+        LogRecordContext.putVariable("customer", customer);
+        LogRecordContext.putVariable("customerName", customer.getName());
+        LogRecordContext.putVariable("poolReason", poolReason);
     }
 
     //======================= 查询相关 =======================
