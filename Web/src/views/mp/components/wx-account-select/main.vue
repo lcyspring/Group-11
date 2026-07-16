@@ -4,15 +4,10 @@
   </el-select>
 </template>
 
-<script lang="ts">
-let missingAccountNotified = false
-</script>
-
 <script lang="ts" setup>
 import * as MpAccountApi from '@/api/mp/account'
 import { useTagsViewStore } from '@/store/modules/tagsView'
 
-const message = useMessage() // 消息弹窗
 const { t } = useI18n('mp') // 国际化
 const { delView } = useTagsViewStore() // 视图操作
 const { push, currentRoute } = useRouter() // 路由
@@ -34,15 +29,10 @@ const handleQuery = async () => {
   try {
     accountList.value = await MpAccountApi.getSimpleAccountList()
     if (accountList.value.length === 0) {
-      if (!missingAccountNotified) {
-        message.warning(t('mp.common.noAccountConfig'))
-        missingAccountNotified = true
-      }
       delView(unref(currentRoute))
       await push({ name: 'MpAccount' })
       return
     }
-    missingAccountNotified = false
     // 默认选中第一个
     account.id = accountList.value[0].id
     if (account.id) {
