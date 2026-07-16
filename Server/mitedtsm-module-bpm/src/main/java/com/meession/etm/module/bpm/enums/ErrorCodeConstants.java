@@ -15,6 +15,9 @@ public interface ErrorCodeConstants {
     ErrorCode OA_LEAVE_NOT_EXISTS = new ErrorCode(1_009_001_001, "请假申请不存在");
     ErrorCode OA_BUSINESS_TRIP_NOT_EXISTS = new ErrorCode(1_009_001_002, "出差申请不存在");
     ErrorCode OA_BORROW_NOT_EXISTS = new ErrorCode(1_009_001_003, "借款申请不存在");
+    ErrorCode OA_CUSTOMER_VISIT_NOT_EXISTS = new ErrorCode(1_009_001_004, "客户拜访申请不存在");
+    ErrorCode OA_REQUEST_NOT_EXISTS = new ErrorCode(1_009_001_005, "请示审批不存在");
+    ErrorCode OA_WORK_REPORT_NOT_EXISTS = new ErrorCode(1_009_001_006, "工作报告不存在");
 
     // ========== 流程模型 1-009-002-000 ==========
     ErrorCode MODEL_KEY_EXISTS = new ErrorCode(1_009_002_000, "已经存在流程标识为【{}】的流程");

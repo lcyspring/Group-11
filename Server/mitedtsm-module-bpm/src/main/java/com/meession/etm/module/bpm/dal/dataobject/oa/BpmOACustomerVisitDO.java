@@ -1,7 +1,6 @@
 package com.meession.etm.module.bpm.dal.dataobject.oa;
 
 import com.meession.etm.framework.mybatis.core.dataobject.BaseDO;
-import com.meession.etm.module.bpm.enums.task.BpmTaskStatusEnum;
 import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -10,33 +9,36 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@TableName("bpm_oa_business_trip")
-@KeySequence("bpm_oa_business_trip_seq")
+@TableName("bpm_oa_customer_visit")
+@KeySequence("bpm_oa_customer_visit_seq")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class BpmOABusinessTripDO extends BaseDO {
+public class BpmOACustomerVisitDO extends BaseDO {
 
     @TableId
     private Long id;
 
     private Long userId;
 
-    private String destination;
+    private Long customerId;
 
-    private String reason;
+    private String customerName;
 
-    private LocalDateTime startTime;
+    private String contactPerson;
 
-    private LocalDateTime endTime;
-  
-    private Long days;
+    private String contactPhone;
 
-    private BigDecimal budget;
+    private String visitAddress;
+
+    private LocalDateTime visitTime;
+
+    private String purpose;
+
+    private String content;
 
     private Integer status;
 
