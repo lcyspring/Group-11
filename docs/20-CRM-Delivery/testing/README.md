@@ -69,6 +69,7 @@
 | `crm-business-quote-versioning/` | 报价锁定/重开、币种税率、产品版本、合同快照和真实 API 验收 |
 | `crm-contract-erp-fulfillment/` | 合同履约资格、主数据映射、双侧幂等、多币种冻结、ERP 不可变保护和状态回传 |
 | `crm-work-order-collaboration/` | 处理组、自动派单、未分配领取、抄送协作、组级/跨组权限和真实 API 验收 |
+| `crm-work-order-service-governance/` | 移动签到、地理围栏、SLA 工作日历、暂停恢复和自动升级 |
 | `admin-legacy-media-orb/` | 管理端退休媒体源、历史头像、响应/缓存归一化和 ORB 防护 |
 
 运行入口统一为：

@@ -11,6 +11,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.List;
 
 @TableName(value = "crm_work_order", autoResultMap = true)
@@ -30,6 +31,10 @@ public class CrmWorkOrderDO extends BaseDO {
     private Long customerId;
     private Integer sourceType;
     private Long sourceId;
+    private BigDecimal serviceLatitude;
+    private BigDecimal serviceLongitude;
+    private Integer geofenceRadiusMeters;
+    private Boolean checkInRequired;
     private Long groupId;
     private Long handlerUserId;
     private Integer dispatchMode;

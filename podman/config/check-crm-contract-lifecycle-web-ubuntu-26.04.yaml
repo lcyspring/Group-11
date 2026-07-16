@@ -19,6 +19,7 @@ network:
   use_host_proxy: false
 web:
   baidu_analytics_code: disabled
+  legacy_media_origins: http://test.yudao.iocoder.cn
   test_script: lint:crm-contract-lifecycle
 cache:
   maven_volume: mitedtsm-build-maven-cache

@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.math.BigDecimal;
 
 @Data
 public class CrmWorkOrderRespVO {
@@ -17,6 +18,10 @@ public class CrmWorkOrderRespVO {
     private String customerName;
     private Integer sourceType;
     private Long sourceId;
+    private BigDecimal serviceLatitude;
+    private BigDecimal serviceLongitude;
+    private Integer geofenceRadiusMeters;
+    private Boolean checkInRequired;
     private Long groupId;
     private String groupName;
     private Long handlerUserId;
@@ -36,4 +41,6 @@ public class CrmWorkOrderRespVO {
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
     private List<CrmWorkOrderRecordRespVO> records;
+    private CrmWorkOrderCheckInRespVO latestCheckIn;
+    private CrmWorkOrderSlaRespVO sla;
 }

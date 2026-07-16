@@ -13,9 +13,18 @@ import com.meession.etm.module.crm.dal.dataobject.workorder.CrmWorkOrderRecordDO
 import com.meession.etm.module.crm.dal.mysql.workorder.CrmWorkOrderCcMapper;
 import com.meession.etm.module.crm.dal.mysql.workorder.CrmWorkOrderMapper;
 import com.meession.etm.module.crm.dal.mysql.workorder.CrmWorkOrderRecordMapper;
+import com.meession.etm.module.crm.dal.mysql.workorder.CrmWorkOrderCheckInMapper;
+import com.meession.etm.module.crm.dal.mysql.workorder.CrmWorkOrderHolidayMapper;
+import com.meession.etm.module.crm.dal.mysql.workorder.CrmWorkOrderSlaMapper;
+import com.meession.etm.module.crm.dal.mysql.workorder.CrmWorkOrderSlaPolicyMapper;
+import com.meession.etm.module.crm.dal.dataobject.workorder.CrmWorkOrderCheckInDO;
+import com.meession.etm.module.crm.dal.dataobject.workorder.CrmWorkOrderHolidayDO;
+import com.meession.etm.module.crm.dal.dataobject.workorder.CrmWorkOrderSlaDO;
+import com.meession.etm.module.crm.dal.dataobject.workorder.CrmWorkOrderSlaPolicyDO;
 import com.meession.etm.module.crm.dal.redis.no.CrmNoRedisDAO;
 import com.meession.etm.module.crm.enums.workorder.*;
 import com.meession.etm.module.crm.framework.workorder.CrmWorkOrderDispatchProperties;
+import com.meession.etm.module.crm.framework.workorder.CrmWorkOrderGovernanceProperties;
 import com.meession.etm.module.crm.service.business.CrmBusinessService;
 import com.meession.etm.module.crm.service.contract.CrmContractService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
@@ -26,6 +35,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -54,12 +65,19 @@ public class CrmWorkOrderServiceImpl implements CrmWorkOrderService {
     @Resource private CrmWorkOrderNotificationService notificationService;
     @Resource private CrmWorkOrderGroupService groupService;
     @Resource private CrmWorkOrderDispatchProperties dispatchProperties;
+    @Resource private CrmWorkOrderGovernanceProperties governanceProperties;
+    @Resource private CrmWorkOrderCheckInMapper checkInMapper;
+    @Resource private CrmWorkOrderSlaMapper slaMapper;
+    @Resource private CrmWorkOrderSlaPolicyMapper slaPolicyMapper;
+    @Resource private CrmWorkOrderHolidayMapper holidayMapper;
+    @Resource private CrmWorkOrderSlaCalculator slaCalculator;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createWorkOrder(CrmWorkOrderSaveReqVO reqVO, Long userId, boolean canAssign, boolean assignAll) {
         validateRelations(reqVO.getCustomerId(), reqVO.getSourceType(), reqVO.getSourceId());
         validateDescription(reqVO.getDescription());
+        validateServiceLocation(reqVO);
         validateCcUsers(reqVO.getCcUserIds());
         DispatchDecision dispatch = resolveCreateDispatch(reqVO.getType(), reqVO.getGroupId(),
                 reqVO.getHandlerUserId(), userId, canAssign, assignAll);
@@ -71,8 +89,13 @@ public class CrmWorkOrderServiceImpl implements CrmWorkOrderService {
                 .setNo(no).setStatus(CrmWorkOrderStatusEnum.PENDING.getStatus())
                 .setGroupId(dispatch.groupId()).setHandlerUserId(dispatch.handlerUserId())
                 .setDispatchMode(dispatch.mode()).setAssignTime(dispatch.handlerUserId() == null ? null : LocalDateTime.now());
+        if (workOrder.getServiceLatitude() != null && workOrder.getGeofenceRadiusMeters() == null
+                && governanceProperties != null) {
+            workOrder.setGeofenceRadiusMeters(governanceProperties.getGeofence().getDefaultRadiusMeters());
+        }
         workOrder.setCreator(String.valueOf(userId));
         workOrderMapper.insert(workOrder);
+        initializeSla(workOrder);
         replaceCcUsers(workOrder.getId(), reqVO.getCcUserIds());
         appendRecord(workOrder, CrmWorkOrderActionTypeEnum.CREATE, null,
                 CrmWorkOrderStatusEnum.PENDING.getStatus(), userId, null);
@@ -93,6 +116,7 @@ public class CrmWorkOrderServiceImpl implements CrmWorkOrderService {
         // 来源、客户、处理人属于闭环主键，编辑阶段不可偷偷替换。
         validateRelations(old.getCustomerId(), old.getSourceType(), old.getSourceId());
         validateDescription(reqVO.getDescription());
+        validateServiceLocation(reqVO);
         validateCcUsers(reqVO.getCcUserIds());
         Set<Long> previousCc = new LinkedHashSet<>(getCcUserIdsMap(List.of(old.getId()))
                 .getOrDefault(old.getId(), List.of()));
@@ -201,6 +225,7 @@ public class CrmWorkOrderServiceImpl implements CrmWorkOrderService {
         transition(old, workOrderMapper.startIfPending(old.getId(), CrmWorkOrderStatusEnum.PENDING.getStatus(),
                 CrmWorkOrderStatusEnum.PROCESSING.getStatus(), LocalDateTime.now()),
                 CrmWorkOrderActionTypeEnum.START, userId, reqVO.getRemark());
+        if (slaMapper != null) slaMapper.markResponded(old.getId());
     }
 
     @Override
@@ -240,10 +265,17 @@ public class CrmWorkOrderServiceImpl implements CrmWorkOrderService {
         if (reqVO.getSolution().trim().length() < dispatchProperties.getSolutionMinLength()) {
             throw exception(WORK_ORDER_SOLUTION_TOO_SHORT, dispatchProperties.getSolutionMinLength());
         }
+        if (Boolean.TRUE.equals(old.getCheckInRequired())
+                || governanceProperties != null && governanceProperties.getGeofence().isRequireBeforeComplete()) {
+            if (checkInMapper == null || !checkInMapper.exists(old.getId())) {
+                throw exception(WORK_ORDER_CHECK_IN_REQUIRED);
+            }
+        }
         transition(old, workOrderMapper.completeIfProcessing(old.getId(), CrmWorkOrderStatusEnum.PROCESSING.getStatus(),
                 CrmWorkOrderStatusEnum.COMPLETED.getStatus(), reqVO.getSolution(), LocalDateTime.now()),
                 CrmWorkOrderActionTypeEnum.COMPLETE, userId, null);
         old.setStatus(CrmWorkOrderStatusEnum.COMPLETED.getStatus()).setSolution(reqVO.getSolution());
+        if (slaMapper != null) slaMapper.markCompleted(old.getId(), LocalDateTime.now());
         notificationService.notifyCompleted(old, getCcUserIdsMap(List.of(old.getId()))
                 .getOrDefault(old.getId(), List.of()));
     }
@@ -277,6 +309,167 @@ public class CrmWorkOrderServiceImpl implements CrmWorkOrderService {
     @Override
     public int getOpenWorkOrderCount(Long handlerUserId) {
         return workOrderMapper.countOpenByHandler(handlerUserId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public CrmWorkOrderCheckInDO checkInWorkOrder(CrmWorkOrderCheckInReqVO reqVO, Long userId) {
+        CrmWorkOrderDO order = requireParticipant(reqVO.getId(), userId, false);
+        requireHandler(order, userId);
+        if (governanceProperties == null || !governanceProperties.getGeofence().isEnabled()
+                || order.getServiceLatitude() == null || order.getServiceLongitude() == null) {
+            throw exception(WORK_ORDER_GEOFENCE_NOT_CONFIGURED);
+        }
+        if (reqVO.getLatitude() == null || reqVO.getLongitude() == null
+                || reqVO.getLatitude().abs().compareTo(BigDecimal.valueOf(90)) > 0
+                || reqVO.getLongitude().abs().compareTo(BigDecimal.valueOf(180)) > 0
+                || reqVO.getAccuracyMeters() != null
+                && reqVO.getAccuracyMeters().compareTo(BigDecimal.valueOf(governanceProperties.getGeofence().getMaxAccuracyMeters())) > 0) {
+            throw exception(WORK_ORDER_LOCATION_INVALID);
+        }
+        BigDecimal distance = distanceMeters(order.getServiceLatitude(), order.getServiceLongitude(),
+                reqVO.getLatitude(), reqVO.getLongitude());
+        int radius = order.getGeofenceRadiusMeters() == null ? governanceProperties.getGeofence().getDefaultRadiusMeters()
+                : order.getGeofenceRadiusMeters();
+        if (distance.compareTo(BigDecimal.valueOf(radius)) > 0) throw exception(WORK_ORDER_OUTSIDE_GEOFENCE);
+        CrmWorkOrderCheckInDO checkIn = new CrmWorkOrderCheckInDO().setWorkOrderId(order.getId()).setUserId(userId)
+                .setLatitude(reqVO.getLatitude()).setLongitude(reqVO.getLongitude())
+                .setAccuracyMeters(reqVO.getAccuracyMeters()).setDistanceMeters(distance).setResult(1);
+        checkInMapper.insert(checkIn);
+        if (Integer.valueOf(CrmWorkOrderStatusEnum.PENDING.getStatus()).equals(order.getStatus())) {
+            if (workOrderMapper.startIfPending(order.getId(), 10, 20, LocalDateTime.now()) != 1) {
+                throw exception(WORK_ORDER_STATUS_TRANSITION_INVALID);
+            }
+            appendRecord(order, CrmWorkOrderActionTypeEnum.START, 10, 20, userId, "移动签到自动开始处理");
+            order.setStatus(20);
+        }
+        appendRecord(order, CrmWorkOrderActionTypeEnum.CHECK_IN, order.getStatus(), order.getStatus(), userId,
+                reqVO.getRemark());
+        return checkIn;
+    }
+
+    @Override
+    public CrmWorkOrderCheckInDO getLatestCheckIn(Long workOrderId, Long userId, boolean queryAll) {
+        requireParticipant(workOrderId, userId, queryAll);
+        return checkInMapper == null ? null : checkInMapper.selectLatest(workOrderId);
+    }
+
+    @Override
+    public CrmWorkOrderSlaDO getWorkOrderSla(Long workOrderId, Long userId, boolean queryAll) {
+        requireParticipant(workOrderId, userId, queryAll);
+        return slaMapper == null ? null : slaMapper.selectByWorkOrderId(workOrderId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void pauseWorkOrderSla(CrmWorkOrderSlaActionReqVO reqVO, Long userId) {
+        CrmWorkOrderDO order = requireParticipant(reqVO.getId(), userId, false);
+        requireHandler(order, userId);
+        CrmWorkOrderSlaDO sla = requireSla(reqVO.getId());
+        if (sla.getPausedAt() != null || slaMapper.pause(sla.getId(), LocalDateTime.now()) != 1) {
+            throw exception(WORK_ORDER_SLA_PAUSE_INVALID);
+        }
+        appendRecord(order, CrmWorkOrderActionTypeEnum.SLA_PAUSE, order.getStatus(), order.getStatus(), userId, reqVO.getRemark());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void resumeWorkOrderSla(CrmWorkOrderSlaActionReqVO reqVO, Long userId) {
+        CrmWorkOrderDO order = requireParticipant(reqVO.getId(), userId, false);
+        requireHandler(order, userId);
+        CrmWorkOrderSlaDO sla = requireSla(reqVO.getId());
+        if (sla.getPausedAt() == null) throw exception(WORK_ORDER_SLA_RESUME_INVALID);
+        long seconds = java.time.Duration.between(sla.getPausedAt(), LocalDateTime.now()).getSeconds();
+        if (slaMapper.resume(sla.getId(), Math.max(0, seconds)) != 1) {
+            throw exception(WORK_ORDER_SLA_RESUME_INVALID);
+        }
+        appendRecord(order, CrmWorkOrderActionTypeEnum.SLA_RESUME, order.getStatus(), order.getStatus(), userId, reqVO.getRemark());
+    }
+
+    @Override
+    public List<CrmWorkOrderSlaPolicyDO> getSlaPolicies() {
+        return slaPolicyMapper == null ? List.of() : slaPolicyMapper.selectEnabled();
+    }
+
+    @Override
+    public List<CrmWorkOrderHolidayDO> getHolidays() {
+        return holidayMapper == null ? List.of() : holidayMapper.selectList();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long saveHoliday(CrmWorkOrderHolidaySaveReqVO reqVO, Long userId) {
+        CrmWorkOrderHolidayDO holiday = BeanUtils.toBean(reqVO, CrmWorkOrderHolidayDO.class);
+        holiday.setUpdater(String.valueOf(userId));
+        if (reqVO.getId() == null) {
+            holiday.setCreator(String.valueOf(userId));
+            holidayMapper.insert(holiday);
+        } else holidayMapper.updateById(holiday);
+        return holiday.getId();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteHoliday(Long id, Long userId) {
+        holidayMapper.deleteById(id);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int processDueSla() {
+        if (governanceProperties == null || !governanceProperties.getSla().isEnabled() || slaMapper == null) return 0;
+        LocalDateTime now = LocalDateTime.now(ZoneId.of(governanceProperties.getSla().getZone()));
+        int changed = 0;
+        for (CrmWorkOrderSlaDO sla : slaMapper.selectDue(now)) {
+            if (sla.getPausedAt() != null) continue;
+            if (sla.getResolutionDueTime() != null && !now.isBefore(sla.getResolutionDueTime())) {
+                if (slaMapper.markOverdue(sla.getId(), now) == 1) {
+                    CrmWorkOrderDO order = workOrderMapper.selectById(sla.getWorkOrderId());
+                    if (order != null) appendRecord(order, CrmWorkOrderActionTypeEnum.SLA_ESCALATE,
+                            order.getStatus(), order.getStatus(), 0L, "SLA 已逾期");
+                    changed++;
+                }
+            } else if (sla.getEscalationDueTime() != null && !now.isBefore(sla.getEscalationDueTime())) {
+                if (slaMapper.markEscalated(sla.getId(), now) == 1) {
+                    CrmWorkOrderDO order = workOrderMapper.selectById(sla.getWorkOrderId());
+                    if (order != null) appendRecord(order, CrmWorkOrderActionTypeEnum.SLA_ESCALATE,
+                            order.getStatus(), order.getStatus(), 0L, "SLA 自动升级");
+                    changed++;
+                }
+            }
+        }
+        return changed;
+    }
+
+    private void initializeSla(CrmWorkOrderDO order) {
+        if (governanceProperties == null || !governanceProperties.getSla().isEnabled()
+                || slaMapper == null || slaPolicyMapper == null || slaCalculator == null) return;
+        CrmWorkOrderSlaPolicyDO policy = slaPolicyMapper.selectEnabled().stream()
+                .filter(item -> ObjectUtil.equal(item.getPriority(), order.getPriority())).findFirst().orElse(null);
+        if (policy == null) policy = slaPolicyMapper.selectByCode(governanceProperties.getSla().getDefaultPolicyCode());
+        if (policy == null) throw exception(WORK_ORDER_SLA_POLICY_INVALID);
+        LocalDateTime now = LocalDateTime.now(ZoneId.of(governanceProperties.getSla().getZone()));
+        slaMapper.insert(new CrmWorkOrderSlaDO().setWorkOrderId(order.getId()).setPolicyId(policy.getId())
+                .setResponseDueTime(slaCalculator.responseDue(now, policy))
+                .setEscalationDueTime(slaCalculator.escalationDue(now, policy))
+                .setResolutionDueTime(slaCalculator.resolutionDue(now, policy)).setPausedSeconds(0L).setStatus(0));
+    }
+
+    private CrmWorkOrderSlaDO requireSla(Long workOrderId) {
+        CrmWorkOrderSlaDO sla = slaMapper == null ? null : slaMapper.selectByWorkOrderId(workOrderId);
+        if (sla == null) throw exception(WORK_ORDER_SLA_NOT_EXISTS);
+        return sla;
+    }
+
+    private static BigDecimal distanceMeters(BigDecimal lat1, BigDecimal lon1, BigDecimal lat2, BigDecimal lon2) {
+        double earth = 6_371_000d;
+        double dLat = Math.toRadians(lat2.doubleValue() - lat1.doubleValue());
+        double dLon = Math.toRadians(lon2.doubleValue() - lon1.doubleValue());
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1.doubleValue())) * Math.cos(Math.toRadians(lat2.doubleValue()))
+                * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        return BigDecimal.valueOf(earth * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)))
+                .setScale(2, java.math.RoundingMode.HALF_UP);
     }
 
     private void validateRelations(Long customerId, Integer sourceType, Long sourceId) {
@@ -393,6 +586,14 @@ public class CrmWorkOrderServiceImpl implements CrmWorkOrderService {
     private void validateDescription(String description) {
         if (description == null || description.trim().length() < dispatchProperties.getDescriptionMinLength()) {
             throw exception(WORK_ORDER_DESCRIPTION_TOO_SHORT, dispatchProperties.getDescriptionMinLength());
+        }
+    }
+
+    private void validateServiceLocation(CrmWorkOrderSaveReqVO reqVO) {
+        boolean hasLatitude = reqVO.getServiceLatitude() != null;
+        boolean hasLongitude = reqVO.getServiceLongitude() != null;
+        if (hasLatitude != hasLongitude || Boolean.TRUE.equals(reqVO.getCheckInRequired()) && !hasLatitude) {
+            throw exception(WORK_ORDER_GEOFENCE_NOT_CONFIGURED);
         }
     }
 

@@ -168,6 +168,84 @@ public class CrmWorkOrderController {
         return success(true);
     }
 
+    @PutMapping("/check-in")
+    @Operation(summary = "移动签到客服工单")
+    @PreAuthorize("@ss.hasPermission('crm:work-order:check-in')")
+    public CommonResult<CrmWorkOrderCheckInRespVO> checkIn(@Valid @RequestBody CrmWorkOrderCheckInReqVO reqVO) {
+        return success(BeanUtils.toBean(workOrderService.checkInWorkOrder(reqVO, getLoginUserId()),
+                CrmWorkOrderCheckInRespVO.class));
+    }
+
+    @GetMapping("/check-in/latest")
+    @Operation(summary = "获得工单最近一次签到")
+    @PreAuthorize("@ss.hasPermission('crm:work-order:query')")
+    public CommonResult<CrmWorkOrderCheckInRespVO> latestCheckIn(@RequestParam Long id) {
+        Long userId = getLoginUserId();
+        return success(BeanUtils.toBean(workOrderService.getLatestCheckIn(id, userId,
+                securityFrameworkService.hasPermission("crm:work-order:query-all")), CrmWorkOrderCheckInRespVO.class));
+    }
+
+    @GetMapping("/sla")
+    @Operation(summary = "获得工单 SLA")
+    @PreAuthorize("@ss.hasPermission('crm:work-order:query')")
+    public CommonResult<CrmWorkOrderSlaRespVO> sla(@RequestParam Long id) {
+        Long userId = getLoginUserId();
+        var sla = workOrderService.getWorkOrderSla(id, userId,
+                securityFrameworkService.hasPermission("crm:work-order:query-all"));
+        CrmWorkOrderSlaRespVO response = BeanUtils.toBean(sla, CrmWorkOrderSlaRespVO.class);
+        if (response != null) {
+            workOrderService.getSlaPolicies().stream().filter(policy -> Objects.equals(policy.getId(), sla.getPolicyId()))
+                    .findFirst().ifPresent(policy -> response.setPolicyCode(policy.getCode()).setPolicyName(policy.getName()));
+            response.setPaused(sla.getPausedAt() != null).setOverdue(Integer.valueOf(3).equals(sla.getStatus()));
+        }
+        return success(response);
+    }
+
+    @PutMapping("/sla/pause")
+    @Operation(summary = "暂停工单 SLA")
+    @PreAuthorize("@ss.hasPermission('crm:work-order:sla-action')")
+    public CommonResult<Boolean> pauseSla(@Valid @RequestBody CrmWorkOrderSlaActionReqVO reqVO) {
+        workOrderService.pauseWorkOrderSla(reqVO, getLoginUserId());
+        return success(true);
+    }
+
+    @PutMapping("/sla/resume")
+    @Operation(summary = "恢复工单 SLA")
+    @PreAuthorize("@ss.hasPermission('crm:work-order:sla-action')")
+    public CommonResult<Boolean> resumeSla(@Valid @RequestBody CrmWorkOrderSlaActionReqVO reqVO) {
+        workOrderService.resumeWorkOrderSla(reqVO, getLoginUserId());
+        return success(true);
+    }
+
+    @GetMapping("/sla/policies")
+    @Operation(summary = "获得工单 SLA 策略")
+    @PreAuthorize("@ss.hasPermission('crm:work-order:sla-admin')")
+    public CommonResult<List<CrmWorkOrderSlaPolicyRespVO>> slaPolicies() {
+        return success(BeanUtils.toBean(workOrderService.getSlaPolicies(), CrmWorkOrderSlaPolicyRespVO.class));
+    }
+
+    @GetMapping("/sla/holidays")
+    @Operation(summary = "获得工单工作日历")
+    @PreAuthorize("@ss.hasPermission('crm:work-order:sla-admin')")
+    public CommonResult<List<CrmWorkOrderHolidayRespVO>> holidays() {
+        return success(BeanUtils.toBean(workOrderService.getHolidays(), CrmWorkOrderHolidayRespVO.class));
+    }
+
+    @PostMapping("/sla/holiday/save")
+    @Operation(summary = "保存工单工作日历")
+    @PreAuthorize("@ss.hasPermission('crm:work-order:sla-admin')")
+    public CommonResult<Long> saveHoliday(@Valid @RequestBody CrmWorkOrderHolidaySaveReqVO reqVO) {
+        return success(workOrderService.saveHoliday(reqVO, getLoginUserId()));
+    }
+
+    @DeleteMapping("/sla/holiday/delete")
+    @Operation(summary = "删除工单工作日历")
+    @PreAuthorize("@ss.hasPermission('crm:work-order:sla-admin')")
+    public CommonResult<Boolean> deleteHoliday(@RequestParam Long id) {
+        workOrderService.deleteHoliday(id, getLoginUserId());
+        return success(true);
+    }
+
     private List<CrmWorkOrderRespVO> build(List<CrmWorkOrderDO> orders) {
         if (orders == null || orders.isEmpty()) return Collections.emptyList();
         Set<Long> customerIds = orders.stream().map(CrmWorkOrderDO::getCustomerId)
@@ -183,9 +261,14 @@ public class CrmWorkOrderController {
         Map<Long, AdminUserRespDTO> users = adminUserApi.getUserMap(userIds);
         return BeanUtils.toBean(orders, CrmWorkOrderRespVO.class, vo -> {
             Optional.ofNullable(customers.get(vo.getCustomerId())).ifPresent(c -> vo.setCustomerName(c.getName()));
-            Optional.ofNullable(users.get(vo.getHandlerUserId())).ifPresent(u -> vo.setHandlerUserName(u.getNickname()));
-            Optional.ofNullable(users.get(parseUserId(vo.getCreator()))).ifPresent(u -> vo.setCreatorName(u.getNickname()));
-            Optional.ofNullable(groupMap.get(vo.getGroupId())).ifPresent(group -> vo.setGroupName(group.getName()));
+            if (vo.getHandlerUserId() != null) {
+                Optional.ofNullable(users.get(vo.getHandlerUserId())).ifPresent(u -> vo.setHandlerUserName(u.getNickname()));
+            }
+            Long creatorId = parseUserId(vo.getCreator());
+            if (creatorId != null) Optional.ofNullable(users.get(creatorId)).ifPresent(u -> vo.setCreatorName(u.getNickname()));
+            if (vo.getGroupId() != null) {
+                Optional.ofNullable(groupMap.get(vo.getGroupId())).ifPresent(group -> vo.setGroupName(group.getName()));
+            }
             List<Long> ccIds = ccMap.getOrDefault(vo.getId(), List.of());
             vo.setCcUserIds(ccIds);
             vo.setCcUserNames(ccIds.stream().map(users::get).filter(Objects::nonNull).map(AdminUserRespDTO::getNickname).toList());

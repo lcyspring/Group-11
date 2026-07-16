@@ -4,6 +4,10 @@ import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.module.crm.controller.admin.workorder.vo.*;
 import com.meession.etm.module.crm.dal.dataobject.workorder.CrmWorkOrderDO;
 import com.meession.etm.module.crm.dal.dataobject.workorder.CrmWorkOrderRecordDO;
+import com.meession.etm.module.crm.dal.dataobject.workorder.CrmWorkOrderCheckInDO;
+import com.meession.etm.module.crm.dal.dataobject.workorder.CrmWorkOrderSlaDO;
+import com.meession.etm.module.crm.dal.dataobject.workorder.CrmWorkOrderSlaPolicyDO;
+import com.meession.etm.module.crm.dal.dataobject.workorder.CrmWorkOrderHolidayDO;
 
 import java.util.List;
 import java.util.Collection;
@@ -25,4 +29,14 @@ public interface CrmWorkOrderService {
     Map<Long, List<Long>> getCcUserIdsMap(Collection<Long> workOrderIds);
     List<Long> getDispatchCandidateUserIds(Integer type, Long groupId, Long userId, boolean assignAll);
     int getOpenWorkOrderCount(Long handlerUserId);
+    CrmWorkOrderCheckInDO checkInWorkOrder(CrmWorkOrderCheckInReqVO reqVO, Long userId);
+    CrmWorkOrderCheckInDO getLatestCheckIn(Long workOrderId, Long userId, boolean queryAll);
+    CrmWorkOrderSlaDO getWorkOrderSla(Long workOrderId, Long userId, boolean queryAll);
+    void pauseWorkOrderSla(CrmWorkOrderSlaActionReqVO reqVO, Long userId);
+    void resumeWorkOrderSla(CrmWorkOrderSlaActionReqVO reqVO, Long userId);
+    List<CrmWorkOrderSlaPolicyDO> getSlaPolicies();
+    List<CrmWorkOrderHolidayDO> getHolidays();
+    Long saveHoliday(CrmWorkOrderHolidaySaveReqVO reqVO, Long userId);
+    void deleteHoliday(Long id, Long userId);
+    int processDueSla();
 }

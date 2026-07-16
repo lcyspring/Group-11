@@ -7,6 +7,12 @@
         <el-col :span="12"><el-form-item :label="t('workOrder.priority')" prop="priority"><el-select v-model="formData.priority" class="w-full"><el-option v-for="item in priorities" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item></el-col>
       </el-row>
       <el-row :gutter="16">
+        <el-col :span="8"><el-form-item :label="t('workOrder.serviceLatitude')"><el-input-number v-model="formData.serviceLatitude" :precision="7" :step="0.000001" controls-position="right" class="w-full" /></el-form-item></el-col>
+        <el-col :span="8"><el-form-item :label="t('workOrder.serviceLongitude')"><el-input-number v-model="formData.serviceLongitude" :precision="7" :step="0.000001" controls-position="right" class="w-full" /></el-form-item></el-col>
+        <el-col :span="8"><el-form-item :label="t('workOrder.geofenceRadius')"><el-input-number v-model="formData.geofenceRadiusMeters" :min="10" :max="100000" :step="10" controls-position="right" class="w-full" /></el-form-item></el-col>
+      </el-row>
+      <el-form-item :label="t('workOrder.checkInRequired')"><el-switch v-model="formData.checkInRequired" /></el-form-item>
+      <el-row :gutter="16">
         <el-col :span="12"><el-form-item :label="t('workOrder.customer')" prop="customerId"><el-select v-model="formData.customerId" class="w-full" filterable :disabled="mode === 'update'" @change="() => loadSources(false)"><el-option v-for="item in customers" :key="item.id" :label="item.name" :value="item.id" /></el-select></el-form-item></el-col>
         <el-col :span="12"><el-form-item :label="t('workOrder.group')"><el-select v-model="formData.groupId" class="w-full" clearable :disabled="mode === 'update'" @change="loadDispatch"><el-option v-for="item in dispatchContext.groups" :key="item.id" :label="item.name" :value="item.id" /></el-select></el-form-item></el-col>
       </el-row>

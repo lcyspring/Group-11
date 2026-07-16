@@ -235,6 +235,14 @@ public interface ErrorCodeConstants {
     ErrorCode WORK_ORDER_DESCRIPTION_TOO_SHORT = new ErrorCode(1_020_015_023, "工单描述至少需要 {} 个字符");
     ErrorCode WORK_ORDER_SOLUTION_TOO_SHORT = new ErrorCode(1_020_015_024, "解决方案至少需要 {} 个字符");
     ErrorCode WORK_ORDER_HANDLER_REQUIRED = new ErrorCode(1_020_015_025, "当前 YAML 策略要求必须分配处理人");
+    ErrorCode WORK_ORDER_GEOFENCE_NOT_CONFIGURED = new ErrorCode(1_020_015_026, "工单未配置服务地点，无法移动签到");
+    ErrorCode WORK_ORDER_LOCATION_INVALID = new ErrorCode(1_020_015_027, "签到坐标或定位精度无效");
+    ErrorCode WORK_ORDER_OUTSIDE_GEOFENCE = new ErrorCode(1_020_015_028, "当前定位不在工单服务地理围栏内");
+    ErrorCode WORK_ORDER_CHECK_IN_REQUIRED = new ErrorCode(1_020_015_029, "该工单完结前必须先完成移动签到");
+    ErrorCode WORK_ORDER_SLA_NOT_EXISTS = new ErrorCode(1_020_015_030, "工单 SLA 实例不存在");
+    ErrorCode WORK_ORDER_SLA_PAUSE_INVALID = new ErrorCode(1_020_015_031, "当前工单 SLA 不允许暂停或已经暂停");
+    ErrorCode WORK_ORDER_SLA_RESUME_INVALID = new ErrorCode(1_020_015_032, "当前工单 SLA 未暂停，无法恢复");
+    ErrorCode WORK_ORDER_SLA_POLICY_INVALID = new ErrorCode(1_020_015_033, "工单 SLA 策略无效");
 
     // ========== 发票 1_020_016_000 ==========
     ErrorCode INVOICE_NOT_EXISTS = new ErrorCode(1_020_016_000, "发票不存在");

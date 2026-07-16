@@ -11,6 +11,10 @@ export interface WorkOrderVO {
   customerName?: string
   sourceType: number
   sourceId?: number
+  serviceLatitude?: number
+  serviceLongitude?: number
+  geofenceRadiusMeters?: number
+  checkInRequired?: boolean
   groupId?: number
   groupName?: string
   handlerUserId?: number
@@ -30,6 +34,37 @@ export interface WorkOrderVO {
   createTime?: Date
   updateTime?: Date
   records?: WorkOrderRecordVO[]
+  latestCheckIn?: WorkOrderCheckInVO
+  sla?: WorkOrderSlaVO
+}
+
+export interface WorkOrderCheckInVO {
+  id: number
+  workOrderId: number
+  userId: number
+  latitude: number
+  longitude: number
+  accuracyMeters?: number
+  distanceMeters: number
+  createTime: Date
+}
+
+export interface WorkOrderSlaVO {
+  id: number
+  workOrderId: number
+  policyId: number
+  policyCode?: string
+  policyName?: string
+  responseDueTime: Date
+  escalationDueTime?: Date
+  resolutionDueTime: Date
+  pausedSeconds: number
+  pausedAt?: Date
+  status: number
+  escalatedAt?: Date
+  completedAt?: Date
+  paused: boolean
+  overdue: boolean
 }
 
 export interface WorkOrderRecordVO {
@@ -88,6 +123,16 @@ export const claimWorkOrder = async (id: number, remark?: string) =>
 export const returnWorkOrder = async (id: number, reason: string) => await request.put({ url: '/crm/work-order/return', data: { id, reason } })
 export const resubmitWorkOrder = async (id: number, remark?: string) => await request.put({ url: '/crm/work-order/resubmit', data: { id, remark } })
 export const completeWorkOrder = async (id: number, solution: string) => await request.put({ url: '/crm/work-order/complete', data: { id, solution } })
+export const checkInWorkOrder = async (id: number, latitude: number, longitude: number, accuracyMeters?: number, remark?: string) =>
+  await request.put<WorkOrderCheckInVO>({ url: '/crm/work-order/check-in', data: { id, latitude, longitude, accuracyMeters, remark } })
+export const getLatestCheckIn = async (id: number) => await request.get<WorkOrderCheckInVO>({ url: '/crm/work-order/check-in/latest', params: { id } })
+export const getWorkOrderSla = async (id: number) => await request.get<WorkOrderSlaVO>({ url: '/crm/work-order/sla', params: { id } })
+export const pauseWorkOrderSla = async (id: number, remark?: string) => await request.put({ url: '/crm/work-order/sla/pause', data: { id, remark } })
+export const resumeWorkOrderSla = async (id: number, remark?: string) => await request.put({ url: '/crm/work-order/sla/resume', data: { id, remark } })
+export const getWorkOrderSlaPolicies = async () => await request.get({ url: '/crm/work-order/sla/policies' })
+export const getWorkOrderHolidays = async () => await request.get({ url: '/crm/work-order/sla/holidays' })
+export const saveWorkOrderHoliday = async (data: any) => await request.post({ url: '/crm/work-order/sla/holiday/save', data })
+export const deleteWorkOrderHoliday = async (id: number) => await request.delete({ url: '/crm/work-order/sla/holiday/delete', params: { id } })
 export const getDispatchContext = async (type: number, groupId?: number) =>
   await request.get<WorkOrderDispatchContextVO>({ url: '/crm/work-order/dispatch-context', params: { type, groupId } })
 export const getWorkOrderGroupList = async () =>

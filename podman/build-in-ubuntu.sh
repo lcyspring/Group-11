@@ -135,6 +135,10 @@ if [[ -n "$WEB_LEGACY_MEDIA_ORIGINS" &&
     printf 'web.legacy_media_origins must be a comma-separated list of HTTP(S) origins.\n' >&2
     exit 2
 fi
+if [[ "$BUILD_WEB" == "true" && -z "$WEB_LEGACY_MEDIA_ORIGINS" ]]; then
+    printf 'web.legacy_media_origins is required when build.web is true; explicitly list retired media origins.\n' >&2
+    exit 2
+fi
 if [[ -n "$WEB_TEST_SCRIPT" && ! "$WEB_TEST_SCRIPT" =~ ^[A-Za-z0-9:_-]+$ ]]; then
     printf 'web.test_script contains unsupported characters.\n' >&2
     exit 2

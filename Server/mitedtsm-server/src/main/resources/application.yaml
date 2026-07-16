@@ -269,6 +269,22 @@ mitedtsm:
       max-cc-users: 20
       description-min-length: 20
       solution-min-length: 20
+    work-order-governance:
+      geofence:
+        enabled: true
+        require-before-complete: false
+        default-radius-meters: 300
+        max-accuracy-meters: 100
+      sla:
+        enabled: true
+        skip-weekends: true
+        zone: Asia/Shanghai
+        workday-start: "09:00:00"
+        workday-end: "18:00:00"
+        default-policy-code: MEDIUM
+        cron: "0 */5 * * * ?"
+        lock-key: crm:work-order:sla
+        lock-lease-seconds: 300
     erp-fulfillment:
       enabled: true
       version: 2026-07-16
