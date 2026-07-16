@@ -7,10 +7,18 @@ import com.meession.etm.module.crm.dal.dataobject.marketing.CrmMarketingConsentD
 import com.meession.etm.module.crm.dal.mysql.marketing.CrmMarketingBroadcastMapper;
 import com.meession.etm.module.crm.dal.mysql.marketing.CrmMarketingBroadcastRecipientMapper;
 import com.meession.etm.module.crm.dal.mysql.marketing.CrmMarketingConsentMapper;
+import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerMapper;
+import com.meession.etm.module.crm.dal.mysql.contact.CrmContactMapper;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
+import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
 import com.meession.etm.module.crm.enums.marketing.CrmMarketingBroadcastStatusEnum;
 import com.meession.etm.module.crm.enums.marketing.CrmMarketingConsentStatusEnum;
 import com.meession.etm.module.crm.enums.marketing.CrmMarketingRecipientStatusEnum;
 import com.meession.etm.module.crm.framework.marketing.CrmMarketingProperties;
+import com.meession.etm.module.crm.framework.permission.CrmAuthorizationService;
+import com.meession.etm.module.crm.framework.permission.CrmOwnerReadScope;
+import com.meession.etm.module.crm.controller.admin.marketing.vo.CrmMarketingReviewReqVO;
+import com.meession.etm.framework.common.exception.ServiceException;
 import com.meession.etm.module.system.api.sms.SmsSendApi;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,6 +31,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.*;
@@ -33,6 +42,9 @@ class CrmMarketingOutreachServiceTest {
     @Mock CrmMarketingBroadcastRecipientMapper recipientMapper;
     @Mock CrmMarketingConsentMapper consentMapper;
     @Mock SmsSendApi smsSendApi;
+    @Mock CrmAuthorizationService authorizationService;
+    @Mock CrmCustomerMapper customerMapper;
+    @Mock CrmContactMapper contactMapper;
 
     private CrmMarketingOutreachService service;
     private CrmMarketingProperties properties;
@@ -48,6 +60,9 @@ class CrmMarketingOutreachServiceTest {
         ReflectionTestUtils.setField(service, "recipientMapper", recipientMapper);
         ReflectionTestUtils.setField(service, "consentMapper", consentMapper);
         ReflectionTestUtils.setField(service, "smsSendApi", smsSendApi);
+        ReflectionTestUtils.setField(service, "authorizationService", authorizationService);
+        ReflectionTestUtils.setField(service, "customerMapper", customerMapper);
+        ReflectionTestUtils.setField(service, "contactMapper", contactMapper);
         ReflectionTestUtils.setField(service, "properties", properties);
     }
 
@@ -116,6 +131,8 @@ class CrmMarketingOutreachServiceTest {
                 .setStatus(CrmMarketingBroadcastStatusEnum.PARTIAL_FAILED.getStatus());
         when(broadcastMapper.selectById(10L)).thenReturn(broadcast);
         when(recipientMapper.resetFailed(10L)).thenReturn(2);
+        when(broadcastMapper.transition(eq(10L), any(),
+                eq(CrmMarketingBroadcastStatusEnum.SENDING.getStatus()))).thenReturn(1);
         when(recipientMapper.selectCount(any())).thenReturn(0L);
         when(recipientMapper.selectPending(eq(10L), anyInt())).thenReturn(List.of());
         when(recipientMapper.selectList(any(SFunction.class), eq(10L))).thenReturn(List.of());
@@ -123,6 +140,73 @@ class CrmMarketingOutreachServiceTest {
         service.retryFailed(10L);
 
         verify(recipientMapper).resetFailed(10L);
+    }
+
+    @Test
+    void creatorCanDeleteDraftAndRecipientsTogether() {
+        CrmMarketingBroadcastDO broadcast = new CrmMarketingBroadcastDO().setId(11L)
+                .setStatus(CrmMarketingBroadcastStatusEnum.DRAFT.getStatus());
+        broadcast.setCreator("7");
+        when(broadcastMapper.selectById(11L)).thenReturn(broadcast);
+        when(broadcastMapper.deleteDraft(11L, CrmMarketingBroadcastStatusEnum.DRAFT.getStatus())).thenReturn(1);
+
+        service.deleteBroadcast(11L, 7L);
+
+        verify(broadcastMapper).deleteDraft(11L, CrmMarketingBroadcastStatusEnum.DRAFT.getStatus());
+    }
+
+    @Test
+    void nonCreatorCannotDeleteAnotherUsersDraft() {
+        CrmMarketingBroadcastDO broadcast = new CrmMarketingBroadcastDO().setId(12L)
+                .setStatus(CrmMarketingBroadcastStatusEnum.DRAFT.getStatus());
+        broadcast.setCreator("7");
+        when(broadcastMapper.selectById(12L)).thenReturn(broadcast);
+        when(authorizationService.isCrmAdmin(8L)).thenReturn(false);
+
+        assertThrows(ServiceException.class, () -> service.deleteBroadcast(12L, 8L));
+        verify(broadcastMapper, never()).deleteDraft(any(), any());
+    }
+
+    @Test
+    void rejectedReviewRequiresAReason() {
+        CrmMarketingBroadcastDO broadcast = new CrmMarketingBroadcastDO().setId(13L)
+                .setStatus(CrmMarketingBroadcastStatusEnum.PENDING_REVIEW.getStatus());
+        broadcast.setCreator("7");
+        when(broadcastMapper.selectById(13L)).thenReturn(broadcast);
+
+        assertThrows(ServiceException.class, () -> service.review(
+                new CrmMarketingReviewReqVO().setId(13L).setComment("  "), 8L, false));
+        verify(broadcastMapper, never()).reviewIfPending(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void submitReviewUsesAtomicStatusTransition() {
+        CrmMarketingBroadcastDO broadcast = new CrmMarketingBroadcastDO().setId(14L)
+                .setStatus(CrmMarketingBroadcastStatusEnum.DRAFT.getStatus());
+        broadcast.setCreator("7");
+        when(broadcastMapper.selectById(14L)).thenReturn(broadcast);
+        when(broadcastMapper.transition(eq(14L), any(),
+                eq(CrmMarketingBroadcastStatusEnum.PENDING_REVIEW.getStatus()))).thenReturn(0);
+
+        assertThrows(ServiceException.class, () -> service.submitReview(14L, 7L));
+    }
+
+    @Test
+    void targetOptionsFollowOwnerReadScopeWithoutContactQueryPermission() {
+        CrmCustomerDO own = new CrmCustomerDO().setId(21L).setOwnerUserId(7L);
+        when(customerMapper.selectList(any(com.meession.etm.framework.mybatis.core.query.LambdaQueryWrapperX.class)))
+                .thenReturn(List.of(own));
+        when(authorizationService.resolveOwnerReadScope(7L))
+                .thenReturn(new CrmOwnerReadScope(false, java.util.Set.of(7L)));
+        CrmContactDO ownContact = new CrmContactDO().setId(31L).setCustomerId(21L);
+        when(contactMapper.selectList(any(com.meession.etm.framework.mybatis.core.query.LambdaQueryWrapperX.class)))
+                .thenReturn(List.of(ownContact));
+
+        List<CrmCustomerDO> customers = service.getTargetCustomers(7L);
+        List<CrmContactDO> contacts = service.getTargetContacts(customers);
+
+        assertEquals(List.of(own), customers);
+        assertEquals(List.of(ownContact), contacts);
     }
 
     private static CrmMarketingBroadcastRecipientDO pending(Long id, Long broadcastId) {

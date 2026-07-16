@@ -30,6 +30,45 @@ export interface MarketingBroadcastVO {
   scheduledAt?: Date | string
   customerIds?: number[]
   contactIds?: number[]
+  status?: number
+  totalCount?: number
+  validCount?: number
+  suppressedCount?: number
+  sentCount?: number
+  failedCount?: number
+  reviewerUserId?: number
+  reviewedAt?: Date | string
+  reviewComment?: string
+  sentAt?: Date | string
+  creatorUserId?: number
+  createTime?: Date | string
+  updateTime?: Date | string
+}
+export interface MarketingRecipientVO {
+  id: number
+  broadcastId: number
+  customerId: number
+  contactId?: number
+  channel: number
+  mobile?: string
+  email?: string
+  status: number
+  suppressedReason?: string
+  providerLogId?: number
+  failureReason?: string
+  attemptCount?: number
+  sentAt?: Date | string
+  lastAttemptAt?: Date | string
+}
+export interface MarketingTargetOptionsVO {
+  customers: Array<{ id: number; name: string; mobile?: string; email?: string }>
+  contacts: Array<{
+    id: number
+    customerId: number
+    name: string
+    mobile?: string
+    email?: string
+  }>
 }
 export interface MarketingCompetitorVO {
   id?: number
@@ -71,6 +110,17 @@ export const saveConsent = (data: any) =>
   request.post({ url: '/crm/marketing/outreach/consent/save', data })
 export const saveBroadcast = (data: MarketingBroadcastVO) =>
   request.post({ url: '/crm/marketing/outreach/broadcast/save', data })
+export const getBroadcast = (id: number) =>
+  request.get<MarketingBroadcastVO>({
+    url: '/crm/marketing/outreach/broadcast/get',
+    params: { id }
+  })
+export const deleteBroadcast = (id: number) =>
+  request.delete({ url: '/crm/marketing/outreach/broadcast/delete', params: { id } })
+export const getBroadcastTargetOptions = () =>
+  request.get<MarketingTargetOptionsVO>({
+    url: '/crm/marketing/outreach/broadcast/target-options'
+  })
 export const getBroadcastPage = (params: any) =>
   request.get({ url: '/crm/marketing/outreach/broadcast/page', params })
 export const getRecipientPage = (params: any) =>

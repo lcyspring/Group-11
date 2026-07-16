@@ -7,6 +7,7 @@ import lombok.EqualsAndHashCode;
 @Data @EqualsAndHashCode(callSuper = true)
 public class CrmMarketingBroadcastPageReqVO extends PageParam {
     private String name;
+    private Integer channel;
     private Integer status;
     private Long campaignId;
 }

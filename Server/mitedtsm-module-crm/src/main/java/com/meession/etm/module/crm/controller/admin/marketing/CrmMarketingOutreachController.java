@@ -18,6 +18,9 @@ import org.springframework.web.bind.annotation.*;
 import static com.meession.etm.framework.common.pojo.CommonResult.success;
 import static com.meession.etm.framework.security.core.util.SecurityFrameworkUtils.getLoginUserId;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Tag(name = "管理后台 - CRM 合规群发")
 @RestController
 @RequestMapping("/crm/marketing/outreach")
@@ -39,12 +42,58 @@ public class CrmMarketingOutreachController {
         return success(service.saveBroadcast(request, getLoginUserId()));
     }
 
+    @GetMapping("/broadcast/target-options")
+    @Operation(summary = "获得当前用户可触达的客户和联系人")
+    @PreAuthorize("@ss.hasAnyPermissions('crm:marketing-outreach:query', 'crm:marketing-outreach:update')")
+    public CommonResult<CrmMarketingTargetOptionsRespVO> getTargetOptions() {
+        Long userId = getLoginUserId();
+        List<com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO> customers =
+                service.getTargetCustomers(userId);
+        List<com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO> contacts =
+                service.getTargetContacts(customers);
+        return success(new CrmMarketingTargetOptionsRespVO()
+                .setCustomers(BeanUtils.toBean(customers, CrmMarketingTargetOptionsRespVO.Customer.class))
+                .setContacts(BeanUtils.toBean(contacts, CrmMarketingTargetOptionsRespVO.Contact.class)));
+    }
+
+    @GetMapping("/broadcast/get")
+    @Operation(summary = "获得群发任务详情")
+    @PreAuthorize("@ss.hasPermission('crm:marketing-outreach:query')")
+    public CommonResult<CrmMarketingBroadcastRespVO> getBroadcast(@RequestParam Long id) {
+        CrmMarketingBroadcastDO row = service.getBroadcast(id);
+        CrmMarketingBroadcastRespVO response = toResponse(row);
+        response.setCustomerIds(new ArrayList<>()).setContactIds(new ArrayList<>());
+        service.getBroadcastRecipients(id).stream().forEach(recipient -> {
+            if (recipient.getContactId() == null && recipient.getCustomerId() != null
+                    && !response.getCustomerIds().contains(recipient.getCustomerId())) {
+                response.getCustomerIds().add(recipient.getCustomerId());
+            }
+            if (recipient.getContactId() != null && !response.getContactIds().contains(recipient.getContactId())) {
+                response.getContactIds().add(recipient.getContactId());
+            }
+        });
+        return success(response);
+    }
+
+    @DeleteMapping("/broadcast/delete")
+    @Operation(summary = "删除群发草稿")
+    @PreAuthorize("@ss.hasPermission('crm:marketing-outreach:update')")
+    public CommonResult<Boolean> deleteBroadcast(@RequestParam Long id) {
+        service.deleteBroadcast(id, getLoginUserId());
+        return success(true);
+    }
+
     @GetMapping("/broadcast/page")
     @Operation(summary = "获得群发任务分页")
     @PreAuthorize("@ss.hasPermission('crm:marketing-outreach:query')")
     public CommonResult<PageResult<CrmMarketingBroadcastRespVO>> getBroadcastPage(@Valid CrmMarketingBroadcastPageReqVO request) {
         PageResult<CrmMarketingBroadcastDO> page = service.getBroadcastPage(request);
-        return success(new PageResult<>(BeanUtils.toBean(page.getList(), CrmMarketingBroadcastRespVO.class), page.getTotal()));
+        return success(new PageResult<>(page.getList().stream().map(this::toResponse).toList(), page.getTotal()));
+    }
+
+    private CrmMarketingBroadcastRespVO toResponse(CrmMarketingBroadcastDO row) {
+        return BeanUtils.toBean(row, CrmMarketingBroadcastRespVO.class)
+                .setCreatorUserId(service.parseCreatorUserId(row.getCreator()));
     }
 
     @GetMapping("/broadcast/recipients")

@@ -47,13 +47,21 @@ public class CrmMarketingOutreachService {
     public Long saveBroadcast(CrmMarketingBroadcastSaveReqVO request, Long userId) {
         validateChannel(request.getChannel(), request.getSmsTemplateCode(), request.getMailTemplateCode());
         CrmMarketingBroadcastDO existing = request.getId() == null ? null : requireBroadcast(request.getId());
-        if (existing != null && !CrmMarketingBroadcastStatusEnum.DRAFT.getStatus().equals(existing.getStatus()))
-            throw exception(MARKETING_BROADCAST_STATUS_INVALID);
+        if (existing != null) {
+            requireCreatorOrAdmin(existing, userId);
+            if (!List.of(CrmMarketingBroadcastStatusEnum.DRAFT.getStatus(),
+                    CrmMarketingBroadcastStatusEnum.REJECTED.getStatus()).contains(existing.getStatus())) {
+                throw exception(MARKETING_BROADCAST_STATUS_INVALID);
+            }
+        }
         CrmMarketingBroadcastDO row = BeanUtils.toBean(request, CrmMarketingBroadcastDO.class);
         row.setStatus(CrmMarketingBroadcastStatusEnum.DRAFT.getStatus());
         if (request.getId() == null) broadcastMapper.insert(row); else {
             row.setId(request.getId());
-            broadcastMapper.updateById(row);
+            if (broadcastMapper.updateEditable(row, List.of(CrmMarketingBroadcastStatusEnum.DRAFT.getStatus(),
+                    CrmMarketingBroadcastStatusEnum.REJECTED.getStatus())) == 0) {
+                throw exception(MARKETING_BROADCAST_STATUS_INVALID);
+            }
             recipientMapper.delete(CrmMarketingBroadcastRecipientDO::getBroadcastId, row.getId());
         }
         List<CrmMarketingBroadcastRecipientDO> recipients = resolveRecipients(request, row.getId(), userId);
@@ -71,27 +79,85 @@ public class CrmMarketingOutreachService {
         return broadcastMapper.selectPage(request);
     }
 
+    public List<Long> getDueScheduledBroadcastIds() {
+        return broadcastMapper.selectDueScheduled(CrmMarketingBroadcastStatusEnum.READY.getStatus(),
+                LocalDateTime.now(), properties.getMaxBatchSize()).stream().map(CrmMarketingBroadcastDO::getId).toList();
+    }
+
+    public List<CrmCustomerDO> getTargetCustomers(Long userId) {
+        if (authorizationService.isCrmAdmin(userId)) {
+            return customerMapper.selectList();
+        }
+        var readScope = authorizationService.resolveOwnerReadScope(userId);
+        if (readScope.all()) {
+            return customerMapper.selectList();
+        }
+        if (readScope.ownerUserIds().isEmpty()) {
+            return List.of();
+        }
+        return customerMapper.selectList(new com.meession.etm.framework.mybatis.core.query.LambdaQueryWrapperX<CrmCustomerDO>()
+                .in(CrmCustomerDO::getOwnerUserId, readScope.ownerUserIds())
+                .orderByAsc(CrmCustomerDO::getName)
+                .orderByAsc(CrmCustomerDO::getId));
+    }
+
+    public List<CrmContactDO> getTargetContacts(List<CrmCustomerDO> customers) {
+        if (customers.isEmpty()) {
+            return List.of();
+        }
+        Set<Long> customerIds = customers.stream().map(CrmCustomerDO::getId).collect(java.util.stream.Collectors.toSet());
+        return contactMapper.selectList(new com.meession.etm.framework.mybatis.core.query.LambdaQueryWrapperX<CrmContactDO>()
+                .in(CrmContactDO::getCustomerId, customerIds)
+                .orderByAsc(CrmContactDO::getName)
+                .orderByAsc(CrmContactDO::getId));
+    }
+
+    public CrmMarketingBroadcastDO getBroadcast(Long id) {
+        return requireBroadcast(id);
+    }
+
+    public List<CrmMarketingBroadcastRecipientDO> getBroadcastRecipients(Long id) {
+        requireBroadcast(id);
+        return recipientMapper.selectList(CrmMarketingBroadcastRecipientDO::getBroadcastId, id);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteBroadcast(Long id, Long userId) {
+        CrmMarketingBroadcastDO row = requireBroadcast(id);
+        requireCreatorOrAdmin(row, userId);
+        if (broadcastMapper.deleteDraft(id, CrmMarketingBroadcastStatusEnum.DRAFT.getStatus()) == 0) {
+            throw exception(MARKETING_BROADCAST_STATUS_INVALID);
+        }
+        recipientMapper.delete(CrmMarketingBroadcastRecipientDO::getBroadcastId, id);
+    }
+
     public PageResult<CrmMarketingBroadcastRecipientDO> getRecipientPage(CrmMarketingRecipientPageReqVO request) {
         return recipientMapper.selectPage(request);
     }
 
     public void submitReview(Long id, Long userId) {
         CrmMarketingBroadcastDO row = requireBroadcast(id);
-        if (!Objects.equals(parseCreator(row.getCreator()), userId)
-                || !CrmMarketingBroadcastStatusEnum.DRAFT.getStatus().equals(row.getStatus()))
+        requireCreatorOrAdmin(row, userId);
+        if (broadcastMapper.transition(id, List.of(CrmMarketingBroadcastStatusEnum.DRAFT.getStatus()),
+                CrmMarketingBroadcastStatusEnum.PENDING_REVIEW.getStatus()) == 0) {
             throw exception(MARKETING_BROADCAST_STATUS_INVALID);
-        row.setStatus(CrmMarketingBroadcastStatusEnum.PENDING_REVIEW.getStatus());
-        broadcastMapper.updateById(row);
+        }
     }
 
     public void review(CrmMarketingReviewReqVO request, Long reviewerUserId, boolean approved) {
         CrmMarketingBroadcastDO row = requireBroadcast(request.getId());
         if (!CrmMarketingBroadcastStatusEnum.PENDING_REVIEW.getStatus().equals(row.getStatus()))
             throw exception(MARKETING_BROADCAST_STATUS_INVALID);
-        if (Objects.equals(parseCreator(row.getCreator()), reviewerUserId)) throw exception(MARKETING_REVIEWER_INVALID);
-        row.setReviewerUserId(reviewerUserId).setReviewedAt(LocalDateTime.now()).setReviewComment(request.getComment())
-                .setStatus(approved ? CrmMarketingBroadcastStatusEnum.READY.getStatus() : CrmMarketingBroadcastStatusEnum.REJECTED.getStatus());
-        broadcastMapper.updateById(row);
+        if (Objects.equals(parseCreatorUserId(row.getCreator()), reviewerUserId)) throw exception(MARKETING_REVIEWER_INVALID);
+        if (!approved && (request.getComment() == null || request.getComment().isBlank())) {
+            throw exception(MARKETING_REVIEW_COMMENT_REQUIRED);
+        }
+        Integer target = approved ? CrmMarketingBroadcastStatusEnum.READY.getStatus()
+                : CrmMarketingBroadcastStatusEnum.REJECTED.getStatus();
+        if (broadcastMapper.reviewIfPending(row.getId(), reviewerUserId, LocalDateTime.now(),
+                request.getComment(), target, CrmMarketingBroadcastStatusEnum.PENDING_REVIEW.getStatus()) == 0) {
+            throw exception(MARKETING_BROADCAST_STATUS_INVALID);
+        }
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -103,8 +169,12 @@ public class CrmMarketingOutreachService {
         if (row.getScheduledAt() != null && row.getScheduledAt().isAfter(LocalDateTime.now()))
             throw exception(MARKETING_BROADCAST_STATUS_INVALID);
         enforceQuota(row.getId());
+        if (broadcastMapper.transition(row.getId(), List.of(CrmMarketingBroadcastStatusEnum.READY.getStatus(),
+                CrmMarketingBroadcastStatusEnum.PARTIAL_FAILED.getStatus()),
+                CrmMarketingBroadcastStatusEnum.SENDING.getStatus()) == 0) {
+            throw exception(MARKETING_BROADCAST_STATUS_INVALID);
+        }
         row.setStatus(CrmMarketingBroadcastStatusEnum.SENDING.getStatus());
-        broadcastMapper.updateById(row);
         sendRecipients(row);
     }
 
@@ -267,7 +337,14 @@ public class CrmMarketingOutreachService {
         catch (Exception ex) { throw exception(MARKETING_TEMPLATE_REQUIRED); }
     }
 
-    private Long parseCreator(String creator) {
+    public Long parseCreatorUserId(String creator) {
         try { return creator == null ? null : Long.valueOf(creator); } catch (NumberFormatException ex) { return null; }
+    }
+
+    private void requireCreatorOrAdmin(CrmMarketingBroadcastDO row, Long userId) {
+        if (!Objects.equals(parseCreatorUserId(row.getCreator()), userId)
+                && !authorizationService.isCrmAdmin(userId)) {
+            throw exception(MARKETING_PERMISSION_DENIED);
+        }
     }
 }

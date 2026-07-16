@@ -29,6 +29,12 @@ public class CrmMarketingProperties {
     private String careZone = "Asia/Shanghai";
     @NotBlank
     private String lockKey = "crm:marketing:care";
+    @NotBlank
+    private String broadcastCron = "0 * * * * ?";
+    @NotBlank
+    private String broadcastZone = "Asia/Shanghai";
+    @NotBlank
+    private String broadcastLockKey = "crm:marketing:broadcast";
     @Min(60)
     private int lockLeaseSeconds = 300;
 

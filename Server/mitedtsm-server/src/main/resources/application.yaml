@@ -333,6 +333,10 @@ mitedtsm:
       care-cron: "0 0 9 * * ?"
       care-zone: Asia/Shanghai
       lock-key: crm:marketing:care
+      broadcast-enabled: true
+      broadcast-cron: "0 * * * * ?"
+      broadcast-zone: Asia/Shanghai
+      broadcast-lock-key: crm:marketing:broadcast
       lock-lease-seconds: 300
     authorization:
       # 唯一的 CRM 管理员绕过角色；普通角色仍由功能权限字符和数据范围共同授权。
