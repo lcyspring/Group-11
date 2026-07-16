@@ -10,6 +10,7 @@ import java.util.List;
 
 public interface CrmMarketingService {
     Long saveCampaign(CrmMarketingCampaignSaveReqVO request, Long userId);
+    void deleteCampaign(Long id, Long userId);
     void startCampaign(Long id, Long userId);
     void lockCampaign(Long id, Long userId);
     void terminateCampaign(CrmMarketingCampaignActionReqVO request, Long userId);

@@ -5,6 +5,7 @@ import com.meession.etm.framework.mybatis.core.mapper.BaseMapperX;
 import com.meession.etm.framework.mybatis.core.query.LambdaQueryWrapperX;
 import com.meession.etm.module.crm.controller.admin.marketing.vo.CrmMarketingCampaignPageReqVO;
 import com.meession.etm.module.crm.dal.dataobject.marketing.CrmMarketingCampaignDO;
+import com.meession.etm.module.crm.enums.marketing.CrmMarketingCampaignStatusEnum;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.Set;
@@ -13,6 +14,12 @@ import java.util.Set;
 public interface CrmMarketingCampaignMapper extends BaseMapperX<CrmMarketingCampaignDO> {
     default CrmMarketingCampaignDO selectByCode(String code) {
         return selectOne(CrmMarketingCampaignDO::getCode, code);
+    }
+
+    default int deleteDraftById(Long id) {
+        return delete(new LambdaQueryWrapperX<CrmMarketingCampaignDO>()
+                .eq(CrmMarketingCampaignDO::getId, id)
+                .eq(CrmMarketingCampaignDO::getStatus, CrmMarketingCampaignStatusEnum.DRAFT.getStatus()));
     }
 
     default PageResult<CrmMarketingCampaignDO> selectPage(CrmMarketingCampaignPageReqVO request,

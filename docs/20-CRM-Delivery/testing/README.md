@@ -83,6 +83,7 @@
 | `crm-contract-detail-initialization/` | 合同详情延迟挂载、路由编号校验及生命周期空编号防御 |
 | `crm-dialog-i18n/` | CRM 全树弹窗确认/取消多语言键治理 |
 | `receivable-contract-candidates/` | 可回款合同权限候选、剩余额度、合同优先选择及运行对账 |
+| `crm-marketing-campaign-management/` | 营销活动真实负责人、完整字段、五态操作和草稿受控删除 |
 
 运行入口统一为：
 

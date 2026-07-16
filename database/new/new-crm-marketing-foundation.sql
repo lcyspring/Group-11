@@ -116,7 +116,8 @@ AND NOT EXISTS (SELECT 1 FROM system_menu m WHERE m.path='competitor' AND m.pare
 INSERT INTO system_menu (`name`,`permission`,`type`,`sort`,`parent_id`,`path`,`icon`,`component`,`component_name`,`status`,`visible`,`keep_alive`,`always_show`,`creator`,`create_time`,`updater`,`update_time`,`deleted`)
 SELECT defs.name,defs.permission,3,defs.sort,page.id,'','','','',0,b'1',b'1',b'1','crm-marketing',NOW(),'crm-marketing',NOW(),b'0'
 FROM system_menu page JOIN (SELECT '营销活动查询' name,'crm:marketing-campaign:query' permission,1 sort
- UNION ALL SELECT '营销活动维护','crm:marketing-campaign:update',2) defs
+ UNION ALL SELECT '营销活动维护','crm:marketing-campaign:update',2
+ UNION ALL SELECT '营销活动删除','crm:marketing-campaign:delete',3) defs
 WHERE page.path='marketing-campaign' AND page.deleted=b'0'
 AND NOT EXISTS (SELECT 1 FROM system_menu existing WHERE existing.permission=defs.permission AND existing.deleted=b'0');
 
@@ -163,7 +164,7 @@ ON DUPLICATE KEY UPDATE name=VALUES(name),deleted=b'0';
 INSERT INTO system_role_menu (`role_id`,`menu_id`,`creator`,`create_time`,`updater`,`update_time`,`deleted`,`tenant_id`)
 SELECT role.id,menu.id,'crm-marketing',NOW(),'crm-marketing',NOW(),b'0',role.tenant_id
 FROM system_role role JOIN system_menu menu ON (menu.path IN ('marketing-campaign','competitor','marketing-outreach','customer-care') OR menu.permission IN
- ('crm:marketing-campaign:query','crm:marketing-campaign:update','crm:competitor:query','crm:competitor:update','crm:competitor:delete','crm:marketing-outreach:query','crm:marketing-outreach:update','crm:marketing-outreach:review','crm:marketing-outreach:send','crm:marketing-outreach:consent','crm:customer-care:query','crm:customer-care:update'))
+ ('crm:marketing-campaign:query','crm:marketing-campaign:update','crm:marketing-campaign:delete','crm:competitor:query','crm:competitor:update','crm:competitor:delete','crm:marketing-outreach:query','crm:marketing-outreach:update','crm:marketing-outreach:review','crm:marketing-outreach:send','crm:marketing-outreach:consent','crm:customer-care:query','crm:customer-care:update'))
 WHERE role.code='crm_admin' AND role.deleted=b'0' AND menu.deleted=b'0'
 AND NOT EXISTS (SELECT 1 FROM system_role_menu existing WHERE existing.role_id=role.id AND existing.menu_id=menu.id
  AND existing.tenant_id=role.tenant_id AND existing.deleted=b'0');

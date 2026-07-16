@@ -80,6 +80,20 @@ public class CrmMarketingServiceImpl implements CrmMarketingService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteCampaign(Long id, Long userId) {
+        CrmMarketingCampaignDO campaign = requireCampaign(id);
+        checkWrite(campaign, userId);
+        if (!CrmMarketingCampaignStatusEnum.DRAFT.getStatus().equals(campaign.getStatus())) {
+            throw exception(MARKETING_CAMPAIGN_STATUS_INVALID);
+        }
+        if (campaignMapper.deleteDraftById(id) != 1) {
+            throw exception(MARKETING_CAMPAIGN_STATUS_INVALID);
+        }
+        relationMapper.deleteByCampaignId(id);
+    }
+
+    @Override
     public void startCampaign(Long id, Long userId) {
         CrmMarketingCampaignDO campaign = requireCampaign(id);
         checkWrite(campaign, userId);

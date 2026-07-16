@@ -64,6 +64,14 @@ public class CrmMarketingController {
                 CrmMarketingRelationReqVO.class));
     }
 
+    @DeleteMapping("/campaign/delete")
+    @Operation(summary = "删除营销活动草稿")
+    @PreAuthorize("@ss.hasPermission('crm:marketing-campaign:delete')")
+    public CommonResult<Boolean> deleteCampaign(@RequestParam Long id) {
+        marketingService.deleteCampaign(id, getLoginUserId());
+        return success(true);
+    }
+
     @PutMapping("/campaign/start")
     @Operation(summary = "启动营销活动")
     @PreAuthorize("@ss.hasPermission('crm:marketing-campaign:update')")
