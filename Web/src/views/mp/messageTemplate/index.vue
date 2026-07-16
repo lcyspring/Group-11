@@ -12,7 +12,7 @@
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('account.title')" prop="accountId">
-            <WxAccountSelect @change="onAccountChanged" />
+            <WxAccountSelect @change="onAccountChanged" @unavailable="onAccountUnavailable" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -98,6 +98,13 @@ const syncLoading = ref(false) // 同步模板的加载中
 const onAccountChanged = (accountId: number) => {
   queryParams.accountId = accountId
   getList()
+}
+
+const onAccountUnavailable = () => {
+  queryParams.accountId = -1
+  list.value = []
+  loading.value = false
+  syncLoading.value = false
 }
 
 /** 查询列表 */

@@ -5,7 +5,7 @@
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('account.title')" prop="accountId">
-            <WxAccountSelect @change="onAccountChanged" />
+            <WxAccountSelect @change="onAccountChanged" @unavailable="onAccountUnavailable" />
           </el-form-item>
         </el-col>
         <el-col :span="8">
@@ -235,10 +235,23 @@ const onAccountChanged = (id: number) => {
   getSummary()
 }
 
+const onAccountUnavailable = () => {
+  accountId.value = -1
+  xAxisDate.value = []
+  userSummaryOption.xAxis.data = []
+  userSummaryOption.series.forEach((series) => (series.data = []))
+  userCumulateOption.xAxis.data = []
+  userCumulateOption.series[0].data = []
+  upstreamMessageOption.xAxis.data = []
+  upstreamMessageOption.series.forEach((series) => (series.data = []))
+  interfaceSummaryOption.xAxis.data = []
+  interfaceSummaryOption.series.forEach((series) => (series.data = []))
+}
+
 /** 加载数据 */
 const getSummary = () => {
   // 如果没有选中公众号账号，则进行提示。
-  if (!accountId) {
+  if (accountId.value <= 0) {
     message.error(t('statistics.noAccountSelected'))
     return false
   }

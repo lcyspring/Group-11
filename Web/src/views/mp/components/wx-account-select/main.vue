@@ -46,6 +46,7 @@ const loadFailed = ref(false)
 const emit = defineEmits<{
   (e: 'change', id: number, name: string)
   (e: 'update:modelValue', id: number)
+  (e: 'unavailable', reason: 'empty' | 'error')
 }>()
 
 const handleQuery = async () => {
@@ -54,6 +55,7 @@ const handleQuery = async () => {
   try {
     accountList.value = await MpAccountApi.getSimpleAccountList()
     if (accountList.value.length === 0) {
+      emit('unavailable', 'empty')
       return
     }
     const selected = accountList.value.find((item) => item.id === props.modelValue)
@@ -66,6 +68,7 @@ const handleQuery = async () => {
   } catch {
     accountList.value = []
     loadFailed.value = true
+    emit('unavailable', 'error')
   } finally {
     loading.value = false
   }

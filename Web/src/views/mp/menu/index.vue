@@ -6,7 +6,7 @@
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('account.title')" prop="accountId">
-            <WxAccountSelect @change="onAccountChanged" />
+            <WxAccountSelect @change="onAccountChanged" @unavailable="onAccountUnavailable" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -116,9 +116,18 @@ const onAccountChanged = (id: number, name: string) => {
   getList()
 }
 
+const onAccountUnavailable = () => {
+  accountId.value = -1
+  accountName.value = ''
+  menuList.value = []
+  activeIndex.value = MENU_NOT_SELECTED
+  showRightPanel.value = false
+  loading.value = false
+}
+
 /** 查询并转换菜单 **/
 const getList = async () => {
-  loading.value = false
+  loading.value = true
   try {
     const data = await MpMenuApi.getMenuList(accountId.value)
     const menuData = menuListToFrontend(data)
