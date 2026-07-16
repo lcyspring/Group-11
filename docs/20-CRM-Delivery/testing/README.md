@@ -21,6 +21,7 @@
 |---|---|
 | `database-lifecycle-governance/` | MySQL 基线、迁移、种子、修复、清理、销毁分层及 manifest 门禁 |
 | `crm-user-guide-routes/` | 用户指南路由、运行菜单和前端组件一致性 |
+| `podman-operations-documentation/` | 编译、构建、部署操作与三类 YAML 字段参考 |
 | `customer-duplicate-check/` | 客户名称查重功能与缺陷 |
 | `contact-primary/` | 首联系人生命周期 |
 | `contact-mobile-unique/` | 联系人手机号唯一性 |

@@ -4,7 +4,8 @@ This project builds in a dedicated Ubuntu 26.04 container and runs as one
 rootless Podman Pod. Docker Engine, the Docker CLI, Docker sockets, and Compose
 are not used. `docker.io` in an image name is an OCI registry address only.
 
-中文完整流程请阅读：[Podman 全流程操作指南](DEPLOY_GUIDE_ZH.md)。
+中文完整流程请阅读：[Podman 全流程操作指南](DEPLOY_GUIDE_ZH.md)、
+[编译构建部署手册](OPERATIONS_ZH.md)和[配置字段参考](config/YAML_FIELDS_ZH.md)。
 
 ## Configuration contract
 
@@ -24,7 +25,7 @@ The committed configuration uses `operation.startup_mode: check` and
 changing Pod or volume state. Copy it to a local deployment configuration and
 explicitly select a mode before making a stateful operation:
 
-- startup: `full`, `fast`, `no-build`, `frontends-only`, `rebuild-web`, or `rebuild-mall`;
+- startup: `full`, `fast`, `no-build`, `frontends-only`, `rebuild-server`, `rebuild-web`, or `rebuild-mall`;
 - shutdown: `stop`;
 - image archives: `save` or `pull-save`;
 - destructive data removal additionally requires
@@ -98,12 +99,14 @@ bash ./up.sh ./config/my-runtime.yaml
 - `no-build` recreates the Pod from configured local runtime images.
 - `fast` starts an existing stopped Pod and missing frontend containers.
 - `frontends-only` replaces only Web and Mall containers in a running Pod.
+- `rebuild-server` packages the current Server JAR, applies compatibility migrations, and replaces only Server.
 - `rebuild-web` packages current `Web/dist-prod/` and replaces only Web.
 - `rebuild-mall` packages current Mall H5 output and replaces only Mall.
 - `check` validates rootless Podman, configuration, artifacts, and offline
   archive prerequisites without loading, pulling, building, or starting.
 
-Use `full` after backend changes or when artifact freshness is uncertain. The
+Use `rebuild-server` after an ordinary backend change and `full` when database
+packaging, base images, or artifact freshness is uncertain. The
 Web Nginx configuration does not cache `index.html`, while hashed assets remain
 cacheable.
 

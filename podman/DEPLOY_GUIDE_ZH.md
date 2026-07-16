@@ -55,8 +55,8 @@ pnpm；具体版本以 `Containerfile.build-ubuntu` 和 YAML 为准。
 - `Web/dist-prod/`
 - CRM Surefire 与 JaCoCo 报告
 
-Mall H5 的已构建产物已纳入版本管理，只有 Mall 源码变化时才需要 HBuilderX
-重新发布到 `MallFrontend/unpackage/dist/build/web/`。
+Mall H5 构建产物位于被 Git 忽略的 `MallFrontend/unpackage/dist/build/web/`，Mall 源码变化后必须
+使用 Ubuntu 26.04 HBuilderX 容器重新生成，不能依赖仓库中的旧产物。
 
 ## 4. 运行配置
 
@@ -76,7 +76,12 @@ cp ./config/runtime-local-check.yaml ./config/runtime-local.yaml
 - `container` / `volume`：全部容器名和持久卷名；
 - `mysql` / `rabbitmq` / `tdengine`：服务连接及凭据；
 - `server`：Spring profile；
+- `security`：Mock、BCrypt、XSS、CORS、文档、Druid、Actuator 等安全策略；
+- `integration`：微信、社交登录、地图、支付回调和快递 Provider；
+- `file`：文件存储模式、主配置和公开基地址；
 - `health`：探测路径、间隔、重试次数和数据库校验 SQL。
+
+所有字段的作用、取值和安全边界见 `config/YAML_FIELDS_ZH.md`。
 
 相对路径以 YAML 文件所在目录为基准。解析器不执行配置内容，只接受顶层
 键和一层子映射；缺值、重复键、超过两层、非法布尔值/端口/模式都会失败。
@@ -112,6 +117,7 @@ bash ./up.sh ./config/runtime-local.yaml
 - `no-build`：使用现有本地运行镜像重新创建 Pod；
 - `fast`：启动已有的停止状态 Pod，并补齐缺失前端容器；
 - `frontends-only`：仅替换运行中 Pod 的 Web 和 Mall 容器；
+- `rebuild-server`：封装当前 Server JAR、执行兼容迁移并仅替换 Server；
 - `rebuild-web`：只封装当前 `Web/dist-prod/` 并替换 Web；
 - `rebuild-mall`：只封装当前 Mall H5 产物并替换 Mall；
 - `check`：只预检。
