@@ -145,6 +145,13 @@ public interface CrmContractMapper extends BaseMapperX<CrmContractDO> {
                 .eq(CrmContractDO::getOwnerUserId, ownerUserId));
     }
 
+    default List<CrmContractDO> selectReceivableCandidateList(Long customerId) {
+        return selectList(new LambdaQueryWrapperX<CrmContractDO>()
+                .eq(CrmContractDO::getAuditStatus, CrmAuditStatusEnum.APPROVE.getStatus())
+                .eqIfPresent(CrmContractDO::getCustomerId, customerId)
+                .orderByDesc(CrmContractDO::getId));
+    }
+
     default Set<Long> selectProtectedCustomerIds(Collection<Long> customerIds, Collection<Integer> auditStatuses,
                                                   LocalDateTime now) {
         if (customerIds == null || customerIds.isEmpty() || auditStatuses == null || auditStatuses.isEmpty()) {

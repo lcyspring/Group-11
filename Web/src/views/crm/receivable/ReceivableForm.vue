@@ -37,6 +37,7 @@
               v-model="formData.customerId"
               :disabled="formType !== 'create'"
               class="w-1/1"
+              clearable
               filterable
               :placeholder="t('customer.ownerUserPlaceholder')"
               @change="handleCustomerChange"
@@ -54,7 +55,7 @@
           <el-form-item :label="t('receivable.contractName')" prop="contractId">
             <el-select
               v-model="formData.contractId"
-              :disabled="formType !== 'create' || !formData.customerId"
+              :disabled="formType !== 'create'"
               class="w-1/1"
               filterable
               :placeholder="t('contract.namePlaceholder')"
@@ -63,10 +64,17 @@
               <el-option
                 v-for="data in contractList"
                 :key="data.id"
-                :disabled="data.auditStatus !== 20"
-                :label="data.name"
-                :value="data.id!"
-              />
+                :disabled="data.remainingReceivablePrice <= 0"
+                :label="getContractCandidateLabel(data)"
+                :value="data.id"
+              >
+                <div class="flex items-center justify-between gap-12px">
+                  <span>{{ data.customerName }} · {{ data.no }} · {{ data.name }}</span>
+                  <span class="text-12px text-gray-500">
+                    {{ t('receivable.remainingReceivablePrice') }}：{{ data.remainingReceivablePrice }}
+                  </span>
+                </div>
+              </el-option>
             </el-select>
           </el-form-item>
         </el-col>
@@ -162,6 +170,7 @@ import * as CustomerApi from '@/api/crm/customer'
 import * as ContractApi from '@/api/crm/contract'
 import { useUserStore } from '@/store/modules/user'
 import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
+import { filterReceivableCandidates } from './receivableCandidates.mjs'
 
 const { t } = useI18n('crm') // 国际化
 const message = useMessage() // 消息弹窗
@@ -179,7 +188,10 @@ const formRules = reactive({
 })
 const formRef = ref() // 表单 Ref
 const customerList = ref<CustomerApi.CustomerVO[]>([]) // 客户列表
-const contractList = ref<ContractApi.ContractVO[]>([]) // 合同列表
+const allContractCandidates = ref<ContractApi.ReceivableContractCandidateVO[]>([])
+const contractList = computed(() =>
+  filterReceivableCandidates(allContractCandidates.value, formData.value.customerId)
+)
 const receivablePlanList = ref<ReceivablePlanApi.ReceivablePlanVO[]>([]) // 回款计划列表
 
 /** 打开弹窗 */
@@ -192,37 +204,54 @@ const open = async (
   dialogTitle.value = t('action.' + type, { scope: 'common' })
   formType.value = type
   resetForm()
-  // 修改时，设置数据
-  if (id) {
-    formLoading.value = true
-    try {
+  formLoading.value = true
+  try {
+    const [users, customers, candidates] = await Promise.all([
+      UserApi.getSimpleUserList(),
+      CustomerApi.getCustomerSimpleList(),
+      type === 'create' ? ContractApi.getReceivableContractCandidates() : Promise.resolve([])
+    ])
+    userOptions.value = users
+    customerList.value = customers
+    allContractCandidates.value = candidates
+    // 修改时，设置数据，并补入当前只读合同供下拉框回显
+    if (id) {
       const data = (await ReceivableApi.getReceivable(id)) as ReceivableVO
       formData.value = data
-      await handleCustomerChange(data.customerId!)
       formData.value.contractId = data?.contract?.id
-    } finally {
-      formLoading.value = false
+      if (data.contract?.id) {
+        allContractCandidates.value = [
+          {
+            id: data.contract.id,
+            no: data.contract.no,
+            name: data.contract.name || '',
+            customerId: data.customerId!,
+            customerName: data.customerName,
+            totalPrice: data.contract.totalPrice,
+            totalReceivablePrice: data.contract.totalPrice,
+            remainingReceivablePrice: 0
+          }
+        ]
+      }
     }
-  }
-  // 获得用户列表
-  userOptions.value = await UserApi.getSimpleUserList()
-  // 获得客户列表
-  customerList.value = await CustomerApi.getCustomerSimpleList()
-  // 默认新建时选中自己
-  if (formType.value === 'create') {
-    formData.value.ownerUserId = useUserStore().getUser.id
-  }
-  // 从回款计划创建回款
-  if (receivablePlan) {
-    formData.value.customerId = receivablePlan.customerId
-    await handleCustomerChange(receivablePlan.customerId)
-    formData.value.contractId = receivablePlan.contractId
-    await handleContractChange(receivablePlan.contractId)
-    if (receivablePlan.id) {
-      formData.value.planId = receivablePlan.id
-      formData.value.price = receivablePlan.price
-      formData.value.returnType = receivablePlan.returnType
+    mergeCandidateCustomers()
+    // 默认新建时选中自己
+    if (formType.value === 'create') {
+      formData.value.ownerUserId = useUserStore().getUser.id
     }
+    // 从回款计划创建回款
+    if (receivablePlan) {
+      formData.value.customerId = receivablePlan.customerId
+      formData.value.contractId = receivablePlan.contractId
+      await handleContractChange(receivablePlan.contractId)
+      if (receivablePlan.id) {
+        formData.value.planId = receivablePlan.id
+        formData.value.price = receivablePlan.price
+        formData.value.returnType = receivablePlan.returnType
+      }
+    }
+  } finally {
+    formLoading.value = false
   }
 }
 defineExpose({ open }) // 提供 open 方法，用于打开弹窗
@@ -260,14 +289,11 @@ const resetForm = () => {
 }
 
 /** 处理切换客户 */
-const handleCustomerChange = async (customerId: number) => {
+const handleCustomerChange = () => {
   // 重置合同编号
   formData.value.contractId = undefined
-  // 获得合同列表
-  if (customerId) {
-    contractList.value = []
-    contractList.value = await ContractApi.getContractSimpleList(customerId)
-  }
+  formData.value.planId = undefined
+  receivablePlanList.value = []
 }
 
 /** 处理切换合同 */
@@ -275,18 +301,33 @@ const handleContractChange = async (contractId: number) => {
   // 重置回款计划编号
   formData.value.planId = undefined
   if (contractId) {
+    const contract = allContractCandidates.value.find((item) => item.id === contractId)
+    if (!contract) return
+    formData.value.customerId = contract.customerId
+    formData.value.price = contract.remainingReceivablePrice
     // 获得回款计划列表
     receivablePlanList.value = []
     receivablePlanList.value = await ReceivablePlanApi.getReceivablePlanSimpleList(
-      formData.value.customerId!,
+      contract.customerId,
       contractId
     )
-    // 设置金额
-    const contract = contractList.value.find((item) => item.id === contractId)
-    if (contract) {
-      formData.value.price = contract.totalPrice - contract.totalReceivablePrice
-    }
   }
+}
+
+const getContractCandidateLabel = (candidate: ContractApi.ReceivableContractCandidateVO) =>
+  `${candidate.customerName || '-'} · ${candidate.no} · ${candidate.name} · ${t('receivable.remainingReceivablePrice')} ${candidate.remainingReceivablePrice}`
+
+const mergeCandidateCustomers = () => {
+  const customerIds = new Set(customerList.value.map((customer) => customer.id))
+  allContractCandidates.value.forEach((candidate) => {
+    if (!customerIds.has(candidate.customerId)) {
+      customerList.value.push({
+        id: candidate.customerId,
+        name: candidate.customerName || String(candidate.customerId)
+      } as CustomerApi.CustomerVO)
+      customerIds.add(candidate.customerId)
+    }
+  })
 }
 
 /** 处理切换回款计划 */

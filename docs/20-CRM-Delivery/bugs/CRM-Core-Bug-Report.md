@@ -74,6 +74,7 @@
 | CRM-CONTRACT-FE-BUG-003 | GAP-CTR-001/002 | P1 | 合同详情在主数据返回前挂载生命周期等子页并发送 `contractId=undefined`；父级延迟挂载、子级双重空值防御并校验路由编号 | 契约 2/2、专项 ESLint、Ubuntu Web build | 已关闭 |
 | CRM-I18N-BUG-002 | 管理端体验 | P1 | CRM 局部命名空间引用不存在的 `dialog.confirm/cancel` 并回显键名；统一 common 键并增加 CRM 全树门禁 | 163/163 Vue 扫描、残留 0、Ubuntu Web build | 已关闭 |
 | CRM-MKT-FE-BUG-001 | GAP-MKT-001 | P1 | 竞争对手页面固定负责人 1 且缺少编辑、状态、策略和备注；改为真实用户选择和完整 CRUD，补请求边界、权限、三语及门禁 | 请求 5/5、前端 4/4、CRM 438/438、Ubuntu Web build | 已关闭 |
+| CRM-FIN-FE-BUG-002 | GAP-FIN-001、GAP-IAM-003 | P1 | 回款表单必须先选客户且合同标签信息不足；新增直接 OWNER/WRITE 的审批通过候选，展示客户/编号/名称/剩余额度并自动带出客户 | 后端 2/2、前端 4/4、CRM 440/440、真实候选 7 条对账 | 已关闭 |
 
 ## 边界说明
 

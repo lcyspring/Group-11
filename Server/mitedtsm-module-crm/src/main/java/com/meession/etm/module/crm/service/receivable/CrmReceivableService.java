@@ -123,6 +123,9 @@ public interface CrmReceivableService {
      */
     Map<Long, BigDecimal> getReceivablePriceMapByContractId(Collection<Long> contractIds);
 
+    /** Amount already approved or under approval, used to calculate new receivable capacity. */
+    Map<Long, BigDecimal> getReservedPriceMapByContractId(Collection<Long> contractIds);
+
     /**
      * 根据合同编号查询回款数量
      *

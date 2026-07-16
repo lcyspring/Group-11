@@ -215,4 +215,7 @@ public interface CrmContractService {
      */
     List<CrmContractDO> getContractListByCustomerIdOwnerUserId(Long customerId, Long ownerUserId);
 
+    /** Approved contracts that the current user can write and therefore use for a receivable. */
+    List<CrmContractDO> getReceivableCandidateList(Long customerId, Long userId);
+
 }

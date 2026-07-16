@@ -49,6 +49,17 @@ export interface ContractVO {
   ]
 }
 
+export interface ReceivableContractCandidateVO {
+  id: number
+  no: string
+  name: string
+  customerId: number
+  customerName?: string
+  totalPrice: number
+  totalReceivablePrice: number
+  remainingReceivablePrice: number
+}
+
 // 查询 CRM 合同列表
 export const getContractPage = async (params) => {
   return await request.get({ url: `/crm/contract/page`, params })
@@ -73,6 +84,13 @@ export const getContract = async (id: number) => {
 export const getContractSimpleList = async (customerId: number) => {
   return await request.get({
     url: `/crm/contract/simple-list?customerId=${customerId}`
+  })
+}
+
+export const getReceivableContractCandidates = async (customerId?: number) => {
+  return await request.get({
+    url: '/crm/contract/receivable-candidates',
+    params: { customerId }
   })
 }
 

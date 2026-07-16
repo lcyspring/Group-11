@@ -10,6 +10,7 @@ import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractProductDO;
 import com.meession.etm.module.crm.dal.dataobject.product.CrmProductDO;
+import com.meession.etm.module.crm.dal.dataobject.permission.CrmPermissionDO;
 import com.meession.etm.module.crm.dal.dataobject.quote.CrmBusinessQuoteDO;
 import com.meession.etm.module.crm.dal.dataobject.quote.CrmBusinessQuoteItemDO;
 import com.meession.etm.module.crm.dal.mysql.contract.CrmContractMapper;
@@ -20,6 +21,7 @@ import com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
 import com.meession.etm.module.crm.framework.permission.core.annotations.CrmPermission;
+import com.meession.etm.module.crm.framework.permission.CrmAuthorizationService;
 import com.meession.etm.module.crm.service.business.CrmBusinessService;
 import com.meession.etm.module.crm.service.contact.CrmContactService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
@@ -41,6 +43,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTRACT_CREATE_FAIL_BUSINESS_NOT_WON;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTRACT_CREATE_BUSINESS_REQUIRES_CONVERSION;
@@ -91,9 +94,41 @@ class CrmContractServiceImplTest {
     private BpmProcessInstanceApi bpmProcessInstanceApi;
     @Mock
     private CrmContractLifecycleService contractLifecycleService;
+    @Mock
+    private CrmAuthorizationService authorizationService;
 
     @InjectMocks
     private CrmContractServiceImpl service;
+
+    @Test
+    void receivableCandidatesIncludeOnlyDirectOwnerOrWriteContracts() {
+        List<CrmContractDO> candidates = List.of(
+                new CrmContractDO().setId(1L).setOwnerUserId(7L),
+                new CrmContractDO().setId(2L).setOwnerUserId(8L),
+                new CrmContractDO().setId(3L).setOwnerUserId(9L),
+                new CrmContractDO().setId(4L).setOwnerUserId(10L));
+        when(contractMapper.selectReceivableCandidateList(null)).thenReturn(candidates);
+        when(authorizationService.isCrmAdmin(7L)).thenReturn(false);
+        when(crmPermissionService.getPermissionListByBizTypeAndUserId(
+                CrmBizTypeEnum.CRM_CONTRACT.getType(), 7L)).thenReturn(List.of(
+                new CrmPermissionDO().setBizId(2L).setLevel(CrmPermissionLevelEnum.WRITE.getLevel()),
+                new CrmPermissionDO().setBizId(3L).setLevel(CrmPermissionLevelEnum.READ.getLevel())));
+
+        List<CrmContractDO> result = service.getReceivableCandidateList(null, 7L);
+
+        assertEquals(List.of(1L, 2L), result.stream().map(CrmContractDO::getId).toList());
+    }
+
+    @Test
+    void crmAdminReceivesAllApprovedCandidatesWithoutPermissionLookup() {
+        List<CrmContractDO> candidates = List.of(
+                new CrmContractDO().setId(1L), new CrmContractDO().setId(2L));
+        when(contractMapper.selectReceivableCandidateList(20L)).thenReturn(candidates);
+        when(authorizationService.isCrmAdmin(7L)).thenReturn(true);
+
+        assertEquals(candidates, service.getReceivableCandidateList(20L, 7L));
+        verify(crmPermissionService, never()).getPermissionListByBizTypeAndUserId(any(), any());
+    }
 
     @Test
     void createContractRejectsBusinessThatIsNotWon() {

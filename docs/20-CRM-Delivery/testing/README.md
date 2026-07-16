@@ -82,6 +82,7 @@
 | `table-action-and-approval-ui/` | 全量操作列收敛、财务弹窗本地化及 BPM 缓存待办自动刷新 |
 | `crm-contract-detail-initialization/` | 合同详情延迟挂载、路由编号校验及生命周期空编号防御 |
 | `crm-dialog-i18n/` | CRM 全树弹窗确认/取消多语言键治理 |
+| `receivable-contract-candidates/` | 可回款合同权限候选、剩余额度、合同优先选择及运行对账 |
 
 运行入口统一为：
 

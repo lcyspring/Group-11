@@ -980,6 +980,7 @@ export default {
     createTime: 'وقت الإنشاء',
     updateTime: 'وقت التحديث',
     contractPrice: 'سعر العقد',
+    remainingReceivablePrice: 'المبلغ المتبقي للتحصيل',
     period: 'الفترة',
     noPlaceholder: 'الرجاء إدخال رقم المستحق',
     pricePlaceholder: 'الرجاء إدخال سعر المستحق',

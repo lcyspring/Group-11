@@ -19,6 +19,7 @@ import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractConfigDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractProductDO;
 import com.meession.etm.module.crm.dal.dataobject.product.CrmProductDO;
+import com.meession.etm.module.crm.dal.dataobject.permission.CrmPermissionDO;
 import com.meession.etm.module.crm.dal.mysql.contract.CrmContractMapper;
 import com.meession.etm.module.crm.dal.mysql.contract.CrmContractProductMapper;
 import com.meession.etm.module.crm.dal.redis.no.CrmNoRedisDAO;
@@ -27,6 +28,7 @@ import com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
 import com.meession.etm.module.crm.framework.permission.core.annotations.CrmPermission;
+import com.meession.etm.module.crm.framework.permission.CrmAuthorizationService;
 import com.meession.etm.module.crm.service.business.CrmBusinessService;
 import com.meession.etm.module.crm.service.contact.CrmContactService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
@@ -110,6 +112,8 @@ public class CrmContractServiceImpl implements CrmContractService {
     private BpmProcessInstanceApi bpmProcessInstanceApi;
     @Resource
     private CrmContractLifecycleService contractLifecycleService;
+    @Resource
+    private CrmAuthorizationService authorizationService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -638,6 +642,25 @@ public class CrmContractServiceImpl implements CrmContractService {
     @Override
     public List<CrmContractDO> getContractListByCustomerIdOwnerUserId(Long customerId, Long ownerUserId) {
         return contractMapper.selectListByCustomerIdOwnerUserId(customerId, ownerUserId);
+    }
+
+    @Override
+    public List<CrmContractDO> getReceivableCandidateList(Long customerId, Long userId) {
+        List<CrmContractDO> candidates = contractMapper.selectReceivableCandidateList(customerId);
+        if (CollUtil.isEmpty(candidates) || authorizationService.isCrmAdmin(userId)) {
+            return candidates;
+        }
+        Set<Long> writableContractIds = convertSet(
+                CollUtil.emptyIfNull(crmPermissionService.getPermissionListByBizTypeAndUserId(
+                        CrmBizTypeEnum.CRM_CONTRACT.getType(), userId)).stream()
+                        .filter(permission -> CrmPermissionLevelEnum.isOwner(permission.getLevel())
+                                || CrmPermissionLevelEnum.isWrite(permission.getLevel()))
+                        .toList(),
+                CrmPermissionDO::getBizId);
+        return candidates.stream()
+                .filter(contract -> ObjUtil.equal(contract.getOwnerUserId(), userId)
+                        || writableContractIds.contains(contract.getId()))
+                .toList();
     }
 
 }

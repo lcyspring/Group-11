@@ -974,6 +974,7 @@ export default {
     createTime: '创建时间',
     updateTime: '更新时间',
     contractPrice: '合同金额',
+    remainingReceivablePrice: '剩余可回款',
     period: '回款期数',
     noPlaceholder: '请输入回款编号',
     pricePlaceholder: '请输入回款金额',

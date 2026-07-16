@@ -986,6 +986,7 @@ export default {
     createTime: 'Create Time',
     updateTime: 'Update Time',
     contractPrice: 'Contract Price',
+    remainingReceivablePrice: 'Remaining Receivable',
     period: 'Period',
     noPlaceholder: 'Please enter receivable no',
     pricePlaceholder: 'Please enter receivable price',

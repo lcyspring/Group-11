@@ -140,6 +140,20 @@ public interface CrmReceivableMapper extends BaseMapperX<CrmReceivableDO> {
         return convertMap(result, obj -> (Long) obj.get("contract_id"), obj -> (BigDecimal) obj.get("total_price"));
     }
 
+    default Map<Long, BigDecimal> selectReservedPriceMapByContractId(Collection<Long> contractIds) {
+        if (CollUtil.isEmpty(contractIds)) {
+            return Collections.emptyMap();
+        }
+        List<Map<String, Object>> result = selectMaps(new QueryWrapper<CrmReceivableDO>()
+                .select("contract_id, SUM(price) AS total_price")
+                .in("audit_status", CrmAuditStatusEnum.PROCESS.getStatus(),
+                        CrmAuditStatusEnum.APPROVE.getStatus())
+                .groupBy("contract_id")
+                .in("contract_id", contractIds));
+        return convertMap(result, obj -> (Long) obj.get("contract_id"),
+                obj -> (BigDecimal) obj.get("total_price"));
+    }
+
     default Long selectCountByContractId(Long contractId) {
         return selectCount(CrmReceivableDO::getContractId, contractId);
     }

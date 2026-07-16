@@ -330,6 +330,11 @@ public class CrmReceivableServiceImpl implements CrmReceivableService {
     }
 
     @Override
+    public Map<Long, BigDecimal> getReservedPriceMapByContractId(Collection<Long> contractIds) {
+        return receivableMapper.selectReservedPriceMapByContractId(contractIds);
+    }
+
+    @Override
     public Long getReceivableCountByContractId(Long contractId) {
         return receivableMapper.selectCountByContractId(contractId);
     }

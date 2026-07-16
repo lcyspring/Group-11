@@ -14,6 +14,7 @@ import com.meession.etm.module.crm.controller.admin.contract.vo.contract.CrmCont
 import com.meession.etm.module.crm.controller.admin.contract.vo.contract.CrmContractRespVO;
 import com.meession.etm.module.crm.controller.admin.contract.vo.contract.CrmContractSaveReqVO;
 import com.meession.etm.module.crm.controller.admin.contract.vo.contract.CrmContractTransferReqVO;
+import com.meession.etm.module.crm.controller.admin.contract.vo.contract.CrmReceivableContractCandidateRespVO;
 import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessDO;
 import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
@@ -279,6 +280,35 @@ public class CrmContractController {
                 .setId(contract.getId()).setName(contract.getName()).setAuditStatus(contract.getAuditStatus())
                 .setTotalPrice(contract.getTotalPrice())
                 .setTotalReceivablePrice(receivablePriceMap.getOrDefault(contract.getId(), BigDecimal.ZERO))));
+    }
+
+    @GetMapping("/receivable-candidates")
+    @Operation(summary = "获得可创建回款的合同候选")
+    @PreAuthorize("@ss.hasPermission('crm:receivable:create')")
+    public CommonResult<List<CrmReceivableContractCandidateRespVO>> getReceivableContractCandidates(
+            @RequestParam(value = "customerId", required = false) Long customerId) {
+        List<CrmContractDO> contracts = contractService.getReceivableCandidateList(customerId, getLoginUserId());
+        if (CollUtil.isEmpty(contracts)) {
+            return success(Collections.emptyList());
+        }
+        Map<Long, CrmCustomerDO> customerMap = customerService.getCustomerMap(
+                convertSet(contracts, CrmContractDO::getCustomerId));
+        Map<Long, BigDecimal> reservedPriceMap = receivableService.getReservedPriceMapByContractId(
+                convertSet(contracts, CrmContractDO::getId));
+        return success(convertList(contracts, contract -> {
+            BigDecimal reservedPrice = reservedPriceMap.getOrDefault(contract.getId(), BigDecimal.ZERO);
+            BigDecimal remainingPrice = contract.getTotalPrice().subtract(reservedPrice).max(BigDecimal.ZERO);
+            CrmCustomerDO customer = customerMap.get(contract.getCustomerId());
+            return new CrmReceivableContractCandidateRespVO()
+                    .setId(contract.getId())
+                    .setNo(contract.getNo())
+                    .setName(contract.getName())
+                    .setCustomerId(contract.getCustomerId())
+                    .setCustomerName(customer == null ? null : customer.getName())
+                    .setTotalPrice(contract.getTotalPrice())
+                    .setTotalReceivablePrice(reservedPrice)
+                    .setRemainingReceivablePrice(remainingPrice);
+        }));
     }
 
 }
