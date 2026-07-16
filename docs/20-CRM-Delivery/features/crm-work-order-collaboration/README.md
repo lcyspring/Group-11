@@ -28,5 +28,5 @@
 - `crm_work_order.group_id / dispatch_mode / assign_time`
 - 处理组菜单、权限、三语言菜单文案和 `crm-work-order-copied` 通知模板
 
-迁移 `database/new/new-crm-work-order-collaboration.sql` 已纳入兼容迁移清单，并在真实 MySQL
+迁移 `database/migrations/new-crm-work-order-collaboration.sql` 已纳入兼容迁移清单，并在真实 MySQL
 重复执行验证。

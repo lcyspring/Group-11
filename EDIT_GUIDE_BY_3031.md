@@ -2,7 +2,7 @@
     1. 改初始化SQL文件
         -- 在【system_menu】表里面 按照层级 插入数据（1条）
         -- 在【system_menu_i18n】表里面，插入对应的国际化翻译（目前支持zh-CN和en，共2条）
-        -- 请在【database/new】下面新建 初始化SQL文件
+        -- 请按用途在【database/migrations】或【database/seed】下新增 SQL，并登记 manifest
         -- 示例：
             INSERT INTO `system_menu` (`id`, `name`, `permission`, `type`, `sort`, `parent_id`, `path`, `icon`, `component`, `component_name`, `status`, `visible`, `keep_alive`, `always_show`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) 
             VALUES (3000, '新功能名称', '', 1, 1, 0, '/new-feature', 'ep:document', 'newFeature/index', 'NewFeature', 0, b'1', b'1', b'1', '1', NOW(), '1', NOW(), b'0');
@@ -70,7 +70,7 @@
             --- 修改对应的 DO 类（实体类）
             --- 修改对应的 Mapper.xml（如果用了XML写SQL）
             --- 新增字段要在数据库表里同步添加
-            --- 在【database/new】下新建增量SQL文件记录变更
+            --- 在【database/migrations】下新建增量 SQL 文件并登记 manifest
     3. 修改前端页面
         -- Web端：在【Web/src/views】找到对应页面修改
         -- MallFrontend端：在【MallFrontend/pages】找到对应页面修改
@@ -90,7 +90,7 @@
     1. 改初始化SQL文件
         -- 侧边栏菜单国际化，对应【system_menu_i18n】表
         -- 商城用户端菜单国际化，对应【promotion_diy_menu_i18n】表
-        -- 请在【database/new】下面新建 初始化SQL文件
+        -- 请按用途在【database/migrations】或【database/seed】下新增 SQL，并登记 manifest
         -- 示例（新增日语）：
             INSERT INTO `system_menu_i18n` (`menu_id`, `language`, `name`) VALUES (1, 'ja', 'システム管理');
             INSERT INTO `system_menu_i18n` (`menu_id`, `language`, `name`) VALUES (2, 'ja', 'インフラ');

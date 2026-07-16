@@ -27,4 +27,4 @@
 - `erp_sale_order` 外部来源、请求哈希和币种字段
 - CRM 与 ERP 双侧来源/请求唯一键
 
-迁移 `database/new/new-crm-erp-fulfillment.sql` 已连续执行两次通过。
+迁移 `database/migrations/new-crm-erp-fulfillment.sql` 已连续执行两次通过。

@@ -4,7 +4,7 @@ import test from 'node:test'
 
 const detail = fs.readFileSync(new URL('./index.vue', import.meta.url), 'utf8')
 const migration = fs.readFileSync(
-  new URL('../../../../../../database/new/repair-crm-orphan-approval-state.sql', import.meta.url),
+  new URL('../../../../../../database/maintenance/repair/repair-crm-orphan-approval-state.sql', import.meta.url),
   'utf8'
 )
 

@@ -51,5 +51,5 @@ Ubuntu 26.04 YAML 显式注入，命令行只接受配置文件路径。
 
 - 测试：`docs/20-CRM-Delivery/testing/crm-business-quote-versioning/`
 - 运行证据：`docs/20-CRM-Delivery/runtime/yaml-podman-deployment/2026-07-16-crm-business-quote-versioning.md`
-- 迁移：`database/new/new-crm-business-quote-version.sql`
+- 迁移：`database/migrations/new-crm-business-quote-version.sql`
 - 真实验收：`podman/verify-crm-quote.sh` 与显式 YAML

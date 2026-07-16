@@ -4,6 +4,7 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PODMAN_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
+DATABASE_DIR="$(cd -- "${PODMAN_DIR}/../database" && pwd)"
 
 usage() {
     printf 'Usage: bash ./tests/runtime-config/run.sh <runtime-config.yaml>\n' >&2
@@ -54,14 +55,50 @@ bash -n "${PODMAN_DIR}/up.sh"
 bash -n "${PODMAN_DIR}/down.sh"
 bash -n "${PODMAN_DIR}/image-archives.sh"
 bash -n "${PODMAN_DIR}/lib/yaml-config.sh"
+bash -n "${PODMAN_DIR}/init/init-mysql.sh"
 bash -n "${PODMAN_DIR}/verify-crm-receivable-reference-integrity.sh"
 bash -n "${PODMAN_DIR}/verify-crm-performance-target-runtime.sh"
 bash -n "${PODMAN_DIR}/verify-crm-runtime-security.sh"
 
+validate_sql_manifest() {
+    local manifest="$1"
+    local manifest_dir entry resolved
+
+    [[ -s "$manifest" ]] || fail "SQL manifest is missing: $manifest"
+    manifest_dir="$(dirname -- "$manifest")"
+    while IFS= read -r entry || [[ -n "$entry" ]]; do
+        [[ -n "$entry" && "$entry" != \#* ]] || continue
+        [[ "$entry" != /* ]] || fail "SQL manifest contains an absolute path: $entry"
+        resolved="$(realpath -m -- "${manifest_dir}/${entry}")"
+        [[ "$resolved" == "${DATABASE_DIR}/"* ]] || fail "SQL manifest escapes database root: $entry"
+        [[ -s "$resolved" ]] || fail "SQL manifest entry is missing: $entry"
+        [[ "$resolved" != "${DATABASE_DIR}/maintenance/cleanup/"* ]] || \
+            fail "cleanup SQL must not be automated: $entry"
+        [[ "$resolved" != "${DATABASE_DIR}/teardown/"* ]] || \
+            fail "teardown SQL must not be automated: $entry"
+    done < "$manifest"
+}
+
+bootstrap_manifest="${DATABASE_DIR}/manifests/mysql-bootstrap.manifest"
+compatibility_manifest="${DATABASE_DIR}/manifests/mysql-compatibility.manifest"
+validate_sql_manifest "$bootstrap_manifest"
+validate_sql_manifest "$compatibility_manifest"
+
+missing_from_bootstrap="$(comm -23 \
+    <(sed '/^[[:space:]]*#/d; /^[[:space:]]*$/d' "$compatibility_manifest" | sort) \
+    <(sed '/^[[:space:]]*#/d; /^[[:space:]]*$/d' "$bootstrap_manifest" | sort))"
+[[ -z "$missing_from_bootstrap" ]] || fail \
+    "Compatibility migration missing from empty-database bootstrap: ${missing_from_bootstrap//$'\n'/, }"
+
+if rg -ni '^[[:space:]]*(CREATE|ALTER|UPDATE|DELETE|DROP|TRUNCATE)[[:space:]]' \
+    "${DATABASE_DIR}/seed"/*.sql; then
+    fail 'seed SQL contains schema, cleanup, or teardown statements'
+fi
+
 missing_crm_migrations="$(comm -23 \
-    <(find "${PODMAN_DIR}/../database/new" -maxdepth 1 -type f -name 'new-crm-*.sql' -printf '%f\n' | sort) \
+    <(find "${DATABASE_DIR}/migrations" -maxdepth 1 -type f -name 'new-crm-*.sql' -printf '%f\n' | sort) \
     <(sed -n 's#^.*/\(new-crm-[^/]*\.sql\)$#\1#p' \
-        "${PODMAN_DIR}/config/mysql-compatibility-migrations.manifest" | sort))"
+        "$compatibility_manifest" | sort))"
 [[ -z "$missing_crm_migrations" ]] || fail \
     "CRM compatibility migrations missing from manifest: ${missing_crm_migrations//$'\n'/, }"
 

@@ -17,7 +17,7 @@
 
 ## 数据库约束
 
-迁移 `database/new/new-crm-contact-mobile-unique.sql` 增加：
+迁移 `database/migrations/new-crm-contact-mobile-unique.sql` 增加：
 
 - `active_mobile_key` 存储生成列；只为 `deleted=0`、客户和手机号均有效的联系人生成租户级组合键。
 - 唯一索引 `uk_crm_contact_active_mobile`。

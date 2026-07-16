@@ -30,7 +30,7 @@
 
 - 配置：`mitedtsm.crm.receivable-refund.process-definition-key`；
 - 配置：`mitedtsm.crm.receivable-refund.number-prefix`；
-- 迁移：`database/new/new-crm-receivable-refund.sql`；
+- 迁移：`database/migrations/new-crm-receivable-refund.sql`；
 - 兼容迁移可重复执行，并由 Podman YAML 指定的 manifest 统一加载。
 
 ## 当前边界

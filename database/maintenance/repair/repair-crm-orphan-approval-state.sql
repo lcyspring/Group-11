@@ -12,6 +12,16 @@ CREATE TABLE IF NOT EXISTS `crm_approval_repair_record` (
   UNIQUE KEY `uk_crm_approval_repair` (`tenant_id`,`biz_type`,`biz_id`,`old_process_instance_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='CRM 孤立审批状态修复记录';
 
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `repair_crm_orphan_approval_state`$$
+CREATE PROCEDURE `repair_crm_orphan_approval_state`()
+BEGIN
+IF EXISTS (
+  SELECT 1 FROM information_schema.tables
+  WHERE table_schema=DATABASE() AND table_name='ACT_HI_PROCINST'
+) THEN
+
 INSERT IGNORE INTO crm_approval_repair_record
   (biz_type,biz_id,tenant_id,old_process_instance_id,old_audit_status,new_audit_status,reason)
 SELECT 'contract',source.id,source.tenant_id,COALESCE(source.process_instance_id,'missing-id'),
@@ -81,3 +91,11 @@ LEFT JOIN ACT_HI_PROCINST flow ON flow.ID_=source.process_instance_id
 SET source.audit_status=40,source.process_instance_id=NULL,
     source.updater='crm-orphan-approval-repair',source.update_time=NOW()
 WHERE source.deleted=b'0' AND source.audit_status=10 AND flow.ID_ IS NULL;
+
+END IF;
+END$$
+
+CALL `repair_crm_orphan_approval_state`()$$
+DROP PROCEDURE `repair_crm_orphan_approval_state`$$
+
+DELIMITER ;

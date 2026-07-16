@@ -62,8 +62,8 @@ mysql_exec() {
         "--database=${MYSQL_DATABASE}" --default-character-set=utf8mb4 -Nse "$1"
 }
 
-grep -Fx '../../database/new/new-crm-performance-target.sql' \
-    "${SCRIPT_DIR}/config/mysql-compatibility-migrations.manifest" >/dev/null || {
+grep -Fx '../migrations/new-crm-performance-target.sql' \
+    "${SCRIPT_DIR}/../database/manifests/mysql-compatibility.manifest" >/dev/null || {
     printf 'Performance-target migration is absent from the compatibility manifest.\n' >&2
     exit 1
 }

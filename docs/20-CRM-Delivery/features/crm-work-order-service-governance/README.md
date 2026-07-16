@@ -4,7 +4,7 @@
 
 ## 已交付
 
-- `database/new/new-crm-work-order-service-governance.sql`：签到记录、SLA 策略、工作日历、SLA 实例及权限菜单。
+- `database/migrations/new-crm-work-order-service-governance.sql`：签到记录、SLA 策略、工作日历、SLA 实例及权限菜单。
 - 工单保存服务地点和签到要求；处理人通过 `/crm/work-order/check-in` 完成服务端距离校验。
 - SLA 实例在工单创建事务中按优先级初始化，截止时间跳过周末和数据库工作日历覆盖日。
 - `/crm/work-order/sla/pause`、`/resume` 提供处理人暂停/恢复，恢复会平移截止时间。

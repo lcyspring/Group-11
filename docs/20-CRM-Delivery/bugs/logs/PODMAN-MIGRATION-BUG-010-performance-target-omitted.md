@@ -13,7 +13,7 @@
 ## 根因
 
 兼容迁移使用显式 manifest，但五个较早新增的 CRM 幂等迁移没有登记；运行配置测试也只检查清单内文件，
-未反向检查 `database/new/new-crm-*.sql` 是否全部进入 manifest。
+未反向检查 CRM 增量迁移是否全部进入 manifest。
 
 ## 修复关键
 
