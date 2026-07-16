@@ -3,6 +3,7 @@ import request from '@/config/axios'
 export interface ContractAttachmentVO {
   id: number
   contractId: number
+  amendmentId?: number
   contractVersion: number
   category: number
   fileName: string
@@ -49,6 +50,7 @@ export interface ContractLifecycleVO {
 
 export interface ContractAttachmentCreateReqVO {
   contractId: number
+  amendmentId?: number
   category: number
   fileName: string
   fileUrl: string

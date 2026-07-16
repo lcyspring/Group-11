@@ -380,6 +380,9 @@ mitedtsm:
         lock-lease-seconds: 1800
     security:
       protected-file-directory: crm-protected/contract
+    contract-amendment:
+      process-definition-key: crm-contract-amendment-audit
+      number-prefix: BC
     receivable-refund:
       process-definition-key: crm-receivable-refund-audit
       number-prefix: TK

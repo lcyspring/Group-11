@@ -1,5 +1,7 @@
 package com.meession.etm.module.crm.controller.admin.contract.vo.lifecycle;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -14,6 +16,9 @@ public class CrmContractAttachmentCreateReqVO {
 
     @NotNull
     private Long contractId;
+
+    @Schema(description = "补充协议编号；补充协议依据附件必传")
+    private Long amendmentId;
     @NotNull
     @Min(1)
     @Max(3)

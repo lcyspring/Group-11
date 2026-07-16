@@ -52,5 +52,6 @@
 | CRM-FEATURE-046 | 客服处理组、最小负载自动派单、未分配领取、抄送协作及组级/跨组权限闭环 | GAP-WO-001/002、ADR-021 | 已实现 | `docs/20-CRM-Delivery/testing/crm-work-order-collaboration/` |
 | CRM-FEATURE-047 | 工单移动签到、地理围栏、SLA 工作日历、暂停和自动升级闭环 | GAP-WO-002、ADR-011 | 已实现 | `docs/20-CRM-Delivery/testing/crm-work-order-service-governance/` |
 | CRM-FEATURE-048 | 营销活动、竞争对手、客户关怀及短信/邮件合规群发闭环 | GAP-MKT-001～003、ADR-016 | 已实现 | `docs/20-CRM-Delivery/testing/crm-marketing/` |
+| CRM-FEATURE-049 | 已签署合同补充协议前后快照、独立审批、生效投影、金额下限和不可变依据附件闭环 | GAP-CTR-001/002、GAP-ORD-003、GAP-APR-002、ADR-015 | 已实现 | `docs/20-CRM-Delivery/testing/crm-contract-amendment/` |
 
-说明：`CRM-FEATURE-005/043` 共同关闭线索转换的首联系人、跟进及任务/通话/短信活动迁移、并发幂等、审计和失败回滚。`CRM-FEATURE-007` 是历史二态基线，现已由 `CRM-FEATURE-029` 升级为四态模型。`CRM-FEATURE-015/016/017` 已建立目标事实源、完成度展示和三层目标维护入口；目标逐级分解合计规则仍待业务签署。`CRM-FEATURE-028` 不宣称已接入外部电子签平台，也不包含正式补充协议的新审批命令。`CRM-FEATURE-030/035` 已聚合退款真源，但不伪造尚未实现的 OA 任务和费用真源。`CRM-FEATURE-033` 已完成真实 BPM 提交、驳回、修订、重提和通过验收。`CRM-FEATURE-034` 的新附件已受保护，历史公开附件仍需物理迁移。客户联系人归属、公海、垃圾池、公共线索、活动迁移、报价版本、ERP 履约和工单协作分别由 `CRM-FEATURE-039`～`046` 关闭。
+说明：`CRM-FEATURE-005/043` 共同关闭线索转换的首联系人、跟进及任务/通话/短信活动迁移、并发幂等、审计和失败回滚。`CRM-FEATURE-007` 是历史二态基线，现已由 `CRM-FEATURE-029` 升级为四态模型。`CRM-FEATURE-015/016/017` 已建立目标事实源、完成度展示和三层目标维护入口；目标逐级分解合计规则仍待业务签署。`CRM-FEATURE-028` 负责合同签署事实与基础版本轨迹，正式补充协议独立审批由 `CRM-FEATURE-049` 完成；二者均不宣称接入外部电子签平台。`CRM-FEATURE-030/035` 已聚合退款真源，但不伪造尚未实现的 OA 任务真源。`CRM-FEATURE-033` 已完成真实 BPM 提交、驳回、修订、重提和通过验收。`CRM-FEATURE-034` 的新附件已受保护，历史公开附件仍需物理迁移。客户联系人归属、公海、垃圾池、公共线索、活动迁移、报价版本、ERP 履约和工单协作分别由 `CRM-FEATURE-039`～`046` 关闭。

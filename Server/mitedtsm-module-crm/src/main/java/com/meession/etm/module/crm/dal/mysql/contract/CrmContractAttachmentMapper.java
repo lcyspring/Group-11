@@ -14,4 +14,10 @@ public interface CrmContractAttachmentMapper extends BaseMapperX<CrmContractAtta
                 .eq(CrmContractAttachmentDO::getContractId, contractId)
                 .orderByDesc(CrmContractAttachmentDO::getId));
     }
+
+    default List<CrmContractAttachmentDO> selectListByAmendmentId(Long amendmentId) {
+        return selectList(new LambdaQueryWrapperX<CrmContractAttachmentDO>()
+                .eq(CrmContractAttachmentDO::getAmendmentId, amendmentId)
+                .orderByAsc(CrmContractAttachmentDO::getId));
+    }
 }

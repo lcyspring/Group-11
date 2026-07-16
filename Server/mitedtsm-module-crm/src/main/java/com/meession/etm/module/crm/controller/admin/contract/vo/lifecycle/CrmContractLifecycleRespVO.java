@@ -35,6 +35,7 @@ public class CrmContractLifecycleRespVO {
     public static class Attachment {
         private Long id;
         private Long contractId;
+        private Long amendmentId;
         private Integer contractVersion;
         private Integer category;
         private String fileName;

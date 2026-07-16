@@ -6,8 +6,8 @@
 
 更新日期：2026-07-16
 
-- Ubuntu 26.04 容器 CRM 自动化：407/407，失败 0、错误 0、跳过 0。
-- CRM JaCoCo：指令 44.86%、分支 37.83%、行 43.83%、方法 33.55%。
+- Ubuntu 26.04 容器 CRM 自动化：426/426，失败 0、错误 0、跳过 0。
+- CRM JaCoCo：指令 45.71%、分支 38.52%、行 44.77%、方法 33.93%。
 - ERP 履约专项：4/4；ERP 模块 JaCoCo 行覆盖率 6.92%。
 - Ubuntu 26.04 Infra 文件专项：28/28；模块行覆盖率 8.16%。
 - Ubuntu 26.04 BPM 自动化：54 个，48 通过、6 跳过、失败 0；行覆盖率 8.58%。
@@ -56,6 +56,7 @@
 | `crm-work-order-dispatch/` | 待处理工单分派、并发保护、轨迹通知和多维视图筛选 |
 | `crm-invoice-lifecycle/` | 发票草稿、开具、红冲、作废、金额守恒、Provider 幂等和前端状态机 |
 | `crm-contract-lifecycle/` | 合同附件、实际签署、Provider 能力、作废、幂等和不可变轨迹 |
+| `crm-contract-amendment/` | 已签署合同补充协议快照、独立审批、版本生效、财务下限、附件锁定和真实 API 验收 |
 | `customer-four-state-lifecycle/` | 客户四态命令、成交兼容、不可变历史、筛选与画像统计 |
 | `bpm-tenant-unified-backlog/` | BPM 租户查询、模型旁路、统一待办、构建和覆盖率 |
 | `statistics-lineage-refresh/` | 六类统计指标血缘、域权限、实时刷新和覆盖率 |

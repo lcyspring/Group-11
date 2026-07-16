@@ -21,6 +21,14 @@
       >
         {{ t('crm.contract.voidSignature') }}
       </el-button>
+      <el-button
+        v-if="data.signing?.status === 10 && !openAmendment"
+        v-hasPermi="['crm:contract:amendment']"
+        type="warning"
+        @click="amendmentDialogRef?.open()"
+      >
+        {{ t('crm.contract.createAmendment') }}
+      </el-button>
     </div>
     <el-alert
       v-if="contract.auditStatus === 20 && !data.signing && signedCopies.length === 0"
@@ -94,6 +102,37 @@
         </template>
       </el-table-column>
     </el-table>
+    <el-divider>{{ t('crm.contract.amendmentTitle') }}</el-divider>
+    <el-table :data="amendments" class="mb-16px">
+      <el-table-column :label="t('crm.contract.amendmentNo')" prop="no" min-width="160" />
+      <el-table-column :label="t('crm.contract.amendmentName')" prop="title" min-width="180" />
+      <el-table-column :label="t('crm.contract.contractVersion')" width="110">
+        <template #default="scope">V{{ scope.row.baseVersion }} → V{{ scope.row.targetVersion }}</template>
+      </el-table-column>
+      <el-table-column :label="t('crm.contract.auditStatus')" width="110">
+        <template #default="scope">{{ auditStatusLabel(scope.row.auditStatus) }}</template>
+      </el-table-column>
+      <el-table-column :label="t('crm.contract.amendmentAmountAfter')" prop="amountAfter" width="140" />
+      <el-table-column :label="t('crm.contract.amendmentAmountDelta')" prop="amountDelta" width="140" />
+      <el-table-column :label="t('common.action')" width="180" fixed="right">
+        <template #default="scope">
+          <el-button
+            v-if="[0, 30, 40].includes(scope.row.auditStatus)"
+            v-hasPermi="['crm:contract:amendment']"
+            link
+            type="primary"
+            @click="amendmentDialogRef?.open(scope.row.id)"
+          >{{ t('action.edit') }}</el-button>
+          <el-button
+            v-if="scope.row.auditStatus === 0"
+            v-hasPermi="['crm:contract:amendment']"
+            link
+            type="success"
+            @click="submitAmendment(scope.row)"
+          >{{ t('crm.contract.submitAudit') }}</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
     <el-timeline>
       <el-timeline-item
         v-for="item in data.changeRecords"
@@ -117,6 +156,21 @@
           <el-option :label="t('crm.contract.generalAttachment')" :value="1" />
           <el-option :label="t('crm.contract.signedCopy')" :value="2" />
           <el-option :label="t('crm.contract.amendmentEvidence')" :value="3" />
+        </el-select>
+      </el-form-item>
+      <el-form-item
+        v-if="attachmentForm.category === 3"
+        :label="t('crm.contract.amendmentName')"
+        prop="amendmentId"
+        :rules="[{ required: true }]"
+      >
+        <el-select v-model="attachmentForm.amendmentId" class="w-full">
+          <el-option
+            v-for="item in editableAmendments"
+            :key="item.id"
+            :label="`${item.no} · ${item.title}`"
+            :value="item.id"
+          />
         </el-select>
       </el-form-item>
       <el-form-item
@@ -198,15 +252,23 @@
       <el-button @click="signVisible = false">{{ t('common.cancel') }}</el-button>
     </template>
   </Dialog>
+  <ContractAmendmentDialog ref="amendmentDialogRef" :contract="contract" @success="load" />
 </template>
 <script setup lang="ts">
 import * as LifecycleApi from '@/api/crm/contract/lifecycle'
+import * as AmendmentApi from '@/api/crm/contract/amendment'
 import * as ContractApi from '@/api/crm/contract'
 import * as UserApi from '@/api/system/user'
 import { formatDate } from '@/utils/formatTime'
 import download from '@/utils/download'
-import type { FormInstance, UploadRequestOptions, UploadUserFile } from 'element-plus'
+import type {
+  FormInstance,
+  UploadRequestOptions,
+  UploadUserFile
+} from 'element-plus'
+import ContractAmendmentDialog from './ContractAmendmentDialog.vue'
 const props = defineProps<{ contract: ContractApi.ContractVO }>()
+type UploadError = Parameters<UploadRequestOptions['onError']>[0]
 const { t } = useI18n()
 const message = useMessage()
 const data = ref<LifecycleApi.ContractLifecycleVO>({
@@ -215,9 +277,23 @@ const data = ref<LifecycleApi.ContractLifecycleVO>({
   supportedSignMethods: []
 })
 const users = ref<UserApi.UserVO[]>([])
+const amendments = ref<AmendmentApi.ContractAmendmentVO[]>([])
+const amendmentDialogRef = ref<InstanceType<typeof ContractAmendmentDialog>>()
 const load = async () => {
-  data.value = await LifecycleApi.getContractLifecycle(props.contract.id)
+  const [lifecycle, amendmentList] = await Promise.all([
+    LifecycleApi.getContractLifecycle(props.contract.id),
+    AmendmentApi.getContractAmendmentList(props.contract.id)
+  ])
+  data.value = lifecycle
+  amendments.value = amendmentList
 }
+const openAmendment = computed(() => amendments.value.find((item) => item.auditStatus !== 20))
+const editableAmendments = computed<Array<AmendmentApi.ContractAmendmentVO & { id: number }>>(() =>
+  amendments.value.filter(
+    (item): item is AmendmentApi.ContractAmendmentVO & { id: number } =>
+      item.id !== undefined && [0, 30, 40].includes(item.auditStatus || 0)
+  )
+)
 const signedCopies = computed(() =>
   data.value.attachments.filter((x) => x.category === 2 && !x.immutable)
 )
@@ -238,8 +314,24 @@ const actionLabel = (v: number) =>
     t('crm.contract.rejected'),
     t('crm.contract.canceled'),
     t('crm.contract.signed'),
-    t('crm.contract.signatureVoided')
+    t('crm.contract.signatureVoided'),
+    t('crm.contract.amendmentCreated'),
+    t('crm.contract.amendmentUpdated'),
+    t('crm.contract.amendmentSubmitted'),
+    t('crm.contract.amendmentEffective'),
+    t('crm.contract.amendmentRejected'),
+    t('crm.contract.amendmentCanceled')
   ][v - 1] || v
+const auditStatusLabel = (v?: number) =>
+  v === 0
+    ? t('crm.contract.auditStatusDraft')
+    : v === 10
+      ? t('crm.contract.auditStatusProcess')
+      : v === 20
+        ? t('crm.contract.auditStatusApprove')
+        : v === 30
+          ? t('crm.contract.auditStatusReject')
+          : t('crm.contract.canceled')
 const attachmentVisible = ref(false)
 const attachmentFormRef = ref<FormInstance>()
 const attachmentForm = ref<LifecycleApi.ContractAttachmentCreateReqVO>({
@@ -268,7 +360,7 @@ const uploadAttachment = async (options: UploadRequestOptions) => {
     if (!attachmentForm.value.fileName) attachmentForm.value.fileName = options.file.name
     options.onSuccess(response)
   } catch (error) {
-    options.onError(error as Error)
+    options.onError(error as UploadError)
     throw error
   } finally {
     attachmentUploading.value = false
@@ -282,6 +374,12 @@ const submitAttachment = async () => {
   await LifecycleApi.createContractAttachment(attachmentForm.value)
   message.success(t('common.createSuccess'))
   attachmentVisible.value = false
+  await load()
+}
+const submitAmendment = async (row: AmendmentApi.ContractAmendmentVO) => {
+  await message.confirm(t('crm.contract.submitAmendmentConfirm'))
+  await AmendmentApi.submitContractAmendment(props.contract.id, row.id!)
+  message.success(t('crm.contract.submitAuditSuccess'))
   await load()
 }
 const removeAttachment = async (row: LifecycleApi.ContractAttachmentVO) => {

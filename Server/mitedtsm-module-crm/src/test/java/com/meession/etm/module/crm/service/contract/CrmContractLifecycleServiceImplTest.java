@@ -4,11 +4,13 @@ import com.meession.etm.framework.common.exception.ServiceException;
 import com.meession.etm.module.crm.controller.admin.contract.vo.lifecycle.CrmContractAttachmentCreateReqVO;
 import com.meession.etm.module.crm.controller.admin.contract.vo.lifecycle.CrmContractSignReqVO;
 import com.meession.etm.module.crm.controller.admin.contract.vo.lifecycle.CrmContractSignVoidReqVO;
+import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractAmendmentDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractAttachmentDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractChangeRecordDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractSigningDO;
 import com.meession.etm.module.crm.dal.mysql.contract.CrmContractAttachmentMapper;
+import com.meession.etm.module.crm.dal.mysql.contract.CrmContractAmendmentMapper;
 import com.meession.etm.module.crm.dal.mysql.contract.CrmContractChangeRecordMapper;
 import com.meession.etm.module.crm.dal.mysql.contract.CrmContractMapper;
 import com.meession.etm.module.crm.dal.mysql.contract.CrmContractProductMapper;
@@ -30,6 +32,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.*;
@@ -46,6 +49,8 @@ class CrmContractLifecycleServiceImplTest {
     private CrmContractProductMapper productMapper;
     @Mock
     private CrmContractAttachmentMapper attachmentMapper;
+    @Mock
+    private CrmContractAmendmentMapper amendmentMapper;
     @Mock
     private CrmContractSigningMapper signingMapper;
     @Mock
@@ -64,7 +69,7 @@ class CrmContractLifecycleServiceImplTest {
     @Test
     void createAttachmentNormalizesShaAndUsesCurrentVersion() {
         when(contractMapper.selectByIdForUpdate(7L)).thenReturn(contract());
-        when(changeMapper.selectLatest(7L)).thenReturn(new CrmContractChangeRecordDO().setContractVersion(3));
+        when(changeMapper.selectLatestEffective(7L)).thenReturn(new CrmContractChangeRecordDO().setContractVersion(3));
         when(securityProperties.getProtectedFileDirectory()).thenReturn("crm-protected/contract");
         when(fileApi.getFileByUrl("/files/a")).thenReturn(managedFile());
         doAnswer(invocation -> {
@@ -97,6 +102,55 @@ class CrmContractLifecycleServiceImplTest {
         ServiceException ex = assertThrows(ServiceException.class, () -> service.createAttachment(req, 1L));
 
         assertEquals(CONTRACT_ATTACHMENT_FILE_NOT_PROTECTED.getCode(), ex.getCode());
+        verify(attachmentMapper, never()).insert(any(CrmContractAttachmentDO.class));
+    }
+
+    @Test
+    void createAmendmentEvidenceBindsTargetVersionAndAmendment() {
+        when(contractMapper.selectByIdForUpdate(7L)).thenReturn(contract());
+        when(changeMapper.selectLatestEffective(7L)).thenReturn(new CrmContractChangeRecordDO().setContractVersion(2));
+        when(securityProperties.getProtectedFileDirectory()).thenReturn("crm-protected/contract");
+        when(fileApi.getFileByUrl("/files/evidence.pdf")).thenReturn(managedFile());
+        when(amendmentMapper.selectByIdForUpdate(11L)).thenReturn(new CrmContractAmendmentDO()
+                .setId(11L).setContractId(7L).setTargetVersion(3)
+                .setAuditStatus(CrmAuditStatusEnum.DRAFT.getStatus()));
+        doAnswer(invocation -> {
+            ((CrmContractAttachmentDO) invocation.getArgument(0)).setId(9L);
+            return 1;
+        }).when(attachmentMapper).insert(any(CrmContractAttachmentDO.class));
+        CrmContractAttachmentCreateReqVO req = new CrmContractAttachmentCreateReqVO().setContractId(7L)
+                .setAmendmentId(11L).setCategory(CrmContractLifecycleEnums.ATTACHMENT_AMENDMENT)
+                .setFileName("evidence.pdf").setFileUrl("/files/evidence.pdf");
+
+        assertEquals(9L, service.createAttachment(req, 1L));
+
+        verify(attachmentMapper).insert(ArgumentMatchers.<CrmContractAttachmentDO>argThat(item ->
+                item.getAmendmentId().equals(11L) && item.getContractVersion().equals(3)
+                        && item.getCategory().equals(CrmContractLifecycleEnums.ATTACHMENT_AMENDMENT)));
+    }
+
+    @Test
+    void createAmendmentEvidenceRejectsCrossContractOrProcessingAmendment() {
+        when(contractMapper.selectByIdForUpdate(7L)).thenReturn(contract());
+        when(securityProperties.getProtectedFileDirectory()).thenReturn("crm-protected/contract");
+        when(fileApi.getFileByUrl("/files/evidence.pdf")).thenReturn(managedFile());
+        CrmContractAttachmentCreateReqVO req = new CrmContractAttachmentCreateReqVO().setContractId(7L)
+                .setAmendmentId(11L).setCategory(CrmContractLifecycleEnums.ATTACHMENT_AMENDMENT)
+                .setFileName("evidence.pdf").setFileUrl("/files/evidence.pdf");
+        when(amendmentMapper.selectByIdForUpdate(11L)).thenReturn(new CrmContractAmendmentDO()
+                .setId(11L).setContractId(8L).setTargetVersion(3)
+                .setAuditStatus(CrmAuditStatusEnum.DRAFT.getStatus()));
+
+        ServiceException crossContract = assertThrows(ServiceException.class,
+                () -> service.createAttachment(req, 1L));
+        assertEquals(CONTRACT_AMENDMENT_ATTACHMENT_INVALID.getCode(), crossContract.getCode());
+
+        when(amendmentMapper.selectByIdForUpdate(11L)).thenReturn(new CrmContractAmendmentDO()
+                .setId(11L).setContractId(7L).setTargetVersion(3)
+                .setAuditStatus(CrmAuditStatusEnum.PROCESS.getStatus()));
+        ServiceException processing = assertThrows(ServiceException.class,
+                () -> service.createAttachment(req, 1L));
+        assertEquals(CONTRACT_AMENDMENT_ATTACHMENT_INVALID.getCode(), processing.getCode());
         verify(attachmentMapper, never()).insert(any(CrmContractAttachmentDO.class));
     }
 
@@ -148,6 +202,38 @@ class CrmContractLifecycleServiceImplTest {
         ServiceException ex = assertThrows(ServiceException.class, () -> service.deleteAttachment(7L, 9L));
         assertEquals(CONTRACT_ATTACHMENT_IMMUTABLE.getCode(), ex.getCode());
         verify(attachmentMapper, never()).deleteById(any(Long.class));
+    }
+
+    @Test
+    void amendmentEvidenceCanOnlyBeDeletedBeforeSubmission() {
+        CrmContractAttachmentDO evidence = new CrmContractAttachmentDO().setId(9L).setContractId(7L)
+                .setAmendmentId(11L).setCategory(CrmContractLifecycleEnums.ATTACHMENT_AMENDMENT)
+                .setImmutable(false);
+        when(contractMapper.selectByIdForUpdate(7L)).thenReturn(contract());
+        when(attachmentMapper.selectById(9L)).thenReturn(evidence);
+        when(amendmentMapper.selectByIdForUpdate(11L)).thenReturn(new CrmContractAmendmentDO()
+                .setId(11L).setContractId(7L).setAuditStatus(CrmAuditStatusEnum.PROCESS.getStatus()));
+
+        ServiceException processing = assertThrows(ServiceException.class,
+                () -> service.deleteAttachment(7L, 9L));
+        assertEquals(CONTRACT_AMENDMENT_ATTACHMENT_INVALID.getCode(), processing.getCode());
+        verify(attachmentMapper, never()).deleteById(any(Long.class));
+
+        when(amendmentMapper.selectByIdForUpdate(11L)).thenReturn(new CrmContractAmendmentDO()
+                .setId(11L).setContractId(7L).setAuditStatus(CrmAuditStatusEnum.REJECT.getStatus()));
+        service.deleteAttachment(7L, 9L);
+        verify(attachmentMapper).deleteById(9L);
+    }
+
+    @Test
+    void currentVersionUsesOnlyEffectiveLifecycleRecords() {
+        when(changeMapper.selectLatestEffective(7L)).thenReturn(new CrmContractChangeRecordDO()
+                .setContractVersion(3).setActionType(CrmContractLifecycleEnums.ACTION_AMENDMENT_EFFECTIVE));
+
+        assertEquals(3, service.getCurrentVersion(7L));
+
+        verify(changeMapper).selectLatestEffective(7L);
+        verify(changeMapper, never()).selectLatest(7L);
     }
 
     @Test

@@ -11,6 +11,7 @@
     "ts:check": "node --max_old_space_size=6144 ./node_modules/vue-tsc/bin/vue-tsc.js --noEmit",
     "lint:crm-invoice": "eslint --max-warnings=0 --ext .ts,.vue src/api/crm/invoice src/views/crm/invoice",
     "lint:crm-contract-lifecycle": "eslint --max-warnings=0 --ext .ts,.vue src/api/crm/contract/lifecycle.ts src/views/crm/contract/detail/ContractLifecyclePanel.vue src/views/crm/contract/detail/index.vue",
+    "lint:crm-contract-amendment": "eslint --max-warnings=0 --ext .ts,.vue src/api/crm/contract/amendment.ts src/api/crm/contract/lifecycle.ts src/views/crm/contract/components/ContractProductForm.vue src/views/crm/contract/detail/ContractAmendmentDialog.vue src/views/crm/contract/detail/ContractLifecyclePanel.vue src/locales/zh-CN/crm.ts src/locales/en/crm.ts src/locales/ar/crm.ts",
     "lint:crm-customer-lifecycle": "eslint --max-warnings=0 --ext .ts,.vue src/api/crm/customer/index.ts src/api/crm/statistics/portrait.ts src/views/crm/customer src/views/crm/statistics/portrait/components/PortraitCustomerDealStatus.vue",
     "lint:crm-customer-pool": "eslint --max-warnings=0 --ext .ts,.vue src/api/crm/customer/index.ts src/api/crm/customer/poolConfig src/views/crm/customer/pool src/views/crm/customer/poolConfig src/views/crm/customer/garbage src/views/crm/customer/detail/index.vue src/locales/zh-CN/crm.ts src/locales/en/crm.ts src/locales/ar/crm.ts",
     "lint:crm-clue-public": "eslint --max-warnings=0 --ext .ts,.vue src/api/crm/clue/index.ts src/views/crm/clue src/locales/zh-CN/crm.ts src/locales/en/crm.ts src/locales/ar/crm.ts",

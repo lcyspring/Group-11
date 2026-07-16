@@ -3,6 +3,7 @@ package com.meession.etm.module.crm.controller.admin.contract;
 import com.meession.etm.framework.common.pojo.CommonResult;
 import com.meession.etm.framework.common.util.json.JsonUtils;
 import com.meession.etm.module.crm.controller.admin.contract.vo.lifecycle.CrmContractLifecycleRespVO;
+import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractAttachmentDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractChangeRecordDO;
 import com.meession.etm.module.crm.service.contract.CrmContractLifecycleService;
 import org.junit.jupiter.api.Test;
@@ -49,5 +50,19 @@ class CrmContractLifecycleControllerTest {
         assertFalse(json.contains("productSnapshot"));
         assertFalse(json.contains("sensitive contract"));
         assertFalse(json.contains("sensitive product"));
+    }
+
+    @Test
+    void getExposesAmendmentBindingOnAttachmentInsteadOfSigning() {
+        when(service.getAttachments(7L)).thenReturn(List.of(new CrmContractAttachmentDO()
+                .setId(10L).setContractId(7L).setAmendmentId(11L).setImmutable(true)));
+        when(service.getChangeRecords(7L)).thenReturn(Collections.emptyList());
+        when(service.getSupportedSignMethods()).thenReturn(Collections.emptyList());
+
+        CommonResult<CrmContractLifecycleRespVO> result = controller.get(7L);
+        String json = JsonUtils.toJsonString(result);
+
+        assertEquals(11L, result.getData().getAttachments().get(0).getAmendmentId());
+        assertFalse(json.contains("\"signing\":{\"amendmentId\""));
     }
 }

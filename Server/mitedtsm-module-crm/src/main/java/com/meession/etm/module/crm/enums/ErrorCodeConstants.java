@@ -66,6 +66,33 @@ public interface ErrorCodeConstants {
             "合同附件必须通过受保护的合同文件入口上传");
     ErrorCode CONTRACT_SOURCE_QUOTE_CHANGED = new ErrorCode(1_020_000_025,
             "合同来源报价已变化，不能用其他报价版本改写合同");
+    ErrorCode CONTRACT_AMENDMENT_NOT_EXISTS = new ErrorCode(1_020_000_026, "合同补充协议不存在");
+    ErrorCode CONTRACT_AMENDMENT_REQUIRES_APPROVED = new ErrorCode(1_020_000_027,
+            "只有审批通过的合同可以创建补充协议");
+    ErrorCode CONTRACT_AMENDMENT_REQUIRES_SIGNED = new ErrorCode(1_020_000_028,
+            "只有已签署且未作废的合同可以创建补充协议");
+    ErrorCode CONTRACT_AMENDMENT_OPEN_EXISTS = new ErrorCode(1_020_000_029,
+            "当前合同已有未生效的补充协议，请完成后再创建");
+    ErrorCode CONTRACT_AMENDMENT_REQUEST_CONFLICT = new ErrorCode(1_020_000_030,
+            "补充协议请求号已被不同内容使用");
+    ErrorCode CONTRACT_AMENDMENT_NOT_EDITABLE = new ErrorCode(1_020_000_031,
+            "当前补充协议状态不允许修改");
+    ErrorCode CONTRACT_AMENDMENT_NOT_DRAFT = new ErrorCode(1_020_000_032,
+            "只有草稿补充协议可以提交审批");
+    ErrorCode CONTRACT_AMENDMENT_BASE_VERSION_STALE = new ErrorCode(1_020_000_033,
+            "合同版本已经变化，请基于最新版本重新创建补充协议");
+    ErrorCode CONTRACT_AMENDMENT_EVIDENCE_REQUIRED = new ErrorCode(1_020_000_034,
+            "补充协议提交审批前必须上传至少一份变更依据");
+    ErrorCode CONTRACT_AMENDMENT_FINANCIAL_FLOOR = new ErrorCode(1_020_000_035,
+            "补充协议金额不能低于已生效回款、回款计划或净开票金额");
+    ErrorCode CONTRACT_AMENDMENT_TIME_RANGE_INVALID = new ErrorCode(1_020_000_036,
+            "补充协议合同开始时间不能晚于结束时间");
+    ErrorCode CONTRACT_AMENDMENT_AMOUNT_INVALID = new ErrorCode(1_020_000_037,
+            "补充协议生效后的合同金额必须大于零");
+    ErrorCode CONTRACT_AMENDMENT_NOT_BELONGS = new ErrorCode(1_020_000_038,
+            "补充协议不属于当前合同");
+    ErrorCode CONTRACT_AMENDMENT_ATTACHMENT_INVALID = new ErrorCode(1_020_000_039,
+            "补充协议依据附件与补充协议状态或合同不匹配");
 
     // ========== 线索管理 1-020-001-000 ==========
     ErrorCode CLUE_NOT_EXISTS = new ErrorCode(1_020_001_000, "线索不存在");

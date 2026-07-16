@@ -20,4 +20,10 @@ public final class CrmContractLifecycleEnums {
     public static final int ACTION_CANCEL = 6;
     public static final int ACTION_SIGN = 7;
     public static final int ACTION_VOID_SIGN = 8;
+    public static final int ACTION_AMENDMENT_CREATE = 9;
+    public static final int ACTION_AMENDMENT_UPDATE = 10;
+    public static final int ACTION_AMENDMENT_SUBMIT = 11;
+    public static final int ACTION_AMENDMENT_EFFECTIVE = 12;
+    public static final int ACTION_AMENDMENT_REJECT = 13;
+    public static final int ACTION_AMENDMENT_CANCEL = 14;
 }

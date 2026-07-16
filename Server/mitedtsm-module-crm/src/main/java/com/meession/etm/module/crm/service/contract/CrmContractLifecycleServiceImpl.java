@@ -6,11 +6,13 @@ import com.meession.etm.framework.common.util.json.JsonUtils;
 import com.meession.etm.module.crm.controller.admin.contract.vo.lifecycle.CrmContractAttachmentCreateReqVO;
 import com.meession.etm.module.crm.controller.admin.contract.vo.lifecycle.CrmContractSignReqVO;
 import com.meession.etm.module.crm.controller.admin.contract.vo.lifecycle.CrmContractSignVoidReqVO;
+import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractAmendmentDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractAttachmentDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractChangeRecordDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractSigningDO;
 import com.meession.etm.module.crm.dal.mysql.contract.CrmContractAttachmentMapper;
+import com.meession.etm.module.crm.dal.mysql.contract.CrmContractAmendmentMapper;
 import com.meession.etm.module.crm.dal.mysql.contract.CrmContractChangeRecordMapper;
 import com.meession.etm.module.crm.dal.mysql.contract.CrmContractMapper;
 import com.meession.etm.module.crm.dal.mysql.contract.CrmContractProductMapper;
@@ -46,6 +48,8 @@ public class CrmContractLifecycleServiceImpl implements CrmContractLifecycleServ
     @Resource
     private CrmContractAttachmentMapper attachmentMapper;
     @Resource
+    private CrmContractAmendmentMapper amendmentMapper;
+    @Resource
     private CrmContractSigningMapper signingMapper;
     @Resource
     private CrmContractChangeRecordMapper changeMapper;
@@ -73,8 +77,21 @@ public class CrmContractLifecycleServiceImpl implements CrmContractLifecycleServ
     public Long createAttachment(CrmContractAttachmentCreateReqVO req, Long userId) {
         requireContractForUpdate(req.getContractId());
         FileRespDTO file = getProtectedManagedFile(req.getFileUrl(), req.getContractId());
+        Integer contractVersion = currentVersion(req.getContractId());
+        if (ObjUtil.equal(req.getCategory(), CrmContractLifecycleEnums.ATTACHMENT_AMENDMENT)) {
+            CrmContractAmendmentDO amendment = req.getAmendmentId() == null
+                    ? null : amendmentMapper.selectByIdForUpdate(req.getAmendmentId());
+            if (amendment == null || ObjUtil.notEqual(amendment.getContractId(), req.getContractId())
+                    || !List.of(CrmAuditStatusEnum.DRAFT.getStatus(), CrmAuditStatusEnum.REJECT.getStatus(),
+                    CrmAuditStatusEnum.CANCEL.getStatus()).contains(amendment.getAuditStatus())) {
+                throw exception(CONTRACT_AMENDMENT_ATTACHMENT_INVALID);
+            }
+            contractVersion = amendment.getTargetVersion();
+        } else if (req.getAmendmentId() != null) {
+            throw exception(CONTRACT_AMENDMENT_ATTACHMENT_INVALID);
+        }
         CrmContractAttachmentDO item = new CrmContractAttachmentDO().setContractId(req.getContractId())
-                .setContractVersion(currentVersion(req.getContractId())).setCategory(req.getCategory())
+                .setAmendmentId(req.getAmendmentId()).setContractVersion(contractVersion).setCategory(req.getCategory())
                 .setFileName(req.getFileName()).setFileUrl(file.getUrl()).setContentType(file.getType())
                 .setFileSize(file.getSize()).setSha256(req.getSha256() == null ? null
                         : req.getSha256().toLowerCase(Locale.ROOT))
@@ -104,6 +121,14 @@ public class CrmContractLifecycleServiceImpl implements CrmContractLifecycleServ
         CrmContractAttachmentDO item = requireAttachment(contractId, attachmentId);
         if (Boolean.TRUE.equals(item.getImmutable())) {
             throw exception(CONTRACT_ATTACHMENT_IMMUTABLE);
+        }
+        if (item.getAmendmentId() != null) {
+            CrmContractAmendmentDO amendment = amendmentMapper.selectByIdForUpdate(item.getAmendmentId());
+            if (amendment == null || ObjUtil.notEqual(amendment.getContractId(), contractId)
+                    || ObjUtil.equal(amendment.getAuditStatus(), CrmAuditStatusEnum.PROCESS.getStatus())
+                    || ObjUtil.equal(amendment.getAuditStatus(), CrmAuditStatusEnum.APPROVE.getStatus())) {
+                throw exception(CONTRACT_AMENDMENT_ATTACHMENT_INVALID);
+            }
         }
         attachmentMapper.deleteById(attachmentId);
     }
@@ -230,7 +255,7 @@ public class CrmContractLifecycleServiceImpl implements CrmContractLifecycleServ
     }
 
     private int currentVersion(Long contractId) {
-        CrmContractChangeRecordDO latest = changeMapper.selectLatest(contractId);
+        CrmContractChangeRecordDO latest = changeMapper.selectLatestEffective(contractId);
         return latest == null ? 1 : latest.getContractVersion();
     }
 
