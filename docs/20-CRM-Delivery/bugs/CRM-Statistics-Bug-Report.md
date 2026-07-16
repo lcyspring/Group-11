@@ -4,12 +4,12 @@
 
 | ID | 级别 | 根因与处理 | 验证 | 状态 |
 |---|---|---|---|---|
-| STAT-BUG-001 | P0 | 乱码使三个 ref 声明落入注释；已拆分并清理 | ESLint、构建；待浏览器 | 已修复/待复测 |
-| STAT-BUG-002 | P1 | 分页请求丢失本地页码；已合并分页参数 | ESLint、构建；待 Network | 已修复/待复测 |
-| STAT-BUG-003 | P1 | 年份和完整时间戳共用模型；已分离 selectedYear | ESLint、构建；待浏览器 | 已修复/待复测 |
+| STAT-BUG-001 | P0 | 乱码使四个 ref 声明落入注释；已拆分为独立 UTF-8 声明 | 严格 UTF-8/ref 顺序契约、统计前端 10/10、ESLint、生产构建 | 已关闭 |
+| STAT-BUG-002 | P1 | 分页请求丢失本地页码；显式分页字段在父级筛选后覆盖 | 参数合并契约、统计前端 10/10、生产构建 | 已关闭 |
+| STAT-BUG-003 | P1 | 年份和完整时间戳共用模型；分离 `selectedYear` 并显式生成全年范围 | 年份/时间模型契约、统计前端 10/10、生产构建 | 已关闭 |
 | STAT-BUG-004 | P1 | 空部门漏斗返回 null；改为 0/0/0 | Java 单测、Podman API 零值对象复测 | 已关闭 |
 | STAT-BUG-005 | P1 | Request VO 时间校验不足；补 NotNull/Size | Java 单测；Podman 缺失/单值参数均返回 400 | 已关闭 |
-| STAT-BUG-006 | P1 | 接口失败可能永久 loading；改用 try/finally | ESLint、构建；待失败注入 | 已修复/待复测 |
+| STAT-BUG-006 | P1 | 接口失败可能永久 loading；加载入口统一使用 `try/finally` | 三类组件异常控制流契约、统计前端 10/10、生产构建 | 已关闭 |
 | STAT-BUG-007 | P2 | 回款同比判断错误 series 索引 | ESLint、构建 | 已修复 |
 | STAT-BUG-008 | P2 | 字符串 `NULL` 混入数值图表；统一零基期规则 | ESLint、专项类型检查 | 已修复 |
 | STAT-BUG-009 | P2 | 两组件使用相同 defineOptions 名称 | ESLint、构建 | 已修复 |
