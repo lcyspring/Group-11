@@ -84,6 +84,7 @@
 | `crm-dialog-i18n/` | CRM 全树弹窗确认/取消多语言键治理 |
 | `receivable-contract-candidates/` | 可回款合同权限候选、剩余额度、合同优先选择及运行对账 |
 | `crm-marketing-campaign-management/` | 营销活动真实负责人、完整字段、五态操作和草稿受控删除 |
+| `bpm-orphan-approval-recovery/` | 孤立审批审计恢复、详情顺序加载和 Promise 异常收敛 |
 
 运行入口统一为：
 
