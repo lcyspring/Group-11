@@ -73,6 +73,7 @@
 | WEB-I18N-BUG-003 | 管理端启动回归 | P0 | 静态路由移除模块级翻译函数后仍残留个人中心 `t()` 调用；改为翻译键并将门禁扩大到禁止该模块全部 `t()` | 残留 0、专项 6/6、Ubuntu Web build | 已关闭 |
 | CRM-CONTRACT-FE-BUG-003 | GAP-CTR-001/002 | P1 | 合同详情在主数据返回前挂载生命周期等子页并发送 `contractId=undefined`；父级延迟挂载、子级双重空值防御并校验路由编号 | 契约 2/2、专项 ESLint、Ubuntu Web build | 已关闭 |
 | CRM-I18N-BUG-002 | 管理端体验 | P1 | CRM 局部命名空间引用不存在的 `dialog.confirm/cancel` 并回显键名；统一 common 键并增加 CRM 全树门禁 | 163/163 Vue 扫描、残留 0、Ubuntu Web build | 已关闭 |
+| CRM-MKT-FE-BUG-001 | GAP-MKT-001 | P1 | 竞争对手页面固定负责人 1 且缺少编辑、状态、策略和备注；改为真实用户选择和完整 CRUD，补请求边界、权限、三语及门禁 | 请求 5/5、前端 4/4、CRM 438/438、Ubuntu Web build | 已关闭 |
 
 ## 边界说明
 
