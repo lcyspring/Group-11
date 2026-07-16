@@ -1002,7 +1002,17 @@ export default {
     basicInfoTab: 'Basic Info',
     operateLogTab: 'Operation Log',
     teamMemberTab: 'Team Members',
-    systemInfo: 'System Info'
+    systemInfo: 'System Info',
+    referenceIntegrity: 'Reference Integrity',
+    referenceIntegrityPlaceholder: 'Select reference integrity',
+    referenceValid: 'References Valid',
+    referenceCustomerMissing: 'Customer Reference Missing',
+    referenceContractInvalid: 'Contract Reference Missing or Customer Mismatch',
+    referenceBothInvalid: 'Customer Reference Missing and Contract Reference Invalid',
+    missingCustomerReference: 'Original customer is missing (ID: {id})',
+    missingContractReference: 'Original contract is missing or belongs to another customer (ID: {id})',
+    referenceArchiveNotice:
+      'This approved receivable remains as financial history and will not be deleted or rebound automatically. Original customer ID: {customerId}; original contract ID: {contractId}'
   },
   receivablePlan: {
     title: 'Receivable Plan',

@@ -996,7 +996,17 @@ export default {
     basicInfoTab: 'المعلومات الأساسية',
     operateLogTab: 'سجل العمليات',
     teamMemberTab: 'أعضاء الفريق',
-    systemInfo: 'معلومات النظام'
+    systemInfo: 'معلومات النظام',
+    referenceIntegrity: 'سلامة المراجع',
+    referenceIntegrityPlaceholder: 'اختر حالة سلامة المراجع',
+    referenceValid: 'المراجع سليمة',
+    referenceCustomerMissing: 'مرجع العميل مفقود',
+    referenceContractInvalid: 'مرجع العقد مفقود أو لا يطابق العميل',
+    referenceBothInvalid: 'مرجع العميل مفقود ومرجع العقد غير صالح',
+    missingCustomerReference: 'العميل الأصلي مفقود (المعرف: {id})',
+    missingContractReference: 'العقد الأصلي مفقود أو تابع لعميل آخر (المعرف: {id})',
+    referenceArchiveNotice:
+      'يبقى هذا التحصيل المعتمد كسجل مالي تاريخي ولن يُحذف أو يُعاد ربطه تلقائياً. معرف العميل الأصلي: {customerId}؛ معرف العقد الأصلي: {contractId}'
   },
   receivablePlan: {
     title: 'خطة المستحقات',

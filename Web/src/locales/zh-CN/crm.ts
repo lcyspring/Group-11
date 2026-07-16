@@ -990,7 +990,17 @@ export default {
     basicInfoTab: '详细资料',
     operateLogTab: '操作日志',
     teamMemberTab: '团队成员',
-    systemInfo: '系统信息'
+    systemInfo: '系统信息',
+    referenceIntegrity: '关联完整性',
+    referenceIntegrityPlaceholder: '请选择关联完整性',
+    referenceValid: '关联完整',
+    referenceCustomerMissing: '客户引用缺失',
+    referenceContractInvalid: '合同引用缺失或与客户不匹配',
+    referenceBothInvalid: '客户引用缺失且合同引用无效',
+    missingCustomerReference: '原客户已不存在（ID: {id}）',
+    missingContractReference: '原合同不存在或不属于原客户（ID: {id}）',
+    referenceArchiveNotice:
+      '该回款作为已审批财务历史保留，不会自动删除或重绑。原客户 ID: {customerId}，原合同 ID: {contractId}'
   },
   receivablePlan: {
     title: '回款计划',

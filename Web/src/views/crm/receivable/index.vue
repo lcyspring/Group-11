@@ -18,6 +18,23 @@
           </el-form-item>
         </el-col>
         <el-col :span="8">
+          <el-form-item :label="t('receivable.referenceIntegrity')" prop="referenceStatus">
+            <el-select
+              v-model="queryParams.referenceStatus"
+              class="!w-240px"
+              clearable
+              :placeholder="t('receivable.referenceIntegrityPlaceholder')"
+            >
+              <el-option
+                v-for="option in referenceStatusOptions"
+                :key="option.value"
+                :label="t(option.label)"
+                :value="option.value"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="8">
           <el-form-item :label="t('receivable.customerName')" prop="customerId">
             <el-select
               v-model="queryParams.customerId"
@@ -107,12 +124,16 @@
       >
         <template #default="scope">
           <el-link
+            v-if="!isCustomerReferenceMissing(scope.row.referenceStatus)"
             :underline="false"
             type="primary"
             @click="openCustomerDetail(scope.row.customerId)"
           >
             {{ scope.row.customerName }}
           </el-link>
+          <el-tag v-else type="danger">
+            {{ t('receivable.missingCustomerReference', { id: scope.row.customerId }) }}
+          </el-tag>
         </template>
       </el-table-column>
       <el-table-column
@@ -123,12 +144,29 @@
       >
         <template #default="scope">
           <el-link
+            v-if="!isContractReferenceInvalid(scope.row.referenceStatus)"
             :underline="false"
             type="primary"
             @click="openContractDetail(scope.row.contractId)"
           >
-            {{ scope.row.contract.no }}
+            {{ scope.row.contract?.no }}
           </el-link>
+          <el-tag v-else type="danger">
+            {{ t('receivable.missingContractReference', { id: scope.row.contractId }) }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column
+        align="center"
+        :label="t('receivable.referenceIntegrity')"
+        prop="referenceStatus"
+        min-width="180"
+      >
+        <template #default="scope">
+          <el-tag v-if="hasReferenceIssue(scope.row.referenceStatus)" type="warning">
+            {{ t(referenceStatusLocaleKey(scope.row.referenceStatus)) }}
+          </el-tag>
+          <el-tag v-else type="success">{{ t('receivable.referenceValid') }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column
@@ -211,44 +249,51 @@
           <dict-tag :type="DICT_TYPE.CRM_AUDIT_STATUS" :value="scope.row.auditStatus" />
         </template>
       </el-table-column>
-      <el-table-column align="center" fixed="right" :label="t('common.action')" min-width="180">
+      <el-table-column align="center" fixed="right" :label="t('common.action')" width="340">
         <template #default="scope">
-          <el-button
-            v-if="[0, 30, 40].includes(scope.row.auditStatus)"
-            v-hasPermi="['crm:receivable:update']"
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-          >
-            {{ scope.row.auditStatus === 0 ? t('common.edit') : t('receivable.revise') }}
-          </el-button>
-          <el-button
-            v-if="scope.row.auditStatus === 0"
-            v-hasPermi="['crm:receivable:update']"
-            link
-            type="primary"
-            @click="handleSubmit(scope.row)"
-          >
-            {{ t('contract.submitAudit') }}
-          </el-button>
-          <el-button
-            v-if="scope.row.processInstanceId"
-            v-hasPermi="['crm:receivable:update']"
-            link
-            type="primary"
-            @click="handleProcessDetail(scope.row)"
-          >
-            {{ t('contract.viewApproval') }}
-          </el-button>
-          <el-button
-            v-if="scope.row.auditStatus === 0 && !scope.row.processInstanceId && !scope.row.planId"
-            v-hasPermi="['crm:receivable:delete']"
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions>
+            <el-button
+              v-if="
+                scope.row.referenceStatus === ReceivableReferenceStatus.VALID &&
+                [0, 30, 40].includes(scope.row.auditStatus)
+              "
+              v-hasPermi="['crm:receivable:update']"
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+            >
+              {{ scope.row.auditStatus === 0 ? t('common.edit') : t('receivable.revise') }}
+            </el-button>
+            <el-button
+              v-if="scope.row.auditStatus === 0"
+              v-hasPermi="['crm:receivable:update']"
+              link
+              type="primary"
+              @click="handleSubmit(scope.row)"
+            >
+              {{ t('contract.submitAudit') }}
+            </el-button>
+            <el-button
+              v-if="scope.row.processInstanceId"
+              v-hasPermi="['crm:receivable:update']"
+              link
+              type="primary"
+              @click="handleProcessDetail(scope.row)"
+            >
+              {{ t('contract.viewApproval') }}
+            </el-button>
+            <el-button
+              v-if="
+                scope.row.auditStatus === 0 && !scope.row.processInstanceId && !scope.row.planId
+              "
+              v-hasPermi="['crm:receivable:delete']"
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>
@@ -270,9 +315,17 @@ import { dateFormatter, dateFormatter2 } from '@/utils/formatTime'
 import download from '@/utils/download'
 import * as ReceivableApi from '@/api/crm/receivable'
 import ReceivableForm from './ReceivableForm.vue'
+import TableActions from '@/components/TableActions/index.vue'
 import * as CustomerApi from '@/api/crm/customer'
 import { TabsPaneContext } from 'element-plus'
 import { erpPriceTableColumnFormatter } from '@/utils'
+import {
+  ReceivableReferenceStatus,
+  hasReferenceIssue,
+  isContractReferenceInvalid,
+  isCustomerReferenceMissing,
+  referenceStatusLocaleKey
+} from './referenceIntegrity'
 
 defineOptions({ name: 'Receivable' })
 
@@ -280,13 +333,26 @@ const message = useMessage() // 消息弹窗
 const { t } = useI18n('crm') // 国际化
 const loading = ref(true) // 列表的加载中
 const total = ref(0) // 列表的总页数
-const list = ref([]) // 列表的数据
+const list = ref<ReceivableApi.ReceivableVO[]>([]) // 列表的数据
+const referenceStatusOptions = [
+  { value: ReceivableReferenceStatus.VALID, label: 'receivable.referenceValid' },
+  {
+    value: ReceivableReferenceStatus.CUSTOMER_MISSING,
+    label: 'receivable.referenceCustomerMissing'
+  },
+  {
+    value: ReceivableReferenceStatus.CONTRACT_INVALID,
+    label: 'receivable.referenceContractInvalid'
+  },
+  { value: ReceivableReferenceStatus.BOTH_INVALID, label: 'receivable.referenceBothInvalid' }
+]
 const queryParams = reactive({
   pageNo: 1,
   pageSize: 10,
   sceneType: '1', // 默认与 activeName 相等
   no: undefined,
-  customerId: undefined
+  customerId: undefined,
+  referenceStatus: undefined
 })
 const queryFormRef = ref() // 搜索的表单
 const exportLoading = ref(false) // 导出的加载中

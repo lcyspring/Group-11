@@ -13,6 +13,7 @@ export interface ReceivableVO {
     no: string
     totalPrice: number
   }
+  referenceStatus: number
   auditStatus: number
   processInstanceId?: string
   returnTime: Date

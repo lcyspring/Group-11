@@ -17,6 +17,7 @@ import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.receivable.CrmReceivableDO;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
+import com.meession.etm.module.crm.enums.receivable.CrmReceivableReferenceStatusEnum;
 import com.meession.etm.module.crm.service.contract.CrmContractService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
 import com.meession.etm.module.crm.service.receivable.CrmReceivableService;
@@ -39,6 +40,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import static com.meession.etm.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
@@ -157,6 +159,12 @@ public class CrmReceivableController {
                 convertSet(receivableList, CrmReceivableDO::getContractId));
         // 2. 拼接结果
         return BeanUtils.toBean(receivableList, CrmReceivableRespVO.class, (receivableVO) -> {
+            boolean customerExists = customerMap.containsKey(receivableVO.getCustomerId());
+            CrmContractDO contract = contractMap.get(receivableVO.getContractId());
+            boolean contractValid = contract != null
+                    && Objects.equals(contract.getCustomerId(), receivableVO.getCustomerId());
+            receivableVO.setReferenceStatus(CrmReceivableReferenceStatusEnum
+                    .resolve(customerExists, contractValid).getStatus());
             // 2.1 拼接客户名称
             findAndThen(customerMap, receivableVO.getCustomerId(), customer -> receivableVO.setCustomerName(customer.getName()));
             // 2.2 拼接负责人、创建人名称
@@ -167,8 +175,9 @@ public class CrmReceivableController {
                 MapUtils.findAndThen(deptMap, user.getDeptId(), dept -> receivableVO.setOwnerUserDeptName(dept.getName()));
             });
             // 2.3 拼接合同信息
-            findAndThen(contractMap, receivableVO.getContractId(), contract ->
-                    receivableVO.setContract(BeanUtils.toBean(contract, CrmContractRespVO.class)));
+            if (contractValid) {
+                receivableVO.setContract(BeanUtils.toBean(contract, CrmContractRespVO.class));
+            }
         });
     }
 

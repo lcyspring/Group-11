@@ -97,17 +97,22 @@
 
     <select id="selectReceivablePriceGroupByUser"
             resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerSummaryByUserRespVO">
-        SELECT owner_user_id,
-               IFNULL(SUM(price), 0) AS receivable_price
-          FROM crm_receivable
-         WHERE deleted = 0
-           AND audit_status = ${@com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
-           AND owner_user_id IN
+        SELECT receivable.owner_user_id,
+               IFNULL(SUM(receivable.price), 0) AS receivable_price
+          FROM crm_receivable AS receivable
+               INNER JOIN crm_customer AS customer ON customer.id = receivable.customer_id
+                    AND customer.deleted = 0
+               INNER JOIN crm_contract AS contract ON contract.id = receivable.contract_id
+                    AND contract.customer_id = receivable.customer_id
+                    AND contract.deleted = 0
+         WHERE receivable.deleted = 0
+           AND receivable.audit_status = ${@com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
+           AND receivable.owner_user_id IN
                 <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                     #{userId}
                 </foreach>
-           AND return_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND #{times[1],javaType=java.time.LocalDateTime}
-         GROUP BY owner_user_id
+           AND receivable.return_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND #{times[1],javaType=java.time.LocalDateTime}
+         GROUP BY receivable.owner_user_id
     </select>
 
     <select id="selectFollowUpRecordCountGroupByDate"

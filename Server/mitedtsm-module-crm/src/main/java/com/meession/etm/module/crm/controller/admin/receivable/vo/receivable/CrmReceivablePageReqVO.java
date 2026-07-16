@@ -4,6 +4,7 @@ import com.meession.etm.framework.common.pojo.PageParam;
 import com.meession.etm.framework.common.validation.InEnum;
 import com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum;
 import com.meession.etm.module.crm.enums.common.CrmSceneTypeEnum;
+import com.meession.etm.module.crm.enums.receivable.CrmReceivableReferenceStatusEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -34,5 +35,9 @@ public class CrmReceivablePageReqVO extends PageParam {
     @Schema(description = "审批状态", example = "20")
     @InEnum(CrmAuditStatusEnum.class)
     private Integer auditStatus;
+
+    @Schema(description = "客户、合同引用完整性状态", example = "30")
+    @InEnum(CrmReceivableReferenceStatusEnum.class)
+    private Integer referenceStatus;
 
 }

@@ -1,7 +1,11 @@
 <template>
   <ReceivableDetailsHeader v-loading="loading" :receivable="receivable">
     <el-button
-      v-if="permissionListRef?.validateWrite && [0, 30, 40].includes(receivable.auditStatus)"
+      v-if="
+        permissionListRef?.validateWrite &&
+        receivable.referenceStatus === ReceivableReferenceStatus.VALID &&
+        [0, 30, 40].includes(receivable.auditStatus)
+      "
       @click="openForm('update', receivable.id)"
     >
       {{ receivable.auditStatus === 0 ? t('common.edit') : t('receivable.revise') }}
@@ -40,6 +44,7 @@ import { BizTypeEnum } from '@/api/crm/permission'
 import { OperateLogVO } from '@/api/system/operatelog'
 import { getOperateLogPage } from '@/api/crm/operateLog'
 import ReceivableForm from '@/views/crm/receivable/ReceivableForm.vue'
+import { ReceivableReferenceStatus } from '../referenceIntegrity'
 
 defineOptions({ name: 'CrmReceivablePlanDetail' })
 const props = defineProps<{ id?: number }>()

@@ -5,8 +5,11 @@ import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.meession.etm.framework.mybatis.core.query.MPJLambdaWrapperX;
 import com.meession.etm.module.crm.controller.admin.receivable.vo.receivable.CrmReceivablePageReqVO;
+import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.receivable.CrmReceivableDO;
 import com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum;
+import com.meession.etm.module.crm.enums.receivable.CrmReceivableReferenceStatusEnum;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeAll;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
@@ -19,15 +22,48 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CrmReceivableMapperTest {
 
     @BeforeAll
     static void initTableMetadata() {
-        TableInfoHelper.initTableInfo(
-                new MapperBuilderAssistant(new MybatisConfiguration(), "crm-receivable-query-test"),
+        MybatisConfiguration configuration = new MybatisConfiguration();
+        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(configuration, "crm-receivable-query-test"),
                 CrmReceivableDO.class);
+        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(configuration, "crm-customer-query-test"),
+                CrmCustomerDO.class);
+        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(configuration, "crm-contract-query-test"),
+                CrmContractDO.class);
+    }
+
+    @Test
+    void referenceStatusFilterUsesValidCustomerAndContractJoins() {
+        MPJLambdaWrapperX<CrmReceivableDO> valid = new MPJLambdaWrapperX<>();
+        CrmReceivableMapper.appendReferenceStatusFilter(valid,
+                CrmReceivableReferenceStatusEnum.VALID.getStatus());
+        assertTrue(valid.getFrom().contains("crm_customer"));
+        assertTrue(valid.getFrom().contains("crm_contract"));
+        assertEquals(2, occurrences(valid.getSqlSegment(), "IS NOT NULL"));
+
+        MPJLambdaWrapperX<CrmReceivableDO> bothMissing = new MPJLambdaWrapperX<>();
+        CrmReceivableMapper.appendReferenceStatusFilter(bothMissing,
+                CrmReceivableReferenceStatusEnum.BOTH_INVALID.getStatus());
+        assertTrue(bothMissing.getFrom().contains("customer_id"));
+        assertEquals(2, occurrences(bothMissing.getSqlSegment(), "IS NULL"));
+    }
+
+    @Test
+    void referenceStatusResolutionDistinguishesMissingObjects() {
+        assertEquals(CrmReceivableReferenceStatusEnum.VALID,
+                CrmReceivableReferenceStatusEnum.resolve(true, true));
+        assertEquals(CrmReceivableReferenceStatusEnum.CUSTOMER_MISSING,
+                CrmReceivableReferenceStatusEnum.resolve(false, true));
+        assertEquals(CrmReceivableReferenceStatusEnum.CONTRACT_INVALID,
+                CrmReceivableReferenceStatusEnum.resolve(true, false));
+        assertEquals(CrmReceivableReferenceStatusEnum.BOTH_INVALID,
+                CrmReceivableReferenceStatusEnum.resolve(false, false));
     }
 
     @Test
@@ -66,6 +102,10 @@ class CrmReceivableMapperTest {
         assertTrue(captured.get().getParamNameValuePairs().containsValue(CrmAuditStatusEnum.APPROVE.getStatus()));
         assertFalse(captured.get().getParamNameValuePairs().containsValue(CrmAuditStatusEnum.DRAFT.getStatus()));
         assertFalse(captured.get().getParamNameValuePairs().containsValue(CrmAuditStatusEnum.PROCESS.getStatus()));
+    }
+
+    private static int occurrences(String source, String token) {
+        return (source.length() - source.replace(token, "").length()) / token.length();
     }
 
 }

@@ -7,10 +7,13 @@ import com.meession.etm.framework.mybatis.core.mapper.BaseMapperX;
 import com.meession.etm.framework.mybatis.core.query.LambdaQueryWrapperX;
 import com.meession.etm.framework.mybatis.core.query.MPJLambdaWrapperX;
 import com.meession.etm.module.crm.controller.admin.receivable.vo.receivable.CrmReceivablePageReqVO;
+import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.receivable.CrmReceivableDO;
 import com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.enums.common.CrmSceneTypeEnum;
+import com.meession.etm.module.crm.enums.receivable.CrmReceivableReferenceStatusEnum;
 import com.meession.etm.module.crm.util.CrmPermissionUtils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.apache.ibatis.annotations.Mapper;
@@ -82,8 +85,29 @@ public interface CrmReceivableMapper extends BaseMapperX<CrmReceivableDO> {
                 .eqIfPresent(CrmReceivableDO::getPlanId, pageReqVO.getPlanId())
                 .eqIfPresent(CrmReceivableDO::getContractId, pageReqVO.getContractId())
                 .eqIfPresent(CrmReceivableDO::getCustomerId, pageReqVO.getCustomerId())
-                .eqIfPresent(CrmReceivableDO::getAuditStatus, pageReqVO.getAuditStatus())
-                .orderByDesc(CrmReceivableDO::getId);
+                .eqIfPresent(CrmReceivableDO::getAuditStatus, pageReqVO.getAuditStatus());
+        appendReferenceStatusFilter(query, pageReqVO.getReferenceStatus());
+        query.orderByDesc(CrmReceivableDO::getId);
+    }
+
+    static void appendReferenceStatusFilter(MPJLambdaWrapperX<CrmReceivableDO> query, Integer referenceStatus) {
+        if (referenceStatus == null) {
+            return;
+        }
+        query.leftJoin(CrmCustomerDO.class,
+                        on -> on.eq(CrmCustomerDO::getId, CrmReceivableDO::getCustomerId))
+                .leftJoin(CrmContractDO.class,
+                        on -> on.eq(CrmContractDO::getId, CrmReceivableDO::getContractId)
+                                .eq(CrmContractDO::getCustomerId, CrmReceivableDO::getCustomerId));
+        if (CrmReceivableReferenceStatusEnum.VALID.getStatus().equals(referenceStatus)) {
+            query.isNotNull(CrmCustomerDO::getId).isNotNull(CrmContractDO::getId);
+        } else if (CrmReceivableReferenceStatusEnum.CUSTOMER_MISSING.getStatus().equals(referenceStatus)) {
+            query.isNull(CrmCustomerDO::getId).isNotNull(CrmContractDO::getId);
+        } else if (CrmReceivableReferenceStatusEnum.CONTRACT_INVALID.getStatus().equals(referenceStatus)) {
+            query.isNotNull(CrmCustomerDO::getId).isNull(CrmContractDO::getId);
+        } else if (CrmReceivableReferenceStatusEnum.BOTH_INVALID.getStatus().equals(referenceStatus)) {
+            query.isNull(CrmCustomerDO::getId).isNull(CrmContractDO::getId);
+        }
     }
 
     default Long selectCountByAudit(Long userId) {

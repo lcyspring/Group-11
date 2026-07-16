@@ -42,6 +42,18 @@ class CrmStatisticsCustomerMapperTest {
     }
 
     @Test
+    void customerReceivableAmountExcludesBrokenCustomerAndContractReferences() throws IOException {
+        String body = selectBody(loadMapperXml(), "selectReceivablePriceGroupByUser");
+
+        assertTrue(body.contains("INNER JOIN crm_customer AS customer"));
+        assertTrue(body.contains("customer.deleted = 0"));
+        assertTrue(body.contains("INNER JOIN crm_contract AS contract"));
+        assertTrue(body.contains("contract.customer_id = receivable.customer_id"));
+        assertTrue(body.contains("contract.deleted = 0"));
+        assertTrue(body.contains("receivable.audit_status"));
+    }
+
+    @Test
     void dealCycleQueriesExposeNegativeSourceSamples() throws IOException {
         String mapperXml = loadMapperXml();
 
