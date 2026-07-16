@@ -4,10 +4,11 @@
 
 ## 当前基线
 
-更新日期：2026-07-16
+更新日期：2026-07-17
 
-- Ubuntu 26.04 容器 CRM 自动化：429/429，失败 0、错误 0、跳过 0。
-- CRM JaCoCo：指令 46.01%、分支 38.55%、行 45.01%、方法 34.26%。
+- Ubuntu 26.04 容器 CRM 自动化：470/470，失败 0、错误 0、跳过 0。
+- CRM JaCoCo：指令 47.27%、分支 40.43%、行 46.08%、方法 35.65%。
+- 运行安全框架专项：Security 3/3、CORS 2/2；真实 HTTP 安全矩阵全部通过。
 - ERP 履约专项：4/4；ERP 模块 JaCoCo 行覆盖率 6.92%。
 - Ubuntu 26.04 Infra 文件专项：28/28；模块行覆盖率 8.16%。
 - Ubuntu 26.04 BPM 自动化：54 个，48 通过、6 跳过、失败 0；行覆盖率 8.58%。
@@ -87,6 +88,7 @@
 | `bpm-orphan-approval-recovery/` | 孤立审批审计恢复、详情顺序加载和 Promise 异常收敛 |
 | `crm-marketing-outreach/` | 合规群发名单、审核、调度、发送、重试和收件人结果完整闭环 |
 | `crm-customer-care-management/` | 客户关怀计划、生日/节假日/成交后回访、自动触达、记录和生日查询 |
+| `crm-runtime-security-baseline/` | Podman 显式安全配置、管理端点、Mock Token、CORS 和凭据外置 |
 | `receivable-form-localization/` | 回款及回款计划负责人标签和客户/合同下拉三语一致性 |
 | `shared-shortcut-date-range/` | 快捷日期状态初始化和 Promise 异常收敛 |
 | `mp-account-empty-state/` | 公众号账号空状态导航、无通知行为和初始化异常收敛 |

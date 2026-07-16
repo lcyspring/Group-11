@@ -75,6 +75,9 @@ BUILD_BPM_COVERAGE="$(bool_value "${BUILD_BPM_COVERAGE:-false}")"
 BUILD_COMMON_TESTS="$(bool_value "${BUILD_COMMON_TESTS:-false}")"
 BUILD_COMMON_COVERAGE="$(bool_value "${BUILD_COMMON_COVERAGE:-false}")"
 BUILD_COMMON_TEST_PATTERN="${BUILD_COMMON_TEST_PATTERN:-}"
+BUILD_FRAMEWORK_TESTS="$(bool_value "${BUILD_FRAMEWORK_TESTS:-false}")"
+BUILD_FRAMEWORK_COVERAGE="$(bool_value "${BUILD_FRAMEWORK_COVERAGE:-false}")"
+BUILD_FRAMEWORK_TEST_PATTERN="${BUILD_FRAMEWORK_TEST_PATTERN:-}"
 PNPM_FROZEN_LOCKFILE="$(bool_value "${PNPM_FROZEN_LOCKFILE:-true}")"
 BUILD_CI="$(bool_value "${BUILD_CI:-true}")"
 PNPM_STORE_PATH="${PNPM_STORE_PATH:-/pnpm-store}"
@@ -101,6 +104,14 @@ if [[ "$BUILD_COMMON_COVERAGE" == "true" && "$BUILD_COMMON_TESTS" != "true" ]]; 
 fi
 if [[ "$BUILD_COMMON_TESTS" == "true" && ! "$BUILD_COMMON_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?,]+$ ]]; then
     printf 'BUILD_COMMON_TEST_PATTERN is required for common tests and contains unsupported characters.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_FRAMEWORK_COVERAGE" == "true" && "$BUILD_FRAMEWORK_TESTS" != "true" ]]; then
+    printf 'Framework coverage requires framework tests to be enabled.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_FRAMEWORK_TESTS" == "true" && ! "$BUILD_FRAMEWORK_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?,]+$ ]]; then
+    printf 'BUILD_FRAMEWORK_TEST_PATTERN is required for framework tests and contains unsupported characters.\n' >&2
     exit 2
 fi
 
@@ -146,6 +157,32 @@ if [[ "$BUILD_COMMON_TESTS" == "true" ]]; then
     maven_goal /workspace/Server/pom.xml "${common_test_args[@]}"
     if [[ "$BUILD_COMMON_COVERAGE" == "true" ]]; then
         require_file /workspace/Server/mitedtsm-framework/mitedtsm-common/target/site/jacoco/jacoco.csv
+    fi
+fi
+
+if [[ "$BUILD_FRAMEWORK_TESTS" == "true" ]]; then
+    printf 'Running framework security and web tests%s inside Ubuntu 26.04.\n' \
+        "$([[ "$BUILD_FRAMEWORK_COVERAGE" == "true" ]] && printf ' with JaCoCo' || true)"
+    framework_modules='mitedtsm-framework/mitedtsm-spring-boot-starter-security,mitedtsm-framework/mitedtsm-spring-boot-starter-web'
+    framework_test_args=(
+        -pl "$framework_modules"
+        -am
+        "-Dtest=${BUILD_FRAMEWORK_TEST_PATTERN}"
+        -Dsurefire.failIfNoSpecifiedTests=false
+    )
+    if [[ "$BUILD_FRAMEWORK_COVERAGE" == "true" ]]; then
+        framework_test_args+=(
+            org.jacoco:jacoco-maven-plugin:0.8.13:prepare-agent
+            test
+            org.jacoco:jacoco-maven-plugin:0.8.13:report
+        )
+    else
+        framework_test_args+=(test)
+    fi
+    maven_goal /workspace/Server/pom.xml "${framework_test_args[@]}"
+    if [[ "$BUILD_FRAMEWORK_COVERAGE" == "true" ]]; then
+        require_file /workspace/Server/mitedtsm-framework/mitedtsm-spring-boot-starter-security/target/site/jacoco/jacoco.csv
+        require_file /workspace/Server/mitedtsm-framework/mitedtsm-spring-boot-starter-web/target/site/jacoco/jacoco.csv
     fi
 fi
 

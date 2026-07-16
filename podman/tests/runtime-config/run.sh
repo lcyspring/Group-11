@@ -56,6 +56,7 @@ bash -n "${PODMAN_DIR}/image-archives.sh"
 bash -n "${PODMAN_DIR}/lib/yaml-config.sh"
 bash -n "${PODMAN_DIR}/verify-crm-receivable-reference-integrity.sh"
 bash -n "${PODMAN_DIR}/verify-crm-performance-target-runtime.sh"
+bash -n "${PODMAN_DIR}/verify-crm-runtime-security.sh"
 
 missing_crm_migrations="$(comm -23 \
     <(find "${PODMAN_DIR}/../database/new" -maxdepth 1 -type f -name 'new-crm-*.sql' -printf '%f\n' | sort) \
@@ -90,6 +91,12 @@ expect_exit_1 bash "${PODMAN_DIR}/image-archives.sh" \
     "${SCRIPT_DIR}/fixtures/archive-check-missing.yaml"
 
 yaml_config_init "$CONFIG_PATH"
+[[ "$(yaml_bool security.mock_login_enabled)" == "false" ]] || fail 'mock login must be explicitly disabled'
+[[ "$(yaml_positive_integer security.password_encoder_length)" -ge 10 ]] || fail 'BCrypt strength must be explicit'
+[[ "$(yaml_bool security.xss_enabled)" == "true" ]] || fail 'XSS filtering must be explicitly enabled'
+[[ "$(yaml_require security.actuator_exposure)" == "health,info" ]] || fail 'Actuator exposure must be explicit'
+[[ "$(yaml_bool security.api_docs_enabled)" == "false" ]] || fail 'API documentation must be explicitly disabled'
+[[ "$(yaml_bool integration.justauth_enabled)" == "false" ]] || fail 'JustAuth startup must be explicit'
 pod_name="$(yaml_require deployment.pod_name)"
 before="$(pod_snapshot "$pod_name")"
 bash "${PODMAN_DIR}/up.sh" "$CONFIG_PATH"

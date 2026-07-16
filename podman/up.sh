@@ -92,8 +92,40 @@ RABBITMQ_PASSWORD="$(yaml_require rabbitmq.password)"
 TDENGINE_HOST="$(yaml_require tdengine.host)"
 TDENGINE_PORT="$(yaml_port tdengine.port)"
 TDENGINE_FQDN="$(yaml_require tdengine.fqdn)"
+TDENGINE_USERNAME="$(yaml_require tdengine.username)"
+TDENGINE_PASSWORD="$(yaml_require tdengine.password)"
 TDENGINE_INITIALIZATION_ATTEMPTS="$(yaml_positive_integer tdengine.initialization_attempts)"
 SPRING_PROFILE="$(yaml_require server.spring_profile)"
+SECURITY_MOCK_LOGIN_ENABLED="$(yaml_bool security.mock_login_enabled)"
+SECURITY_MOCK_SECRET="$(yaml_require security.mock_secret)"
+SECURITY_PASSWORD_ENCODER_LENGTH="$(yaml_positive_integer security.password_encoder_length)"
+SECURITY_XSS_ENABLED="$(yaml_bool security.xss_enabled)"
+SECURITY_CORS_ALLOWED_ORIGINS="$(yaml_require security.cors_allowed_origins)"
+SECURITY_CORS_ALLOWED_HEADERS="$(yaml_require security.cors_allowed_headers)"
+SECURITY_CORS_ALLOWED_METHODS="$(yaml_require security.cors_allowed_methods)"
+SECURITY_CORS_ALLOW_CREDENTIALS="$(yaml_bool security.cors_allow_credentials)"
+SECURITY_CORS_MAX_AGE_SECONDS="$(yaml_positive_integer security.cors_max_age_seconds)"
+SECURITY_API_DOCS_ENABLED="$(yaml_bool security.api_docs_enabled)"
+SECURITY_DRUID_CONSOLE_ENABLED="$(yaml_bool security.druid_console_enabled)"
+SECURITY_ACTUATOR_EXPOSURE="$(yaml_require security.actuator_exposure)"
+SECURITY_API_ENCRYPTION_ENABLED="$(yaml_bool security.api_encryption_enabled)"
+SECURITY_CAPTCHA_ENABLED="$(yaml_bool security.captcha_enabled)"
+SECURITY_BOOT_ADMIN_CLIENT_ENABLED="$(yaml_bool security.boot_admin_client_enabled)"
+INTEGRATION_JUSTAUTH_ENABLED="$(yaml_bool integration.justauth_enabled)"
+INTEGRATION_WX_MP_APP_ID="$(yaml_require integration.wx_mp_app_id)"
+INTEGRATION_WX_MP_SECRET="$(yaml_require integration.wx_mp_secret)"
+INTEGRATION_WX_MINIAPP_APP_ID="$(yaml_require integration.wx_miniapp_app_id)"
+INTEGRATION_WX_MINIAPP_SECRET="$(yaml_require integration.wx_miniapp_secret)"
+INTEGRATION_TENCENT_LBS_KEY="$(yaml_require integration.tencent_lbs_key)"
+INTEGRATION_PAY_ORDER_NOTIFY_URL="$(yaml_require integration.pay_order_notify_url)"
+INTEGRATION_PAY_REFUND_NOTIFY_URL="$(yaml_require integration.pay_refund_notify_url)"
+INTEGRATION_PAY_TRANSFER_NOTIFY_URL="$(yaml_require integration.pay_transfer_notify_url)"
+INTEGRATION_EXPRESS_CLIENT="$(yaml_require integration.express_client)"
+INTEGRATION_EXPRESS_KDNIAO_API_KEY="$(yaml_require integration.express_kdniao_api_key)"
+INTEGRATION_EXPRESS_KDNIAO_BUSINESS_ID="$(yaml_require integration.express_kdniao_business_id)"
+INTEGRATION_EXPRESS_KDNIAO_REQUEST_TYPE="$(yaml_require integration.express_kdniao_request_type)"
+INTEGRATION_EXPRESS_KD100_KEY="$(yaml_require integration.express_kd100_key)"
+INTEGRATION_EXPRESS_KD100_CUSTOMER="$(yaml_require integration.express_kd100_customer)"
 FILE_STORAGE_MODE="$(yaml_require file.storage_mode)"
 FILE_CLIENT_ID="$(yaml_positive_integer file.client_id)"
 FILE_PUBLIC_BASE_URL="$(yaml_require file.public_base_url)"
@@ -286,6 +318,45 @@ start_server() {
     podman_cmd run -d --replace --name "$SERVER_CONTAINER" --pod "$POD_NAME" --pull=never \
         "${PROXY_ENV[@]}" \
         --env "SPRING_PROFILES_ACTIVE=${SPRING_PROFILE}" \
+        --env "SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_USERNAME=${MYSQL_USER}" \
+        --env "SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_PASSWORD=${MYSQL_ROOT_PASSWORD}" \
+        --env "SPRING_RABBITMQ_USERNAME=${RABBITMQ_USERNAME}" \
+        --env "SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}" \
+        --env "MITEDTSM_SECURITY_MOCK_ENABLE=${SECURITY_MOCK_LOGIN_ENABLED}" \
+        --env "MITEDTSM_SECURITY_MOCK_SECRET=${SECURITY_MOCK_SECRET}" \
+        --env "MITEDTSM_SECURITY_PASSWORD_ENCODER_LENGTH=${SECURITY_PASSWORD_ENCODER_LENGTH}" \
+        --env "MITEDTSM_XSS_ENABLE=${SECURITY_XSS_ENABLED}" \
+        --env "MITEDTSM_WEB_CORS_ALLOWED_ORIGIN_PATTERNS=${SECURITY_CORS_ALLOWED_ORIGINS}" \
+        --env "MITEDTSM_WEB_CORS_ALLOWED_HEADERS=${SECURITY_CORS_ALLOWED_HEADERS}" \
+        --env "MITEDTSM_WEB_CORS_ALLOWED_METHODS=${SECURITY_CORS_ALLOWED_METHODS}" \
+        --env "MITEDTSM_WEB_CORS_ALLOW_CREDENTIALS=${SECURITY_CORS_ALLOW_CREDENTIALS}" \
+        --env "MITEDTSM_WEB_CORS_MAX_AGE=${SECURITY_CORS_MAX_AGE_SECONDS}s" \
+        --env "SPRINGDOC_API_DOCS_ENABLED=${SECURITY_API_DOCS_ENABLED}" \
+        --env "SPRINGDOC_SWAGGER_UI_ENABLED=${SECURITY_API_DOCS_ENABLED}" \
+        --env "KNIFE4J_ENABLE=${SECURITY_API_DOCS_ENABLED}" \
+        --env "SPRING_DATASOURCE_DRUID_WEB_STAT_FILTER_ENABLED=${SECURITY_DRUID_CONSOLE_ENABLED}" \
+        --env "SPRING_DATASOURCE_DRUID_STAT_VIEW_SERVLET_ENABLED=${SECURITY_DRUID_CONSOLE_ENABLED}" \
+        --env "MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=${SECURITY_ACTUATOR_EXPOSURE}" \
+        --env "MITEDTSM_API_ENCRYPT_ENABLE=${SECURITY_API_ENCRYPTION_ENABLED}" \
+        --env "MITEDTSM_CAPTCHA_ENABLE=${SECURITY_CAPTCHA_ENABLED}" \
+        --env "SPRING_BOOT_ADMIN_CLIENT_ENABLED=${SECURITY_BOOT_ADMIN_CLIENT_ENABLED}" \
+        --env "TDENGINE_USER=${TDENGINE_USERNAME}" \
+        --env "TDENGINE_PASSWORD=${TDENGINE_PASSWORD}" \
+        --env "JUSTAUTH_ENABLED=${INTEGRATION_JUSTAUTH_ENABLED}" \
+        --env "WX_MP_APP_ID=${INTEGRATION_WX_MP_APP_ID}" \
+        --env "WX_MP_SECRET=${INTEGRATION_WX_MP_SECRET}" \
+        --env "WX_MINIAPP_APP_ID=${INTEGRATION_WX_MINIAPP_APP_ID}" \
+        --env "WX_MINIAPP_SECRET=${INTEGRATION_WX_MINIAPP_SECRET}" \
+        --env "MITEDTSM_TENCENT_LBS_KEY=${INTEGRATION_TENCENT_LBS_KEY}" \
+        --env "MITEDTSM_PAY_ORDER_NOTIFY_URL=${INTEGRATION_PAY_ORDER_NOTIFY_URL}" \
+        --env "MITEDTSM_PAY_REFUND_NOTIFY_URL=${INTEGRATION_PAY_REFUND_NOTIFY_URL}" \
+        --env "MITEDTSM_PAY_TRANSFER_NOTIFY_URL=${INTEGRATION_PAY_TRANSFER_NOTIFY_URL}" \
+        --env "MITEDTSM_EXPRESS_CLIENT=${INTEGRATION_EXPRESS_CLIENT}" \
+        --env "MITEDTSM_EXPRESS_KDNIAO_API_KEY=${INTEGRATION_EXPRESS_KDNIAO_API_KEY}" \
+        --env "MITEDTSM_EXPRESS_KDNIAO_BUSINESS_ID=${INTEGRATION_EXPRESS_KDNIAO_BUSINESS_ID}" \
+        --env "MITEDTSM_EXPRESS_KDNIAO_REQUEST_TYPE=${INTEGRATION_EXPRESS_KDNIAO_REQUEST_TYPE}" \
+        --env "MITEDTSM_EXPRESS_KD100_KEY=${INTEGRATION_EXPRESS_KD100_KEY}" \
+        --env "MITEDTSM_EXPRESS_KD100_CUSTOMER=${INTEGRATION_EXPRESS_KD100_CUSTOMER}" \
         "$SERVER_IMAGE"
 }
 
@@ -440,6 +511,29 @@ validate_configuration() {
         printf 'Configured host ports must be unique.\n' >&2
         exit 2
     fi
+
+    ((SECURITY_PASSWORD_ENCODER_LENGTH >= 10 && SECURITY_PASSWORD_ENCODER_LENGTH <= 16)) || {
+        printf 'security.password_encoder_length must be between 10 and 16.\n' >&2
+        exit 2
+    }
+    if [[ "$SECURITY_MOCK_LOGIN_ENABLED" == "true" && "$SECURITY_MOCK_SECRET" == "not-enabled" ]]; then
+        printf 'security.mock_secret must be an explicit non-placeholder value when mock login is enabled.\n' >&2
+        exit 2
+    fi
+    [[ "$SECURITY_ACTUATOR_EXPOSURE" == "health,info" || "$SECURITY_ACTUATOR_EXPOSURE" == "info,health" ]] || {
+        printf 'security.actuator_exposure must contain only health and info.\n' >&2
+        exit 2
+    }
+    if [[ "$SECURITY_CORS_ALLOW_CREDENTIALS" == "true" && "$SECURITY_CORS_ALLOWED_ORIGINS" == "*" ]]; then
+        printf 'Credentialed CORS cannot use a wildcard origin.\n' >&2
+        exit 2
+    fi
+    [[ "$INTEGRATION_PAY_ORDER_NOTIFY_URL" =~ ^https?://[^[:space:]]+$ &&
+       "$INTEGRATION_PAY_REFUND_NOTIFY_URL" =~ ^https?://[^[:space:]]+$ &&
+       "$INTEGRATION_PAY_TRANSFER_NOTIFY_URL" =~ ^https?://[^[:space:]]+$ ]] || {
+        printf 'Integration callback URLs must be explicit HTTP(S) URLs.\n' >&2
+        exit 2
+    }
 
     if [[ "$USE_HOST_PROXY" == "true" ]]; then
         PODMAN_PROXY_ARGS=()

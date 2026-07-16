@@ -103,6 +103,9 @@ BUILD_BPM_COVERAGE="$(normalize_bool "$(config_value build.bpm_coverage false)")
 BUILD_COMMON_TESTS="$(normalize_bool "$(config_value build.common_tests false)")"
 BUILD_COMMON_COVERAGE="$(normalize_bool "$(config_value build.common_coverage false)")"
 BUILD_COMMON_TEST_PATTERN="$(config_value build.common_test_pattern '')"
+BUILD_FRAMEWORK_TESTS="$(normalize_bool "$(config_value build.framework_tests false)")"
+BUILD_FRAMEWORK_COVERAGE="$(normalize_bool "$(config_value build.framework_coverage false)")"
+BUILD_FRAMEWORK_TEST_PATTERN="$(config_value build.framework_test_pattern '')"
 BUILD_CI="$(normalize_bool "$(config_value build.ci true)")"
 BAIDU_ANALYTICS_CODE="$(config_value web.baidu_analytics_code '')"
 WEB_LEGACY_MEDIA_ORIGINS="$(config_value web.legacy_media_origins '')"
@@ -145,6 +148,14 @@ if [[ -n "$WEB_TEST_SCRIPT" && ! "$WEB_TEST_SCRIPT" =~ ^[A-Za-z0-9:_-]+$ ]]; the
 fi
 if [[ "$BUILD_COMMON_TESTS" == "true" && ! "$BUILD_COMMON_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?,]+$ ]]; then
     printf 'build.common_test_pattern is required for common tests and contains unsupported characters.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_FRAMEWORK_COVERAGE" == "true" && "$BUILD_FRAMEWORK_TESTS" != "true" ]]; then
+    printf 'Framework coverage requires framework tests to be enabled.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_FRAMEWORK_TESTS" == "true" && ! "$BUILD_FRAMEWORK_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?,]+$ ]]; then
+    printf 'build.framework_test_pattern is required for framework tests and contains unsupported characters.\n' >&2
     exit 2
 fi
 
@@ -219,6 +230,9 @@ podman run "${podman_proxy_args[@]}" --rm --pull=never \
     --env "BUILD_COMMON_TESTS=$BUILD_COMMON_TESTS" \
     --env "BUILD_COMMON_COVERAGE=$BUILD_COMMON_COVERAGE" \
     --env "BUILD_COMMON_TEST_PATTERN=$BUILD_COMMON_TEST_PATTERN" \
+    --env "BUILD_FRAMEWORK_TESTS=$BUILD_FRAMEWORK_TESTS" \
+    --env "BUILD_FRAMEWORK_COVERAGE=$BUILD_FRAMEWORK_COVERAGE" \
+    --env "BUILD_FRAMEWORK_TEST_PATTERN=$BUILD_FRAMEWORK_TEST_PATTERN" \
     --env "BUILD_CI=$BUILD_CI" \
     --env "BUILD_MAVEN_THREADS=$MAVEN_THREADS" \
     --env "PNPM_FROZEN_LOCKFILE=$PNPM_FROZEN_LOCKFILE" \

@@ -105,17 +105,23 @@ public class MitedtsmWebAutoConfiguration {
      */
     @Bean
     @Order(value = WebFilterOrderEnum.CORS_FILTER) // 特殊：修复因执行顺序影响到跨域配置不生效问题
-    public FilterRegistrationBean<CorsFilter> corsFilterBean() {
+    public FilterRegistrationBean<CorsFilter> corsFilterBean(WebProperties webProperties) {
         // 创建 CorsConfiguration 对象
-        CorsConfiguration config = new CorsConfiguration();
-        config.setAllowCredentials(true);
-        config.addAllowedOriginPattern("*"); // 设置访问源地址
-        config.addAllowedHeader("*"); // 设置访问源请求头
-        config.addAllowedMethod("*"); // 设置访问源请求方法
+        CorsConfiguration config = buildCorsConfiguration(webProperties.getCors());
         // 创建 UrlBasedCorsConfigurationSource 对象
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config); // 对接口配置跨域设置
         return createFilterBean(new CorsFilter(source), WebFilterOrderEnum.CORS_FILTER);
+    }
+
+    static CorsConfiguration buildCorsConfiguration(WebProperties.Cors properties) {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOriginPatterns(properties.getAllowedOriginPatterns());
+        config.setAllowedHeaders(properties.getAllowedHeaders());
+        config.setAllowedMethods(properties.getAllowedMethods());
+        config.setAllowCredentials(properties.getAllowCredentials());
+        config.setMaxAge(properties.getMaxAge());
+        return config;
     }
 
     /**

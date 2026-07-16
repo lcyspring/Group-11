@@ -81,10 +81,46 @@ tdengine:
   host: 127.0.0.1
   port: 6041
   fqdn: localhost
+  username: root
+  password: taosdata
   initialization_attempts: 30
 
 server:
   spring_profile: local
+
+security:
+  mock_login_enabled: false
+  mock_secret: not-enabled
+  password_encoder_length: 10
+  xss_enabled: true
+  cors_allowed_origins: http://127.0.0.1:8081,http://localhost:8081
+  cors_allowed_headers: Authorization,Content-Type,tenant-id,Accept-Language
+  cors_allowed_methods: GET,POST,PUT,DELETE,PATCH,OPTIONS
+  cors_allow_credentials: true
+  cors_max_age_seconds: 3600
+  api_docs_enabled: false
+  druid_console_enabled: false
+  actuator_exposure: health,info
+  api_encryption_enabled: false
+  captcha_enabled: false
+  boot_admin_client_enabled: false
+
+integration:
+  justauth_enabled: false
+  wx_mp_app_id: not-configured
+  wx_mp_secret: not-configured
+  wx_miniapp_app_id: not-configured
+  wx_miniapp_secret: not-configured
+  tencent_lbs_key: not-configured
+  pay_order_notify_url: http://127.0.0.1:8080/admin-api/pay/notify/order
+  pay_refund_notify_url: http://127.0.0.1:8080/admin-api/pay/notify/refund
+  pay_transfer_notify_url: http://127.0.0.1:8080/admin-api/pay/notify/transfer
+  express_client: not_provide
+  express_kdniao_api_key: not-configured
+  express_kdniao_business_id: not-configured
+  express_kdniao_request_type: 1002
+  express_kd100_key: not-configured
+  express_kd100_customer: not-configured
 
 file:
   storage_mode: database
