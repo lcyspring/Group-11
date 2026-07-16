@@ -19,7 +19,15 @@ import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerLimitConfigDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerPoolConfigDO;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerPoolReceiveDO;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerPoolRuleDO;
 import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerMapper;
+import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerPoolReceiveMapper;
+import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerPoolRuleMapper;
+import com.meession.etm.module.crm.service.customer.bo.CrmCustomerPoolReceiveRuleConfig;
+import com.meession.etm.module.crm.service.customer.rule.PoolReceiveRule;
+import com.meession.etm.module.crm.enums.customer.CrmCustomerPoolReceiveSourceTypeEnum;
+import com.meession.etm.module.crm.enums.customer.CrmCustomerPoolRuleTypeEnum;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.enums.common.CrmSceneTypeEnum;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
@@ -86,6 +94,16 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
 
     @Resource
     private AdminUserApi adminUserApi;
+
+    @Resource
+    private CrmCustomerPoolReceiveMapper poolReceiveMapper;
+
+    @Resource
+    private CrmCustomerPoolRuleMapper poolRuleMapper;
+
+    @Resource
+    @Lazy
+    private PoolReceiveRule poolReceiveRule;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -401,24 +419,44 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
             // 校验成交状态
             validateCustomerDeal(customer);
         });
-        // 1.4  校验负责人是否到达上限
+        // 1.4 校验负责人是否到达上限
         validateCustomerExceedOwnerLimit(ownerUserId, customers.size());
+
+        // 1.5 校验领取数量限制（仅手动领取时校验）
+        if (Boolean.TRUE.equals(isReceive)) {
+            validateReceiveLimit(ownerUserId, customers.size());
+        }
 
         // 2. 领取公海数据
         List<CrmCustomerDO> updateCustomers = new ArrayList<>();
         List<CrmPermissionCreateReqBO> createPermissions = new ArrayList<>();
+        List<CrmCustomerPoolReceiveDO> receiveRecords = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+        Integer sourceType = Boolean.TRUE.equals(isReceive)
+                ? CrmCustomerPoolReceiveSourceTypeEnum.MANUAL.getType()
+                : CrmCustomerPoolReceiveSourceTypeEnum.ADMIN.getType();
+
         customers.forEach(customer -> {
             // 2.1. 设置负责人
             updateCustomers.add(new CrmCustomerDO().setId(customer.getId())
-                    .setOwnerUserId(ownerUserId).setOwnerTime(LocalDateTime.now()));
+                    .setOwnerUserId(ownerUserId).setOwnerTime(now));
             // 2.2. 创建负责人数据权限
             createPermissions.add(new CrmPermissionCreateReqBO().setBizType(CrmBizTypeEnum.CRM_CUSTOMER.getType())
                     .setBizId(customer.getId()).setUserId(ownerUserId).setLevel(CrmPermissionLevelEnum.OWNER.getLevel()));
+            // 2.3. 创建领取记录
+            receiveRecords.add(CrmCustomerPoolReceiveDO.builder()
+                    .customerId(customer.getId())
+                    .receiveUserId(ownerUserId)
+                    .receiveTime(now)
+                    .sourceType(sourceType)
+                    .build());
         });
-        // 2.2 更新客户负责人
+        // 2.4 更新客户负责人
         customerMapper.updateBatch(updateCustomers);
-        // 2.3 创建负责人数据权限
+        // 2.5 创建负责人数据权限
         permissionService.createPermissionBatch(createPermissions);
+        // 2.6 保存领取记录
+        poolReceiveMapper.insertBatch(receiveRecords);
         // TODO @芋艿：要不要处理关联的联系人？？？
 
         // 3. 记录操作日志
@@ -428,6 +466,16 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
         }
         for (CrmCustomerDO customer : customers) {
             getSelf().receiveCustomerLog(customer, user == null ? null : user.getNickname());
+        }
+    }
+
+    private void validateReceiveLimit(Long userId, int count) {
+        List<CrmCustomerPoolRuleDO> receiveRules = poolRuleMapper.selectReceiveRules();
+        for (CrmCustomerPoolRuleDO rule : receiveRules) {
+            CrmCustomerPoolReceiveRuleConfig config = poolReceiveRule.parseConfig(rule, CrmCustomerPoolReceiveRuleConfig.class);
+            if (!poolReceiveRule.checkLimit(userId, count, config)) {
+                throw exception(CUSTOMER_RECEIVE_LIMIT_EXCEED);
+            }
         }
     }
 
