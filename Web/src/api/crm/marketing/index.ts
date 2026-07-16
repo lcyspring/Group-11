@@ -84,6 +84,48 @@ export interface MarketingCompetitorVO {
   createTime?: Date | string
   updateTime?: Date | string
 }
+export interface CustomerCarePlanVO {
+  id?: number
+  code: string
+  name: string
+  ruleType: number
+  eventMonthDay?: string
+  followUpDays?: number
+  channel: number
+  smsTemplateCode?: string
+  mailTemplateCode?: string
+  enabled: boolean
+  targetScope?: string
+  createTime?: Date | string
+  updateTime?: Date | string
+}
+export interface CustomerCareRecordVO {
+  id: number
+  planId: number
+  planName?: string
+  customerId: number
+  customerName?: string
+  contactId?: number
+  contactName?: string
+  eventDate: string
+  channel: number
+  status: number
+  failureReason?: string
+  providerLogId?: number
+  sentAt?: Date | string
+  createTime?: Date | string
+}
+export interface CustomerBirthdayVO {
+  customerId: number
+  customerName?: string
+  contactId: number
+  contactName: string
+  birthday: string
+  nextBirthday: string
+  daysUntil: number
+  mobile?: string
+  email?: string
+}
 export const getCampaignPage = (params: any) =>
   request.get({ url: '/crm/marketing/campaign/page', params })
 export const getCampaign = (id: number) =>
@@ -135,9 +177,17 @@ export const sendBroadcast = (id: number) =>
   request.put({ url: '/crm/marketing/outreach/broadcast/send', params: { id } })
 export const retryBroadcast = (id: number) =>
   request.put({ url: '/crm/marketing/outreach/broadcast/retry', params: { id } })
-export const saveCarePlan = (data: any) =>
+export const saveCarePlan = (data: CustomerCarePlanVO) =>
   request.post({ url: '/crm/marketing/care/plan/save', data })
+export const getCarePlan = (id: number) =>
+  request.get<CustomerCarePlanVO>({ url: '/crm/marketing/care/plan/get', params: { id } })
+export const updateCarePlanStatus = (id: number, enabled: boolean) =>
+  request.put({ url: '/crm/marketing/care/plan/status', data: { id, enabled } })
+export const deleteCarePlan = (id: number) =>
+  request.delete({ url: '/crm/marketing/care/plan/delete', params: { id } })
 export const getCarePlanPage = (params: any) =>
   request.get({ url: '/crm/marketing/care/plan/page', params })
 export const getCareRecordPage = (params: any) =>
   request.get({ url: '/crm/marketing/care/record/page', params })
+export const getCustomerBirthdayPage = (params: any) =>
+  request.get({ url: '/crm/marketing/care/birthday/page', params })

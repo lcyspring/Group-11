@@ -6,5 +6,5 @@ import lombok.EqualsAndHashCode;
 
 @Data @EqualsAndHashCode(callSuper = true)
 public class CrmCustomerCarePlanPageReqVO extends PageParam {
-    private String name; private Integer ruleType; private Boolean enabled;
+    private String code; private String name; private Integer ruleType; private Integer channel; private Boolean enabled;
 }

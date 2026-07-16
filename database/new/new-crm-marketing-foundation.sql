@@ -83,7 +83,8 @@ CREATE TABLE IF NOT EXISTS `crm_marketing_broadcast_recipient` (
 
 CREATE TABLE IF NOT EXISTS `crm_customer_care_plan` (
   `id` bigint NOT NULL AUTO_INCREMENT, `code` varchar(64) NOT NULL, `name` varchar(200) NOT NULL,
-  `rule_type` tinyint NOT NULL COMMENT '1生日、2节假日', `event_month_day` varchar(5) NOT NULL COMMENT 'MM-dd',
+  `rule_type` tinyint NOT NULL COMMENT '1生日、2节假日、3成交后定期回访', `event_month_day` varchar(5) NULL COMMENT '节假日日期 MM-dd',
+  `follow_up_days` int NULL COMMENT '成交后第 N 天触达，仅定期回访使用',
   `channel` tinyint NOT NULL, `sms_template_code` varchar(100) NULL, `mail_template_code` varchar(100) NULL,
   `enabled` bit(1) NOT NULL DEFAULT b'0', `target_scope` varchar(50) NOT NULL DEFAULT 'READABLE_CUSTOMERS',
   `creator` varchar(64) NULL DEFAULT '', `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -146,7 +147,7 @@ AND NOT EXISTS (SELECT 1 FROM system_menu existing WHERE existing.permission=def
 
 INSERT INTO system_menu (`name`,`permission`,`type`,`sort`,`parent_id`,`path`,`icon`,`component`,`component_name`,`status`,`visible`,`keep_alive`,`always_show`,`creator`,`create_time`,`updater`,`update_time`,`deleted`)
 SELECT defs.name,defs.permission,3,defs.sort,page.id,'','','','',0,b'1',b'1',b'1','crm-marketing',NOW(),'crm-marketing',NOW(),b'0'
-FROM system_menu page JOIN (SELECT '关怀查询' name,'crm:customer-care:query' permission,1 sort UNION ALL SELECT '关怀维护','crm:customer-care:update',2) defs
+FROM system_menu page JOIN (SELECT '关怀查询' name,'crm:customer-care:query' permission,1 sort UNION ALL SELECT '关怀维护','crm:customer-care:update',2 UNION ALL SELECT '关怀删除','crm:customer-care:delete',3) defs
 WHERE page.path='customer-care' AND page.deleted=b'0'
 AND NOT EXISTS (SELECT 1 FROM system_menu existing WHERE existing.permission=defs.permission AND existing.deleted=b'0');
 
@@ -164,7 +165,7 @@ ON DUPLICATE KEY UPDATE name=VALUES(name),deleted=b'0';
 INSERT INTO system_role_menu (`role_id`,`menu_id`,`creator`,`create_time`,`updater`,`update_time`,`deleted`,`tenant_id`)
 SELECT role.id,menu.id,'crm-marketing',NOW(),'crm-marketing',NOW(),b'0',role.tenant_id
 FROM system_role role JOIN system_menu menu ON (menu.path IN ('marketing-campaign','competitor','marketing-outreach','customer-care') OR menu.permission IN
- ('crm:marketing-campaign:query','crm:marketing-campaign:update','crm:marketing-campaign:delete','crm:competitor:query','crm:competitor:update','crm:competitor:delete','crm:marketing-outreach:query','crm:marketing-outreach:update','crm:marketing-outreach:review','crm:marketing-outreach:send','crm:marketing-outreach:consent','crm:customer-care:query','crm:customer-care:update'))
+ ('crm:marketing-campaign:query','crm:marketing-campaign:update','crm:marketing-campaign:delete','crm:competitor:query','crm:competitor:update','crm:competitor:delete','crm:marketing-outreach:query','crm:marketing-outreach:update','crm:marketing-outreach:review','crm:marketing-outreach:send','crm:marketing-outreach:consent','crm:customer-care:query','crm:customer-care:update','crm:customer-care:delete'))
 WHERE role.code='crm_admin' AND role.deleted=b'0' AND menu.deleted=b'0'
 AND NOT EXISTS (SELECT 1 FROM system_role_menu existing WHERE existing.role_id=role.id AND existing.menu_id=menu.id
  AND existing.tenant_id=role.tenant_id AND existing.deleted=b'0');

@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 @Data
 public class CrmCustomerCareRecordRespVO {
     private Long id; private Long planId; private Long customerId; private Long contactId;
+    private String planName; private String customerName; private String contactName;
     private LocalDate eventDate; private Integer channel; private Integer status; private String failureReason;
-    private Long providerLogId; private LocalDateTime sentAt;
+    private Long providerLogId; private LocalDateTime sentAt; private LocalDateTime createTime;
 }

@@ -5,7 +5,9 @@ import com.meession.etm.framework.mybatis.core.mapper.BaseMapperX;
 import com.meession.etm.framework.mybatis.core.query.LambdaQueryWrapperX;
 import com.meession.etm.framework.mybatis.core.query.MPJLambdaWrapperX;
 import com.meession.etm.module.crm.controller.admin.contact.vo.CrmContactPageReqVO;
+import com.meession.etm.module.crm.controller.admin.marketing.vo.CrmCustomerBirthdayPageReqVO;
 import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.util.CrmPermissionUtils;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -15,6 +17,10 @@ import org.apache.ibatis.annotations.Select;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * CRM 联系人 Mapper
@@ -124,6 +130,59 @@ public interface CrmContactMapper extends BaseMapperX<CrmContactDO> {
         return selectList(new LambdaQueryWrapperX<CrmContactDO>()
                 .apply("DATE_FORMAT(birthday, '%m-%d') = {0}", monthDay)
                 .orderByAsc(CrmContactDO::getId));
+    }
+
+    default List<CrmContactDO> selectPrimaryContactsByLifecycleStatus(Integer lifecycleStatus) {
+        MPJLambdaWrapperX<CrmContactDO> query = new MPJLambdaWrapperX<>();
+        query.selectAll(CrmContactDO.class)
+                .innerJoin(CrmCustomerDO.class, CrmCustomerDO::getId, CrmContactDO::getCustomerId)
+                .eq(CrmContactDO::getPrimaryContact, true)
+                .eq(CrmCustomerDO::getLifecycleStatus, lifecycleStatus)
+                .orderByAsc(CrmContactDO::getId);
+        return selectJoinList(CrmContactDO.class, query);
+    }
+
+    default List<CrmContactDO> selectPrimaryContactsByLifecycleChangedBetween(Integer lifecycleStatus,
+                                                                               LocalDateTime begin,
+                                                                               LocalDateTime end) {
+        MPJLambdaWrapperX<CrmContactDO> query = new MPJLambdaWrapperX<>();
+        query.selectAll(CrmContactDO.class)
+                .innerJoin(CrmCustomerDO.class, CrmCustomerDO::getId, CrmContactDO::getCustomerId)
+                .eq(CrmContactDO::getPrimaryContact, true)
+                .eq(CrmCustomerDO::getLifecycleStatus, lifecycleStatus)
+                .ge(CrmCustomerDO::getLifecycleStatusChangeTime, begin)
+                .lt(CrmCustomerDO::getLifecycleStatusChangeTime, end)
+                .orderByAsc(CrmContactDO::getId);
+        return selectJoinList(CrmContactDO.class, query);
+    }
+
+    default PageResult<CrmContactDO> selectUpcomingBirthdayPage(CrmCustomerBirthdayPageReqVO request,
+                                                                 LocalDate today, boolean all,
+                                                                 Set<Long> ownerUserIds) {
+        LocalDate endDate = today.plusDays(request.getUpcomingDays());
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-dd");
+        String start = today.format(formatter);
+        String end = endDate.format(formatter);
+        MPJLambdaWrapperX<CrmContactDO> query = new MPJLambdaWrapperX<>();
+        query.selectAll(CrmContactDO.class)
+                .innerJoin(CrmCustomerDO.class, CrmCustomerDO::getId, CrmContactDO::getCustomerId)
+                .isNotNull(CrmContactDO::getBirthday);
+        if (endDate.getYear() == today.getYear()) {
+            query.apply("DATE_FORMAT(t.birthday, '%m-%d') BETWEEN {0} AND {1}", start, end);
+        } else {
+            query.and(date -> date.apply("DATE_FORMAT(t.birthday, '%m-%d') >= {0}", start)
+                    .or().apply("DATE_FORMAT(t.birthday, '%m-%d') <= {0}", end));
+        }
+        if (request.getKeyword() != null && !request.getKeyword().isBlank()) {
+            query.and(keyword -> keyword.like(CrmContactDO::getName, request.getKeyword())
+                    .or().like(CrmCustomerDO::getName, request.getKeyword()));
+        }
+        if (!all) {
+            if (ownerUserIds.isEmpty()) query.eq(CrmContactDO::getOwnerUserId, -1L);
+            else query.in(CrmContactDO::getOwnerUserId, ownerUserIds);
+        }
+        query.last("ORDER BY DATE_FORMAT(t.birthday, '%m-%d'), t.id");
+        return selectJoinPage(request, CrmContactDO.class, query);
     }
 
 }

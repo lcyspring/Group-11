@@ -33,8 +33,8 @@ class CrmMarketingOutreachValidationTest {
     void carePlanRejectsMalformedDate() {
         CrmCustomerCareServiceImpl service = new CrmCustomerCareServiceImpl();
         CrmCustomerCarePlanSaveReqVO request = new CrmCustomerCarePlanSaveReqVO().setCode("b").setName("生日")
-                .setRuleType(1).setEventMonthDay("tomorrow").setChannel(1).setSmsTemplateCode("sms").setEnabled(false);
+                .setRuleType(2).setEventMonthDay("tomorrow").setChannel(1).setSmsTemplateCode("sms").setEnabled(false);
         ServiceException ex = assertThrows(ServiceException.class, () -> service.savePlan(request));
-        assertEquals(MARKETING_CHANNEL_INVALID.getCode(), ex.getCode());
+        assertEquals(MARKETING_CARE_RULE_INVALID.getCode(), ex.getCode());
     }
 }

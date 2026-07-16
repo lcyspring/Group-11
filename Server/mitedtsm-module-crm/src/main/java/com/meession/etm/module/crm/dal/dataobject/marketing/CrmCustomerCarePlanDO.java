@@ -17,6 +17,7 @@ public class CrmCustomerCarePlanDO extends BaseDO {
     private String name;
     private Integer ruleType;
     private String eventMonthDay;
+    private Integer followUpDays;
     private Integer channel;
     private String smsTemplateCode;
     private String mailTemplateCode;
