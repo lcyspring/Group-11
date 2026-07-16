@@ -55,6 +55,13 @@ public class CrmFollowUpRecordController {
         return success(followUpRecordService.createFollowUpRecord(createReqVO));
     }
 
+    @PutMapping("/update")
+    @Operation(summary = "更新跟进记录")
+    public CommonResult<Boolean> updateFollowUpRecord(@Valid @RequestBody CrmFollowUpRecordSaveReqVO updateReqVO) {
+        followUpRecordService.updateFollowUpRecord(updateReqVO);
+        return success(true);
+    }
+
     @DeleteMapping("/delete")
     @Operation(summary = "删除跟进记录")
     @Parameter(name = "id", description = "编号", required = true)

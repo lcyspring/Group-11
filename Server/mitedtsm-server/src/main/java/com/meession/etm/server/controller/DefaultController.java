@@ -5,6 +5,7 @@ import com.meession.etm.framework.common.util.servlet.ServletUtils;
 import jakarta.annotation.security.PermitAll;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.ClassUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -46,11 +47,16 @@ public class DefaultController {
                 "[ERP 模块 mitedtsm-module-erp - 已禁用]");
     }
 
-    @RequestMapping("/admin-api/crm/**")
-    public CommonResult<Boolean> crm404() {
-        return CommonResult.error(NOT_IMPLEMENTED.getCode(),
-                "[CRM 模块 mitedtsm-module-crm - 已禁用]");
-    }
+    // [DELETE] 临时注释，测试 CRM 模块是否能正常工作 - 2026-07-14 - qingzi
+    // @RequestMapping("/admin-api/crm/**")
+    // public CommonResult<Boolean> crm404() {
+    //     if (ClassUtils.isPresent("com.meession.etm.module.crm.controller.admin.business.CrmBusinessController", 
+    //             ClassUtils.getDefaultClassLoader())) {
+    //         throw new IllegalStateException("CRM module is enabled but controllers are not registered");
+    //     }
+    //     return CommonResult.error(NOT_IMPLEMENTED.getCode(),
+    //             "[CRM 模块 mitedtsm-module-crm - 已禁用]");
+    // }
 
     @RequestMapping(value = { "/admin-api/report/**"})
     public CommonResult<Boolean> report404() {

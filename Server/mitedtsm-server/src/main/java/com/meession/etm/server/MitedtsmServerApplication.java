@@ -9,7 +9,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @author 密讯
  */
 @SuppressWarnings("SpringComponentScan") // 忽略 IDEA 无法识别 ${mitedtsm.info.base-package}
-@SpringBootApplication(scanBasePackages = {"${mitedtsm.info.base-package}.server", "${mitedtsm.info.base-package}.module"})
+@SpringBootApplication(scanBasePackages = {"${mitedtsm.info.base-package}.server", "${mitedtsm.info.base-package}.module", "com.meession.etm.module.crm"})
 public class MitedtsmServerApplication {
 
     public static void main(String[] args) {

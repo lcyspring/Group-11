@@ -9,6 +9,7 @@ import com.meession.etm.framework.common.util.object.BeanUtils;
 import com.meession.etm.module.crm.controller.admin.business.vo.business.CrmBusinessPageReqVO;
 import com.meession.etm.module.crm.controller.admin.business.vo.business.CrmBusinessSaveReqVO;
 import com.meession.etm.module.crm.controller.admin.business.vo.business.CrmBusinessTransferReqVO;
+import com.meession.etm.module.crm.controller.admin.business.vo.business.CrmBusinessAdvanceStageReqVO;
 import com.meession.etm.module.crm.controller.admin.business.vo.business.CrmBusinessUpdateStatusReqVO;
 import com.meession.etm.module.crm.controller.admin.contact.vo.CrmContactBusinessReqVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsFunnelReqVO;
@@ -31,6 +32,7 @@ import com.meession.etm.module.crm.service.permission.bo.CrmPermissionCreateReqB
 import com.meession.etm.module.crm.service.permission.bo.CrmPermissionTransferReqBO;
 import com.meession.etm.module.crm.service.product.CrmProductService;
 import com.meession.etm.module.system.api.user.AdminUserApi;
+import com.meession.etm.framework.security.core.util.SecurityFrameworkUtils;
 import com.mzt.logapi.context.LogRecordContext;
 import com.mzt.logapi.service.impl.DiffParseFunction;
 import com.mzt.logapi.starter.annotation.LogRecord;
@@ -83,6 +85,9 @@ public class CrmBusinessServiceImpl implements CrmBusinessService {
     private CrmContactBusinessService contactBusinessService;
     @Resource
     private CrmProductService productService;
+
+    @Resource
+    private CrmBusinessStatusRecordService statusRecordService;
 
     @Resource
     private AdminUserApi adminUserApi;
@@ -229,6 +234,7 @@ public class CrmBusinessServiceImpl implements CrmBusinessService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     @LogRecord(type = CRM_BUSINESS_TYPE, subType = CRM_BUSINESS_UPDATE_STATUS_SUB_TYPE, bizNo = "{{#reqVO.id}}",
             success = CRM_BUSINESS_UPDATE_STATUS_SUCCESS)
     @CrmPermission(bizType = CrmBizTypeEnum.CRM_BUSINESS, bizId = "#reqVO.id", level = CrmPermissionLevelEnum.WRITE)
@@ -250,15 +256,90 @@ public class CrmBusinessServiceImpl implements CrmBusinessService {
             throw exception(BUSINESS_UPDATE_STATUS_FAIL_STATUS_EQUALS);
         }
 
-        // 2. 更新商机状态
-        businessMapper.updateById(new CrmBusinessDO().setId(reqVO.getId()).setStatusId(reqVO.getStatusId())
-                .setEndStatus(reqVO.getEndStatus()));
+        // 1.5 状态机流转校验：如果是普通状态流转，校验是否为相邻状态
+        if (reqVO.getStatusId() != null && reqVO.getEndStatus() == null) {
+            validateStatusTransition(business.getStatusTypeId(), business.getStatusId(), reqVO.getStatusId());
+        }
 
-        // 3. 记录操作日志上下文
+        // 2. 保存旧状态用于记录流转历史
+        CrmBusinessDO oldBusiness = BeanUtils.toBean(business, CrmBusinessDO.class);
+
+        // 3. 更新商机状态
+        businessMapper.updateById(new CrmBusinessDO().setId(reqVO.getId()).setStatusId(reqVO.getStatusId())
+                .setEndStatus(reqVO.getEndStatus()).setEndRemark(reqVO.getEndRemark()));
+
+        // 4. 创建流转历史记录
+        CrmBusinessDO newBusiness = businessMapper.selectById(reqVO.getId());
+        statusRecordService.createRecord(oldBusiness, newBusiness, SecurityFrameworkUtils.getLoginUserId(), reqVO.getRemark());
+
+        // 5. 记录操作日志上下文
         LogRecordContext.putVariable("businessName", business.getName());
         LogRecordContext.putVariable("oldStatusName", getBusinessStatusName(business.getEndStatus(),
                 businessStatusService.getBusinessStatus(business.getStatusId())));
         LogRecordContext.putVariable("newStatusName", getBusinessStatusName(reqVO.getEndStatus(), status));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @LogRecord(type = CRM_BUSINESS_TYPE, subType = CRM_BUSINESS_UPDATE_STATUS_SUB_TYPE, bizNo = "{{#reqVO.id}}",
+            success = CRM_BUSINESS_UPDATE_STATUS_SUCCESS)
+    @CrmPermission(bizType = CrmBizTypeEnum.CRM_BUSINESS, bizId = "#reqVO.id", level = CrmPermissionLevelEnum.WRITE)
+    public void advanceBusinessStage(CrmBusinessAdvanceStageReqVO reqVO) {
+        CrmBusinessDO business = validateBusinessExists(reqVO.getId());
+        if (business.getEndStatus() != null) {
+            throw exception(BUSINESS_UPDATE_STATUS_FAIL_END_STATUS);
+        }
+
+        CrmBusinessUpdateStatusReqVO statusReqVO = new CrmBusinessUpdateStatusReqVO();
+        statusReqVO.setId(reqVO.getId());
+        statusReqVO.setRemark(reqVO.getRemark());
+        statusReqVO.setEndStatus(reqVO.getEndStatus());
+        statusReqVO.setEndRemark(reqVO.getEndRemark());
+
+        if (reqVO.getEndStatus() != null) {
+            updateBusinessStatus(statusReqVO);
+            return;
+        }
+
+        List<CrmBusinessStatusDO> statusList = businessStatusService.getBusinessStatusListByTypeId(business.getStatusTypeId());
+        Map<Long, Integer> statusSortMap = convertMap(statusList, CrmBusinessStatusDO::getId, CrmBusinessStatusDO::getSort);
+
+        Integer currentSort = statusSortMap.get(business.getStatusId());
+        if (currentSort == null) {
+            throw exception(BUSINESS_UPDATE_STATUS_FAIL_STATUS_EQUALS);
+        }
+
+        Long nextStatusId = null;
+        for (CrmBusinessStatusDO status : statusList) {
+            if (statusSortMap.get(status.getId()).equals(currentSort + 1)) {
+                nextStatusId = status.getId();
+                break;
+            }
+        }
+
+        if (nextStatusId == null) {
+            throw exception(BUSINESS_UPDATE_STATUS_FAIL_NOT_ADJACENT);
+        }
+
+        statusReqVO.setStatusId(nextStatusId);
+        updateBusinessStatus(statusReqVO);
+    }
+
+    private void validateStatusTransition(Long statusTypeId, Long oldStatusId, Long newStatusId) {
+        List<CrmBusinessStatusDO> statusList = businessStatusService.getBusinessStatusListByTypeId(statusTypeId);
+        Map<Long, Integer> statusSortMap = convertMap(statusList, CrmBusinessStatusDO::getId, CrmBusinessStatusDO::getSort);
+
+        Integer oldSort = statusSortMap.get(oldStatusId);
+        Integer newSort = statusSortMap.get(newStatusId);
+
+        if (oldSort == null || newSort == null) {
+            throw exception(BUSINESS_UPDATE_STATUS_FAIL_STATUS_EQUALS);
+        }
+
+        int diff = newSort - oldSort;
+        if (Math.abs(diff) > 1) {
+            throw exception(BUSINESS_UPDATE_STATUS_FAIL_NOT_ADJACENT);
+        }
     }
 
     @Override

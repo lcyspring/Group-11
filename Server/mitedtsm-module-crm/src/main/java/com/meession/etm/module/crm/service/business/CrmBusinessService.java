@@ -4,6 +4,7 @@ import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.module.crm.controller.admin.business.vo.business.CrmBusinessPageReqVO;
 import com.meession.etm.module.crm.controller.admin.business.vo.business.CrmBusinessSaveReqVO;
 import com.meession.etm.module.crm.controller.admin.business.vo.business.CrmBusinessTransferReqVO;
+import com.meession.etm.module.crm.controller.admin.business.vo.business.CrmBusinessAdvanceStageReqVO;
 import com.meession.etm.module.crm.controller.admin.business.vo.business.CrmBusinessUpdateStatusReqVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsFunnelReqVO;
 import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessDO;
@@ -67,6 +68,13 @@ public interface CrmBusinessService {
      * @param reqVO 更新请求
      */
     void updateBusinessStatus(CrmBusinessUpdateStatusReqVO reqVO);
+
+    /**
+     * 商机阶段推进（推进到下一阶段）
+     *
+     * @param reqVO 推进请求
+     */
+    void advanceBusinessStage(CrmBusinessAdvanceStageReqVO reqVO);
 
     /**
      * 删除商机

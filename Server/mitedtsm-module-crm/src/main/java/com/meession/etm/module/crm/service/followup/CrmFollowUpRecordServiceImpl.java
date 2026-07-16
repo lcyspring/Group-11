@@ -64,7 +64,6 @@ public class CrmFollowUpRecordServiceImpl implements CrmFollowUpRecordService {
     @Override
     @CrmPermission(bizTypeValue = "#createReqVO.bizType", bizId = "#createReqVO.bizId", level = CrmPermissionLevelEnum.WRITE)
     public Long createFollowUpRecord(CrmFollowUpRecordSaveReqVO createReqVO) {
-        // 1. 创建更进记录
         CrmFollowUpRecordDO record = BeanUtils.toBean(createReqVO, CrmFollowUpRecordDO.class);
         crmFollowUpRecordMapper.insert(record);
 
@@ -94,6 +93,38 @@ public class CrmFollowUpRecordServiceImpl implements CrmFollowUpRecordService {
             businessService.updateBusinessContactNextTime(createReqVO.getBusinessIds(), createReqVO.getNextTime());
         }
         return record.getId();
+    }
+
+    @Override
+    @CrmPermission(bizTypeValue = "#updateReqVO.bizType", bizId = "#updateReqVO.bizId", level = CrmPermissionLevelEnum.WRITE)
+    public void updateFollowUpRecord(CrmFollowUpRecordSaveReqVO updateReqVO) {
+        CrmFollowUpRecordDO record = validateFollowUpRecordExists(updateReqVO.getId());
+
+        CrmFollowUpRecordDO updateObj = BeanUtils.toBean(updateReqVO, CrmFollowUpRecordDO.class);
+        crmFollowUpRecordMapper.updateById(updateObj);
+
+        if (ObjUtil.equal(CrmBizTypeEnum.CRM_CUSTOMER.getType(), record.getBizType())) {
+            customerService.updateCustomerFollowUp(record.getBizId(), updateReqVO.getNextTime(), updateReqVO.getContent());
+        }
+        if (ObjUtil.equal(CrmBizTypeEnum.CRM_BUSINESS.getType(), record.getBizType())) {
+            businessService.updateBusinessFollowUp(record.getBizId(), updateReqVO.getNextTime(), updateReqVO.getContent());
+        }
+        if (ObjUtil.equal(CrmBizTypeEnum.CRM_CLUE.getType(), record.getBizType())) {
+            clueService.updateClueFollowUp(record.getBizId(), updateReqVO.getNextTime(), updateReqVO.getContent());
+        }
+        if (ObjUtil.equal(CrmBizTypeEnum.CRM_CONTACT.getType(), record.getBizType())) {
+            contactService.updateContactFollowUp(record.getBizId(), updateReqVO.getNextTime(), updateReqVO.getContent());
+        }
+        if (ObjUtil.equal(CrmBizTypeEnum.CRM_CONTRACT.getType(), record.getBizType())) {
+            contractService.updateContractFollowUp(record.getBizId(), updateReqVO.getNextTime(), updateReqVO.getContent());
+        }
+
+        if (CollUtil.isNotEmpty(updateReqVO.getContactIds())) {
+            contactService.updateContactContactNextTime(updateReqVO.getContactIds(), updateReqVO.getNextTime());
+        }
+        if (CollUtil.isNotEmpty(updateReqVO.getBusinessIds())) {
+            businessService.updateBusinessContactNextTime(updateReqVO.getBusinessIds(), updateReqVO.getNextTime());
+        }
     }
 
     @Override

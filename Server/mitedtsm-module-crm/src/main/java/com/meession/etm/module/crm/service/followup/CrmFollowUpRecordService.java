@@ -26,6 +26,13 @@ public interface CrmFollowUpRecordService {
     Long createFollowUpRecord(@Valid CrmFollowUpRecordSaveReqVO createReqVO);
 
     /**
+     * 更新跟进记录 (数据权限基于 bizType、 bizId)
+     *
+     * @param updateReqVO 更新信息
+     */
+    void updateFollowUpRecord(@Valid CrmFollowUpRecordSaveReqVO updateReqVO);
+
+    /**
      * 创建更进
      *
      * @param list 请求

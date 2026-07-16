@@ -8,6 +8,7 @@ import com.meession.etm.framework.common.util.collection.MapUtils;
 import com.meession.etm.framework.common.util.number.NumberUtils;
 import com.meession.etm.framework.common.util.object.BeanUtils;
 import com.meession.etm.framework.excel.core.util.ExcelUtils;
+import com.meession.etm.module.crm.controller.admin.business.vo.business.CrmBusinessAdvanceStageReqVO;
 import com.meession.etm.module.crm.controller.admin.business.vo.business.*;
 import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessDO;
 import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessProductDO;
@@ -93,6 +94,14 @@ public class CrmBusinessController {
     @PreAuthorize("@ss.hasPermission('crm:business:update')")
     public CommonResult<Boolean> updateBusinessStatus(@Valid @RequestBody CrmBusinessUpdateStatusReqVO updateStatusReqVO) {
         businessService.updateBusinessStatus(updateStatusReqVO);
+        return success(true);
+    }
+
+    @PutMapping("/advance-stage")
+    @Operation(summary = "商机阶段推进")
+    @PreAuthorize("@ss.hasPermission('crm:business:update')")
+    public CommonResult<Boolean> advanceBusinessStage(@Valid @RequestBody CrmBusinessAdvanceStageReqVO reqVO) {
+        businessService.advanceBusinessStage(reqVO);
         return success(true);
     }
 

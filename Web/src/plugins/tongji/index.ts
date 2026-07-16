@@ -1,12 +1,11 @@
 import router from '@/router'
 
-// 用于 router push
 window._hmt = window._hmt || []
-// HM_ID
 const HM_ID = import.meta.env.VITE_APP_BAIDU_CODE
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+
 ;(function () {
-  // 有值的时候，才开启
-  if (!HM_ID) {
+  if (!HM_ID || isLocalhost) {
     return
   }
   const hm = document.createElement('script')
@@ -16,7 +15,7 @@ const HM_ID = import.meta.env.VITE_APP_BAIDU_CODE
 })()
 
 router.afterEach(function (to) {
-  if (!HM_ID) {
+  if (!HM_ID || isLocalhost) {
     return
   }
   _hmt.push(['_trackPageview', to.fullPath])
