@@ -2,6 +2,7 @@ package com.meession.etm.module.crm.framework.permission;
 
 import cn.hutool.core.collection.CollUtil;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.CrmStatisticsScopedReqVO;
+import com.meession.etm.framework.datapermission.core.annotation.DataPermission;
 import com.meession.etm.module.system.api.dept.DeptApi;
 import com.meession.etm.module.system.api.dept.dto.DeptRespDTO;
 import com.meession.etm.module.system.api.user.AdminUserApi;
@@ -29,6 +30,7 @@ public class CrmStatisticsDataScopeService {
     @Resource
     private AdminUserApi adminUserApi;
 
+    @DataPermission(enable = false)
     public void validate(Long loginUserId, CrmStatisticsScopedReqVO reqVO) {
         if (loginUserId == null || reqVO == null || reqVO.getDeptId() == null) {
             throw exception(CRM_STATISTICS_SCOPE_DENIED);
@@ -46,6 +48,8 @@ public class CrmStatisticsDataScopeService {
 
         Long selectedUserId = reqVO.getUserId();
         if (selectedUserId != null && !selection.departmentUserIds().contains(selectedUserId)) {
+            log.warn("[validate][拒绝 CRM 统计范围：userId({}) deptId({}) selectedUserId({}) 不在部门人员({})中]",
+                    loginUserId, reqVO.getDeptId(), selectedUserId, selection.departmentUserIds());
             throw exception(CRM_STATISTICS_SCOPE_DENIED);
         }
         if (selection.readScope().all()) {
@@ -53,11 +57,17 @@ public class CrmStatisticsDataScopeService {
         }
         if (selectedUserId != null) {
             if (!selection.readScope().allows(selectedUserId)) {
+                log.warn("[validate][拒绝 CRM 统计范围：userId({}) selectedUserId({}) readAll({}) readOwners({})]",
+                        loginUserId, selectedUserId, selection.readScope().all(),
+                        selection.readScope().ownerUserIds());
                 throw exception(CRM_STATISTICS_SCOPE_DENIED);
             }
             return;
         }
         if (!selection.readScope().ownerUserIds().containsAll(selection.departmentUserIds())) {
+            log.warn("[validate][拒绝 CRM 部门统计：userId({}) deptId({}) deptUsers({}) readOwners({})]",
+                    loginUserId, reqVO.getDeptId(), selection.departmentUserIds(),
+                    selection.readScope().ownerUserIds());
             throw exception(CRM_STATISTICS_SCOPE_DENIED);
         }
     }

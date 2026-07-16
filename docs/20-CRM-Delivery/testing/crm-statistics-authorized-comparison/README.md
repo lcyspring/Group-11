@@ -48,3 +48,10 @@
 
 覆盖率为 CRM 模块全量口径，原始报告位于构建产物
 `Server/mitedtsm-module-crm/target/site/jacoco/`，不提交生成物。
+
+## 真实角色补证
+
+2026-07-16 使用正式系统 API 创建临时 SELF 角色/用户并运行补证。首次暴露组织 API 被当前数据
+权限二次过滤的问题，修复后 CRM 自动化为 427/427；本人客户统计与 MySQL 均为 1，同部门他人和
+整部门返回 `1020014006`，未授权统计域和跨租户返回 403，匿名返回 401。完整记录见
+`testing/crm-statistics-runtime-security/`。

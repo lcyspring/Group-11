@@ -1,6 +1,8 @@
 package com.meession.etm.module.crm.framework.permission;
 
 import com.meession.etm.framework.common.exception.ServiceException;
+import com.meession.etm.framework.datapermission.core.annotation.DataPermission;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.CrmStatisticsScopedReqVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.performance.CrmStatisticsPerformanceReqVO;
 import com.meession.etm.module.system.api.dept.DeptApi;
 import com.meession.etm.module.system.api.dept.dto.DeptRespDTO;
@@ -20,6 +22,8 @@ import java.util.Set;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CRM_STATISTICS_SCOPE_DENIED;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.lenient;
@@ -105,6 +109,16 @@ class CrmStatisticsDataScopeServiceTest {
     @Test
     void missingLoginUserFailsClosed() {
         assertDenied(() -> service.validate(null, request(null)));
+    }
+
+    @Test
+    void organizationResolutionDisablesAmbientDataPermission() throws NoSuchMethodException {
+        DataPermission annotation = CrmStatisticsDataScopeService.class
+                .getMethod("validate", Long.class, CrmStatisticsScopedReqVO.class)
+                .getAnnotation(DataPermission.class);
+
+        assertNotNull(annotation);
+        assertFalse(annotation.enable());
     }
 
     private static CrmStatisticsPerformanceReqVO request(Long userId) {
