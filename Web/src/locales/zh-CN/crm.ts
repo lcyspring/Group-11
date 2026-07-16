@@ -1272,6 +1272,9 @@ export default {
       // 成交周期
       customerDealCycle: '成交周期(天)',
       dealCycleDay: '成交周期(天)',
+      dataQuality: '数据质量',
+      historicalBackfillAnomalySamples: '历史补录异常样本：合同下单日期早于客户创建日期',
+      negativeSampleCount: '负样本数量',
       areaName: '地区',
       productName: '产品名称'
     },

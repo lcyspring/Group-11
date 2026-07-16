@@ -6,12 +6,12 @@
 
 更新日期：2026-07-16
 
-- Ubuntu 26.04 容器 CRM 自动化：427/427，失败 0、错误 0、跳过 0。
-- CRM JaCoCo：指令 45.80%、分支 38.52%、行 44.82%、方法 33.93%。
+- Ubuntu 26.04 容器 CRM 自动化：429/429，失败 0、错误 0、跳过 0。
+- CRM JaCoCo：指令 46.01%、分支 38.55%、行 45.01%、方法 34.26%。
 - ERP 履约专项：4/4；ERP 模块 JaCoCo 行覆盖率 6.92%。
 - Ubuntu 26.04 Infra 文件专项：28/28；模块行覆盖率 8.16%。
 - Ubuntu 26.04 BPM 自动化：54 个，48 通过、6 跳过、失败 0；行覆盖率 8.58%。
-- Ubuntu 26.04 容器 CRM 前端：统计纯函数与 SFC 契约 10/10，发票 3/3。
+- Ubuntu 26.04 容器 CRM 前端：统计纯函数与 SFC 契约 11/11，行 95.49%、分支 95.83%、函数 100%；发票 3/3。
 - 原始报告：`Server/mitedtsm-module-crm/target/site/jacoco/`，属于构建产物，不提交。
 
 ## 目录索引
@@ -62,6 +62,7 @@
 | `statistics-lineage-refresh/` | 六类统计指标血缘、域权限、实时刷新和覆盖率 |
 | `crm-statistics-runtime-security/` | 临时 SELF 用户真实数据对账、跨人员/跨域/跨租户负向和清理 |
 | `crm-statistics-ui-regressions/` | 乱码 ref、分页、年份模型和 loading 异常路径的 SFC 契约回归 |
+| `deal-cycle-data-quality/` | 负成交周期保留、负样本显式标记、四类 API/MySQL 对账和覆盖率 |
 | `crm-receivable-refund/` | 回款退款/冲销金额守恒、审批状态机、对象权限、动作轨迹和运行验收 |
 | `crm-resource-security/` | 八类导出对象权限、合同受保护附件、公共文件隔离和历史通知乱码 |
 | `customer-360-refund/` | 退款/冲销审批金额、净回款、待回款和客户明细入口 |

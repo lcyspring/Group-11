@@ -13,4 +13,7 @@ public class CrmStatisticsCustomerDealCycleByDateRespVO {
     @Schema(description = "成交周期", requiredMode = Schema.RequiredMode.REQUIRED, example = "1.0")
     private Double customerDealCycle;
 
+    @Schema(description = "下单日期早于客户创建日期的样本数", requiredMode = Schema.RequiredMode.REQUIRED, example = "0")
+    private Integer negativeSampleCount;
+
 }

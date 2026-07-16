@@ -282,9 +282,12 @@ public class CrmStatisticsCustomerServiceImpl implements CrmStatisticsCustomerSe
                     .average().orElse(0D);
             double customerDealCycle = BigDecimal.valueOf(averageDealCycle)
                     .setScale(1, RoundingMode.DOWN).doubleValue();
+            int negativeSampleCount = customerDealCycleList.stream()
+                    .filter(vo -> LocalDateTimeUtils.isBetween(times[0], times[1], vo.getTime()))
+                    .mapToInt(vo -> ObjUtil.defaultIfNull(vo.getNegativeSampleCount(), 0)).sum();
             return new CrmStatisticsCustomerDealCycleByDateRespVO()
                     .setTime(LocalDateTimeUtils.formatDateRange(times[0], times[1], reqVO.getInterval()))
-                    .setCustomerDealCycle(customerDealCycle);
+                    .setCustomerDealCycle(customerDealCycle).setNegativeSampleCount(negativeSampleCount);
         });
     }
 
@@ -306,8 +309,12 @@ public class CrmStatisticsCustomerServiceImpl implements CrmStatisticsCustomerSe
                     .mapToDouble(CrmStatisticsCustomerDealCycleByUserRespVO::getCustomerDealCycle).sum();
             Integer customerDealCount = customerDealCountList.stream().filter(vo -> userId.equals(vo.getOwnerUserId()))
                     .mapToInt(CrmStatisticsCustomerSummaryByUserRespVO::getCustomerDealCount).sum();
+            Integer negativeSampleCount = customerDealCycleList.stream()
+                    .filter(vo -> userId.equals(vo.getOwnerUserId()))
+                    .mapToInt(vo -> ObjUtil.defaultIfNull(vo.getNegativeSampleCount(), 0)).sum();
             return (CrmStatisticsCustomerDealCycleByUserRespVO) new CrmStatisticsCustomerDealCycleByUserRespVO()
-                    .setCustomerDealCycle(customerDealCycle).setCustomerDealCount(customerDealCount).setOwnerUserId(userId);
+                    .setCustomerDealCycle(customerDealCycle).setCustomerDealCount(customerDealCount)
+                    .setNegativeSampleCount(negativeSampleCount).setOwnerUserId(userId);
         });
         // 3.2 拼接用户信息
         appendUserInfo(summaryList);

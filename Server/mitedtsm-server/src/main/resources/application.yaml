@@ -417,6 +417,15 @@ mitedtsm:
           filters: [customer and contract deleted = 0, contract audit_status = approved, owner_user_id in authorized users]
           permission: crm:statistics-customer:query + CRM authorized user scope + tenant isolation
         - scope: customer
+          code: customer.deal-cycle
+          name: 客户首次成交周期
+          source-tables: [crm_customer, crm_contract]
+          source-fields: [crm_customer.id, crm_customer.create_time, crm_contract.customer_id, crm_contract.order_date, crm_contract.audit_status]
+          business-time: crm_contract.order_date
+          formula: AVG(DATEDIFF(first approved contract order_date, customer create_time)); negative values remain in the average and are exposed through negativeSampleCount
+          filters: [customer and contract deleted = 0, first contract audit_status = approved, owner_user_id in authorized users]
+          permission: crm:statistics-customer:query + CRM authorized user scope + tenant isolation
+        - scope: customer
           code: customer.follow-up-count
           name: 客户跟进次数
           source-tables: [crm_follow_up_record]

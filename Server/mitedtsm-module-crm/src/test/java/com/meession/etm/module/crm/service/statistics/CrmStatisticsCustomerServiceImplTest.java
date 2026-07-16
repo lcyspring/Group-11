@@ -1,6 +1,7 @@
 package com.meession.etm.module.crm.service.statistics;
 
 import com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerDealCycleByDateRespVO;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerDealCycleByUserRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerDealTopRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerReqVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerSummaryByDateRespVO;
@@ -150,7 +151,7 @@ class CrmStatisticsCustomerServiceImplTest {
     void getCustomerDealCycleByDateAveragesCustomersAcrossRequestedInterval() {
         List<CrmStatisticsCustomerDealCycleByDateRespVO> mapperResult = List.of(
                 dealCycle("2024-01-01T09:00:00", 5D),
-                dealCycle("2024-01-02T09:00:00", 20D),
+                dealCycle("2024-01-02T09:00:00", -20D).setNegativeSampleCount(1),
                 dealCycle("2024-01-02T10:00:00", 30D)
         );
         CrmStatisticsCustomerServiceImpl service = new CrmStatisticsCustomerServiceImpl();
@@ -164,13 +165,42 @@ class CrmStatisticsCustomerServiceImplTest {
         List<CrmStatisticsCustomerDealCycleByDateRespVO> result = service.getCustomerDealCycleByDate(reqVO);
 
         assertEquals(1, result.size());
-        assertEquals(18.3D, result.get(0).getCustomerDealCycle());
+        assertEquals(5D, result.get(0).getCustomerDealCycle());
+        assertEquals(1, result.get(0).getNegativeSampleCount());
+    }
+
+    @Test
+    void getCustomerDealCycleByUserPreservesNegativeSampleCount() {
+        CrmStatisticsCustomerDealCycleByUserRespVO dealCycleByUser =
+                new CrmStatisticsCustomerDealCycleByUserRespVO()
+                        .setCustomerDealCycle(-16D)
+                        .setNegativeSampleCount(1);
+        dealCycleByUser.setOwnerUserId(1L);
+        CrmStatisticsCustomerSummaryByUserRespVO dealCountByUser =
+                new CrmStatisticsCustomerSummaryByUserRespVO().setCustomerDealCount(1);
+        dealCountByUser.setOwnerUserId(1L);
+        CrmStatisticsCustomerServiceImpl service = serviceWithMapper((proxy, method, args) -> switch (method.getName()) {
+            case "selectCustomerDealCycleGroupByUser" -> List.of(dealCycleByUser);
+            case "selectCustomerDealCountGroupByUser" -> List.of(dealCountByUser);
+            default -> throw new AssertionError("未预期的 Mapper 调用 " + method.getName());
+        });
+        AdminUserRespDTO user = new AdminUserRespDTO().setId(1L).setNickname("历史补录用户");
+        ReflectionTestUtils.setField(service, "adminUserApi", proxy(AdminUserApi.class,
+                (proxy, method, args) -> Map.of(1L, user)));
+
+        List<CrmStatisticsCustomerDealCycleByUserRespVO> result = service.getCustomerDealCycleByUser(request());
+
+        assertEquals(1, result.size());
+        assertEquals(-16D, result.get(0).getCustomerDealCycle());
+        assertEquals(1, result.get(0).getNegativeSampleCount());
+        assertEquals("历史补录用户", result.get(0).getOwnerUserName());
     }
 
     private static CrmStatisticsCustomerDealCycleByDateRespVO dealCycle(String time, double cycle) {
         return new CrmStatisticsCustomerDealCycleByDateRespVO()
                 .setTime(time)
-                .setCustomerDealCycle(cycle);
+                .setCustomerDealCycle(cycle)
+                .setNegativeSampleCount(0);
     }
 
     private static CrmStatisticsFollowUpCustomerByDateBO followCustomer(String time, Long customerId) {

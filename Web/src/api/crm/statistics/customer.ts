@@ -72,24 +72,28 @@ export interface CrmStatisticsPoolSummaryByUserRespVO {
 export interface CrmStatisticsCustomerDealCycleByDateRespVO {
   time: string
   customerDealCycle: number
+  negativeSampleCount: number
 }
 
 export interface CrmStatisticsCustomerDealCycleByUserRespVO {
   ownerUserName: string
   customerDealCycle: number
   customerDealCount: number
+  negativeSampleCount: number
 }
 
 export interface CrmStatisticsCustomerDealCycleByAreaRespVO {
   areaName: string
   customerDealCycle: number
   customerDealCount: number
+  negativeSampleCount: number
 }
 
 export interface CrmStatisticsCustomerDealCycleByProductRespVO {
   productName: string
   customerDealCycle: number
   customerDealCount: number
+  negativeSampleCount: number
 }
 
 // 客户分析 API

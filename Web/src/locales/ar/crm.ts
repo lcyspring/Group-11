@@ -1304,6 +1304,9 @@ export default {
       // Deal cycle
       customerDealCycle: 'دورة الصفقة (أيام)',
       dealCycleDay: 'دورة الصفقة (أيام)',
+      dataQuality: 'جودة البيانات',
+      historicalBackfillAnomalySamples: 'عينات شاذة من الإدخال التاريخي: تاريخ طلب العقد يسبق تاريخ إنشاء العميل',
+      negativeSampleCount: 'عدد العينات السالبة',
       areaName: 'المنطقة',
       productName: 'اسم المنتج'
     },

@@ -2,6 +2,7 @@ export interface ProductDealCycle {
   productName?: string | null
   customerDealCycle: number
   customerDealCount: number
+  negativeSampleCount: number
 }
 
 /** 保留后端成交周期，仅为空产品名提供展示兜底。 */

@@ -39,8 +39,14 @@ test('performance year selector remains separate from timestamp range', () => {
 
   assert.match(source, /v-model="selectedYear"/)
   assert.match(source, /const selectedYear = ref\(String\(currentYear\)\)/)
-  assert.match(source, /queryParams\.times\[0\] = formatDate\(beginOfDay\(new Date\(selectYear, 0, 1\)\)\)/)
-  assert.match(source, /queryParams\.times\[1\] = formatDate\(endOfDay\(new Date\(selectYear, 11, 31\)\)\)/)
+  assert.match(
+    source,
+    /queryParams\.times\[0\] = formatDate\(beginOfDay\(new Date\(selectYear, 0, 1\)\)\)/
+  )
+  assert.match(
+    source,
+    /queryParams\.times\[1\] = formatDate\(endOfDay\(new Date\(selectYear, 11, 31\)\)\)/
+  )
   assert.doesNotMatch(source, /v-model="queryParams\.times"/)
 })
 
@@ -57,4 +63,24 @@ test('statistics loaders always release loading state after request failure', ()
       relativePath
     )
   }
+})
+
+test('deal-cycle views expose negative source samples without clipping the cycle axis', () => {
+  for (const relativePath of [
+    './customer/components/CustomerDealCycleByUser.vue',
+    './customer/components/CustomerDealCycleByArea.vue',
+    './customer/components/CustomerDealCycleByProduct.vue'
+  ]) {
+    const source = readUtf8(relativePath)
+    const firstYAxis = source.match(/yAxis:\s*\[\s*\{([\s\S]*?)\n\s*\},\s*\n\s*\{/)
+
+    assert.ok(firstYAxis, `${relativePath} must declare two Y axes`)
+    assert.match(source, /customer\.dataQuality/)
+    assert.match(source, /row\.negativeSampleCount > 0/)
+    assert.match(source, /customer\.historicalBackfillAnomalySamples/)
+    assert.doesNotMatch(firstYAxis[1], /min:\s*0/)
+  }
+
+  const areaSource = readUtf8('./customer/components/CustomerDealCycleByArea.vue')
+  assert.match(areaSource, /negativeSampleCount:\s*s\.negativeSampleCount/)
 })

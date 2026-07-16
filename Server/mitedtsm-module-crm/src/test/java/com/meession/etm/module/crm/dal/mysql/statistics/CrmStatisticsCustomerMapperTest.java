@@ -41,6 +41,31 @@ class CrmStatisticsCustomerMapperTest {
         assertTrue(body.contains("LIMIT 10"));
     }
 
+    @Test
+    void dealCycleQueriesExposeNegativeSourceSamples() throws IOException {
+        String mapperXml = loadMapperXml();
+
+        List.of(
+                "selectCustomerDealCycleGroupByDate",
+                "selectCustomerDealCycleGroupByUser",
+                "selectCustomerDealCycleGroupByAreaId",
+                "selectCustomerDealCycleGroupByProductId"
+        ).forEach(id -> {
+            String body = selectBody(mapperXml, id);
+            assertTrue(body.contains("contract.order_date &lt; customer.create_time"),
+                    () -> id + " 必须识别负成交周期来源样本");
+            assertTrue(body.contains("negative_sample_count"),
+                    () -> id + " 必须返回负样本计数");
+        });
+        List.of(
+                "selectCustomerDealCycleGroupByUser",
+                "selectCustomerDealCycleGroupByAreaId",
+                "selectCustomerDealCycleGroupByProductId"
+        ).forEach(id -> assertTrue(selectBody(mapperXml, id).contains(
+                        "COUNT(DISTINCT CASE WHEN contract.order_date &lt; customer.create_time THEN customer.id END)"),
+                () -> id + " 必须按客户去重计算负样本"));
+    }
+
     private static String loadMapperXml() throws IOException {
         try (InputStream input = CrmStatisticsCustomerMapperTest.class.getResourceAsStream(MAPPER_RESOURCE)) {
             assertNotNull(input, "统计 Mapper XML 应在测试 classpath 中");

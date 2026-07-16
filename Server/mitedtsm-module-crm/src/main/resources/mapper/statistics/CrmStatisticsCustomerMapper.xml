@@ -304,7 +304,8 @@
     <select id="selectCustomerDealCycleGroupByDate"
             resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerDealCycleByDateRespVO">
         SELECT DATE_FORMAT(contract.order_date, '%Y-%m-%dT%H:%i:%s') AS time,
-               TIMESTAMPDIFF(DAY, customer.create_time, contract.order_date) AS customer_deal_cycle
+               TIMESTAMPDIFF(DAY, customer.create_time, contract.order_date) AS customer_deal_cycle,
+               CASE WHEN contract.order_date &lt; customer.create_time THEN 1 ELSE 0 END AS negative_sample_count
           FROM crm_customer AS customer
                 <include refid="firstApprovedContractJoin"/>
          WHERE customer.deleted = 0
@@ -318,7 +319,8 @@
     <select id="selectCustomerDealCycleGroupByUser"
             resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerDealCycleByUserRespVO">
         SELECT customer.owner_user_id,
-               IFNULL(TRUNCATE(AVG(TIMESTAMPDIFF(DAY, customer.create_time, contract.order_date)), 1), 0) AS customer_deal_cycle
+               IFNULL(TRUNCATE(AVG(TIMESTAMPDIFF(DAY, customer.create_time, contract.order_date)), 1), 0) AS customer_deal_cycle,
+               COUNT(DISTINCT CASE WHEN contract.order_date &lt; customer.create_time THEN customer.id END) AS negative_sample_count
           FROM crm_customer AS customer
                 <include refid="firstApprovedContractJoin"/>
          WHERE customer.deleted = 0
@@ -334,7 +336,8 @@
             resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerDealCycleByAreaRespVO">
         SELECT customer.area_id AS area_id,
                IFNULL(TRUNCATE(AVG(TIMESTAMPDIFF(DAY, customer.create_time, contract.order_date)), 1), 0) AS customer_deal_cycle,
-               COUNT(DISTINCT customer.id) AS customer_deal_count
+               COUNT(DISTINCT customer.id) AS customer_deal_count,
+               COUNT(DISTINCT CASE WHEN contract.order_date &lt; customer.create_time THEN customer.id END) AS negative_sample_count
         FROM crm_customer AS customer
                 <include refid="firstApprovedContractJoin"/>
         WHERE customer.deleted = 0
@@ -351,7 +354,8 @@
             resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerDealCycleByProductRespVO">
         SELECT product.name                                                                                 AS product_name,
                IFNULL(TRUNCATE(AVG(TIMESTAMPDIFF(DAY, customer.create_time, contract.order_date)), 1), 0)   AS customer_deal_cycle,
-               COUNT(DISTINCT customer.id)                                                                  AS customer_deal_count
+               COUNT(DISTINCT customer.id)                                                                  AS customer_deal_count,
+               COUNT(DISTINCT CASE WHEN contract.order_date &lt; customer.create_time THEN customer.id END)   AS negative_sample_count
           FROM crm_customer AS customer
                 <include refid="firstApprovedContractJoin"/>
                 LEFT JOIN crm_contract_product AS contract_product ON contract_product.contract_id = contract.id

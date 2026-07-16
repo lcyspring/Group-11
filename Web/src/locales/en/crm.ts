@@ -1285,6 +1285,9 @@ export default {
       // Deal cycle
       customerDealCycle: 'Deal Cycle(days)',
       dealCycleDay: 'Deal Cycle(days)',
+      dataQuality: 'Data Quality',
+      historicalBackfillAnomalySamples: 'Historical backfill anomaly: contract order date precedes customer creation date',
+      negativeSampleCount: 'Negative Samples',
       areaName: 'Area',
       productName: 'Product Name'
     },
