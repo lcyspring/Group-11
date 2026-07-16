@@ -131,9 +131,7 @@ const open = async (type: string, id?: number) => {
   formType.value = type
   resetForm()
   // 加载工单类型列表
-  try {
-    typeList.value = await WorkOrderTypeApi.getEnableWorkOrderTypeList()
-  } catch {}
+  typeList.value = await WorkOrderTypeApi.getEnableWorkOrderTypeList()
   // 修改时设置数据
   if (id) {
     formLoading.value = true

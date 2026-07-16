@@ -71,6 +71,38 @@ public class WorkOrderController {
         return success(true);
     }
 
+    @PutMapping("/update-priority")
+    @Operation(summary = "更新工单优先级")
+    @PreAuthorize("@ss.hasPermission('workorder:work-order:update')")
+    public CommonResult<Boolean> updateWorkOrderPriority(@Valid @RequestBody WorkOrderUpdatePriorityReqVO updatePriorityReqVO) {
+        workOrderService.updateWorkOrderPriority(updatePriorityReqVO);
+        return success(true);
+    }
+
+    @PutMapping("/assign")
+    @Operation(summary = "分配工单")
+    @PreAuthorize("@ss.hasPermission('workorder:work-order:update')")
+    public CommonResult<Boolean> assignWorkOrder(@Valid @RequestBody WorkOrderAssignReqVO assignReqVO) {
+        workOrderService.assignWorkOrder(assignReqVO);
+        return success(true);
+    }
+
+    @PutMapping("/process")
+    @Operation(summary = "处理工单（开始处理）")
+    @PreAuthorize("@ss.hasPermission('workorder:work-order:update')")
+    public CommonResult<Boolean> processWorkOrder(@Valid @RequestBody WorkOrderProcessReqVO processReqVO) {
+        workOrderService.processWorkOrder(processReqVO, getLoginUserId());
+        return success(true);
+    }
+
+    @PutMapping("/complete")
+    @Operation(summary = "完结工单")
+    @PreAuthorize("@ss.hasPermission('workorder:work-order:update')")
+    public CommonResult<Boolean> completeWorkOrder(@Valid @RequestBody WorkOrderCompleteReqVO completeReqVO) {
+        workOrderService.completeWorkOrder(completeReqVO);
+        return success(true);
+    }
+
     @DeleteMapping("/delete")
     @Operation(summary = "删除工单")
     @Parameter(name = "id", description = "工单编号", required = true)

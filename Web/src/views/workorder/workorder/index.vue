@@ -145,7 +145,7 @@
         min-width="170"
         :formatter="dateFormatter"
       />
-      <el-table-column label="操作" align="center" min-width="260" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" min-width="400" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button
             link
@@ -162,6 +162,41 @@
             v-hasPermi="['workorder:work-order:update']"
           >
             编辑
+          </el-button>
+          <el-button
+            link
+            type="warning"
+            @click="openPriorityForm(scope.row.id, scope.row.priority)"
+            v-hasPermi="['workorder:work-order:update']"
+          >
+            优先级
+          </el-button>
+          <el-button
+            link
+            type="success"
+            @click="openAssignForm(scope.row.id, scope.row.handlerUserName)"
+            v-hasPermi="['workorder:work-order:update']"
+            v-if="scope.row.status !== 2 && scope.row.status !== 3"
+          >
+            分配
+          </el-button>
+          <el-button
+            link
+            type="primary"
+            @click="handleProcess(scope.row)"
+            v-hasPermi="['workorder:work-order:update']"
+            v-if="scope.row.status === 0 || scope.row.status === 4"
+          >
+            处理
+          </el-button>
+          <el-button
+            link
+            type="success"
+            @click="openCompleteForm(scope.row.id, scope.row.status)"
+            v-hasPermi="['workorder:work-order:update']"
+            v-if="scope.row.status === 1"
+          >
+            完结
           </el-button>
           <el-button
             link
@@ -196,6 +231,12 @@
   <WorkOrderForm ref="formRef" @success="getList" />
   <!-- 状态流转弹窗 -->
   <WorkOrderStatusForm ref="statusFormRef" @success="getList" />
+  <!-- 优先级修改弹窗 -->
+  <WorkOrderPriorityForm ref="priorityFormRef" @success="getList" />
+  <!-- 分配弹窗 -->
+  <WorkOrderAssignForm ref="assignFormRef" @success="getList" />
+  <!-- 完结弹窗 -->
+  <WorkOrderCompleteForm ref="completeFormRef" @success="getList" />
   <!-- 详情弹窗 -->
   <WorkOrderDetail ref="detailRef" />
 </template>
@@ -206,6 +247,9 @@ import * as WorkOrderApi from '@/api/workorder/workOrder'
 import * as WorkOrderTypeApi from '@/api/workorder/workOrderType'
 import WorkOrderForm from './WorkOrderForm.vue'
 import WorkOrderStatusForm from './WorkOrderStatusForm.vue'
+import WorkOrderPriorityForm from './WorkOrderPriorityForm.vue'
+import WorkOrderAssignForm from './WorkOrderAssignForm.vue'
+import WorkOrderCompleteForm from './WorkOrderCompleteForm.vue'
 import WorkOrderDetail from './WorkOrderDetail.vue'
 
 defineOptions({ name: 'WorkOrder' })
@@ -271,6 +315,34 @@ const openDetail = (id: number) => {
   detailRef.value.open(id)
 }
 
+/** 优先级修改操作 */
+const priorityFormRef = ref()
+const openPriorityForm = (id: number, currentPriority: number) => {
+  priorityFormRef.value.open(id, currentPriority)
+}
+
+/** 分配操作 */
+const assignFormRef = ref()
+const openAssignForm = (id: number, currentHandlerName: string) => {
+  assignFormRef.value.open(id, currentHandlerName)
+}
+
+/** 处理操作 */
+const handleProcess = async (row: any) => {
+  try {
+    await message.confirm(`确认开始处理工单「${row.title}」?`)
+    await WorkOrderApi.processWorkOrder({ id: row.id })
+    message.success('已开始处理工单')
+    await getList()
+  } catch {}
+}
+
+/** 完结操作 */
+const completeFormRef = ref()
+const openCompleteForm = (id: number, currentStatus: number) => {
+  completeFormRef.value.open(id, currentStatus)
+}
+
 /** 删除按钮操作 */
 const handleDelete = async (id: number) => {
   try {
@@ -288,10 +360,8 @@ const handleExport = async () => {
 
 /** 加载工单类型列表 */
 const loadTypeList = async () => {
-  try {
-    const data = await WorkOrderTypeApi.getEnableWorkOrderTypeList()
-    typeList.value = data
-  } catch {}
+  const data = await WorkOrderTypeApi.getEnableWorkOrderTypeList()
+  typeList.value = data
 }
 
 /** 初始化 **/

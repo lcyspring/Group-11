@@ -4,8 +4,12 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
 import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.framework.common.util.object.BeanUtils;
+import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderAssignReqVO;
+import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderCompleteReqVO;
 import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderPageReqVO;
+import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderProcessReqVO;
 import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderSaveReqVO;
+import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderUpdatePriorityReqVO;
 import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderUpdateStatusReqVO;
 import com.meession.etm.module.workorder.dal.dataobject.WorkOrderDO;
 import com.meession.etm.module.workorder.dal.mysql.WorkOrderMapper;
@@ -104,6 +108,79 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         if (reqVO.getResult() != null) {
             updateObj.setResult(reqVO.getResult());
         }
+        workOrderMapper.updateById(updateObj);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateWorkOrderPriority(WorkOrderUpdatePriorityReqVO reqVO) {
+        // 1. 校验存在
+        validateWorkOrderExists(reqVO.getId());
+        // 2. 更新优先级
+        WorkOrderDO updateObj = new WorkOrderDO()
+                .setId(reqVO.getId())
+                .setPriority(reqVO.getPriority());
+        workOrderMapper.updateById(updateObj);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void assignWorkOrder(WorkOrderAssignReqVO reqVO) {
+        // 1. 校验存在
+        WorkOrderDO workOrder = validateWorkOrderExists(reqVO.getId());
+        // 2. 校验状态（只有待处理或已退回状态才能分配）
+        if (!WorkOrderStatusEnum.PENDING.getStatus().equals(workOrder.getStatus())
+                && !WorkOrderStatusEnum.RETURNED.getStatus().equals(workOrder.getStatus())) {
+            throw exception(WORK_ORDER_ASSIGN_FAIL_STATUS);
+        }
+        // 3. 更新处理人
+        WorkOrderDO updateObj = new WorkOrderDO()
+                .setId(reqVO.getId())
+                .setHandlerUserId(reqVO.getHandlerUserId());
+        workOrderMapper.updateById(updateObj);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void processWorkOrder(WorkOrderProcessReqVO reqVO, Long userId) {
+        // 1. 校验存在
+        WorkOrderDO workOrder = validateWorkOrderExists(reqVO.getId());
+        // 2. 校验状态（只有待处理或已退回状态才能开始处理）
+        if (!WorkOrderStatusEnum.PENDING.getStatus().equals(workOrder.getStatus())
+                && !WorkOrderStatusEnum.RETURNED.getStatus().equals(workOrder.getStatus())) {
+            throw exception(WORK_ORDER_PROCESS_FAIL_STATUS);
+        }
+        // 3. 更新为处理中
+        WorkOrderDO updateObj = new WorkOrderDO()
+                .setId(reqVO.getId())
+                .setStatus(WorkOrderStatusEnum.PROCESSING.getStatus())
+                .setHandleTime(LocalDateTime.now());
+        // 如果之前没有分配处理人，自动将当前用户设为处理人
+        if (workOrder.getHandlerUserId() == null) {
+            updateObj.setHandlerUserId(userId);
+        }
+        // 处理备注
+        if (reqVO.getResult() != null) {
+            updateObj.setResult(reqVO.getResult());
+        }
+        workOrderMapper.updateById(updateObj);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void completeWorkOrder(WorkOrderCompleteReqVO reqVO) {
+        // 1. 校验存在
+        WorkOrderDO workOrder = validateWorkOrderExists(reqVO.getId());
+        // 2. 校验状态（只有处理中状态才能完结）
+        if (!WorkOrderStatusEnum.PROCESSING.getStatus().equals(workOrder.getStatus())) {
+            throw exception(WORK_ORDER_COMPLETE_FAIL_STATUS);
+        }
+        // 3. 更新为已完成
+        WorkOrderDO updateObj = new WorkOrderDO()
+                .setId(reqVO.getId())
+                .setStatus(WorkOrderStatusEnum.COMPLETED.getStatus())
+                .setResult(reqVO.getResult())
+                .setFinishTime(LocalDateTime.now());
         workOrderMapper.updateById(updateObj);
     }
 

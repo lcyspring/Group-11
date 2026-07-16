@@ -57,6 +57,26 @@ export const updateWorkOrderStatus = (data: WorkOrderUpdateStatusVO) => {
   return request.put({ url: '/workorder/work-order/update-status', data })
 }
 
+// 更新工单优先级
+export const updateWorkOrderPriority = (data: { id: number; priority: number }) => {
+  return request.put({ url: '/workorder/work-order/update-priority', data })
+}
+
+// 分配工单
+export const assignWorkOrder = (data: { id: number; handlerUserId: number }) => {
+  return request.put({ url: '/workorder/work-order/assign', data })
+}
+
+// 处理工单（开始处理）
+export const processWorkOrder = (data: { id: number; result?: string }) => {
+  return request.put({ url: '/workorder/work-order/process', data })
+}
+
+// 完结工单
+export const completeWorkOrder = (data: { id: number; result: string }) => {
+  return request.put({ url: '/workorder/work-order/complete', data })
+}
+
 // 删除工单
 export const deleteWorkOrder = (id: number) => {
   return request.delete({ url: '/workorder/work-order/delete?id=' + id })

@@ -1,8 +1,12 @@
 package com.meession.etm.module.workorder.service;
 
 import com.meession.etm.framework.common.pojo.PageResult;
+import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderAssignReqVO;
+import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderCompleteReqVO;
 import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderPageReqVO;
+import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderProcessReqVO;
 import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderSaveReqVO;
+import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderUpdatePriorityReqVO;
 import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderUpdateStatusReqVO;
 import com.meession.etm.module.workorder.dal.dataobject.WorkOrderDO;
 import jakarta.validation.Valid;
@@ -42,6 +46,35 @@ public interface WorkOrderService {
      * @param reqVO 更新状态请求
      */
     void updateWorkOrderStatus(WorkOrderUpdateStatusReqVO reqVO);
+
+    /**
+     * 更新工单优先级
+     *
+     * @param reqVO 更新优先级请求
+     */
+    void updateWorkOrderPriority(WorkOrderUpdatePriorityReqVO reqVO);
+
+    /**
+     * 分配工单
+     *
+     * @param reqVO 分配请求
+     */
+    void assignWorkOrder(WorkOrderAssignReqVO reqVO);
+
+    /**
+     * 处理工单（开始处理）
+     *
+     * @param reqVO 处理请求
+     * @param userId 当前用户编号
+     */
+    void processWorkOrder(WorkOrderProcessReqVO reqVO, Long userId);
+
+    /**
+     * 完结工单
+     *
+     * @param reqVO 完结请求
+     */
+    void completeWorkOrder(WorkOrderCompleteReqVO reqVO);
 
     /**
      * 删除工单

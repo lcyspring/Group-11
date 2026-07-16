@@ -17,6 +17,10 @@ public interface ErrorCodeConstants {
     ErrorCode WORK_ORDER_UPDATE_STATUS_FAIL_STATUS_EQUALS = new ErrorCode(1_021_000_002, "更新工单状态失败，原因：已经是该状态");
     ErrorCode WORK_ORDER_UPDATE_STATUS_FAIL_END_STATUS = new ErrorCode(1_021_000_003, "更新工单状态失败，原因：工单已经结束，不允许变更");
     ErrorCode WORK_ORDER_DELETE_FAIL = new ErrorCode(1_021_000_004, "删除工单失败，原因：工单处于处理中状态，不允许删除");
+    ErrorCode WORK_ORDER_ASSIGN_FAIL_STATUS = new ErrorCode(1_021_000_005, "分配工单失败，原因：当前状态不允许分配");
+    ErrorCode WORK_ORDER_PROCESS_FAIL_STATUS = new ErrorCode(1_021_000_006, "处理工单失败，原因：当前状态不允许处理");
+    ErrorCode WORK_ORDER_COMPLETE_FAIL_STATUS = new ErrorCode(1_021_000_007, "完结工单失败，原因：当前状态不允许完结");
+    ErrorCode WORK_ORDER_COMPLETE_FAIL_RESULT_REQUIRED = new ErrorCode(1_021_000_008, "完结工单失败，原因：处理结果不能为空");
 
     // ========== 工单类型管理 1-021-001-000 ==========
     ErrorCode WORK_ORDER_TYPE_NOT_EXISTS = new ErrorCode(1_021_001_000, "工单类型不存在");
