@@ -1,0 +1,27 @@
+schema_version: 1
+
+endpoint:
+  base_url: http://127.0.0.1:8080/admin-api
+  tenant_id: 1
+
+account:
+  username: admin
+  password: admin123
+
+acceptance:
+  owner_user_id: 1
+  crm_customer_id: 12
+  crm_product_id: 3
+  source_currency: USD
+  base_currency: CNY
+  exchange_rate: 7.200000
+  source_price: 10.000000
+  count: 1.000000
+  tax_rate_percent: 0.000000
+  expected_erp_total: 72.000000
+
+mysql:
+  container: mitedtsm-rootless-mysql
+  user: root
+  password: 1234
+  database: mitedtsm_database

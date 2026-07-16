@@ -1,10 +1,13 @@
 package com.meession.etm.module.erp.service.sale;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.meession.etm.framework.common.pojo.PageResult;
-import com.meession.etm.framework.common.util.number.MoneyUtils;
 import com.meession.etm.framework.common.util.object.BeanUtils;
+import com.meession.etm.module.erp.api.sale.dto.ErpSaleOrderCreateReqDTO;
+import com.meession.etm.module.erp.api.sale.dto.ErpSaleOrderRespDTO;
+import com.meession.etm.module.erp.api.sale.event.ErpSaleOrderChangedEvent;
 import com.meession.etm.module.erp.controller.admin.sale.vo.order.ErpSaleOrderPageReqVO;
 import com.meession.etm.module.erp.controller.admin.sale.vo.order.ErpSaleOrderSaveReqVO;
 import com.meession.etm.module.erp.dal.dataobject.product.ErpProductDO;
@@ -19,10 +22,13 @@ import com.meession.etm.module.erp.service.product.ErpProductService;
 import com.meession.etm.module.system.api.user.AdminUserApi;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -43,6 +49,9 @@ import static com.meession.etm.module.erp.enums.ErrorCodeConstants.*;
 @Validated
 public class ErpSaleOrderServiceImpl implements ErpSaleOrderService {
 
+    private static final int ERP_AMOUNT_SCALE = 6;
+    private static final BigDecimal EXTERNAL_AMOUNT_TOLERANCE = new BigDecimal("0.000001");
+
     @Resource
     private ErpSaleOrderMapper saleOrderMapper;
     @Resource
@@ -60,10 +69,50 @@ public class ErpSaleOrderServiceImpl implements ErpSaleOrderService {
 
     @Resource
     private AdminUserApi adminUserApi;
+    @Resource
+    private ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createSaleOrder(ErpSaleOrderSaveReqVO createReqVO) {
+        return createSaleOrderInternal(createReqVO, null);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ErpSaleOrderRespDTO createOrGetExternalSaleOrder(ErpSaleOrderCreateReqDTO request) {
+        ErpSaleOrderDO existing = saleOrderMapper.selectByExternalSource(
+                request.getSourceSystem(), request.getSourceType(), request.getSourceId());
+        if (existing != null) {
+            validateExternalRequestHash(existing, request.getRequestHash());
+            return toApiResponse(existing);
+        }
+        ErpSaleOrderSaveReqVO reqVO = new ErpSaleOrderSaveReqVO()
+                .setCustomerId(request.getCustomerId()).setOrderTime(request.getOrderTime())
+                .setSaleUserId(request.getSaleUserId()).setAccountId(request.getAccountId())
+                .setDiscountPercent(request.getDiscountPercent()).setDepositPrice(BigDecimal.ZERO)
+                .setRemark(request.getRemark()).setItems(convertList(request.getItems(), item ->
+                        new ErpSaleOrderSaveReqVO.Item().setProductId(item.getProductId())
+                                .setProductPrice(item.getProductPrice()).setCount(item.getCount())
+                                .setTaxPercent(item.getTaxPercent()).setRemark(item.getRemark())));
+        ExternalSource externalSource = new ExternalSource(request.getSourceSystem(), request.getSourceType(),
+                request.getSourceId(), request.getRequestId(), request.getRequestHash(), request.getCurrencyCode(),
+                request.getSourceCurrencyCode(), request.getExchangeRateToOrderCurrency(),
+                request.getSourceGrossAmount(), request.getExpectedTotalPrice());
+        try {
+            return toApiResponse(saleOrderMapper.selectById(createSaleOrderInternal(reqVO, externalSource)));
+        } catch (DuplicateKeyException ex) {
+            ErpSaleOrderDO concurrent = saleOrderMapper.selectByExternalSource(
+                    request.getSourceSystem(), request.getSourceType(), request.getSourceId());
+            if (concurrent == null) {
+                throw ex;
+            }
+            validateExternalRequestHash(concurrent, request.getRequestHash());
+            return toApiResponse(concurrent);
+        }
+    }
+
+    private Long createSaleOrderInternal(ErpSaleOrderSaveReqVO createReqVO, ExternalSource externalSource) {
         // 1.1 校验订单项的有效性
         List<ErpSaleOrderItemDO> saleOrderItems = validateSaleOrderItems(createReqVO.getItems());
         // 1.2 校验客户
@@ -85,12 +134,32 @@ public class ErpSaleOrderServiceImpl implements ErpSaleOrderService {
         // 2.1 插入订单
         ErpSaleOrderDO saleOrder = BeanUtils.toBean(createReqVO, ErpSaleOrderDO.class, in -> in
                 .setNo(no).setStatus(ErpAuditStatus.PROCESS.getStatus()));
+        if (externalSource != null) {
+            saleOrder.setExternalSourceSystem(externalSource.sourceSystem())
+                    .setExternalSourceType(externalSource.sourceType()).setExternalSourceId(externalSource.sourceId())
+                    .setExternalRequestId(externalSource.requestId()).setExternalRequestHash(externalSource.requestHash())
+                    .setCurrencyCode(externalSource.currencyCode()).setSourceCurrencyCode(externalSource.sourceCurrencyCode())
+                    .setSourceExchangeRate(externalSource.sourceExchangeRate())
+                    .setSourceGrossAmount(externalSource.sourceGrossAmount());
+        }
         calculateTotalPrice(saleOrder, saleOrderItems);
+        if (externalSource != null && saleOrder.getTotalPrice().subtract(externalSource.expectedTotalPrice()).abs()
+                .compareTo(EXTERNAL_AMOUNT_TOLERANCE) > 0) {
+            throw exception(SALE_ORDER_EXTERNAL_AMOUNT_MISMATCH,
+                    externalSource.expectedTotalPrice(), saleOrder.getTotalPrice());
+        }
         saleOrderMapper.insert(saleOrder);
         // 2.2 插入订单项
         saleOrderItems.forEach(o -> o.setOrderId(saleOrder.getId()));
         saleOrderItemMapper.insertBatch(saleOrderItems);
+        publishChange(saleOrder);
         return saleOrder.getId();
+    }
+
+    private void validateExternalRequestHash(ErpSaleOrderDO existing, String requestHash) {
+        if (!StrUtil.equals(existing.getExternalRequestHash(), requestHash)) {
+            throw exception(SALE_ORDER_EXTERNAL_SOURCE_CONFLICT, existing.getNo());
+        }
     }
 
     @Override
@@ -98,6 +167,9 @@ public class ErpSaleOrderServiceImpl implements ErpSaleOrderService {
     public void updateSaleOrder(ErpSaleOrderSaveReqVO updateReqVO) {
         // 1.1 校验存在
         ErpSaleOrderDO saleOrder = validateSaleOrderExists(updateReqVO.getId());
+        if (StrUtil.isNotBlank(saleOrder.getExternalSourceSystem())) {
+            throw exception(SALE_ORDER_EXTERNAL_IMMUTABLE, saleOrder.getNo());
+        }
         if (ErpAuditStatus.APPROVE.getStatus().equals(saleOrder.getStatus())) {
             throw exception(SALE_ORDER_UPDATE_FAIL_APPROVE, saleOrder.getNo());
         }
@@ -120,6 +192,7 @@ public class ErpSaleOrderServiceImpl implements ErpSaleOrderService {
         saleOrderMapper.updateById(updateObj);
         // 2.2 更新订单项
         updateSaleOrderItemList(updateReqVO.getId(), saleOrderItems);
+        publishChange(saleOrderMapper.selectById(updateReqVO.getId()));
     }
 
     private void calculateTotalPrice(ErpSaleOrderDO saleOrder, List<ErpSaleOrderItemDO> saleOrderItems) {
@@ -131,7 +204,7 @@ public class ErpSaleOrderServiceImpl implements ErpSaleOrderService {
         if (saleOrder.getDiscountPercent() == null) {
             saleOrder.setDiscountPercent(BigDecimal.ZERO);
         }
-        saleOrder.setDiscountPrice(MoneyUtils.priceMultiplyPercent(saleOrder.getTotalPrice(), saleOrder.getDiscountPercent()));
+        saleOrder.setDiscountPrice(multiplyPercent(saleOrder.getTotalPrice(), saleOrder.getDiscountPercent()));
         saleOrder.setTotalPrice(saleOrder.getTotalPrice().subtract(saleOrder.getDiscountPrice()));
     }
 
@@ -160,6 +233,7 @@ public class ErpSaleOrderServiceImpl implements ErpSaleOrderService {
         if (updateCount == 0) {
             throw exception(approve ? SALE_ORDER_APPROVE_FAIL : SALE_ORDER_PROCESS_FAIL);
         }
+        publishChange(saleOrderMapper.selectById(id));
     }
 
     private List<ErpSaleOrderItemDO> validateSaleOrderItems(List<ErpSaleOrderSaveReqVO.Item> list) {
@@ -170,12 +244,14 @@ public class ErpSaleOrderServiceImpl implements ErpSaleOrderService {
         // 2. 转化为 ErpSaleOrderItemDO 列表
         return convertList(list, o -> BeanUtils.toBean(o, ErpSaleOrderItemDO.class, item -> {
             item.setProductUnitId(productMap.get(item.getProductId()).getUnitId());
-            item.setTotalPrice(MoneyUtils.priceMultiply(item.getProductPrice(), item.getCount()));
+            item.setTotalPrice(multiply(item.getProductPrice(), item.getCount()));
             if (item.getTotalPrice() == null) {
                 return;
             }
             if (item.getTaxPercent() != null) {
-                item.setTaxPrice(MoneyUtils.priceMultiplyPercent(item.getTotalPrice(), item.getTaxPercent()));
+                item.setTaxPrice(multiplyPercent(item.getTotalPrice(), item.getTaxPercent()));
+            } else {
+                item.setTaxPrice(BigDecimal.ZERO.setScale(ERP_AMOUNT_SCALE, RoundingMode.HALF_UP));
             }
         }));
     }
@@ -217,6 +293,7 @@ public class ErpSaleOrderServiceImpl implements ErpSaleOrderService {
         // 2. 更新销售订单
         BigDecimal totalOutCount = getSumValue(outCountMap.values(), value -> value, BigDecimal::add, BigDecimal.ZERO);
         saleOrderMapper.updateById(new ErpSaleOrderDO().setId(id).setOutCount(totalOutCount));
+        publishChange(saleOrderMapper.selectById(id));
     }
 
     @Override
@@ -237,6 +314,7 @@ public class ErpSaleOrderServiceImpl implements ErpSaleOrderService {
         // 2. 更新销售订单
         BigDecimal totalReturnCount = getSumValue(returnCountMap.values(), value -> value, BigDecimal::add, BigDecimal.ZERO);
         saleOrderMapper.updateById(new ErpSaleOrderDO().setId(orderId).setReturnCount(totalReturnCount));
+        publishChange(saleOrderMapper.selectById(orderId));
     }
 
     @Override
@@ -248,6 +326,9 @@ public class ErpSaleOrderServiceImpl implements ErpSaleOrderService {
             return;
         }
         saleOrders.forEach(saleOrder -> {
+            if (StrUtil.isNotBlank(saleOrder.getExternalSourceSystem())) {
+                throw exception(SALE_ORDER_EXTERNAL_IMMUTABLE, saleOrder.getNo());
+            }
             if (ErpAuditStatus.APPROVE.getStatus().equals(saleOrder.getStatus())) {
                 throw exception(SALE_ORDER_DELETE_FAIL_APPROVE, saleOrder.getNo());
             }
@@ -273,6 +354,17 @@ public class ErpSaleOrderServiceImpl implements ErpSaleOrderService {
     @Override
     public ErpSaleOrderDO getSaleOrder(Long id) {
         return saleOrderMapper.selectById(id);
+    }
+
+    @Override
+    public ErpSaleOrderRespDTO toApiResponse(ErpSaleOrderDO order) {
+        return new ErpSaleOrderRespDTO().setId(order.getId()).setNo(order.getNo()).setStatus(order.getStatus())
+                .setTotalCount(order.getTotalCount()).setTotalPrice(order.getTotalPrice())
+                .setOutCount(order.getOutCount()).setReturnCount(order.getReturnCount())
+                .setSourceSystem(order.getExternalSourceSystem()).setSourceType(order.getExternalSourceType())
+                .setSourceId(order.getExternalSourceId()).setRequestId(order.getExternalRequestId())
+                .setRequestHash(order.getExternalRequestHash()).setCurrencyCode(order.getCurrencyCode())
+                .setSourceCurrencyCode(order.getSourceCurrencyCode());
     }
 
     @Override
@@ -302,6 +394,32 @@ public class ErpSaleOrderServiceImpl implements ErpSaleOrderService {
             return Collections.emptyList();
         }
         return saleOrderItemMapper.selectListByOrderIds(orderIds);
+    }
+
+    private static BigDecimal multiply(BigDecimal left, BigDecimal right) {
+        if (left == null || right == null) {
+            return null;
+        }
+        return left.multiply(right).setScale(ERP_AMOUNT_SCALE, RoundingMode.HALF_UP);
+    }
+
+    private static BigDecimal multiplyPercent(BigDecimal price, BigDecimal percent) {
+        if (price == null || percent == null) {
+            return null;
+        }
+        return price.multiply(percent).divide(BigDecimal.valueOf(100), ERP_AMOUNT_SCALE, RoundingMode.HALF_UP);
+    }
+
+    private void publishChange(ErpSaleOrderDO order) {
+        if (order != null) {
+            eventPublisher.publishEvent(new ErpSaleOrderChangedEvent(toApiResponse(order)));
+        }
+    }
+
+    private record ExternalSource(String sourceSystem, String sourceType, Long sourceId, String requestId,
+                                  String requestHash, String currencyCode, String sourceCurrencyCode,
+                                  BigDecimal sourceExchangeRate, BigDecimal sourceGrossAmount,
+                                  BigDecimal expectedTotalPrice) {
     }
 
 }

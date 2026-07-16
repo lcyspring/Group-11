@@ -63,6 +63,12 @@ ErrorCode PURCHASE_ORDER_ITEM_RETURN_FAIL_IN_EXCEED = new ErrorCode(1_030_101_00
     ErrorCode SALE_ORDER_ITEM_OUT_FAIL_PRODUCT_EXCEED = new ErrorCode(1_020_201_007, "销售订单项({})超过最大允许出库数量({})");
     ErrorCode SALE_ORDER_PROCESS_FAIL_EXISTS_OUT = new ErrorCode(1_020_201_008, "反审核失败，已存在对应的销售出库单");
     ErrorCode SALE_ORDER_ITEM_RETURN_FAIL_OUT_EXCEED = new ErrorCode(1_020_201_009, "销售订单项({})超过最大允许退货数量({})");
+    ErrorCode SALE_ORDER_EXTERNAL_SOURCE_CONFLICT = new ErrorCode(1_020_201_010,
+            "外部来源已生成销售订单({})，但请求快照不一致");
+    ErrorCode SALE_ORDER_EXTERNAL_AMOUNT_MISMATCH = new ErrorCode(1_020_201_011,
+            "外部订单期望金额({})与 ERP 计算金额({})不一致");
+    ErrorCode SALE_ORDER_EXTERNAL_IMMUTABLE = new ErrorCode(1_020_201_012,
+            "外部履约销售订单({})的客户、产品和价格快照不可修改或删除");
     ErrorCode SALE_ORDER_PROCESS_FAIL_EXISTS_RETURN = new ErrorCode(1_020_201_010, "反审核失败，已存在对应的销售退货单");
 
     // ========== ERP 销售出库（1-030-202-000） ==========

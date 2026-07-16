@@ -318,4 +318,44 @@ public interface ErrorCodeConstants {
     ErrorCode QUOTE_TERMINATE_STATUS_INVALID = new ErrorCode(1_020_020_014,
             "只有当前草稿或锁定报价可以随商机终止");
 
+    // ========== CRM 到 ERP 履约 1_020_021_000 ==========
+    ErrorCode ERP_FULFILLMENT_DISABLED = new ErrorCode(1_020_021_000, "CRM 到 ERP 履约功能未在 YAML 中启用");
+    ErrorCode ERP_CUSTOMER_MAPPING_NOT_EXISTS = new ErrorCode(1_020_021_001,
+            "CRM 客户【{}】尚未映射到 ERP 客户");
+    ErrorCode ERP_PRODUCT_MAPPING_NOT_EXISTS = new ErrorCode(1_020_021_002,
+            "合同产品【{}】尚未映射到 ERP 产品");
+    ErrorCode ERP_CUSTOMER_MAPPING_CONFLICT = new ErrorCode(1_020_021_003,
+            "ERP 客户【{}】已经映射到其他 CRM 客户");
+    ErrorCode ERP_PRODUCT_MAPPING_CONFLICT = new ErrorCode(1_020_021_004,
+            "ERP 产品【{}】已经映射到其他 CRM 产品");
+    ErrorCode ERP_MAPPING_NOT_EXISTS = new ErrorCode(1_020_021_005, "CRM—ERP 映射不存在");
+    ErrorCode CONTRACT_FULFILLMENT_REQUIRES_APPROVED = new ErrorCode(1_020_021_006,
+            "只有审批通过的合同可以创建 ERP 履约订单");
+    ErrorCode CONTRACT_FULFILLMENT_REQUIRES_SIGNED = new ErrorCode(1_020_021_007,
+            "合同必须完成有效签署后才能创建 ERP 履约订单");
+    ErrorCode CONTRACT_FULFILLMENT_PRODUCT_REQUIRED = new ErrorCode(1_020_021_008,
+            "合同至少需要一条产品快照才能创建 ERP 履约订单");
+    ErrorCode CONTRACT_FULFILLMENT_CURRENCY_UNSUPPORTED = new ErrorCode(1_020_021_009,
+            "合同币种【{}】未在 ERP 履约 YAML 白名单中配置");
+    ErrorCode CONTRACT_FULFILLMENT_CURRENCY_MISMATCH = new ErrorCode(1_020_021_010,
+            "合同币种【{}】与 ERP 币种【{}】不一致，当前策略禁止换算");
+    ErrorCode CONTRACT_FULFILLMENT_BASE_CURRENCY_MISMATCH = new ErrorCode(1_020_021_011,
+            "合同本位币【{}】与 ERP 币种【{}】不一致，不能执行显式换算");
+    ErrorCode CONTRACT_FULFILLMENT_RATE_INVALID = new ErrorCode(1_020_021_012,
+            "合同兑 ERP 币种汇率无效");
+    ErrorCode CONTRACT_FULFILLMENT_AMOUNT_MISMATCH = new ErrorCode(1_020_021_013,
+            "转换后的 ERP 明细金额【{}】与合同本位币含税金额【{}】差异超过 YAML 容差【{}】");
+    ErrorCode CONTRACT_FULFILLMENT_REQUEST_CORRUPTED = new ErrorCode(1_020_021_014,
+            "履约请求快照无法读取，请检查数据完整性");
+    ErrorCode CONTRACT_FULFILLMENT_CREATE_FAILED = new ErrorCode(1_020_021_015,
+            "ERP 履约订单创建失败：{}");
+    ErrorCode CONTRACT_FULFILLMENT_NOT_EXISTS = new ErrorCode(1_020_021_016,
+            "合同尚未创建 ERP 履约记录");
+    ErrorCode CONTRACT_FULFILLMENT_NOT_CREATED = new ErrorCode(1_020_021_017,
+            "ERP 履约订单尚未创建成功，不能刷新状态");
+    ErrorCode CONTRACT_FULFILLMENT_ERP_ORDER_MISSING = new ErrorCode(1_020_021_018,
+            "已记录的 ERP 履约订单不存在，请人工核对，不会自动重建第二张订单");
+    ErrorCode CONTRACT_FULFILLMENT_SNAPSHOT_CONFLICT = new ErrorCode(1_020_021_019,
+            "合同已有不同的履约请求快照，已阻止重复生成 ERP 订单");
+
 }

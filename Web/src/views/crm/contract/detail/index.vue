@@ -25,6 +25,9 @@
       <el-tab-pane :label="t('crm.contract.lifecycleTab')">
         <ContractLifecyclePanel :contract="contract" />
       </el-tab-pane>
+      <el-tab-pane :label="t('crm.contract.fulfillmentTab')">
+        <ContractFulfillmentPanel :contract-id="contract.id!" />
+      </el-tab-pane>
       <el-tab-pane :label="t('crm.contract.receivableTab')">
         <ReceivablePlanList
           :contract-id="contract.id!"
@@ -64,6 +67,7 @@ import ContractDetailsInfo from './ContractDetailsInfo.vue'
 import ContractDetailsHeader from './ContractDetailsHeader.vue'
 import ContractProductList from './ContractProductList.vue'
 import ContractLifecyclePanel from './ContractLifecyclePanel.vue'
+import ContractFulfillmentPanel from './ContractFulfillmentPanel.vue'
 import { BizTypeEnum } from '@/api/crm/permission'
 import { getOperateLogPage } from '@/api/crm/operateLog'
 import ContractForm from '@/views/crm/contract/ContractForm.vue'

@@ -262,6 +262,18 @@ mitedtsm:
     file-security:
       protected-path-prefixes: [crm-protected/]
   crm:
+    erp-fulfillment:
+      enabled: true
+      version: 2026-07-16
+      source-system: CRM
+      source-type: CONTRACT
+      erp-currency: CNY
+      allowed-source-currencies: [CNY, USD, EUR]
+      currency-mode: CONVERT_TO_ERP_CURRENCY
+      amount-scale: 6
+      rounding-mode: HALF_UP
+      total-tolerance: 0.010000
+      max-error-message-length: 1000
     quote:
       version: 2026-07-15
       base-currency: CNY
