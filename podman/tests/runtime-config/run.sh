@@ -59,6 +59,7 @@ bash -n "${PODMAN_DIR}/init/init-mysql.sh"
 bash -n "${PODMAN_DIR}/verify-crm-receivable-reference-integrity.sh"
 bash -n "${PODMAN_DIR}/verify-crm-performance-target-runtime.sh"
 bash -n "${PODMAN_DIR}/verify-crm-runtime-security.sh"
+bash -n "${PODMAN_DIR}/verify-crm-user-guide.sh"
 
 validate_sql_manifest() {
     local manifest="$1"
