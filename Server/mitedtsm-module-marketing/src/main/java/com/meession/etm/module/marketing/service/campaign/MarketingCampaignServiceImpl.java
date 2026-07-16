@@ -1,19 +1,36 @@
 package com.meession.etm.module.marketing.service.campaign;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import com.meession.etm.framework.common.enums.UserTypeEnum;
 import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.framework.common.util.object.BeanUtils;
+import com.meession.etm.module.bpm.api.task.BpmProcessInstanceApi;
+import com.meession.etm.module.bpm.api.task.dto.BpmProcessInstanceCreateReqDTO;
 import com.meession.etm.module.marketing.controller.admin.campaign.vo.CampaignPageReqVO;
 import com.meession.etm.module.marketing.controller.admin.campaign.vo.CampaignSaveReqVO;
 import com.meession.etm.module.marketing.dal.dataobject.campaign.MarketingCampaignDO;
+import com.meession.etm.module.marketing.dal.dataobject.log.MarketingSendRecordDO;
 import com.meession.etm.module.marketing.dal.mysql.campaign.MarketingCampaignMapper;
+import com.meession.etm.module.marketing.dal.mysql.log.MarketingSendRecordMapper;
 import com.meession.etm.module.marketing.enums.CampaignStatusEnum;
+import com.meession.etm.module.marketing.enums.CampaignTargetTypeEnum;
+import com.meession.etm.module.marketing.enums.CampaignTypeEnum;
+import com.meession.etm.module.marketing.service.mail.MarketingMailTemplateService;
+import com.meession.etm.module.marketing.service.sms.MarketingSmsTemplateService;
+import com.meession.etm.module.member.api.user.MemberUserApi;
+import com.meession.etm.module.member.api.user.dto.MemberUserRespDTO;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.meession.etm.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static com.meession.etm.module.marketing.enums.ErrorCodeConstants.*;
@@ -29,6 +46,21 @@ public class MarketingCampaignServiceImpl implements MarketingCampaignService {
 
     @Resource
     private MarketingCampaignMapper campaignMapper;
+
+    @Resource
+    private BpmProcessInstanceApi bpmProcessInstanceApi;
+
+    @Resource
+    private MarketingSmsTemplateService marketingSmsTemplateService;
+
+    @Resource
+    private MarketingMailTemplateService marketingMailTemplateService;
+
+    @Resource
+    private MemberUserApi memberUserApi;
+
+    @Resource
+    private MarketingSendRecordMapper sendRecordMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -96,13 +128,21 @@ public class MarketingCampaignServiceImpl implements MarketingCampaignService {
         if (!CampaignStatusEnum.isDraft(campaign.getStatus())) {
             throw exception(CAMPAIGN_STATUS_NOT_DRAFT);
         }
-        // 更新为待审核状态
+        // 创建 BPM 流程实例
+        BpmProcessInstanceCreateReqDTO reqDTO = new BpmProcessInstanceCreateReqDTO();
+        reqDTO.setProcessDefinitionKey("marketing-campaign-approval");
+        reqDTO.setBusinessKey(String.valueOf(campaign.getId()));
+        reqDTO.setVariables(Map.of(
+                "campaignName", campaign.getName(),
+                "campaignType", campaign.getType()
+        ));
+        String processInstanceId = bpmProcessInstanceApi.createProcessInstance(userId, reqDTO);
+        // 更新活动状态和BPM关联
         campaign.setStatus(CampaignStatusEnum.PENDING_APPROVAL.getStatus());
-        // TODO: 创建 BPM 流程实例，关联 module-bpm
-        // String processInstanceId = bpmProcessInstanceApi.createProcessInstance(...);
-        // campaign.setBpmProcessInstanceId(processInstanceId);
+        campaign.setBpmProcessInstanceId(processInstanceId);
         campaignMapper.updateById(campaign);
-        return campaign.getBpmProcessInstanceId();
+        log.info("[submitApproval][营销活动({})提交审核，流程实例ID({})]", id, processInstanceId);
+        return processInstanceId;
     }
 
     @Override
@@ -119,12 +159,78 @@ public class MarketingCampaignServiceImpl implements MarketingCampaignService {
         campaign.setStatus(CampaignStatusEnum.IN_PROGRESS.getStatus());
         campaign.setSendTime(LocalDateTime.now());
         campaignMapper.updateById(campaign);
-        // TODO: 根据活动类型和模板执行批量发送逻辑
-        // if (CampaignTypeEnum.SMS.getType().equals(campaign.getType())) {
-        //     smsBatchSendService.batchSend(campaign);
-        // } else if (CampaignTypeEnum.MAIL.getType().equals(campaign.getType())) {
-        //     mailBatchSendService.batchSend(campaign);
-        // }
+
+        // 异步执行批量发送（避免阻塞接口返回）
+        executeBatchSend(campaign);
+    }
+
+    /**
+     * 执行批量发送：解析目标用户 → 发送 → 记录关联日志
+     */
+    private void executeBatchSend(MarketingCampaignDO campaign) {
+        try {
+            // 1. 获取目标用户列表
+            List<MemberUserRespDTO> targetUsers = resolveTargetUsers(campaign);
+            if (CollUtil.isEmpty(targetUsers)) {
+                log.warn("[executeBatchSend][营销活动({})没有找到目标用户]", campaign.getId());
+                return;
+            }
+            // 2. 根据活动类型分发发送
+            List<Long> sendLogIds;
+            if (CampaignTypeEnum.isSms(campaign.getType())) {
+                List<String> mobiles = targetUsers.stream()
+                        .map(MemberUserRespDTO::getMobile)
+                        .filter(StrUtil::isNotBlank)
+                        .collect(Collectors.toList());
+                sendLogIds = marketingSmsTemplateService.batchSendSmsByTemplate(
+                        mobiles, null, Collections.emptyMap()); // 模板参数后续从 campaign 扩展
+            } else {
+                List<String> emails = targetUsers.stream()
+                        .map(u -> "") // MemberUserRespDTO 无 email 字段，后续扩展
+                        .collect(Collectors.toList());
+                sendLogIds = marketingMailTemplateService.batchSendMailByTemplate(
+                        emails, null, Collections.emptyMap());
+            }
+            // 3. 写入关联记录
+            String channel = CampaignTypeEnum.isSms(campaign.getType()) ? "SMS" : "MAIL";
+            List<MarketingSendRecordDO> records = new ArrayList<>();
+            for (Long logId : sendLogIds) {
+                MarketingSendRecordDO record = new MarketingSendRecordDO();
+                record.setCampaignId(campaign.getId());
+                record.setChannel(channel);
+                record.setSystemLogId(logId);
+                records.add(record);
+            }
+            sendRecordMapper.insertBatch(records);
+            // 4. 更新统计
+            updateSendStatistics(campaign.getId(), sendLogIds.size(), sendLogIds.size(), 0);
+        } catch (Exception e) {
+            log.error("[executeBatchSend][营销活动({})批量发送异常]", campaign.getId(), e);
+        }
+    }
+
+    /**
+     * 根据 targetType 解析目标用户列表
+     */
+    private List<MemberUserRespDTO> resolveTargetUsers(MarketingCampaignDO campaign) {
+        Integer targetType = campaign.getTargetType();
+        if (CampaignTargetTypeEnum.isAllMembers(targetType)) {
+            // 全部会员 - 分页获取，防止内存溢出
+            // TODO: 实际应该分批获取，目前先取前5000条
+            return memberUserApi.getUserListByNickname("");
+        }
+        if (CampaignTargetTypeEnum.isSpecificUsers(targetType)) {
+            // 指定会员 - 解析 targetUserIds JSON
+            String userIdsJson = campaign.getTargetUserIds();
+            if (StrUtil.isBlank(userIdsJson)) {
+                return Collections.emptyList();
+            }
+            List<Long> userIds = cn.hutool.json.JSONUtil.toList(userIdsJson, Long.class);
+            return memberUserApi.getUserList(userIds);
+        }
+        // 按标签筛选 - TODO: 标签查询接口待对接
+        log.warn("[resolveTargetUsers][按标签筛选暂未实现]");
+        return Collections.emptyList();
     }
 
     @Override

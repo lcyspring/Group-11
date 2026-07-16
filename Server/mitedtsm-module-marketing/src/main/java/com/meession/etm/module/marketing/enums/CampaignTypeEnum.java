@@ -34,4 +34,12 @@ public enum CampaignTypeEnum implements ArrayValuable<Integer> {
         return ARRAYS;
     }
 
+    public static boolean isSms(Integer type) {
+        return SMS.getType().equals(type);
+    }
+
+    public static boolean isMail(Integer type) {
+        return MAIL.getType().equals(type);
+    }
+
 }

@@ -24,6 +24,9 @@ public interface ErrorCodeConstants {
     // ========== 邮件模板(营销) 1-030-002-000 ==========
     ErrorCode MARKETING_MAIL_TEMPLATE_NOT_EXISTS = new ErrorCode(1_030_002_000, "邮件模板不存在或已禁用");
 
+    // ========== 客户关怀 1-030-004-000 ==========
+    ErrorCode CARE_CONFIG_NOT_EXISTS = new ErrorCode(1_030_004_000, "客户关怀配置不存在");
+
     // ========== 批量发送 1-030-003-000 ==========
     ErrorCode BATCH_SEND_MOBILE_LIST_EMPTY = new ErrorCode(1_030_003_000, "批量发送的手机号列表不能为空");
     ErrorCode BATCH_SEND_MAIL_LIST_EMPTY = new ErrorCode(1_030_003_001, "批量发送的邮箱列表不能为空");

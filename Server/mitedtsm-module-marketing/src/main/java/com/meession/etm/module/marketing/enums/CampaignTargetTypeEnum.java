@@ -35,4 +35,16 @@ public enum CampaignTargetTypeEnum implements ArrayValuable<Integer> {
         return ARRAYS;
     }
 
+    public static boolean isAllMembers(Integer type) {
+        return ALL_MEMBERS.getType().equals(type);
+    }
+
+    public static boolean isSpecificUsers(Integer type) {
+        return SPECIFIC_USERS.getType().equals(type);
+    }
+
+    public static boolean isByTags(Integer type) {
+        return BY_TAGS.getType().equals(type);
+    }
+
 }
