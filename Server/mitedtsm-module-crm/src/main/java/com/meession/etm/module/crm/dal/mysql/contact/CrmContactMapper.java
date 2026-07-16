@@ -120,4 +120,10 @@ public interface CrmContactMapper extends BaseMapperX<CrmContactDO> {
                 CrmContactDO::getOwnerUserId, ownerUserId);
     }
 
+    default List<CrmContactDO> selectBirthdayContacts(String monthDay) {
+        return selectList(new LambdaQueryWrapperX<CrmContactDO>()
+                .apply("DATE_FORMAT(birthday, '%m-%d') = {0}", monthDay)
+                .orderByAsc(CrmContactDO::getId));
+    }
+
 }

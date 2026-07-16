@@ -1,4 +1,6 @@
 export default {
+  marketing: { name: 'Name', code: 'Code', status: 'Status', startTime: 'Start Time', endTime: 'End Time', ownerUserId: 'Owner User ID', owner: 'Owner', website: 'Website', strengths: 'Strengths', weaknesses: 'Weaknesses', channel: 'Channel', sms: 'SMS', email: 'Email', both: 'Both', validRecipients: 'Valid Recipients', sentCount: 'Sent', failedCount: 'Failed', submitReview: 'Submit Review', send: 'Send', ruleType: 'Rule Type', eventMonthDay: 'Event Date', enabled: 'Enabled', birthday: 'Birthday', holiday: 'Holiday', smsTemplateCode: 'SMS Template', mailTemplateCode: 'Mail Template', customerIds: 'Customer IDs (comma separated)', createCampaign: 'Create Campaign', createCompetitor: 'Create Competitor', createBroadcast: 'Create Broadcast', createCarePlan: 'Create Care Plan', start: 'Start', lock: 'Lock', complete: 'Complete', confirmComplete: 'Complete campaign?', completedByUser: 'Completed by user',
+  },
   activity: {
     tasks: 'Tasks', calls: 'Call Records', sms: 'SMS Records', createTask: 'Create Task', editTask: 'Edit Task',
     createCall: 'Log Call', createSms: 'Log SMS', title: 'Task Title', type: 'Task Type', priority: 'Priority',

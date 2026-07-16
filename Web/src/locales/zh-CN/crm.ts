@@ -1,4 +1,6 @@
 export default {
+  marketing: { name: '名称', code: '编码', status: '状态', startTime: '开始时间', endTime: '结束时间', ownerUserId: '负责人编号', owner: '负责人', website: '网站', strengths: '优势', weaknesses: '劣势', channel: '渠道', sms: '短信', email: '邮件', both: '双渠道', validRecipients: '有效收件人', sentCount: '已发送', failedCount: '失败', submitReview: '提交审核', send: '发送', ruleType: '规则类型', eventMonthDay: '触达日期', enabled: '启用', birthday: '生日', holiday: '节假日', smsTemplateCode: '短信模板', mailTemplateCode: '邮件模板', customerIds: '客户编号（逗号分隔）', createCampaign: '新建营销活动', createCompetitor: '新建竞争对手', createBroadcast: '新建群发', createCarePlan: '新建关怀计划', start: '启动', lock: '锁定', complete: '完成', confirmComplete: '确认完成活动？', completedByUser: '活动已完成',
+  },
   activity: {
     tasks: '任务', calls: '通话记录', sms: '短信记录', createTask: '新建任务', editTask: '编辑任务',
     createCall: '登记通话', createSms: '登记短信', title: '任务标题', type: '任务类型', priority: '优先级',

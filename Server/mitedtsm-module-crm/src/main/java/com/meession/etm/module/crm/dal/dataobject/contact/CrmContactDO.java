@@ -96,6 +96,8 @@ public class CrmContactDO extends BaseDO {
      * 枚举 {@link com.meession.etm.module.system.enums.common.SexEnum}
      */
     private Integer sex;
+    /** 生日，用于客户关怀自动祝福。 */
+    private java.time.LocalDate birthday;
     /**
      * 是否关键决策人
      */

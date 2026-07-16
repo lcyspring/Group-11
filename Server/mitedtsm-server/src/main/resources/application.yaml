@@ -323,6 +323,17 @@ mitedtsm:
         batch-size: 500
         max-batch-size: 5000
         max-batches: 20
+    marketing:
+      provider-mode: record-only
+      care-enabled: true
+      batch-size: 50
+      max-batch-size: 500
+      per-recipient-daily-limit: 1
+      monthly-recipient-limit: 10000
+      care-cron: "0 0 9 * * ?"
+      care-zone: Asia/Shanghai
+      lock-key: crm:marketing:care
+      lock-lease-seconds: 300
     authorization:
       # 唯一的 CRM 管理员绕过角色；普通角色仍由功能权限字符和数据范围共同授权。
       admin-role-codes: [crm_admin]

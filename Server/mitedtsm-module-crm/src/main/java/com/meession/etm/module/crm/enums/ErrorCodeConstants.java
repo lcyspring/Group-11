@@ -9,6 +9,26 @@ import com.meession.etm.framework.common.exception.ErrorCode;
  */
 public interface ErrorCodeConstants {
 
+    // ========== 营销互动 1_020_014_000 ==========
+    ErrorCode MARKETING_CAMPAIGN_NOT_EXISTS = new ErrorCode(1_020_014_000, "营销活动不存在");
+    ErrorCode MARKETING_CAMPAIGN_CODE_EXISTS = new ErrorCode(1_020_014_001, "营销活动编码已存在");
+    ErrorCode MARKETING_CAMPAIGN_TIME_INVALID = new ErrorCode(1_020_014_002, "营销活动结束时间必须晚于开始时间");
+    ErrorCode MARKETING_CAMPAIGN_STATUS_INVALID = new ErrorCode(1_020_014_003, "营销活动当前状态不允许此操作");
+    ErrorCode MARKETING_CAMPAIGN_LOCKED = new ErrorCode(1_020_014_004, "营销活动已锁定，不能新增关联对象");
+    ErrorCode MARKETING_RELATION_NOT_EXISTS = new ErrorCode(1_020_014_005, "营销活动关联对象不存在");
+    ErrorCode MARKETING_PERMISSION_DENIED = new ErrorCode(1_020_014_006, "没有营销对象操作权限");
+    ErrorCode COMPETITOR_NOT_EXISTS = new ErrorCode(1_020_014_007, "竞争对手资料不存在");
+    ErrorCode MARKETING_CHANNEL_INVALID = new ErrorCode(1_020_014_008, "营销渠道无效");
+    ErrorCode MARKETING_TEMPLATE_REQUIRED = new ErrorCode(1_020_014_009, "所选渠道必须配置对应模板");
+    ErrorCode MARKETING_BROADCAST_NOT_EXISTS = new ErrorCode(1_020_014_010, "群发任务不存在");
+    ErrorCode MARKETING_BROADCAST_STATUS_INVALID = new ErrorCode(1_020_014_011, "群发任务当前状态不允许此操作");
+    ErrorCode MARKETING_REVIEWER_INVALID = new ErrorCode(1_020_014_012, "群发审核人不能是创建者");
+    ErrorCode MARKETING_QUOTA_EXCEEDED = new ErrorCode(1_020_014_013, "营销群发超过配置的频控或月度配额");
+    ErrorCode MARKETING_RECIPIENT_NOT_FOUND = new ErrorCode(1_020_014_014, "没有可用的 CRM 联系人或客户名单");
+    ErrorCode MARKETING_CONSENT_NOT_EXISTS = new ErrorCode(1_020_014_015, "营销同意记录不存在");
+    ErrorCode MARKETING_CARE_PLAN_NOT_EXISTS = new ErrorCode(1_020_014_016, "客户关怀计划不存在");
+    ErrorCode MARKETING_CARE_PLAN_CODE_EXISTS = new ErrorCode(1_020_014_017, "客户关怀计划编码已存在");
+
     // ========== 合同管理 1-020-000-000 ==========
     ErrorCode CONTRACT_NOT_EXISTS = new ErrorCode(1_020_000_000, "合同不存在");
     ErrorCode CONTRACT_UPDATE_FAIL_NOT_EDITABLE = new ErrorCode(1_020_000_001,

@@ -159,6 +159,14 @@ const queryParams = reactive({
 
 /** 查询列表 */
 const getList = async () => {
+  // Detail panels mount before their asynchronous parent has resolved the business id.
+  // Do not issue an invalid (0, 0) request; the permission aspect cannot scope it.
+  if (queryParams.bizType <= 0 || queryParams.bizId <= 0) {
+    list.value = []
+    total.value = 0
+    loading.value = false
+    return
+  }
   loading.value = true
   try {
     const data = await FollowUpRecordApi.getFollowUpRecordPage(queryParams)
@@ -200,11 +208,12 @@ const openBusinessDetail = (id: number) => {
 }
 
 watch(
-  () => props.bizId,
-  () => {
-    queryParams.bizType = props.bizType
-    queryParams.bizId = props.bizId
-    getList()
-  }
+  [() => props.bizType, () => props.bizId],
+  ([bizType, bizId]) => {
+    queryParams.bizType = bizType
+    queryParams.bizId = bizId
+    void getList()
+  },
+  { immediate: true }
 )
 </script>

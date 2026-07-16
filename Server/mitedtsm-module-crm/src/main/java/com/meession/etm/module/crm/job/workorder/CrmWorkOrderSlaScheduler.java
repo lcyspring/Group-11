@@ -1,7 +1,6 @@
 package com.meession.etm.module.crm.job.workorder;
 
 import com.meession.etm.module.crm.framework.workorder.CrmWorkOrderGovernanceProperties;
-import com.meession.etm.module.crm.service.workorder.CrmWorkOrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
@@ -15,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 @Slf4j
 public class CrmWorkOrderSlaScheduler {
-    private final CrmWorkOrderService workOrderService;
+    private final CrmWorkOrderSlaJob job;
     private final CrmWorkOrderGovernanceProperties properties;
     private final RedissonClient redissonClient;
 
@@ -28,8 +27,7 @@ public class CrmWorkOrderSlaScheduler {
         try {
             acquired = lock.tryLock(0, properties.getSla().getLockLeaseSeconds(), TimeUnit.SECONDS);
             if (!acquired) return;
-            int changed = workOrderService.processDueSla();
-            if (changed > 0) log.info("[execute][CRM work-order SLA changed {} records]", changed);
+            job.execute(null);
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
             log.warn("[execute][CRM work-order SLA scheduler interrupted]", ex);

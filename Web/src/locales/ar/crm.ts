@@ -1,4 +1,6 @@
 export default {
+  marketing: { name: 'الاسم', code: 'الرمز', status: 'الحالة', startTime: 'وقت البدء', endTime: 'وقت الانتهاء', ownerUserId: 'معرف المسؤول', owner: 'المسؤول', website: 'الموقع', strengths: 'نقاط القوة', weaknesses: 'نقاط الضعف', channel: 'القناة', sms: 'رسائل نصية', email: 'بريد', both: 'القناتان', validRecipients: 'المستلمون الصالحون', sentCount: 'تم الإرسال', failedCount: 'فشل', submitReview: 'إرسال للمراجعة', send: 'إرسال', ruleType: 'نوع القاعدة', eventMonthDay: 'تاريخ الحدث', enabled: 'مفعل', birthday: 'عيد الميلاد', holiday: 'العطلة', smsTemplateCode: 'قالب الرسائل', mailTemplateCode: 'قالب البريد', customerIds: 'معرفات العملاء مفصولة بفواصل', createCampaign: 'إنشاء حملة', createCompetitor: 'إنشاء منافس', createBroadcast: 'إنشاء إرسال جماعي', createCarePlan: 'إنشاء خطة رعاية', start: 'بدء', lock: 'قفل', complete: 'إكمال', confirmComplete: 'إكمال الحملة؟', completedByUser: 'اكتملت الحملة',
+  },
   activity: {
     tasks: 'المهام', calls: 'سجلات المكالمات', sms: 'سجلات الرسائل', createTask: 'إنشاء مهمة', editTask: 'تعديل المهمة',
     createCall: 'تسجيل مكالمة', createSms: 'تسجيل رسالة', title: 'عنوان المهمة', type: 'نوع المهمة', priority: 'الأولوية',
