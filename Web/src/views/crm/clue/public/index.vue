@@ -136,9 +136,9 @@
     </el-form>
     <template #footer>
       <el-button type="primary" :loading="assignLoading" :disabled="!assignForm.ownerUserId" @click="submitAssign">
-        {{ t('dialog.confirm') }}
+        {{ t('common.confirm') }}
       </el-button>
-      <el-button @click="assignVisible = false">{{ t('dialog.cancel') }}</el-button>
+      <el-button @click="assignVisible = false">{{ t('common.cancel') }}</el-button>
     </template>
   </Dialog>
 </template>

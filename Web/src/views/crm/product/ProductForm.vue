@@ -92,8 +92,8 @@
       </el-row>
     </el-form>
     <template #footer>
-      <el-button @click="submitForm" type="primary" :disabled="formLoading">{{ t('dialog.confirm') }}</el-button>
-      <el-button @click="dialogVisible = false">{{ t('dialog.cancel') }}</el-button>
+      <el-button @click="submitForm" type="primary" :disabled="formLoading">{{ t('common.confirm') }}</el-button>
+      <el-button @click="dialogVisible = false">{{ t('common.cancel') }}</el-button>
     </template>
   </Dialog>
 </template>

@@ -282,9 +282,11 @@ const users = ref<UserApi.UserVO[]>([])
 const amendments = ref<AmendmentApi.ContractAmendmentVO[]>([])
 const amendmentDialogRef = ref<InstanceType<typeof ContractAmendmentDialog>>()
 const load = async () => {
+  const contractId = props.contract.id
+  if (!contractId) return
   const [lifecycle, amendmentList] = await Promise.all([
-    LifecycleApi.getContractLifecycle(props.contract.id),
-    AmendmentApi.getContractAmendmentList(props.contract.id)
+    LifecycleApi.getContractLifecycle(contractId),
+    AmendmentApi.getContractAmendmentList(contractId)
   ])
   data.value = lifecycle
   amendments.value = amendmentList
@@ -433,7 +435,9 @@ const voidSign = async () => {
 }
 watch(
   () => props.contract.id,
-  () => load(),
+  (contractId) => {
+    if (contractId) load()
+  },
   { immediate: true }
 )
 </script>

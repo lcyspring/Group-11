@@ -11,7 +11,7 @@
       {{ t('crm.customer.transfer') }}
     </el-button>
   </ContractDetailsHeader>
-  <el-col>
+  <el-col v-if="contract.id">
     <el-tabs>
       <el-tab-pane :label="t('crm.contract.followUpTab')">
         <FollowUpList :biz-id="contract.id" :biz-type="BizTypeEnum.CRM_CONTRACT" />
@@ -141,12 +141,13 @@ const close = () => {
 /** 初始化 */
 onMounted(async () => {
   const id = props.id || route.params.id
-  if (!id) {
+  const parsedId = Number(id)
+  if (!Number.isSafeInteger(parsedId) || parsedId <= 0) {
     message.warning(t('crm.contract.paramError'))
     close()
     return
   }
-  contractId.value = id as unknown as number
+  contractId.value = parsedId
   await getContractData()
 })
 </script>

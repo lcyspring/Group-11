@@ -27,7 +27,7 @@
       <el-form-item :label="t('workOrder.description')" prop="description"><el-input v-model="formData.description" type="textarea" :rows="5" /></el-form-item>
       <el-form-item :label="t('workOrder.attachments')"><el-input v-model="attachmentText" :placeholder="t('workOrder.attachmentsPlaceholder')" /></el-form-item>
     </el-form>
-    <template #footer><el-button type="primary" :loading="loading" @click="submit">{{ t('dialog.confirm') }}</el-button><el-button @click="visible = false">{{ t('dialog.cancel') }}</el-button></template>
+    <template #footer><el-button type="primary" :loading="loading" @click="submit">{{ t('common.confirm') }}</el-button><el-button @click="visible = false">{{ t('common.cancel') }}</el-button></template>
   </Dialog>
 </template>
 

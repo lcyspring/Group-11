@@ -80,6 +80,8 @@
 | `crm-marketing/` | 营销活动、竞争对手、客户关怀、同意/退订、审核和短信/邮件群发 |
 | `admin-legacy-media-orb/` | 管理端退休媒体源、历史头像、响应/缓存归一化和 ORB 防护 |
 | `table-action-and-approval-ui/` | 全量操作列收敛、财务弹窗本地化及 BPM 缓存待办自动刷新 |
+| `crm-contract-detail-initialization/` | 合同详情延迟挂载、路由编号校验及生命周期空编号防御 |
+| `crm-dialog-i18n/` | CRM 全树弹窗确认/取消多语言键治理 |
 
 运行入口统一为：
 

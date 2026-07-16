@@ -22,8 +22,8 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button type="primary" :loading="loading" @click="submit">{{ t('dialog.confirm') }}</el-button>
-      <el-button @click="visible = false">{{ t('dialog.cancel') }}</el-button>
+      <el-button type="primary" :loading="loading" @click="submit">{{ t('common.confirm') }}</el-button>
+      <el-button @click="visible = false">{{ t('common.cancel') }}</el-button>
     </template>
   </Dialog>
 </template>

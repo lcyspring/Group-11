@@ -84,8 +84,8 @@
       <el-form-item :label="t('common.remark')"><el-input v-model="form.remark" type="textarea" maxlength="500" /></el-form-item>
     </el-form>
     <template #footer>
-      <el-button type="primary" :loading="saving" @click="save">{{ t('dialog.confirm') }}</el-button>
-      <el-button @click="visible = false">{{ t('dialog.cancel') }}</el-button>
+      <el-button type="primary" :loading="saving" @click="save">{{ t('common.confirm') }}</el-button>
+      <el-button @click="visible = false">{{ t('common.cancel') }}</el-button>
     </template>
   </Dialog>
 </template>
