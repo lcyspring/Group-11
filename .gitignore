@@ -48,6 +48,15 @@ Thumbs.db
 # Docker
 docker-images/*.tar
 
+# Legacy Docker/runtime directories removed from the repository. Keep any
+# locally recreated copies out of source control.
+/dev/
+/docker-compose/
+/docker-images/
+
+# Runtime upload data is disposable and recreated by the application.
+/uploads/
+
 # Podman offline OCI image archives
 podman/images/*.tar
 

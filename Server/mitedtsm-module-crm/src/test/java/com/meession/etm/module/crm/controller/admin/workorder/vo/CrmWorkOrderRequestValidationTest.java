@@ -23,10 +23,12 @@ class CrmWorkOrderRequestValidationTest {
     }
 
     @Test
-    void sceneTypeOnlyAcceptsCreatedOrHandledViews() {
+    void sceneTypeAcceptsFourExplicitViews() {
         assertEquals(1, validator.validate(new CrmWorkOrderPageReqVO().setSceneType(0)).size());
-        assertEquals(1, validator.validate(new CrmWorkOrderPageReqVO().setSceneType(3)).size());
+        assertEquals(1, validator.validate(new CrmWorkOrderPageReqVO().setSceneType(5)).size());
         assertEquals(0, validator.validate(new CrmWorkOrderPageReqVO().setSceneType(1)).size());
         assertEquals(0, validator.validate(new CrmWorkOrderPageReqVO().setSceneType(2)).size());
+        assertEquals(0, validator.validate(new CrmWorkOrderPageReqVO().setSceneType(3)).size());
+        assertEquals(0, validator.validate(new CrmWorkOrderPageReqVO().setSceneType(4)).size());
     }
 }

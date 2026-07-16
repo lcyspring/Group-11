@@ -39,8 +39,12 @@ public class CrmWorkOrderSaveReqVO {
 
     private Long sourceId;
 
-    @NotNull(message = "处理人不能为空")
     private Long handlerUserId;
+
+    private Long groupId;
+
+    @Size(max = 100, message = "抄送人不能超过 100 个")
+    private List<Long> ccUserIds;
 
     @NotBlank(message = "工单描述不能为空")
     @Size(max = 5000, message = "工单描述不能超过 5000 个字符")

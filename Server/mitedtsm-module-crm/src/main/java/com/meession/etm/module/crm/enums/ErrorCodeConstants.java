@@ -220,6 +220,21 @@ public interface ErrorCodeConstants {
     ErrorCode WORK_ORDER_ASSIGN_DENIED = new ErrorCode(1_020_015_009,
             "只有工单创建人或具有全量工单权限的调度人员可以分派工单");
     ErrorCode WORK_ORDER_HANDLER_UNCHANGED = new ErrorCode(1_020_015_010, "新处理人不能与当前处理人相同");
+    ErrorCode WORK_ORDER_GROUP_NOT_EXISTS = new ErrorCode(1_020_015_011, "客服处理组不存在");
+    ErrorCode WORK_ORDER_GROUP_CODE_EXISTS = new ErrorCode(1_020_015_012, "客服处理组编码已存在");
+    ErrorCode WORK_ORDER_GROUP_DISABLED = new ErrorCode(1_020_015_013, "客服处理组已停用");
+    ErrorCode WORK_ORDER_GROUP_TYPE_UNSUPPORTED = new ErrorCode(1_020_015_014, "客服处理组不支持当前工单类型");
+    ErrorCode WORK_ORDER_GROUP_MEMBER_REQUIRED = new ErrorCode(1_020_015_015, "客服处理组至少需要一名成员");
+    ErrorCode WORK_ORDER_GROUP_MANAGER_NOT_MEMBER = new ErrorCode(1_020_015_016, "处理组负责人必须同时是组成员");
+    ErrorCode WORK_ORDER_GROUP_IN_USE = new ErrorCode(1_020_015_017, "处理组仍有关联工单，不能删除");
+    ErrorCode WORK_ORDER_HANDLER_NOT_ELIGIBLE = new ErrorCode(1_020_015_018, "所选处理人不在允许的派单范围内");
+    ErrorCode WORK_ORDER_MANUAL_ASSIGN_DENIED = new ErrorCode(1_020_015_019, "当前用户无权手工指定处理人");
+    ErrorCode WORK_ORDER_UNASSIGNED = new ErrorCode(1_020_015_020, "工单尚未分配处理人");
+    ErrorCode WORK_ORDER_CLAIM_DENIED = new ErrorCode(1_020_015_021, "只有对应处理组成员可以领取未分配工单");
+    ErrorCode WORK_ORDER_CC_LIMIT_EXCEEDED = new ErrorCode(1_020_015_022, "工单抄送人数超过 YAML 配置上限：{} 人");
+    ErrorCode WORK_ORDER_DESCRIPTION_TOO_SHORT = new ErrorCode(1_020_015_023, "工单描述至少需要 {} 个字符");
+    ErrorCode WORK_ORDER_SOLUTION_TOO_SHORT = new ErrorCode(1_020_015_024, "解决方案至少需要 {} 个字符");
+    ErrorCode WORK_ORDER_HANDLER_REQUIRED = new ErrorCode(1_020_015_025, "当前 YAML 策略要求必须分配处理人");
 
     // ========== 发票 1_020_016_000 ==========
     ErrorCode INVOICE_NOT_EXISTS = new ErrorCode(1_020_016_000, "发票不存在");

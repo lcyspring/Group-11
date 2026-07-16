@@ -17,8 +17,14 @@ public class CrmWorkOrderRespVO {
     private String customerName;
     private Integer sourceType;
     private Long sourceId;
+    private Long groupId;
+    private String groupName;
     private Long handlerUserId;
     private String handlerUserName;
+    private Integer dispatchMode;
+    private LocalDateTime assignTime;
+    private List<Long> ccUserIds;
+    private List<String> ccUserNames;
     private String description;
     private String solution;
     private List<String> attachmentUrls;

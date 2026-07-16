@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -51,9 +52,35 @@ class CrmWorkOrderMapperTest {
         assertFalse(query.getSqlSegment().contains("handler_user_id"));
     }
 
+    @Test
+    void copiedSceneUsesExplicitOrderIds() {
+        LambdaQueryWrapper<CrmWorkOrderDO> query = captureQuery(
+                new CrmWorkOrderPageReqVO().setSceneType(3), 9L, false, Set.of(), Set.of(), Set.of(81L));
+        assertTrue(query.getSqlSegment().contains("id"));
+        assertTrue(query.getParamNameValuePairs().containsValue(81L));
+    }
+
+    @Test
+    void personalScopeIncludesManagedAndUnassignedMemberGroups() {
+        LambdaQueryWrapper<CrmWorkOrderDO> query = captureQuery(new CrmWorkOrderPageReqVO(), 9L, false,
+                Set.of(7L), Set.of(8L), Set.of(81L));
+        String queryDetails = query.getSqlSegment() + " params=" + query.getParamNameValuePairs();
+        assertTrue(query.getParamNameValuePairs().containsValue(7L), queryDetails);
+        assertTrue(query.getParamNameValuePairs().containsValue(8L), queryDetails);
+        assertTrue(query.getParamNameValuePairs().containsValue(81L), queryDetails);
+    }
+
     @SuppressWarnings("unchecked")
     private static LambdaQueryWrapper<CrmWorkOrderDO> captureQuery(CrmWorkOrderPageReqVO reqVO,
                                                                    Long userId, boolean queryAll) {
+        return captureQuery(reqVO, userId, queryAll, Set.of(), Set.of(), Set.of());
+    }
+
+    @SuppressWarnings("unchecked")
+    private static LambdaQueryWrapper<CrmWorkOrderDO> captureQuery(CrmWorkOrderPageReqVO reqVO,
+                                                                   Long userId, boolean queryAll,
+                                                                   Set<Long> managedGroups, Set<Long> memberGroups,
+                                                                   Set<Long> ccOrders) {
         AtomicReference<LambdaQueryWrapper<CrmWorkOrderDO>> captured = new AtomicReference<>();
         CrmWorkOrderMapper mapper = (CrmWorkOrderMapper) Proxy.newProxyInstance(
                 CrmWorkOrderMapper.class.getClassLoader(), new Class<?>[]{CrmWorkOrderMapper.class},
@@ -68,7 +95,7 @@ class CrmWorkOrderMapperTest {
                     throw new AssertionError("未预期的 Mapper 调用 " + method.getName());
                 });
 
-        mapper.selectPage(reqVO, userId, queryAll);
+        mapper.selectPage(reqVO, userId, queryAll, managedGroups, memberGroups, ccOrders);
         return captured.get();
     }
 }

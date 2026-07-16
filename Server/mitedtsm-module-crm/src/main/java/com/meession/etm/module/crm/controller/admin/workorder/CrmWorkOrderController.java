@@ -10,6 +10,8 @@ import com.meession.etm.module.crm.dal.dataobject.workorder.CrmWorkOrderDO;
 import com.meession.etm.module.crm.dal.dataobject.workorder.CrmWorkOrderRecordDO;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
 import com.meession.etm.module.crm.service.workorder.CrmWorkOrderService;
+import com.meession.etm.module.crm.service.workorder.CrmWorkOrderGroupService;
+import com.meession.etm.module.crm.framework.workorder.CrmWorkOrderDispatchProperties;
 import com.meession.etm.module.system.api.user.AdminUserApi;
 import com.meession.etm.module.system.api.user.dto.AdminUserRespDTO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,12 +40,16 @@ public class CrmWorkOrderController {
     @Resource private CrmCustomerService customerService;
     @Resource private AdminUserApi adminUserApi;
     @Resource private SecurityFrameworkService securityFrameworkService;
+    @Resource private CrmWorkOrderGroupService groupService;
+    @Resource private CrmWorkOrderDispatchProperties dispatchProperties;
 
     @PostMapping("/create")
     @Operation(summary = "创建客服工单")
     @PreAuthorize("@ss.hasPermission('crm:work-order:create')")
     public CommonResult<Long> create(@Valid @RequestBody CrmWorkOrderSaveReqVO reqVO) {
-        return success(workOrderService.createWorkOrder(reqVO, getLoginUserId()));
+        return success(workOrderService.createWorkOrder(reqVO, getLoginUserId(),
+                securityFrameworkService.hasPermission("crm:work-order:assign"),
+                securityFrameworkService.hasPermission("crm:work-order:assign-all")));
     }
 
     @PutMapping("/update")
@@ -97,9 +103,45 @@ public class CrmWorkOrderController {
     @Operation(summary = "分派待处理客服工单")
     @PreAuthorize("@ss.hasPermission('crm:work-order:assign')")
     public CommonResult<Boolean> assign(@Valid @RequestBody CrmWorkOrderAssignReqVO reqVO) {
-        boolean queryAll = securityFrameworkService.hasPermission("crm:work-order:query-all");
-        workOrderService.assignWorkOrder(reqVO, getLoginUserId(), queryAll);
+        workOrderService.assignWorkOrder(reqVO, getLoginUserId(),
+                securityFrameworkService.hasPermission("crm:work-order:assign-all"));
         return success(true);
+    }
+
+    @PutMapping("/claim")
+    @Operation(summary = "领取处理组未分配工单")
+    @PreAuthorize("@ss.hasPermission('crm:work-order:process')")
+    public CommonResult<Boolean> claim(@Valid @RequestBody CrmWorkOrderActionReqVO reqVO) {
+        workOrderService.claimWorkOrder(reqVO, getLoginUserId());
+        return success(true);
+    }
+
+    @GetMapping("/dispatch-context")
+    @Operation(summary = "获得工单派单策略、处理组和候选人")
+    @PreAuthorize("@ss.hasAnyPermissions('crm:work-order:create', 'crm:work-order:assign')")
+    public CommonResult<CrmWorkOrderDispatchContextRespVO> dispatchContext(@RequestParam Integer type,
+                                                                           @RequestParam(required = false) Long groupId) {
+        Long userId = getLoginUserId();
+        boolean canAssign = securityFrameworkService.hasPermission("crm:work-order:assign");
+        boolean assignAll = securityFrameworkService.hasPermission("crm:work-order:assign-all");
+        List<CrmWorkOrderGroupRespVO> groups = buildGroups(groupService.getGroupList().stream()
+                .filter(group -> Integer.valueOf(0).equals(group.getStatus()))
+                .filter(group -> group.getSupportedTypes() != null && group.getSupportedTypes().contains(type)).toList());
+        List<Long> candidateIds = canAssign
+                ? workOrderService.getDispatchCandidateUserIds(type, groupId, userId, assignAll) : List.of();
+        Map<Long, AdminUserRespDTO> users = adminUserApi.getUserMap(candidateIds);
+        List<CrmWorkOrderDispatchContextRespVO.User> candidates = candidateIds.stream().map(id -> {
+            AdminUserRespDTO user = users.get(id);
+            if (user == null) return null;
+            return new CrmWorkOrderDispatchContextRespVO.User().setId(id).setNickname(user.getNickname())
+                    .setDeptId(user.getDeptId()).setSource(groupId != null ? "GROUP" : assignAll ? "ALL_GROUPS" : "SUBORDINATE")
+                    .setOpenCount(workOrderService.getOpenWorkOrderCount(id));
+        }).filter(Objects::nonNull).toList();
+        return success(new CrmWorkOrderDispatchContextRespVO().setEnabled(dispatchProperties.isEnabled())
+                .setAutoAssignOnCreate(dispatchProperties.isAutoAssignOnCreate())
+                .setFallbackMode(dispatchProperties.getFallbackMode().name())
+                .setMaxCcUsers(dispatchProperties.getMaxCcUsers()).setManualAssignmentAllowed(canAssign)
+                .setGroups(groups).setCandidates(candidates));
     }
 
     @PutMapping("/return")
@@ -131,15 +173,29 @@ public class CrmWorkOrderController {
         Set<Long> customerIds = orders.stream().map(CrmWorkOrderDO::getCustomerId)
                 .filter(Objects::nonNull).collect(Collectors.toSet());
         Map<Long, CrmCustomerDO> customers = customerService.getCustomerMap(customerIds);
+        Map<Long, List<Long>> ccMap = workOrderService.getCcUserIdsMap(orders.stream().map(CrmWorkOrderDO::getId).toList());
+        Map<Long, com.meession.etm.module.crm.dal.dataobject.workorder.CrmWorkOrderGroupDO> groupMap =
+                groupService.getGroupMap(orders.stream().map(CrmWorkOrderDO::getGroupId).filter(Objects::nonNull).toList());
         Set<Long> userIds = orders.stream().flatMap(order -> Stream.of(
                         order.getHandlerUserId(), parseUserId(order.getCreator())))
                 .filter(Objects::nonNull).collect(Collectors.toSet());
+        ccMap.values().forEach(userIds::addAll);
         Map<Long, AdminUserRespDTO> users = adminUserApi.getUserMap(userIds);
         return BeanUtils.toBean(orders, CrmWorkOrderRespVO.class, vo -> {
             Optional.ofNullable(customers.get(vo.getCustomerId())).ifPresent(c -> vo.setCustomerName(c.getName()));
             Optional.ofNullable(users.get(vo.getHandlerUserId())).ifPresent(u -> vo.setHandlerUserName(u.getNickname()));
             Optional.ofNullable(users.get(parseUserId(vo.getCreator()))).ifPresent(u -> vo.setCreatorName(u.getNickname()));
+            Optional.ofNullable(groupMap.get(vo.getGroupId())).ifPresent(group -> vo.setGroupName(group.getName()));
+            List<Long> ccIds = ccMap.getOrDefault(vo.getId(), List.of());
+            vo.setCcUserIds(ccIds);
+            vo.setCcUserNames(ccIds.stream().map(users::get).filter(Objects::nonNull).map(AdminUserRespDTO::getNickname).toList());
         });
+    }
+
+    private List<CrmWorkOrderGroupRespVO> buildGroups(List<com.meession.etm.module.crm.dal.dataobject.workorder.CrmWorkOrderGroupDO> groups) {
+        Map<Long, List<Long>> memberMap = groupService.getMemberUserIdsMap(groups.stream().map(com.meession.etm.module.crm.dal.dataobject.workorder.CrmWorkOrderGroupDO::getId).toList());
+        return BeanUtils.toBean(groups, CrmWorkOrderGroupRespVO.class, vo ->
+                vo.setMemberUserIds(memberMap.getOrDefault(vo.getId(), List.of())));
     }
 
     private List<CrmWorkOrderRecordRespVO> buildRecords(List<CrmWorkOrderRecordDO> records) {

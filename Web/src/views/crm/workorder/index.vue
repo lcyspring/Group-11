@@ -19,12 +19,14 @@
       <el-table-column :label="t('workOrder.type')" prop="type" min-width="90"><template #default="{ row }">{{ typeLabel(row.type) }}</template></el-table-column>
       <el-table-column :label="t('workOrder.priority')" prop="priority" min-width="90"><template #default="{ row }">{{ priorityLabel(row.priority) }}</template></el-table-column>
       <el-table-column :label="t('workOrder.status')" prop="status" min-width="100"><template #default="{ row }"><el-tag :type="statusTag(row.status)">{{ statusLabel(row.status) }}</el-tag></template></el-table-column>
-      <el-table-column :label="t('workOrder.handler')" prop="handlerUserName" min-width="110" />
+      <el-table-column :label="t('workOrder.group')" prop="groupName" min-width="120" />
+      <el-table-column :label="t('workOrder.handler')" min-width="110"><template #default="{ row }">{{ row.handlerUserName || t('workOrder.unassigned') }}</template></el-table-column>
       <el-table-column :label="t('common.createTime')" prop="createTime" :formatter="dateFormatter" min-width="170" />
       <el-table-column :label="t('common.action')" fixed="right" min-width="340">
         <template #default="{ row }">
           <el-button v-if="[10, 40].includes(row.status) && row.creator === String(userId)" v-hasPermi="['crm:work-order:update']" link type="primary" @click="openForm('update', row.id)">{{ t('common.edit') }}</el-button>
           <el-button v-if="row.status === 10 && (row.creator === String(userId) || canAssignAny)" v-hasPermi="['crm:work-order:assign']" link type="primary" @click="assignRef.open(row)">{{ t('workOrder.assign') }}</el-button>
+          <el-button v-if="canClaim(row)" v-hasPermi="['crm:work-order:process']" link type="success" @click="claim(row)">{{ t('workOrder.claim') }}</el-button>
           <el-button v-if="row.status === 10 && row.handlerUserId === userId" v-hasPermi="['crm:work-order:process']" link type="primary" @click="start(row)">{{ t('workOrder.start') }}</el-button>
           <el-button v-if="row.status === 20 && row.handlerUserId === userId" v-hasPermi="['crm:work-order:process']" link type="warning" @click="returnOrder(row)">{{ t('workOrder.return') }}</el-button>
           <el-button v-if="row.status === 20 && row.handlerUserId === userId" v-hasPermi="['crm:work-order:process']" link type="success" @click="complete(row)">{{ t('workOrder.complete') }}</el-button>
@@ -48,6 +50,7 @@ import { dateFormatter } from '@/utils/formatTime'
 import { useUserStore } from '@/store/modules/user'
 import * as UserApi from '@/api/system/user'
 import { checkPermi } from '@/utils/permission'
+import { canClaimWorkOrder } from './dispatch'
 
 defineOptions({ name: 'CrmWorkOrder' })
 const { t } = useI18n('crm')
@@ -60,6 +63,7 @@ const formRef = ref()
 const assignRef = ref()
 const detailRef = ref()
 const users = ref<UserApi.UserVO[]>([])
+const groups = ref<WorkOrderApi.WorkOrderGroupVO[]>([])
 const canAssignAny = checkPermi(['crm:work-order:query-all'])
 const queryParams = reactive({ pageNo: 1, pageSize: 10, no: '', title: '', status: undefined as number | undefined,
   type: undefined as number | undefined, priority: undefined as number | undefined,
@@ -67,7 +71,12 @@ const queryParams = reactive({ pageNo: 1, pageSize: 10, no: '', title: '', statu
 const statusOptions = [{ value: 10, label: t('workOrder.statusPending') }, { value: 20, label: t('workOrder.statusProcessing') }, { value: 30, label: t('workOrder.statusCompleted') }, { value: 40, label: t('workOrder.statusReturned') }]
 const typeOptions = [{ value: 1, label: t('workOrder.typeIssue') }, { value: 2, label: t('workOrder.typeDemand') }, { value: 3, label: t('workOrder.typeComplaint') }, { value: 4, label: t('workOrder.typeConsultation') }]
 const priorityOptions = [{ value: 1, label: t('workOrder.priorityLow') }, { value: 2, label: t('workOrder.priorityMedium') }, { value: 3, label: t('workOrder.priorityHigh') }]
-const sceneOptions = [{ value: 1, label: t('workOrder.createdByMe') }, { value: 2, label: t('workOrder.handledByMe') }]
+const sceneOptions = [
+  { value: 1, label: t('workOrder.createdByMe') },
+  { value: 2, label: t('workOrder.handledByMe') },
+  { value: 3, label: t('workOrder.copiedToMe') },
+  { value: 4, label: t('workOrder.groupUnassigned') }
+]
 const typeLabel = (value: number) => typeOptions.find(item => item.value === value)?.label || value
 const priorityLabel = (value: number) => priorityOptions.find(item => item.value === value)?.label || value
 const statusLabel = (value: number) => statusOptions.find(item => item.value === value)?.label || value
@@ -77,11 +86,26 @@ const query = () => { queryParams.pageNo = 1; getList() }
 const reset = () => { Object.assign(queryParams, { no: '', title: '', status: undefined, type: undefined,
   priority: undefined, handlerUserId: undefined, sceneType: undefined }); query() }
 const openForm = (type: 'create' | 'update', id?: number) => formRef.value.open(type, id)
+const canClaim = (row: WorkOrderApi.WorkOrderVO) => {
+  const group = groups.value.find(item => item.id === row.groupId)
+  return canClaimWorkOrder(row.status, row.handlerUserId, row.groupId, userId, group?.memberUserIds)
+}
+const claim = async (row: WorkOrderApi.WorkOrderVO) => {
+  await WorkOrderApi.claimWorkOrder(row.id!)
+  message.success(t('workOrder.claimSuccess'))
+  getList()
+}
 const start = async (row: WorkOrderApi.WorkOrderVO) => { await WorkOrderApi.startWorkOrder(row.id!); message.success(t('workOrder.startSuccess')); getList() }
 const returnOrder = async (row: WorkOrderApi.WorkOrderVO) => { const { value } = await ElMessageBox.prompt(t('workOrder.returnReason'), t('workOrder.return'), { inputValidator: value => !!value || t('workOrder.returnReasonRequired') }); await WorkOrderApi.returnWorkOrder(row.id!, value); getList() }
-const complete = async (row: WorkOrderApi.WorkOrderVO) => { const { value } = await ElMessageBox.prompt(t('workOrder.solution'), t('workOrder.complete'), { inputType: 'textarea', inputValidator: value => !!value || t('workOrder.solutionRequired') }); await WorkOrderApi.completeWorkOrder(row.id!, value); getList() }
+const complete = async (row: WorkOrderApi.WorkOrderVO) => { const { value } = await ElMessageBox.prompt(t('workOrder.solution'), t('workOrder.complete'), { inputType: 'textarea', inputValidator: value => value?.trim().length >= 20 || t('workOrder.solutionMinLength') }); await WorkOrderApi.completeWorkOrder(row.id!, value); getList() }
 const resubmit = async (row: WorkOrderApi.WorkOrderVO) => { await WorkOrderApi.resubmitWorkOrder(row.id!); message.success(t('workOrder.resubmitSuccess')); getList() }
 const remove = async (row: WorkOrderApi.WorkOrderVO) => { await message.confirm(t('common.delMessage')); await WorkOrderApi.deleteWorkOrder(row.id!); getList() }
-onMounted(async () => { users.value = await UserApi.getSimpleUserList(); await getList() })
+onMounted(async () => {
+  ;[users.value, groups.value] = await Promise.all([
+    UserApi.getSimpleUserList(),
+    WorkOrderApi.getWorkOrderGroupList()
+  ])
+  await getList()
+})
 onActivated(getList)
 </script>

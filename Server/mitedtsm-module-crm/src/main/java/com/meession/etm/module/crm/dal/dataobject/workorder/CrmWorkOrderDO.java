@@ -30,7 +30,10 @@ public class CrmWorkOrderDO extends BaseDO {
     private Long customerId;
     private Integer sourceType;
     private Long sourceId;
+    private Long groupId;
     private Long handlerUserId;
+    private Integer dispatchMode;
+    private LocalDateTime assignTime;
     private String description;
     private String solution;
     @TableField(typeHandler = JacksonTypeHandler.class)

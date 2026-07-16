@@ -7,7 +7,8 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum CrmWorkOrderActionTypeEnum {
     CREATE(1, "创建"), UPDATE(2, "修改"), START(3, "开始处理"), RETURN(4, "退回"),
-    RESUBMIT(5, "重新提交"), COMPLETE(6, "完结"), ASSIGN(7, "分派");
+    RESUBMIT(5, "重新提交"), COMPLETE(6, "完结"), ASSIGN(7, "分派"),
+    CLAIM(8, "领取"), CC_UPDATE(9, "更新抄送人");
 
     private final Integer type;
     private final String name;

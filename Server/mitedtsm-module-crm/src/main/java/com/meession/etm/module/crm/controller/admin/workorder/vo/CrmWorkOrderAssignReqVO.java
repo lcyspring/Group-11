@@ -17,6 +17,9 @@ public class CrmWorkOrderAssignReqVO {
     @NotNull(message = "处理人不能为空")
     private Long handlerUserId;
 
+    @Schema(description = "目标处理组编号；不传时保留原处理组")
+    private Long groupId;
+
     @Schema(description = "分派说明")
     @Size(max = 1000, message = "分派说明不能超过 1000 个字符")
     private String remark;
