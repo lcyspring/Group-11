@@ -56,10 +56,17 @@ bash -n "${PODMAN_DIR}/down.sh"
 bash -n "${PODMAN_DIR}/image-archives.sh"
 bash -n "${PODMAN_DIR}/lib/yaml-config.sh"
 bash -n "${PODMAN_DIR}/init/init-mysql.sh"
+bash -n "${PODMAN_DIR}/database-backup.sh"
+bash -n "${PODMAN_DIR}/database-restore.sh"
+bash -n "${PODMAN_DIR}/build-image-archives.sh"
 bash -n "${PODMAN_DIR}/verify-crm-receivable-reference-integrity.sh"
 bash -n "${PODMAN_DIR}/verify-crm-performance-target-runtime.sh"
 bash -n "${PODMAN_DIR}/verify-crm-runtime-security.sh"
 bash -n "${PODMAN_DIR}/verify-crm-user-guide.sh"
+
+bash "${PODMAN_DIR}/database-backup.sh" "${PODMAN_DIR}/config/database-backup-check.yaml"
+bash "${PODMAN_DIR}/database-restore.sh" "${PODMAN_DIR}/config/database-backup-check.yaml"
+bash "${PODMAN_DIR}/build-image-archives.sh" "${PODMAN_DIR}/config/build-image-archives-check.yaml"
 
 validate_sql_manifest() {
     local manifest="$1"

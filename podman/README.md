@@ -4,7 +4,7 @@ This project builds in a dedicated Ubuntu 26.04 container and runs as one
 rootless Podman Pod. Docker Engine, the Docker CLI, Docker sockets, and Compose
 are not used. `docker.io` in an image name is an OCI registry address only.
 
-中文完整流程请阅读：[Podman 全流程操作指南](DEPLOY_GUIDE_ZH.md)、
+中文入口请阅读：[中文 README](README_ZH.md)。完整流程另见：[Podman 全流程操作指南](DEPLOY_GUIDE_ZH.md)、
 [编译构建部署手册](OPERATIONS_ZH.md)和[配置字段参考](config/YAML_FIELDS_ZH.md)。
 
 ## Configuration contract

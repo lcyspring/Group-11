@@ -1,5 +1,7 @@
 # Podman YAML 字段参考
 
+返回：[Podman 中文 README](../README_ZH.md)；配置分类见 [README_ZH.md](README_ZH.md)。
+
 所有入口命令行只接收一个 YAML 路径。解析器只支持“顶层分组 + 一层标量”，不支持数组、锚点、
 多行值或第三层映射；逗号分隔值仍是一个标量。
 
@@ -129,3 +131,29 @@
 | `media.legacy_fallback` | 无法代理媒体的本地回退资源 |
 | `network.mode` | H5 构建容器网络；可复现构建使用 `none` |
 | `runtime.memory/cpus` | H5 构建容器资源上限 |
+
+## CRM MySQL 备份恢复配置
+
+| 字段 | 作用 |
+|---|---|
+| `operation.mode` | 备份脚本使用 `check/backup`，恢复脚本使用 `check/restore` |
+| `container.mysql/server` | 目标 MySQL 与需要停机保护的 Server 容器 |
+| `mysql.database/username/password` | CRM 真源库及备份账号；真实密码只在 ignored YAML |
+| `archive.directory/filename` | `.sql.gz` 与同名 `.sha256` 的目录和文件名 |
+| `archive.overwrite` | 备份是否允许覆盖已有归档 |
+| `restore.target_database` | 恢复目标库；演练必须使用隔离库名 |
+| `restore.allow_replace` | 是否允许删除并重建已存在的目标库 |
+| `restore.allow_live_database_replace` | 目标等于运行真源库时的第二道显式授权 |
+| `restore.drop_after_verify` | 验证核心表和表数后是否删除演练库 |
+
+## 编译工具链镜像归档配置
+
+| 字段 | 作用 |
+|---|---|
+| `operation.mode` | `check/save/load/push` |
+| `registry.host` | push 的唯一允许仓库主机 |
+| `image.*_builder_source` | 本机 Ubuntu Server/Web 与 HBuilderX 编译镜像 |
+| `image.*_builder_destination` | GHCR 等 OCI 仓库的版本标签 |
+| `archive.directory` | OCI tar 与 SHA-256 输出目录 |
+| `archive.*_builder_filename` | 两个编译镜像归档文件名 |
+| `archive.overwrite` | 是否允许覆盖已存在归档 |

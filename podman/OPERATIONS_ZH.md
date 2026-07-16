@@ -1,5 +1,7 @@
 # 编译、构建与部署操作手册
 
+返回：[Podman 中文 README](README_ZH.md)。
+
 ## 职责边界
 
 | 阶段 | 命令 | 输出/作用 |
@@ -9,6 +11,9 @@
 | 运行镜像打包与部署 | `up.sh <yaml>` | MySQL/Init/Server/Web/Mall 镜像和 rootless Pod |
 | 停止 | `down.sh <yaml>` | 停止 Pod；是否删卷只看 YAML |
 | 离线镜像 | `image-archives.sh <yaml>` | 保存/拉取并保存基础镜像 tar |
+| 编译镜像归档/上传 | `build-image-archives.sh <yaml>` | 两个工具链镜像 check/save/load/push |
+| CRM 数据备份 | `database-backup.sh <yaml>` | MySQL 一致性压缩备份和 SHA-256 |
+| CRM 恢复演练 | `database-restore.sh <yaml>` | 隔离库恢复、核心表检查和可选清理 |
 | 配置门禁 | `tests/runtime-config/run.sh <yaml>` | 无状态检查 YAML、manifest、脚本和 Pod 不变性 |
 
 `build-assets.sh` 只给已经安装 JDK/Node/pnpm 的 Ubuntu 26.04 成员宿主机使用；本工作站统一使用
@@ -52,3 +57,19 @@ bash ./podman/verify-crm-user-guide.sh ./podman/config/runtime-local.yaml
 ```
 
 完整字段说明见 `config/YAML_FIELDS_ZH.md`。
+
+## 备份与恢复
+
+先复制 `config/database-backup-check.yaml` 为被忽略的 `database-backup-local.yaml`，填写真实本地
+密码和归档文件名。备份设 `operation.mode: backup`；演练恢复设 `restore`、隔离目标库、
+`allow_replace: true`、`allow_live_database_replace: false`、`drop_after_verify: true`。任何直接覆盖
+运行库的操作还必须把第二道授权改为 true，不提供命令行捷径。
+直接覆盖运行真源库前还必须先停止 Server；脚本检测到 Server 运行会拒绝恢复。
+
+## 日常入口与验收资产
+
+- 日常入口：`build-in-ubuntu.sh`、`build-mall-h5-in-ubuntu.sh`、`up.sh`、`down.sh`、
+  `image-archives.sh`、`database-backup.sh`、`database-restore.sh`；
+- `verify-*.sh` 与 `config/verify-*`、`test-*`、`check-*` 是结构化测试资产，不用于普通启动；
+- 编译工具链镜像推荐 save，并可在登录 GHCR 后使用 `operation.mode: push` 上传；项目运行镜像仍由
+  当前源码产物重建。基础运行镜像只有离线交付才执行 `archive_mode: save/pull-save`。

@@ -1,0 +1,19 @@
+schema_version: 1
+
+operation:
+  mode: check
+
+registry:
+  host: ghcr.io
+
+image:
+  server_builder_source: localhost/mitedtsm-build-ubuntu:26.04
+  server_builder_destination: ghcr.io/lcyspring/group-11-build-ubuntu:26.04
+  mall_builder_source: localhost/mitedtsm-hbuilderx-ubuntu:26.04-5.05
+  mall_builder_destination: ghcr.io/lcyspring/group-11-hbuilderx-ubuntu:26.04-5.05
+
+archive:
+  directory: ../images
+  server_builder_filename: mitedtsm-build-ubuntu-26.04.oci.tar
+  mall_builder_filename: mitedtsm-hbuilderx-ubuntu-26.04-5.05.oci.tar
+  overwrite: false

@@ -27,6 +27,7 @@ dist-*
 node_modules/
 .pnpm-store/
 unpackage/
+backups/
 
 # Environment
 .env
@@ -59,6 +60,8 @@ docker-images/*.tar
 
 # Podman offline OCI image archives
 podman/images/*.tar
+podman/images/*.sha256
+podman/config/build-image-archives-local.yaml
 
 # Local source-analysis documents (kept out of product commits)
 docs/01-Existing-System-Analysis/
@@ -85,6 +88,7 @@ docs/20-CRM-Delivery/daily/
 # Local stateful runtime configuration may contain deployment credentials.
 podman/config/runtime-local.yaml
 podman/config/runtime-local-rebuild-server.yaml
+podman/config/database-backup-local.yaml
 podman/config/runtime-local-rebuild-web.yaml
 podman/config/runtime-local-rebuild-mall.yaml
 podman/config/bpm-provision-local.yaml

@@ -1,0 +1,24 @@
+schema_version: 1
+
+operation:
+  mode: check
+
+container:
+  mysql: mitedtsm-rootless-mysql
+  server: mitedtsm-rootless-server
+
+mysql:
+  database: mitedtsm_database
+  username: root
+  password: not-configured
+
+archive:
+  directory: ../../backups
+  filename: crm-mysql.sql.gz
+  overwrite: false
+
+restore:
+  target_database: mitedtsm_restore_verify
+  allow_replace: false
+  allow_live_database_replace: false
+  drop_after_verify: true
