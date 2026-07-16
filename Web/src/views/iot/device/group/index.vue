@@ -44,7 +44,7 @@
               @click="openForm('create')"
               v-hasPermi="['iot:device-group:create']"
             >
-              <Icon icon="ep:plus" class="mr-5px" /> {{ t('common.create') }}
+              <Icon icon="ep:plus" class="mr-5px" /> {{ t('action.create') }}
             </el-button>
           </el-form-item>
         </el-col>

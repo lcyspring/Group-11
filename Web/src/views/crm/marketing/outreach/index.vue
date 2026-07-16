@@ -23,7 +23,7 @@
         <el-button @click="handleQuery"><Icon class="mr-5px" icon="ep:search" />{{ t('common.query') }}</el-button>
         <el-button @click="resetQuery"><Icon class="mr-5px" icon="ep:refresh" />{{ t('common.reset') }}</el-button>
         <el-button v-hasPermi="['crm:marketing-outreach:update']" type="primary" @click="openForm()">
-          <Icon class="mr-5px" icon="ep:plus" />{{ t('common.create') }}
+          <Icon class="mr-5px" icon="ep:plus" />{{ t('action.create') }}
         </el-button>
       </el-form-item>
     </el-form>

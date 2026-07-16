@@ -60,7 +60,7 @@
           type="primary"
           @click="openForm('create')"
         >
-          <Icon class="mr-5px" icon="ep:plus" />{{ t('common.create') }}
+          <Icon class="mr-5px" icon="ep:plus" />{{ t('action.create') }}
         </el-button>
       </el-form-item>
     </el-form>

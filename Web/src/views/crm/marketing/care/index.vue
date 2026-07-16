@@ -31,7 +31,7 @@
           <el-button @click="handlePlanQuery"><Icon class="mr-5px" icon="ep:search" />{{ t('common.query') }}</el-button>
           <el-button @click="resetPlanQuery"><Icon class="mr-5px" icon="ep:refresh" />{{ t('common.reset') }}</el-button>
           <el-button v-hasPermi="['crm:customer-care:update']" type="primary" @click="openForm()">
-            <Icon class="mr-5px" icon="ep:plus" />{{ t('common.create') }}
+            <Icon class="mr-5px" icon="ep:plus" />{{ t('action.create') }}
           </el-button>
         </el-form-item>
       </el-form>
