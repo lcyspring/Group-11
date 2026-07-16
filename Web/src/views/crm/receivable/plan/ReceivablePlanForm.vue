@@ -42,7 +42,7 @@
               :disabled="formType !== 'create'"
               class="w-1/1"
               filterable
-              :placeholder="t('customer.ownerUserPlaceholder')"
+              :placeholder="t('receivable.customerPlaceholder')"
               @change="handleCustomerChange"
             >
               <el-option
@@ -61,7 +61,7 @@
               :disabled="formType !== 'create' || !formData.customerId"
               class="w-1/1"
               filterable
-              :placeholder="t('contract.namePlaceholder')"
+              :placeholder="t('receivable.contractPlaceholder')"
             >
               <el-option
                 v-for="data in contractList"

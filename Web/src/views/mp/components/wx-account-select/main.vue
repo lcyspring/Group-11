@@ -1,8 +1,12 @@
 <template>
-  <el-select v-model="account.id" :placeholder="t('common.selectAccount')" class="!w-240px" @change="onChanged">
+  <el-select v-model="account.id" :placeholder="t('mp.common.selectAccount')" class="!w-240px" @change="onChanged">
     <el-option v-for="item in accountList" :key="item.id" :label="item.name" :value="item.id" />
   </el-select>
 </template>
+
+<script lang="ts">
+let missingAccountNotified = false
+</script>
 
 <script lang="ts" setup>
 import * as MpAccountApi from '@/api/mp/account'
@@ -27,20 +31,26 @@ const emit = defineEmits<{
 }>()
 
 const handleQuery = async () => {
-  accountList.value = await MpAccountApi.getSimpleAccountList()
-  if (accountList.value.length == 0) {
-    message.error(t('common.noAccountConfig'))
-    delView(unref(currentRoute))
-    await push({ name: 'MpAccount' })
-    return
-  }
-  // 默认选中第一个
-  if (accountList.value.length > 0) {
+  try {
+    accountList.value = await MpAccountApi.getSimpleAccountList()
+    if (accountList.value.length === 0) {
+      if (!missingAccountNotified) {
+        message.warning(t('mp.common.noAccountConfig'))
+        missingAccountNotified = true
+      }
+      delView(unref(currentRoute))
+      await push({ name: 'MpAccount' })
+      return
+    }
+    missingAccountNotified = false
+    // 默认选中第一个
     account.id = accountList.value[0].id
     if (account.id) {
       account.name = accountList.value[0].name
       emit('change', account.id, account.name)
     }
+  } catch {
+    accountList.value = []
   }
 }
 
@@ -54,6 +64,6 @@ const onChanged = (id?: number) => {
 
 /** 初始化 */
 onMounted(() => {
-  handleQuery()
+  void handleQuery()
 })
 </script>

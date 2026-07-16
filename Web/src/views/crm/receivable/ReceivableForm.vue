@@ -39,7 +39,7 @@
               class="w-1/1"
               clearable
               filterable
-              :placeholder="t('customer.ownerUserPlaceholder')"
+              :placeholder="t('receivable.customerPlaceholder')"
               @change="handleCustomerChange"
             >
               <el-option
@@ -58,7 +58,7 @@
               :disabled="formType !== 'create'"
               class="w-1/1"
               filterable
-              :placeholder="t('contract.namePlaceholder')"
+              :placeholder="t('receivable.contractPlaceholder')"
               @change="handleContractChange"
             >
               <el-option

@@ -953,6 +953,7 @@ export default {
   },
   receivable: {
     title: 'إدارة المستحقات',
+    ownerUserId: 'المالك',
     no: 'رقم المستحق',
     customerId: 'العميل',
     customerName: 'اسم العميل',
@@ -982,6 +983,8 @@ export default {
     contractPrice: 'سعر العقد',
     remainingReceivablePrice: 'المبلغ المتبقي للتحصيل',
     period: 'الفترة',
+    customerPlaceholder: 'اختر العميل',
+    contractPlaceholder: 'اختر العقد',
     noPlaceholder: 'الرجاء إدخال رقم المستحق',
     pricePlaceholder: 'الرجاء إدخال سعر المستحق',
     customerIdRequired: 'لا يمكن أن يكون العميل فارغاً',

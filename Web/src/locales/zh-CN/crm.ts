@@ -947,6 +947,7 @@ export default {
   },
   receivable: {
     title: '回款管理',
+    ownerUserId: '负责人',
     no: '回款编号',
     customerId: '客户',
     customerName: '客户名称',
@@ -976,6 +977,8 @@ export default {
     contractPrice: '合同金额',
     remainingReceivablePrice: '剩余可回款',
     period: '回款期数',
+    customerPlaceholder: '请选择客户',
+    contractPlaceholder: '请选择合同',
     noPlaceholder: '请输入回款编号',
     pricePlaceholder: '请输入回款金额',
     customerIdRequired: '客户不能为空',

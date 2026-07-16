@@ -959,6 +959,7 @@ export default {
   },
   receivable: {
     title: 'Receivable Management',
+    ownerUserId: 'Owner',
     no: 'Receivable No',
     customerId: 'Customer',
     customerName: 'Customer Name',
@@ -988,6 +989,8 @@ export default {
     contractPrice: 'Contract Price',
     remainingReceivablePrice: 'Remaining Receivable',
     period: 'Period',
+    customerPlaceholder: 'Select customer',
+    contractPlaceholder: 'Select contract',
     noPlaceholder: 'Please enter receivable no',
     pricePlaceholder: 'Please enter receivable price',
     customerIdRequired: 'Customer cannot be empty',

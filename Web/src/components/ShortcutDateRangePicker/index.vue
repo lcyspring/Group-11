@@ -28,6 +28,7 @@ import * as DateUtil from '@/utils/formatTime'
 defineOptions({ name: 'ShortcutDateRangePicker' })
 
 const { t } = useI18n()
+const shortcutDays = ref(7)
 const times = ref<[string, string]>(['', '']) // 时间范围参数
 defineExpose({ times }) // 暴露时间范围参数
 
@@ -63,11 +64,11 @@ function setTimes() {
 }
 
 /** 快捷日期单选按钮选中 */
-const handleShortcutDaysChange = async () => {
+const handleShortcutDaysChange = () => {
   // 设置时间范围
   setTimes()
   // 发送时间范围选中事件
-  await emitDateRangePicker()
+  emitDateRangePicker()
 }
 
 /** 触发事件：时间范围选中 */
@@ -75,7 +76,7 @@ const emits = defineEmits<{
   (e: 'change', times: [dayjs.ConfigType, dayjs.ConfigType]): void
 }>()
 /** 触发时间范围选中事件 */
-const emitDateRangePicker = async () => {
+const emitDateRangePicker = () => {
   emits('change', times.value)
 }
 
