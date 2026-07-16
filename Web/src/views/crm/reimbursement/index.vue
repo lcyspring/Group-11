@@ -6,7 +6,12 @@
       </el-form-item>
       <el-form-item :label="t('reimbursement.status')" prop="auditStatus">
         <el-select v-model="queryParams.auditStatus" class="!w-160px" clearable @change="query">
-          <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
+          <el-option
+            v-for="item in statusOptions"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
         </el-select>
       </el-form-item>
       <el-form-item :label="t('reimbursement.expenseDate')" prop="expenseDate">
@@ -22,7 +27,11 @@
       <el-form-item>
         <el-button @click="query">{{ t('common.search') }}</el-button>
         <el-button @click="reset">{{ t('common.reset') }}</el-button>
-        <el-button v-hasPermi="['crm:reimbursement:create']" type="primary" @click="formRef.open('create')">
+        <el-button
+          v-hasPermi="['crm:reimbursement:create']"
+          type="primary"
+          @click="formRef.open('create')"
+        >
           {{ t('reimbursement.createDraft') }}
         </el-button>
         <el-button v-hasPermi="['crm:expense-category:write']" @click="categoryRef.open()">
@@ -42,10 +51,16 @@
     <el-table v-loading="loading" :data="list" stripe>
       <el-table-column fixed="left" :label="t('reimbursement.no')" min-width="170" prop="no">
         <template #default="{ row }">
-          <el-link :underline="false" type="primary" @click="detailRef.open(row.id)">{{ row.no }}</el-link>
+          <el-link :underline="false" type="primary" @click="detailRef.open(row.id)">{{
+            row.no
+          }}</el-link>
         </template>
       </el-table-column>
-      <el-table-column :label="t('reimbursement.applicant')" min-width="110" prop="applicantUserName" />
+      <el-table-column
+        :label="t('reimbursement.applicant')"
+        min-width="110"
+        prop="applicantUserName"
+      />
       <el-table-column :label="t('reimbursement.customer')" min-width="130" prop="customerName">
         <template #default="{ row }">{{ row.customerName || '-' }}</template>
       </el-table-column>
@@ -59,45 +74,53 @@
         <template #default="{ row }">{{ money(row.totalAmount) }}</template>
       </el-table-column>
       <el-table-column :label="t('reimbursement.expenseDate')" min-width="190">
-        <template #default="{ row }">{{ row.expenseStartDate }} → {{ row.expenseEndDate }}</template>
+        <template #default="{ row }"
+          >{{ row.expenseStartDate }} → {{ row.expenseEndDate }}</template
+        >
       </el-table-column>
       <el-table-column fixed="right" :label="t('reimbursement.status')" min-width="110">
         <template #default="{ row }">
           <el-tag :type="statusTag(row.auditStatus)">{{ statusLabel(row.auditStatus) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column fixed="right" :label="t('common.action')" min-width="260">
+      <el-table-column fixed="right" :label="t('common.action')" width="340">
         <template #default="{ row }">
-          <el-button
-            v-if="canEditReimbursement(row.auditStatus)"
-            v-hasPermi="['crm:reimbursement:update']"
-            link
-            type="primary"
-            @click="formRef.open('update', row.id)"
-          >
-            {{ row.auditStatus === REIMBURSEMENT_STATUS.DRAFT ? t('common.edit') : t('reimbursement.revise') }}
-          </el-button>
-          <el-button
-            v-if="row.auditStatus === REIMBURSEMENT_STATUS.DRAFT"
-            v-hasPermi="['crm:reimbursement:update']"
-            link
-            type="success"
-            @click="submit(row)"
-          >
-            {{ t('reimbursement.submit') }}
-          </el-button>
-          <el-button v-if="row.processInstanceId" link type="primary" @click="viewProcess(row)">
-            {{ t('reimbursement.viewApproval') }}
-          </el-button>
-          <el-button
-            v-if="canDeleteReimbursement(row.auditStatus, row.processInstanceId)"
-            v-hasPermi="['crm:reimbursement:delete']"
-            link
-            type="danger"
-            @click="remove(row.id)"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions>
+            <el-button
+              v-if="canEditReimbursement(row.auditStatus)"
+              v-hasPermi="['crm:reimbursement:update']"
+              link
+              type="primary"
+              @click="formRef.open('update', row.id)"
+            >
+              {{
+                row.auditStatus === REIMBURSEMENT_STATUS.DRAFT
+                  ? t('common.edit')
+                  : t('reimbursement.revise')
+              }}
+            </el-button>
+            <el-button
+              v-if="row.auditStatus === REIMBURSEMENT_STATUS.DRAFT"
+              v-hasPermi="['crm:reimbursement:update']"
+              link
+              type="success"
+              @click="submit(row)"
+            >
+              {{ t('reimbursement.submit') }}
+            </el-button>
+            <el-button v-if="row.processInstanceId" link type="primary" @click="viewProcess(row)">
+              {{ t('reimbursement.viewApproval') }}
+            </el-button>
+            <el-button
+              v-if="canDeleteReimbursement(row.auditStatus, row.processInstanceId)"
+              v-hasPermi="['crm:reimbursement:delete']"
+              link
+              type="danger"
+              @click="remove(row.id)"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>
@@ -119,11 +142,8 @@ import * as ReimbursementApi from '@/api/crm/reimbursement'
 import ExpenseCategoryDialog from './ExpenseCategoryDialog.vue'
 import ReimbursementDetail from './ReimbursementDetail.vue'
 import ReimbursementForm from './ReimbursementForm.vue'
-import {
-  REIMBURSEMENT_STATUS,
-  canDeleteReimbursement,
-  canEditReimbursement
-} from './constants'
+import TableActions from '@/components/TableActions/index.vue'
+import { REIMBURSEMENT_STATUS, canDeleteReimbursement, canEditReimbursement } from './constants'
 
 defineOptions({ name: 'CrmReimbursement' })
 const { t } = useI18n('crm')
@@ -156,11 +176,17 @@ const statusLabel = (value?: number) =>
 const statusTag = (value?: number) =>
   ({ 0: 'info', 10: 'warning', 20: 'success', 30: 'danger', 40: 'info' })[value ?? -1] as any
 const money = (value?: number) =>
-  Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })
+  Number(value || 0).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 6
+  })
 const getList = async () => {
   loading.value = true
   try {
-    const data = await ReimbursementApi.getReimbursementPage({ ...queryParams, sceneType: sceneType.value })
+    const data = await ReimbursementApi.getReimbursementPage({
+      ...queryParams,
+      sceneType: sceneType.value
+    })
     list.value = data.list
     total.value = data.total
   } finally {

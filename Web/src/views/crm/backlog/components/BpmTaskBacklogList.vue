@@ -8,7 +8,11 @@
       />
       <el-table-column :label="t('process.instance.summary')" min-width="200">
         <template #default="{ row }">
-          <el-space v-if="row.processInstance?.summary?.length" direction="vertical" alignment="start">
+          <el-space
+            v-if="row.processInstance?.summary?.length"
+            direction="vertical"
+            alignment="start"
+          >
             <el-text v-for="item in row.processInstance.summary" :key="item.key" type="info">
               {{ item.key }}：{{ item.value }}
             </el-text>
@@ -55,6 +59,7 @@ const loading = ref(false)
 const total = ref(0)
 const list = ref<any[]>([])
 const query = reactive({ pageNo: 1, pageSize: 10 })
+let initialized = false
 
 const loadData = async () => {
   loading.value = true
@@ -72,6 +77,12 @@ const handleAudit = (row: any) => {
     query: { id: row.processInstance.id, taskId: row.id }
   })
 }
-onMounted(loadData)
+onMounted(async () => {
+  await loadData()
+  initialized = true
+})
+onActivated(() => {
+  if (initialized) loadData()
+})
 defineExpose({ loadData })
 </script>

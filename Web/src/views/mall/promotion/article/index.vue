@@ -123,24 +123,26 @@
         prop="createTime"
         min-width="180"
       />
-      <el-table-column align="center" fixed="right" :label="t('mall.promotion.article.operation')" min-width="120">
+      <el-table-column align="center" fixed="right" :label="t('mall.promotion.article.operation')" width="220">
         <template #default="scope">
-          <el-button
-            v-hasPermi="['promotion:article:update']"
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-          >
-            {{ t('action.edit') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['promotion:article:delete']"
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-          >
-            {{ t('action.delete') }}
-          </el-button>
+          <TableActions>
+            <el-button
+              v-hasPermi="['promotion:article:update']"
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+            >
+              {{ t('action.edit') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['promotion:article:delete']"
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+            >
+              {{ t('action.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

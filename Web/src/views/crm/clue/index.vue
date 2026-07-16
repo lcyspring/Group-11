@@ -4,12 +4,7 @@
 
   <ContentWrap>
     <!-- 搜索工作栏 -->
-    <el-form
-      class="-mb-15px"
-      :model="queryParams"
-      ref="queryFormRef"
-      label-width="auto"
-    >
+    <el-form class="-mb-15px" :model="queryParams" ref="queryFormRef" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('clue.name')" prop="name">
@@ -58,8 +53,12 @@
       <el-row>
         <el-col :span="24">
           <el-form-item>
-            <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> {{ t('common.search') }}</el-button>
-            <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> {{ t('common.reset') }}</el-button>
+            <el-button @click="handleQuery"
+              ><Icon icon="ep:search" class="mr-5px" /> {{ t('common.search') }}</el-button
+            >
+            <el-button @click="resetQuery"
+              ><Icon icon="ep:refresh" class="mr-5px" /> {{ t('common.reset') }}</el-button
+            >
             <el-button type="primary" @click="openForm('create')" v-hasPermi="['crm:clue:create']">
               <Icon icon="ep:plus" class="mr-5px" /> {{ t('action.add') }}
             </el-button>
@@ -86,8 +85,20 @@
       <el-tab-pane :label="t('customer.subordinateResponsible')" name="3" />
       <el-tab-pane :label="t('customer.organizationScope')" name="4" />
     </el-tabs>
-    <el-table v-loading="loading" :data="list" :stripe="true" :show-overflow-tooltip="true" :table-layout="'auto'">
-      <el-table-column :label="t('clue.name')" align="center" prop="name" fixed="left" min-width="160">
+    <el-table
+      v-loading="loading"
+      :data="list"
+      :stripe="true"
+      :show-overflow-tooltip="true"
+      :table-layout="'auto'"
+    >
+      <el-table-column
+        :label="t('clue.name')"
+        align="center"
+        prop="name"
+        fixed="left"
+        min-width="160"
+      >
         <template #default="scope">
           <el-link :underline="false" type="primary" @click="openDetail(scope.row.id)">
             {{ scope.row.name }}
@@ -100,10 +111,25 @@
         </template>
       </el-table-column>
       <el-table-column :label="t('customer.mobile')" align="center" prop="mobile" min-width="120" />
-      <el-table-column :label="t('customer.telephone')" align="center" prop="telephone" min-width="130" />
+      <el-table-column
+        :label="t('customer.telephone')"
+        align="center"
+        prop="telephone"
+        min-width="130"
+      />
       <el-table-column :label="t('customer.email')" align="center" prop="email" min-width="180" />
-      <el-table-column :label="t('customer.detailAddress')" align="center" prop="detailAddress" min-width="180" />
-      <el-table-column align="center" :label="t('customer.industryId')" prop="industryId" min-width="100">
+      <el-table-column
+        :label="t('customer.detailAddress')"
+        align="center"
+        prop="detailAddress"
+        min-width="180"
+      />
+      <el-table-column
+        align="center"
+        :label="t('customer.industryId')"
+        prop="industryId"
+        min-width="100"
+      >
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.CRM_CUSTOMER_INDUSTRY" :value="scope.row.industryId" />
         </template>
@@ -128,9 +154,24 @@
         :formatter="dateFormatter"
         min-width="180"
       />
-      <el-table-column align="center" :label="t('clue.contactLastContent')" prop="contactLastContent" min-width="200" />
-      <el-table-column align="center" :label="t('clue.ownerUserName')" prop="ownerUserName" min-width="100" />
-      <el-table-column align="center" :label="t('clue.ownerUserDeptName')" prop="ownerUserDeptName" min-width="100" />
+      <el-table-column
+        align="center"
+        :label="t('clue.contactLastContent')"
+        prop="contactLastContent"
+        min-width="200"
+      />
+      <el-table-column
+        align="center"
+        :label="t('clue.ownerUserName')"
+        prop="ownerUserName"
+        min-width="100"
+      />
+      <el-table-column
+        align="center"
+        :label="t('clue.ownerUserDeptName')"
+        prop="ownerUserDeptName"
+        min-width="100"
+      />
       <el-table-column
         :label="t('clue.updateTime')"
         align="center"
@@ -145,36 +186,43 @@
         :formatter="dateFormatter"
         min-width="180"
       />
-      <el-table-column align="center" :label="t('clue.creatorName')" prop="creatorName" min-width="100" />
-      <el-table-column :label="t('common.action')" align="center" min-width="150" fixed="right">
+      <el-table-column
+        align="center"
+        :label="t('clue.creatorName')"
+        prop="creatorName"
+        min-width="100"
+      />
+      <el-table-column :label="t('common.action')" align="center" fixed="right" width="140">
         <template #default="scope">
-          <el-button
-            v-if="!scope.row.transformStatus && scope.row.poolStatus === 0"
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-            v-hasPermi="['crm:clue:update']"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            v-if="!scope.row.transformStatus && scope.row.poolStatus === 0"
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-            v-hasPermi="['crm:clue:delete']"
-          >
-            {{ t('common.delete') }}
-          </el-button>
-          <el-button
-            v-if="!scope.row.transformStatus && scope.row.poolStatus === 0"
-            link
-            type="warning"
-            @click="handlePutPublic(scope.row)"
-            v-hasPermi="['crm:clue-public:put']"
-          >
-            {{ t('clue.putPublic') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              v-if="!scope.row.transformStatus && scope.row.poolStatus === 0"
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+              v-hasPermi="['crm:clue:update']"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              v-if="!scope.row.transformStatus && scope.row.poolStatus === 0"
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+              v-hasPermi="['crm:clue:delete']"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+            <el-button
+              v-if="!scope.row.transformStatus && scope.row.poolStatus === 0"
+              link
+              type="warning"
+              @click="handlePutPublic(scope.row)"
+              v-hasPermi="['crm:clue-public:put']"
+            >
+              {{ t('clue.putPublic') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

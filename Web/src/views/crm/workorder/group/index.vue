@@ -26,14 +26,16 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column :label="t('common.action')" fixed="right" width="150">
+      <el-table-column :label="t('common.action')" fixed="right" width="220">
         <template #default="{ row }">
-          <el-button v-hasPermi="['crm:work-order-group:update']" link type="primary" @click="open(row)">
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button v-hasPermi="['crm:work-order-group:delete']" link type="danger" @click="remove(row.id)">
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions>
+            <el-button v-hasPermi="['crm:work-order-group:update']" link type="primary" @click="open(row)">
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button v-hasPermi="['crm:work-order-group:delete']" link type="danger" @click="remove(row.id)">
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

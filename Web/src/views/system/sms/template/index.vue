@@ -3,12 +3,7 @@
 
   <ContentWrap>
     <!-- 搜索工作栏 -->
-    <el-form
-      class="-mb-15px"
-      :model="queryParams"
-      ref="queryFormRef"
-      label-width="auto"
-    >
+    <el-form class="-mb-15px" :model="queryParams" ref="queryFormRef" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('system.smsTemplate.type')" prop="type">
@@ -103,8 +98,12 @@
       <el-row>
         <el-col :span="24">
           <el-form-item>
-            <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> {{ t('common.query') }}</el-button>
-            <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> {{ t('common.reset') }}</el-button>
+            <el-button @click="handleQuery"
+              ><Icon icon="ep:search" class="mr-5px" /> {{ t('common.query') }}</el-button
+            >
+            <el-button @click="resetQuery"
+              ><Icon icon="ep:refresh" class="mr-5px" /> {{ t('common.reset') }}</el-button
+            >
             <el-button
               type="primary"
               plain
@@ -139,7 +138,12 @@
 
   <!-- 列表 -->
   <ContentWrap>
-    <el-table v-loading="loading" :data="list" :table-layout="'auto'" @selection-change="handleRowCheckboxChange">
+    <el-table
+      v-loading="loading"
+      :data="list"
+      :table-layout="'auto'"
+      @selection-change="handleRowCheckboxChange"
+    >
       <el-table-column type="selection" width="55" />
       <el-table-column
         :label="t('system.smsTemplate.code')"
@@ -195,32 +199,34 @@
         min-width="180"
         :formatter="dateFormatter"
       />
-      <el-table-column :label="t('common.operation')" align="center" min-width="210" fixed="right">
+      <el-table-column :label="t('common.operation')" align="center" fixed="right" width="140">
         <template #default="scope">
-          <el-button
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-            v-hasPermi="['system:sms-template:update']"
-          >
-            {{ t('action.edit') }}
-          </el-button>
-          <el-button
-            link
-            type="primary"
-            @click="openSendForm(scope.row.id)"
-            v-hasPermi="['system:sms-template:send-sms']"
-          >
-            {{ t('system.smsTemplate.test') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-            v-hasPermi="['system:sms-template:delete']"
-          >
-            {{ t('action.delete') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+              v-hasPermi="['system:sms-template:update']"
+            >
+              {{ t('action.edit') }}
+            </el-button>
+            <el-button
+              link
+              type="primary"
+              @click="openSendForm(scope.row.id)"
+              v-hasPermi="['system:sms-template:send-sms']"
+            >
+              {{ t('system.smsTemplate.test') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+              v-hasPermi="['system:sms-template:delete']"
+            >
+              {{ t('action.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

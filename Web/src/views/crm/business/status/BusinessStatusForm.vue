@@ -65,25 +65,27 @@
               <el-text v-else>{{ row.percent }}</el-text>
             </template>
           </el-table-column>
-          <el-table-column :label="t('common.action')" min-width="150" align="center" fixed="right">
+          <el-table-column :label="t('common.action')" align="center" fixed="right" width="220">
             <template #default="scope">
-              <el-button
-                v-if="!scope.row.endStatus"
-                link
-                type="primary"
-                @click="addStatus(scope.$index)"
-              >
-                {{ t('common.add') }}
-              </el-button>
-              <el-button
-                v-if="!scope.row.endStatus"
-                link
-                type="danger"
-                @click="deleteStatusArea(scope.$index)"
-                :disabled="formData.statuses.length <= 1"
-              >
-                {{ t('common.del') }}
-              </el-button>
+              <TableActions>
+                <el-button
+                  v-if="!scope.row.endStatus"
+                  link
+                  type="primary"
+                  @click="addStatus(scope.$index)"
+                >
+                  {{ t('common.add') }}
+                </el-button>
+                <el-button
+                  v-if="!scope.row.endStatus"
+                  link
+                  type="danger"
+                  @click="deleteStatusArea(scope.$index)"
+                  :disabled="formData.statuses.length <= 1"
+                >
+                  {{ t('common.del') }}
+                </el-button>
+              </TableActions>
             </template>
           </el-table-column>
         </el-table>

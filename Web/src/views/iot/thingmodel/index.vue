@@ -70,24 +70,26 @@
             <DataDefinition :data="row" />
           </template>
         </el-table-column>
-        <el-table-column align="center" :label="t('common.operation')" fixed="right">
+        <el-table-column align="center" :label="t('common.operation')" fixed="right" width="220">
           <template #default="scope">
-            <el-button
-              v-hasPermi="[`iot:thing-model:update`]"
-              link
-              type="primary"
-              @click="openForm('update', scope.row.id)"
-            >
-              {{ t('common.edit') }}
-            </el-button>
-            <el-button
-              v-hasPermi="['iot:thing-model:delete']"
-              link
-              type="danger"
-              @click="handleDelete(scope.row.id)"
-            >
-              {{ t('common.delete') }}
-            </el-button>
+            <TableActions>
+              <el-button
+                v-hasPermi="[`iot:thing-model:update`]"
+                link
+                type="primary"
+                @click="openForm('update', scope.row.id)"
+              >
+                {{ t('common.edit') }}
+              </el-button>
+              <el-button
+                v-hasPermi="['iot:thing-model:delete']"
+                link
+                type="danger"
+                @click="handleDelete(scope.row.id)"
+              >
+                {{ t('common.delete') }}
+              </el-button>
+            </TableActions>
           </template>
         </el-table-column>
       </el-table>

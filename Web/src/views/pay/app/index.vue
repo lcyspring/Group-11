@@ -193,24 +193,26 @@
           </template>
         </el-table-column>
       </el-table-column>
-      <el-table-column align="center" fixed="right" :label="t('common.operation')" min-width="150">
+      <el-table-column align="center" fixed="right" :label="t('common.operation')" width="220">
         <template #default="scope">
-          <el-button
-            v-hasPermi="['pay:app:update']"
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['pay:app:delete']"
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions>
+            <el-button
+              v-hasPermi="['pay:app:update']"
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['pay:app:delete']"
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

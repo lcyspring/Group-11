@@ -3,12 +3,7 @@
 
   <!-- 搜索工作栏 -->
   <ContentWrap>
-    <el-form
-      class="-mb-15px"
-      :model="queryParams"
-      ref="queryFormRef"
-      label-width="auto"
-    >
+    <el-form class="-mb-15px" :model="queryParams" ref="queryFormRef" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('system.notify.templateName')" prop="name">
@@ -66,8 +61,12 @@
       <el-row>
         <el-col :span="24">
           <el-form-item>
-            <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> {{ t('common.query') }}</el-button>
-            <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> {{ t('common.reset') }}</el-button>
+            <el-button @click="handleQuery"
+              ><Icon icon="ep:search" class="mr-5px" /> {{ t('common.query') }}</el-button
+            >
+            <el-button @click="resetQuery"
+              ><Icon icon="ep:refresh" class="mr-5px" /> {{ t('common.reset') }}</el-button
+            >
             <el-button
               type="primary"
               plain
@@ -93,7 +92,12 @@
 
   <!-- 列表 -->
   <ContentWrap>
-    <el-table v-loading="loading" :data="list" :table-layout="'auto'" @selection-change="handleRowCheckboxChange">
+    <el-table
+      v-loading="loading"
+      :data="list"
+      :table-layout="'auto'"
+      @selection-change="handleRowCheckboxChange"
+    >
       <el-table-column type="selection" width="55" />
       <el-table-column
         :label="t('system.notify.templateCode2')"
@@ -122,7 +126,12 @@
         min-width="200"
         :show-overflow-tooltip="true"
       />
-      <el-table-column :label="t('system.notify.status')" align="center" prop="status" min-width="80">
+      <el-table-column
+        :label="t('system.notify.status')"
+        align="center"
+        prop="status"
+        min-width="80"
+      >
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.COMMON_STATUS" :value="scope.row.status" />
         </template>
@@ -135,32 +144,34 @@
         min-width="180"
         :formatter="dateFormatter"
       />
-      <el-table-column :label="t('common.operation')" align="center" min-width="210" fixed="right">
+      <el-table-column :label="t('common.operation')" align="center" fixed="right" width="140">
         <template #default="scope">
-          <el-button
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-            v-hasPermi="['system:notify-template:update']"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            link
-            type="primary"
-            @click="openSendForm(scope.row)"
-            v-hasPermi="['system:notify-template:send-notify']"
-          >
-            {{ t('common.detail') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-            v-hasPermi="['system:notify-template:delete']"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+              v-hasPermi="['system:notify-template:update']"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              link
+              type="primary"
+              @click="openSendForm(scope.row)"
+              v-hasPermi="['system:notify-template:send-notify']"
+            >
+              {{ t('common.detail') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+              v-hasPermi="['system:notify-template:delete']"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

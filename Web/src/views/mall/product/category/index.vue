@@ -3,12 +3,7 @@
 
   <!-- 搜索工作区 -->
   <ContentWrap>
-    <el-form
-      class="-mb-15px"
-      :model="queryParams"
-      ref="queryFormRef"
-      label-width="auto"
-    >
+    <el-form class="-mb-15px" :model="queryParams" ref="queryFormRef" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('category.name')" prop="name">
@@ -25,8 +20,12 @@
       <el-row>
         <el-col :span="24">
           <el-form-item>
-            <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> {{ t('common.search') }}</el-button>
-            <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> {{ t('common.reset') }}</el-button>
+            <el-button @click="handleQuery"
+              ><Icon icon="ep:search" class="mr-5px" /> {{ t('common.search') }}</el-button
+            >
+            <el-button @click="resetQuery"
+              ><Icon icon="ep:refresh" class="mr-5px" /> {{ t('common.reset') }}</el-button
+            >
             <el-button
               type="primary"
               plain
@@ -43,9 +42,20 @@
 
   <!-- 列表 -->
   <ContentWrap>
-    <el-table v-loading="loading" :data="list" row-key="id" default-expand-all :table-layout="'auto'">
+    <el-table
+      v-loading="loading"
+      :data="list"
+      row-key="id"
+      default-expand-all
+      :table-layout="'auto'"
+    >
       <el-table-column :label="t('category.name')" min-width="240" prop="name" sortable />
-      <el-table-column :label="t('category.categoryIcon')" align="center" min-width="80" prop="picUrl">
+      <el-table-column
+        :label="t('category.categoryIcon')"
+        align="center"
+        min-width="80"
+        prop="picUrl"
+      >
         <template #default="scope">
           <img :src="scope.row.picUrl" :alt="t('category.mobileCategoryImage')" class="h-36px" />
         </template>
@@ -62,34 +72,37 @@
         prop="createTime"
         min-width="180"
         :formatter="dateFormatter"
-       fixed="right" />
-      <el-table-column :label="t('common.operation')" align="center" min-width="180">
+        fixed="right"
+      />
+      <el-table-column :label="t('common.operation')" align="center" width="140">
         <template #default="scope">
-          <el-button
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-            v-hasPermi="['product:category:update']"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            link
-            type="primary"
-            v-if="scope.row.parentId > 0"
-            @click="handleViewSpu(scope.row.id)"
-            v-hasPermi="['product:spu:query']"
-          >
-            {{ t('category.viewProduct') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-            v-hasPermi="['product:category:delete']"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+              v-hasPermi="['product:category:update']"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              link
+              type="primary"
+              v-if="scope.row.parentId > 0"
+              @click="handleViewSpu(scope.row.id)"
+              v-hasPermi="['product:spu:query']"
+            >
+              {{ t('category.viewProduct') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+              v-hasPermi="['product:category:delete']"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

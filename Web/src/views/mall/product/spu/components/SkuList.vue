@@ -125,12 +125,14 @@
         </template>
       </el-table-column>
     </template>
-    <el-table-column v-if="formData?.specType" align="center" fixed="right" :label="t('common.operation')" min-width="150">
+    <el-table-column v-if="formData?.specType" align="center" fixed="right" :label="t('common.operation')" width="220">
       <template #default="{ row }">
-        <el-button v-if="isBatch" link size="small" type="primary" @click="batchAdd">
-          {{ t('sku.batchAdd') }}
-        </el-button>
-        <el-button v-else link size="small" type="primary" @click="deleteSku(row)">{{ t('sku.delete') }}</el-button>
+        <TableActions>
+          <el-button v-if="isBatch" link size="small" type="primary" @click="batchAdd">
+            {{ t('sku.batchAdd') }}
+          </el-button>
+          <el-button v-else link size="small" type="primary" @click="deleteSku(row)">{{ t('sku.delete') }}</el-button>
+        </TableActions>
       </template>
     </el-table-column>
   </el-table>

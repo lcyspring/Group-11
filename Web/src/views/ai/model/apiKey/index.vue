@@ -86,24 +86,26 @@
           <dict-tag :type="DICT_TYPE.COMMON_STATUS" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column :label="tAi('chat.apiKey.operation')" align="center" fixed="right">
+      <el-table-column :label="tAi('chat.apiKey.operation')" align="center" fixed="right" width="220">
         <template #default="scope">
-          <el-button
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-            v-hasPermi="['ai:api-key:update']"
-          >
-            {{ tAi('chat.apiKey.edit') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-            v-hasPermi="['ai:api-key:delete']"
-          >
-            {{ tAi('chat.apiKey.delete') }}
-          </el-button>
+          <TableActions>
+            <el-button
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+              v-hasPermi="['ai:api-key:update']"
+            >
+              {{ tAi('chat.apiKey.edit') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+              v-hasPermi="['ai:api-key:delete']"
+            >
+              {{ tAi('chat.apiKey.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

@@ -1,12 +1,7 @@
 ﻿<template>
   <ContentWrap>
     <!-- 搜索工作栏 -->
-    <el-form
-      ref="queryFormRef"
-      :model="queryParams"
-      class="-mb-15px"
-      label-width="auto"
-    >
+    <el-form ref="queryFormRef" :model="queryParams" class="-mb-15px" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('common.productName')" prop="name">
@@ -106,7 +101,9 @@
                 </div>
                 <div class="mb-2.5 last:mb-0">
                   <span class="text-[#717c8e] mr-2.5">{{ t('common.productIdentifier') }}</span>
-                  <span class="text-[var(--el-text-color-primary)] inline-block align-middle overflow-hidden text-ellipsis whitespace-nowrap max-w-[140px]">
+                  <span
+                    class="text-[var(--el-text-color-primary)] inline-block align-middle overflow-hidden text-ellipsis whitespace-nowrap max-w-[140px]"
+                  >
                     {{ item.productKey }}
                   </span>
                 </div>
@@ -167,7 +164,14 @@
     </el-row>
 
     <!-- 列表视图 -->
-    <el-table v-else v-loading="loading" :data="list" :show-overflow-tooltip="true" :stripe="true" :table-layout="'auto'">
+    <el-table
+      v-else
+      v-loading="loading"
+      :data="list"
+      :show-overflow-tooltip="true"
+      :stripe="true"
+      :table-layout="'auto'"
+    >
       <el-table-column align="center" label="ID" prop="id" />
       <el-table-column align="center" label="ProductKey" prop="productKey" />
       <el-table-column align="center" :label="t('common.productCategory')" prop="categoryName" />
@@ -204,34 +208,37 @@
         :label="t('common.createTime')"
         prop="createTime"
         min-width="180"
-       fixed="right" />
-      <el-table-column align="center" :label="t('common.operation')">
+        fixed="right"
+      />
+      <el-table-column align="center" :label="t('common.operation')" width="140">
         <template #default="scope">
-          <el-button
-            v-hasPermi="['iot:product:query']"
-            link
-            type="primary"
-            @click="openDetail(scope.row.id)"
-          >
-            {{ t('common.view') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['iot:product:update']"
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['iot:product:delete']"
-            :disabled="scope.row.status === 1"
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              v-hasPermi="['iot:product:query']"
+              link
+              type="primary"
+              @click="openDetail(scope.row.id)"
+            >
+              {{ t('common.view') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['iot:product:update']"
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['iot:product:delete']"
+              :disabled="scope.row.status === 1"
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

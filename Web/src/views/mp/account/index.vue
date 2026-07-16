@@ -3,12 +3,7 @@
 
   <!-- 搜索工作栏 -->
   <ContentWrap>
-    <el-form
-      class="-mb-15px"
-      :model="queryParams"
-      ref="queryFormRef"
-      label-width="auto"
-    >
+    <el-form class="-mb-15px" :model="queryParams" ref="queryFormRef" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('account.name')" prop="name">
@@ -25,9 +20,17 @@
       <el-row>
         <el-col :span="24">
           <el-form-item>
-            <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" />{{ t('common.query') }}</el-button>
-            <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" />{{ t('common.reset') }}</el-button>
-            <el-button type="primary" @click="openForm('create')" v-hasPermi="['mp:account:create']">
+            <el-button @click="handleQuery"
+              ><Icon icon="ep:search" class="mr-5px" />{{ t('common.query') }}</el-button
+            >
+            <el-button @click="resetQuery"
+              ><Icon icon="ep:refresh" class="mr-5px" />{{ t('common.reset') }}</el-button
+            >
+            <el-button
+              type="primary"
+              @click="openForm('create')"
+              v-hasPermi="['mp:account:create']"
+            >
               <Icon icon="ep:plus" class="mr-5px" /> {{ t('common.add') }}
             </el-button>
           </el-form-item>
@@ -40,7 +43,12 @@
   <ContentWrap>
     <el-table v-loading="loading" :data="list" :table-layout="'auto'">
       <el-table-column :label="t('account.name')" align="center" prop="name" />
-      <el-table-column :label="t('account.wechatAccount')" align="center" prop="account" min-width="180" />
+      <el-table-column
+        :label="t('account.wechatAccount')"
+        align="center"
+        prop="account"
+        min-width="180"
+      />
       <el-table-column label="appId" align="center" prop="appId" min-width="180" />
       <el-table-column :label="t('account.serverUrl')" align="center" prop="appId" min-width="360">
         <template #default="scope">
@@ -65,33 +73,35 @@
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column :label="t('account.remark')" align="center" prop="remark"  fixed="right" />
-      <el-table-column :label="t('common.operation')" align="center">
+      <el-table-column :label="t('account.remark')" align="center" prop="remark" fixed="right" />
+      <el-table-column :label="t('common.operation')" align="center" width="140">
         <template #default="scope">
-          <el-button
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-            v-hasPermi="['mp:account:update']"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-            v-hasPermi="['mp:account:delete']"
-          >
-            {{ t('common.delete') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleCleanQuota(scope.row)"
-            v-hasPermi="['mp:account:clear-quota']"
-          >
-            {{ t('account.clearQuota') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+              v-hasPermi="['mp:account:update']"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+              v-hasPermi="['mp:account:delete']"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleCleanQuota(scope.row)"
+              v-hasPermi="['mp:account:clear-quota']"
+            >
+              {{ t('account.clearQuota') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

@@ -25,8 +25,11 @@ test('invalidates the cached garbage list immediately after a successful transit
 })
 
 test('keeps restore and permanent-delete actions visible on one stable row', () => {
-  assert.match(source, /fixed="right" width="320"/)
-  assert.match(source, /<div class="garbage-actions">[\s\S]*?restoreToPublic[\s\S]*?permanentDelete[\s\S]*?<\/div>/)
+  assert.match(source, /fixed="right" width="220"/)
+  assert.match(
+    source,
+    /<TableActions>[\s\S]*?<div class="garbage-actions">[\s\S]*?restoreToPublic[\s\S]*?permanentDelete[\s\S]*?<\/div>[\s\S]*?<\/TableActions>/
+  )
   assert.match(source, /\.garbage-actions \{[\s\S]*?display: inline-flex;[\s\S]*?white-space: nowrap;/)
   assert.match(source, /crm:customer-garbage:manage/)
   assert.match(source, /crm:customer-garbage:delete/)

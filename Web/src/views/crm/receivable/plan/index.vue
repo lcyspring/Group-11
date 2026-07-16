@@ -219,35 +219,37 @@
         prop="creatorName"
         min-width="100"
       />
-      <el-table-column align="center" fixed="right" :label="t('common.action')" min-width="180">
+      <el-table-column align="center" fixed="right" :label="t('common.action')" width="140">
         <template #default="scope">
-          <el-button
-            v-hasPermi="['crm:receivable:create']"
-            link
-            type="success"
-            @click="openReceivableForm(scope.row)"
-            :disabled="scope.row.receivableId"
-          >
-            {{ t('receivablePlan.createReceivable') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['crm:receivable-plan:update']"
-            link
-            type="primary"
-            :disabled="Boolean(scope.row.receivableId)"
-            @click="openForm('update', scope.row.id)"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['crm:receivable-plan:delete']"
-            link
-            type="danger"
-            :disabled="Boolean(scope.row.receivableId)"
-            @click="handleDelete(scope.row.id)"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              v-hasPermi="['crm:receivable:create']"
+              link
+              type="success"
+              @click="openReceivableForm(scope.row)"
+              :disabled="scope.row.receivableId"
+            >
+              {{ t('receivablePlan.createReceivable') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['crm:receivable-plan:update']"
+              link
+              type="primary"
+              :disabled="Boolean(scope.row.receivableId)"
+              @click="openForm('update', scope.row.id)"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['crm:receivable-plan:delete']"
+              link
+              type="danger"
+              :disabled="Boolean(scope.row.receivableId)"
+              @click="handleDelete(scope.row.id)"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

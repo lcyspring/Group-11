@@ -151,7 +151,13 @@
 
     <!-- 数据表格 -->
     <el-card class="mb-20px" shadow="never">
-      <el-table v-loading="loading" :data="list" stripe @selection-change="handleSelectionChange" :table-layout="'auto'">
+      <el-table
+        v-loading="loading"
+        :data="list"
+        stripe
+        @selection-change="handleSelectionChange"
+        :table-layout="'auto'"
+      >
         <el-table-column type="selection" width="55" />
         <el-table-column :label="t('rule.scene.name')" prop="name" min-width="200">
           <template #default="{ row }">
@@ -199,7 +205,11 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column :label="t('common.lastOnlineTime')" prop="lastTriggeredTime" min-width="180">
+        <el-table-column
+          :label="t('common.lastOnlineTime')"
+          prop="lastTriggeredTime"
+          min-width="180"
+        >
           <template #default="{ row }">
             <span v-if="row.lastTriggeredTime">
               {{ formatDate(row.lastTriggeredTime) }}
@@ -212,9 +222,9 @@
             {{ formatDate(row.createTime) }}
           </template>
         </el-table-column>
-        <el-table-column :label="t('common.operation')" min-width="210" fixed="right">
+        <el-table-column :label="t('common.operation')" fixed="right" width="140">
           <template #default="{ row }">
-            <div>
+            <TableActions mode="menu">
               <el-button type="primary" link @click="handleEdit(row)">
                 <Icon icon="ep:edit" />
                 {{ t('common.edit') }}
@@ -231,7 +241,7 @@
                 <Icon icon="ep:delete" />
                 {{ t('common.delete') }}
               </el-button>
-            </div>
+            </TableActions>
           </template>
         </el-table-column>
       </el-table>

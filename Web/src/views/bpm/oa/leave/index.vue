@@ -3,12 +3,7 @@
 
   <ContentWrap>
     <!-- 搜索工作栏 -->
-    <el-form
-      ref="queryFormRef"
-      :model="queryParams"
-      class="-mb-15px"
-      label-width="auto"
-    >
+    <el-form ref="queryFormRef" :model="queryParams" class="-mb-15px" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('oa.leave.type')" prop="type">
@@ -128,42 +123,44 @@
         prop="createTime"
         min-width="180"
       />
-      <el-table-column align="center" :label="t('common.operation')" min-width="200">
+      <el-table-column align="center" :label="t('common.operation')" width="140">
         <template #default="scope">
-          <el-button
-            v-hasPermi="['bpm:oa-leave:query']"
-            link
-            type="primary"
-            @click="handleDetail(scope.row)"
-          >
-            {{ t('common.detail') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['bpm:oa-leave:query']"
-            link
-            type="primary"
-            @click="handleProcessDetail(scope.row)"
-          >
-            {{ t('oa.leave.progress') }}
-          </el-button>
-          <el-button
-            v-if="scope.row.result === 1"
-            v-hasPermi="['bpm:oa-leave:create']"
-            link
-            type="danger"
-            @click="cancelLeave(scope.row)"
-          >
-            {{ t('approval.cancel') }}
-          </el-button>
-          <el-button
-            v-if="scope.row.status !== 1"
-            v-hasPermi="['bpm:oa-leave:create']"
-            link
-            type="primary"
-            @click="handleReCreate(scope.row)"
-          >
-            {{ t('instance.restart') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              v-hasPermi="['bpm:oa-leave:query']"
+              link
+              type="primary"
+              @click="handleDetail(scope.row)"
+            >
+              {{ t('common.detail') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['bpm:oa-leave:query']"
+              link
+              type="primary"
+              @click="handleProcessDetail(scope.row)"
+            >
+              {{ t('oa.leave.progress') }}
+            </el-button>
+            <el-button
+              v-if="scope.row.result === 1"
+              v-hasPermi="['bpm:oa-leave:create']"
+              link
+              type="danger"
+              @click="cancelLeave(scope.row)"
+            >
+              {{ t('approval.cancel') }}
+            </el-button>
+            <el-button
+              v-if="scope.row.status !== 1"
+              v-hasPermi="['bpm:oa-leave:create']"
+              link
+              type="primary"
+              @click="handleReCreate(scope.row)"
+            >
+              {{ t('instance.restart') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>
@@ -253,12 +250,16 @@ const handleDetail = (row: LeaveApi.LeaveVO) => {
 /** 取消请假操作 */
 const cancelLeave = async (row) => {
   // 二次确认
-  const { value } = await ElMessageBox.prompt(t('instance.cancelReason'), t('instance.cancelTitle'), {
-    confirmButtonText: t('common.ok'),
-    cancelButtonText: t('common.cancel'),
-    inputPattern: /^[\s\S]*.*\S[\s\S]*$/, // 判断非空，且非空格
-    inputErrorMessage: t('instance.cancelReasonRequired')
-  })
+  const { value } = await ElMessageBox.prompt(
+    t('instance.cancelReason'),
+    t('instance.cancelTitle'),
+    {
+      confirmButtonText: t('common.ok'),
+      cancelButtonText: t('common.cancel'),
+      inputPattern: /^[\s\S]*.*\S[\s\S]*$/, // 判断非空，且非空格
+      inputErrorMessage: t('instance.cancelReasonRequired')
+    }
+  )
   // 发起取消
   await ProcessInstanceApi.cancelProcessInstanceByStartUser(row.id, value)
   message.success(t('instance.cancelSuccess'))

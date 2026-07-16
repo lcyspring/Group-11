@@ -1,12 +1,7 @@
 <template>
   <!-- 搜索工作栏 -->
   <ContentWrap>
-    <el-form
-      ref="queryFormRef"
-      :model="queryParams"
-      class="-mb-15px"
-      label-width="auto"
-    >
+    <el-form ref="queryFormRef" :model="queryParams" class="-mb-15px" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('system.dict.name')" prop="name">
@@ -109,10 +104,20 @@
 
   <!-- 列表 -->
   <ContentWrap>
-    <el-table v-loading="loading" :data="list" :table-layout="'auto'" @selection-change="handleRowCheckboxChange">
+    <el-table
+      v-loading="loading"
+      :data="list"
+      :table-layout="'auto'"
+      @selection-change="handleRowCheckboxChange"
+    >
       <el-table-column type="selection" width="55" />
       <el-table-column align="center" :label="t('system.dict.id')" prop="id" />
-      <el-table-column align="center" :label="t('system.dict.name')" prop="name" show-overflow-tooltip />
+      <el-table-column
+        align="center"
+        :label="t('system.dict.name')"
+        prop="name"
+        show-overflow-tooltip
+      />
       <el-table-column align="center" :label="t('system.dict.type')" prop="type" min-width="300" />
       <el-table-column align="center" :label="t('system.dict.status')" prop="status">
         <template #default="scope">
@@ -127,27 +132,29 @@
         prop="createTime"
         min-width="180"
       />
-      <el-table-column align="center" :label="t('common.operation')">
+      <el-table-column align="center" :label="t('common.operation')" width="140">
         <template #default="scope">
-          <el-button
-            v-hasPermi="['system:dict:update']"
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-          >
-            {{ t('action.edit') }}
-          </el-button>
-          <router-link :to="'/dict/type/data/' + scope.row.type">
-            <el-button link type="primary">{{ t('system.dict.data') }}</el-button>
-          </router-link>
-          <el-button
-            v-hasPermi="['system:dict:delete']"
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-          >
-            {{ t('action.del') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              v-hasPermi="['system:dict:update']"
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+            >
+              {{ t('action.edit') }}
+            </el-button>
+            <router-link :to="'/dict/type/data/' + scope.row.type">
+              <el-button link type="primary">{{ t('system.dict.data') }}</el-button>
+            </router-link>
+            <el-button
+              v-hasPermi="['system:dict:delete']"
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+            >
+              {{ t('action.del') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

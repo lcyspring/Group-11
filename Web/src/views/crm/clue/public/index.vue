@@ -105,14 +105,16 @@
       </el-table-column>
       <el-table-column :label="t('clue.poolCycleCount')" prop="poolCycleCount" min-width="110" />
       <el-table-column :label="t('clue.contactLastTime')" prop="contactLastTime" :formatter="dateFormatter" min-width="180" />
-      <el-table-column :label="t('common.action')" fixed="right" min-width="170">
+      <el-table-column :label="t('common.action')" fixed="right" width="220">
         <template #default="scope">
-          <el-button link type="primary" @click="handleClaim([scope.row])" v-hasPermi="['crm:clue-public:claim']">
-            {{ t('clue.claim') }}
-          </el-button>
-          <el-button link type="success" @click="openAssign([scope.row])" v-hasPermi="['crm:clue-public:assign']">
-            {{ t('clue.assign') }}
-          </el-button>
+          <TableActions>
+            <el-button link type="primary" @click="handleClaim([scope.row])" v-hasPermi="['crm:clue-public:claim']">
+              {{ t('clue.claim') }}
+            </el-button>
+            <el-button link type="success" @click="openAssign([scope.row])" v-hasPermi="['crm:clue-public:assign']">
+              {{ t('clue.assign') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

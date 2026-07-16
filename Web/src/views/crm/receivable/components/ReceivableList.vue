@@ -44,26 +44,28 @@
       />
       <el-table-column align="center" :label="t('receivable.ownerUserName')" prop="ownerUserName" />
       <el-table-column align="center" :label="t('receivable.remark')" prop="remark" />
-      <el-table-column align="center" fixed="right" :label="t('common.action')" min-width="150">
+      <el-table-column align="center" fixed="right" :label="t('common.action')" width="220">
         <template #default="scope">
-          <el-button
-            v-if="[0, 30, 40].includes(scope.row.auditStatus)"
-            v-hasPermi="['crm:receivable:update']"
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-          >
-            {{ scope.row.auditStatus === 0 ? t('common.edit') : t('receivable.revise') }}
-          </el-button>
-          <el-button
-            v-if="scope.row.auditStatus === 0 && !scope.row.processInstanceId && !scope.row.planId"
-            v-hasPermi="['crm:receivable:delete']"
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions>
+            <el-button
+              v-if="[0, 30, 40].includes(scope.row.auditStatus)"
+              v-hasPermi="['crm:receivable:update']"
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+            >
+              {{ scope.row.auditStatus === 0 ? t('common.edit') : t('receivable.revise') }}
+            </el-button>
+            <el-button
+              v-if="scope.row.auditStatus === 0 && !scope.row.processInstanceId && !scope.row.planId"
+              v-hasPermi="['crm:receivable:delete']"
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

@@ -156,8 +156,12 @@
         />
       </el-form-item>
       <el-form-item>
-        <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> {{ t('common.search') }}</el-button>
-        <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> {{ t('common.reset') }}</el-button>
+        <el-button @click="handleQuery"
+          ><Icon icon="ep:search" class="mr-5px" /> {{ t('common.search') }}</el-button
+        >
+        <el-button @click="resetQuery"
+          ><Icon icon="ep:refresh" class="mr-5px" /> {{ t('common.reset') }}</el-button
+        >
         <el-button
           type="primary"
           plain
@@ -196,10 +200,16 @@
       :stripe="true"
       :show-overflow-tooltip="true"
       @selection-change="handleSelectionChange"
-     :table-layout="'auto'">
+      :table-layout="'auto'"
+    >
       <el-table-column width="30" :label="t('sale.return.select')" type="selection" />
       <el-table-column min-width="180" :label="t('sale.return.no')" align="center" prop="no" />
-      <el-table-column :label="t('sale.return.productInfo')" align="center" prop="productNames" min-width="200" />
+      <el-table-column
+        :label="t('sale.return.productInfo')"
+        align="center"
+        prop="productNames"
+        min-width="200"
+      />
       <el-table-column :label="t('sale.return.customerId')" align="center" prop="customerName" />
       <el-table-column
         :label="t('sale.return.returnTime')"
@@ -235,55 +245,63 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column :label="t('common.auditStatus')" align="center" fixed="right" min-width="90" prop="status">
+      <el-table-column
+        :label="t('common.auditStatus')"
+        align="center"
+        fixed="right"
+        min-width="90"
+        prop="status"
+      >
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.ERP_AUDIT_STATUS" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column :label="t('common.action')" align="center" fixed="right" min-width="220">
+      <el-table-column :label="t('common.action')" align="center" fixed="right" width="140">
         <template #default="scope">
-          <el-button
-            link
-            @click="openForm('detail', scope.row.id)"
-            v-hasPermi="['erp:sale-return:query']"
-          >
-            {{ t('common.detail') }}
-          </el-button>
-          <el-button
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-            v-hasPermi="['erp:sale-return:update']"
-            :disabled="scope.row.status === 20"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            link
-            type="primary"
-            @click="handleUpdateStatus(scope.row.id, 20)"
-            v-hasPermi="['erp:sale-return:update-status']"
-            v-if="scope.row.status === 10"
-          >
-            {{ t('sale.return.approve') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleUpdateStatus(scope.row.id, 10)"
-            v-hasPermi="['erp:sale-return:update-status']"
-            v-else
-          >
-            {{ t('sale.return.unapprove') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete([scope.row.id])"
-            v-hasPermi="['erp:sale-return:delete']"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              link
+              @click="openForm('detail', scope.row.id)"
+              v-hasPermi="['erp:sale-return:query']"
+            >
+              {{ t('common.detail') }}
+            </el-button>
+            <el-button
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+              v-hasPermi="['erp:sale-return:update']"
+              :disabled="scope.row.status === 20"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              link
+              type="primary"
+              @click="handleUpdateStatus(scope.row.id, 20)"
+              v-hasPermi="['erp:sale-return:update-status']"
+              v-if="scope.row.status === 10"
+            >
+              {{ t('sale.return.approve') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleUpdateStatus(scope.row.id, 10)"
+              v-hasPermi="['erp:sale-return:update-status']"
+              v-else
+            >
+              {{ t('sale.return.unapprove') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleDelete([scope.row.id])"
+              v-hasPermi="['erp:sale-return:delete']"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>
@@ -402,7 +420,9 @@ const handleUpdateStatus = async (id: number, status: number) => {
     await message.confirm(t('sale.return.approveConfirm', { action }))
     // 发起审批
     await SaleReturnApi.updateSaleReturnStatus(id, status)
-    message.success(status === 20 ? t('sale.return.approveSuccess') : t('sale.return.unapproveSuccess'))
+    message.success(
+      status === 20 ? t('sale.return.approveSuccess') : t('sale.return.unapproveSuccess')
+    )
     // 刷新列表
     await getList()
   } catch {}

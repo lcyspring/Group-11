@@ -71,12 +71,20 @@
         />
       </el-form-item>
       <el-form-item :label="t('refund.remark')" prop="remark">
-        <el-input v-model="formData.remark" maxlength="1000" :rows="2" show-word-limit type="textarea" />
+        <el-input
+          v-model="formData.remark"
+          maxlength="1000"
+          :rows="2"
+          show-word-limit
+          type="textarea"
+        />
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button :loading="loading" type="primary" @click="submit">{{ t('dialog.confirm') }}</el-button>
-      <el-button @click="visible = false">{{ t('dialog.cancel') }}</el-button>
+      <el-button :loading="loading" type="primary" @click="submit">{{
+        t('common.confirm')
+      }}</el-button>
+      <el-button @click="visible = false">{{ t('common.cancel') }}</el-button>
     </template>
   </Dialog>
 </template>
@@ -97,7 +105,9 @@ const formRef = ref()
 const receivables = ref<ReceivableApi.ReceivableVO[]>([])
 const summary = ref<RefundApi.RefundSourceSummaryVO>()
 const formData = ref<RefundApi.ReceivableRefundVO>({} as RefundApi.ReceivableRefundVO)
-const title = computed(() => (mode.value === 'create' ? t('refund.createDraft') : t('refund.updateDraft')))
+const title = computed(() =>
+  mode.value === 'create' ? t('refund.createDraft') : t('refund.updateDraft')
+)
 const required = (messageKey: string) => ({
   required: true,
   message: t(messageKey),
@@ -123,7 +133,10 @@ const summaryItems = computed(() =>
     : []
 )
 const money = (value?: number) =>
-  Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })
+  Number(value || 0).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 6
+  })
 const loadSummary = async () => {
   summary.value = formData.value.receivableId
     ? await RefundApi.getSourceSummary(formData.value.receivableId, formData.value.id)
@@ -148,9 +161,7 @@ const loadReceivables = async (keyword = '') => {
     if (sequence !== receivableRequestSequence) return
     const candidates = [...(ownedPage.list || []), ...(involvedPage.list || [])]
     if (selected) candidates.unshift(selected)
-    receivables.value = Array.from(
-      new Map(candidates.map((item) => [item.id, item])).values()
-    )
+    receivables.value = Array.from(new Map(candidates.map((item) => [item.id, item])).values())
   } finally {
     if (sequence === receivableRequestSequence) receivableLoading.value = false
   }

@@ -3,12 +3,7 @@
 
   <ContentWrap>
     <!-- 搜索工作栏 -->
-    <el-form
-      class="-mb-15px"
-      :model="queryParams"
-      ref="queryFormRef"
-      label-width="auto"
-    >
+    <el-form class="-mb-15px" :model="queryParams" ref="queryFormRef" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('mall.trade.brokerage.userId')" prop="userId">
@@ -40,7 +35,12 @@
         </el-col>
         <el-col :span="8">
           <el-form-item :label="t('common.status')" prop="status">
-            <el-select v-model="queryParams.status" :placeholder="t('common.selectText')" clearable class="!w-240px">
+            <el-select
+              v-model="queryParams.status"
+              :placeholder="t('common.selectText')"
+              clearable
+              class="!w-240px"
+            >
               <el-option
                 v-for="dict in getIntDictOptions(DICT_TYPE.BROKERAGE_WITHDRAW_STATUS)"
                 :key="dict.value"
@@ -69,8 +69,12 @@
       <el-row>
         <el-col :span="24">
           <el-form-item>
-            <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> {{ t('common.query') }}</el-button>
-            <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> {{ t('common.reset') }}</el-button>
+            <el-button @click="handleQuery"
+              ><Icon icon="ep:search" class="mr-5px" /> {{ t('common.query') }}</el-button
+            >
+            <el-button @click="resetQuery"
+              ><Icon icon="ep:refresh" class="mr-5px" /> {{ t('common.reset') }}</el-button
+            >
           </el-form-item>
         </el-col>
       </el-row>
@@ -79,7 +83,13 @@
 
   <!-- 列表 -->
   <ContentWrap>
-    <el-table v-loading="loading" :data="list" :stripe="true" :show-overflow-tooltip="true" :table-layout="'auto'">
+    <el-table
+      v-loading="loading"
+      :data="list"
+      :stripe="true"
+      :show-overflow-tooltip="true"
+      :table-layout="'auto'"
+    >
       <el-table-column :label="t('common.index')" align="left" prop="id" min-width="60px" />
       <el-table-column :label="t('mall.trade.brokerage.userInfo')" align="left" min-width="120px">
         <template #default="scope">
@@ -87,23 +97,41 @@
           <div>{{ t('mall.trade.brokerage.nickname') }}：{{ scope.row.userNickname }}</div>
         </template>
       </el-table-column>
-      <el-table-column :label="t('mall.trade.brokerage.withdrawAmount')" align="left" prop="price" min-width="80px">
+      <el-table-column
+        :label="t('mall.trade.brokerage.withdrawAmount')"
+        align="left"
+        prop="price"
+        min-width="80px"
+      >
         <template #default="scope">
           <div>{{ t('mall.trade.brokerage.amount') }}：￥{{ fenToYuan(scope.row.price) }}</div>
           <div>{{ t('mall.trade.brokerage.fee') }}：￥{{ fenToYuan(scope.row.feePrice) }}</div>
         </template>
       </el-table-column>
-      <el-table-column :label="t('mall.trade.brokerage.withdrawMethod')" align="left" prop="type" min-width="80px">
+      <el-table-column
+        :label="t('mall.trade.brokerage.withdrawMethod')"
+        align="left"
+        prop="type"
+        min-width="80px"
+      >
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.BROKERAGE_WITHDRAW_TYPE" :value="scope.row.type" />
         </template>
       </el-table-column>
-      <el-table-column :label="t('mall.trade.brokerage.withdrawInfo')" align="left" min-width="120px">
+      <el-table-column
+        :label="t('mall.trade.brokerage.withdrawInfo')"
+        align="left"
+        min-width="120px"
+      >
         <template #default="scope">
           <div v-if="scope.row.type === BrokerageWithdrawTypeEnum.WALLET.type">-</div>
           <div v-else>
-            <div v-if="scope.row.userAccount">{{ t('mall.trade.brokerage.account') }}：{{ scope.row.userAccount }}</div>
-            <div v-if="scope.row.userName">{{ t('mall.trade.brokerage.realName') }}：{{ scope.row.userName }}</div>
+            <div v-if="scope.row.userAccount"
+              >{{ t('mall.trade.brokerage.account') }}：{{ scope.row.userAccount }}</div
+            >
+            <div v-if="scope.row.userName"
+              >{{ t('mall.trade.brokerage.realName') }}：{{ scope.row.userName }}</div
+            >
           </div>
           <template v-if="scope.row.type === BrokerageWithdrawTypeEnum.BANK.type">
             <div>
@@ -146,41 +174,43 @@
           </div>
         </template>
       </el-table-column>
-      <el-table-column :label="t('common.operation')" align="left" min-width="150" fixed="right">
+      <el-table-column :label="t('common.operation')" align="left" fixed="right" width="140">
         <template #default="scope">
-          <template
-            v-if="
-              scope.row.status === BrokerageWithdrawStatusEnum.AUDITING.status &&
-              !scope.row.payTransferId
-            "
-          >
-            <el-button
-              link
-              type="primary"
-              @click="handleApprove(scope.row.id)"
-              v-hasPermi="['trade:brokerage-withdraw:audit']"
+          <TableActions mode="menu">
+            <template
+              v-if="
+                scope.row.status === BrokerageWithdrawStatusEnum.AUDITING.status &&
+                !scope.row.payTransferId
+              "
             >
-              {{ t('mall.trade.brokerage.approve') }}
-            </el-button>
-            <el-button
-              link
-              type="danger"
-              @click="openForm(scope.row.id)"
-              v-hasPermi="['trade:brokerage-withdraw:audit']"
-            >
-              {{ t('mall.trade.brokerage.reject') }}
-            </el-button>
-          </template>
-          <template v-if="scope.row.status === BrokerageWithdrawStatusEnum.WITHDRAW_FAIL.status">
-            <el-button
-              link
-              type="warning"
-              @click="handleRetryTransfer(scope.row.id)"
-              v-hasPermi="['trade:brokerage-withdraw:audit']"
-            >
-              {{ t('mall.trade.brokerage.retryTransfer') }}
-            </el-button>
-          </template>
+              <el-button
+                link
+                type="primary"
+                @click="handleApprove(scope.row.id)"
+                v-hasPermi="['trade:brokerage-withdraw:audit']"
+              >
+                {{ t('mall.trade.brokerage.approve') }}
+              </el-button>
+              <el-button
+                link
+                type="danger"
+                @click="openForm(scope.row.id)"
+                v-hasPermi="['trade:brokerage-withdraw:audit']"
+              >
+                {{ t('mall.trade.brokerage.reject') }}
+              </el-button>
+            </template>
+            <template v-if="scope.row.status === BrokerageWithdrawStatusEnum.WITHDRAW_FAIL.status">
+              <el-button
+                link
+                type="warning"
+                @click="handleRetryTransfer(scope.row.id)"
+                v-hasPermi="['trade:brokerage-withdraw:audit']"
+              >
+                {{ t('mall.trade.brokerage.retryTransfer') }}
+              </el-button>
+            </template>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

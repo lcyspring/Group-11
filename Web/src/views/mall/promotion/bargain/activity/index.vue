@@ -3,12 +3,7 @@
 
   <ContentWrap>
     <!-- 搜索工作区 -->
-    <el-form
-      class="-mb-15px"
-      :model="queryParams"
-      ref="queryFormRef"
-      label-width="auto"
-    >
+    <el-form class="-mb-15px" :model="queryParams" ref="queryFormRef" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('mall.promotion.bargain.name')" prop="name">
@@ -42,8 +37,12 @@
       <el-row>
         <el-col :span="24">
           <el-form-item>
-            <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> {{ t('common.query') }}</el-button>
-            <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> {{ t('common.reset') }}</el-button>
+            <el-button @click="handleQuery"
+              ><Icon icon="ep:search" class="mr-5px" /> {{ t('common.query') }}</el-button
+            >
+            <el-button @click="resetQuery"
+              ><Icon icon="ep:refresh" class="mr-5px" /> {{ t('common.reset') }}</el-button
+            >
             <el-button
               type="primary"
               plain
@@ -60,7 +59,13 @@
 
   <!-- 列表 -->
   <ContentWrap>
-    <el-table v-loading="loading" :data="list" :stripe="true" :show-overflow-tooltip="true" :table-layout="'auto'">
+    <el-table
+      v-loading="loading"
+      :data="list"
+      :stripe="true"
+      :show-overflow-tooltip="true"
+      :table-layout="'auto'"
+    >
       <el-table-column :label="t('mall.promotion.bargain.activityId')" prop="id" min-width="80" />
       <el-table-column :label="t('mall.promotion.bargain.name')" prop="name" min-width="140" />
       <el-table-column :label="t('mall.promotion.bargain.activeTime')" min-width="210">
@@ -79,7 +84,11 @@
           />
         </template>
       </el-table-column>
-      <el-table-column :label="t('mall.promotion.bargain.spuName')" prop="spuName" min-width="300" />
+      <el-table-column
+        :label="t('mall.promotion.bargain.spuName')"
+        prop="spuName"
+        min-width="300"
+      />
       <el-table-column
         :label="t('mall.promotion.bargain.bargainFirstPrice')"
         prop="bargainFirstPrice"
@@ -92,16 +101,43 @@
         min-width="100"
         :formatter="fenToYuanFormat"
       />
-      <el-table-column :label="t('mall.promotion.bargain.recordUserCount')" prop="recordUserCount" min-width="100" />
-      <el-table-column :label="t('mall.promotion.bargain.recordSuccessUserCount')" prop="recordSuccessUserCount" min-width="110" />
-      <el-table-column :label="t('mall.promotion.bargain.helpUserCount')" prop="helpUserCount" min-width="100" />
-      <el-table-column :label="t('mall.promotion.bargain.status')" align="center" prop="status" min-width="100">
+      <el-table-column
+        :label="t('mall.promotion.bargain.recordUserCount')"
+        prop="recordUserCount"
+        min-width="100"
+      />
+      <el-table-column
+        :label="t('mall.promotion.bargain.recordSuccessUserCount')"
+        prop="recordSuccessUserCount"
+        min-width="110"
+      />
+      <el-table-column
+        :label="t('mall.promotion.bargain.helpUserCount')"
+        prop="helpUserCount"
+        min-width="100"
+      />
+      <el-table-column
+        :label="t('mall.promotion.bargain.status')"
+        align="center"
+        prop="status"
+        min-width="100"
+      >
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.COMMON_STATUS" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column :label="t('mall.promotion.bargain.stock')" align="center" prop="stock" min-width="80" />
-      <el-table-column :label="t('mall.promotion.bargain.totalStock')" align="center" prop="totalStock" min-width="80" />
+      <el-table-column
+        :label="t('mall.promotion.bargain.stock')"
+        align="center"
+        prop="stock"
+        min-width="80"
+      />
+      <el-table-column
+        :label="t('mall.promotion.bargain.totalStock')"
+        align="center"
+        prop="totalStock"
+        min-width="80"
+      />
       <el-table-column
         :label="t('common.createTime')"
         align="center"
@@ -109,34 +145,36 @@
         :formatter="dateFormatter"
         min-width="180"
       />
-      <el-table-column :label="t('common.operation')" align="center" min-width="150" fixed="right">
+      <el-table-column :label="t('common.operation')" align="center" fixed="right" width="140">
         <template #default="scope">
-          <el-button
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-            v-hasPermi="['promotion:bargain-activity:update']"
-          >
-            {{ t('action.edit') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleClose(scope.row.id)"
-            v-if="scope.row.status === 0"
-            v-hasPermi="['promotion:bargain-activity:close']"
-          >
-            {{ t('mall.promotion.bargain.close') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-            v-else
-            v-hasPermi="['promotion:bargain-activity:delete']"
-          >
-            {{ t('action.del') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+              v-hasPermi="['promotion:bargain-activity:update']"
+            >
+              {{ t('action.edit') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleClose(scope.row.id)"
+              v-if="scope.row.status === 0"
+              v-hasPermi="['promotion:bargain-activity:close']"
+            >
+              {{ t('mall.promotion.bargain.close') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+              v-else
+              v-hasPermi="['promotion:bargain-activity:delete']"
+            >
+              {{ t('action.del') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

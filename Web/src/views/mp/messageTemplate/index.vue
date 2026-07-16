@@ -45,24 +45,26 @@
       <el-table-column :label="t('messageTemplate.primaryIndustry')" align="center" prop="primaryIndustry" min-width="120" />
       <el-table-column :label="t('messageTemplate.deputyIndustry')" align="center" prop="deputyIndustry" min-width="120" />
       <el-table-column :label="t('common.status')" align="center" prop="status" />
-      <el-table-column :label="t('common.operation')" align="center" min-width="160">
+      <el-table-column :label="t('common.operation')" align="center" width="220">
         <template #default="scope">
-          <el-button
-            link
-            type="primary"
-            @click="handleSend(scope.row)"
-            v-hasPermi="['mp:message-template:send']"
-          >
-            {{ t('messageTemplate.send') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-            v-hasPermi="['mp:message-template:delete']"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions>
+            <el-button
+              link
+              type="primary"
+              @click="handleSend(scope.row)"
+              v-hasPermi="['mp:message-template:send']"
+            >
+              {{ t('messageTemplate.send') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+              v-hasPermi="['mp:message-template:delete']"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

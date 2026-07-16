@@ -102,24 +102,26 @@
       />
       <el-table-column align="center" :label="t('sort')" prop="sort" />
       <el-table-column align="center" :label="t('memo')" prop="memo" />
-      <el-table-column align="center" :label="t('common.operation')">
+      <el-table-column align="center" :label="t('common.operation')" width="220">
         <template #default="scope">
-          <el-button
-            v-hasPermi="['promotion:banner:update']"
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['promotion:banner:delete']"
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions>
+            <el-button
+              v-hasPermi="['promotion:banner:update']"
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['promotion:banner:delete']"
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

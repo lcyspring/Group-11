@@ -4,12 +4,7 @@
 
   <!-- 搜索工作区 -->
   <ContentWrap>
-    <el-form
-      ref="queryFormRef"
-      :model="queryParams"
-      class="-mb-15px"
-      label-width="auto"
-    >
+    <el-form ref="queryFormRef" :model="queryParams" class="-mb-15px" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('spu.name')" prop="name">
@@ -162,7 +157,12 @@
       <el-table-column align="center" :label="t('spu.price')" min-width="160" prop="price">
         <template #default="{ row }"> ¥ {{ fenToYuan(row.price) }}</template>
       </el-table-column>
-      <el-table-column align="center" :label="t('spu.salesCount')" min-width="90" prop="salesCount" />
+      <el-table-column
+        align="center"
+        :label="t('spu.salesCount')"
+        min-width="90"
+        prop="salesCount"
+      />
       <el-table-column align="center" :label="t('spu.stock')" min-width="90" prop="stock" />
       <el-table-column align="center" :label="t('spu.sort')" min-width="70" prop="sort" />
       <el-table-column align="center" :label="t('spu.salesStatus')" min-width="80">
@@ -190,45 +190,49 @@
         prop="createTime"
         min-width="180"
       />
-      <el-table-column align="center" fixed="right" :label="t('common.operation')" min-width="200">
+      <el-table-column align="center" fixed="right" :label="t('common.operation')" width="140">
         <template #default="{ row }">
-          <el-button link type="primary" @click="openDetail(row.id)"> {{ t('common.detail') }} </el-button>
-          <el-button
-            v-hasPermi="['product:spu:update']"
-            link
-            type="primary"
-            @click="openForm(row.id)"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <template v-if="queryParams.tabType === 4">
-            <el-button
-              v-hasPermi="['product:spu:delete']"
-              link
-              type="danger"
-              @click="handleDelete(row.id)"
-            >
-              {{ t('common.delete') }}
+          <TableActions mode="menu">
+            <el-button link type="primary" @click="openDetail(row.id)">
+              {{ t('common.detail') }}
             </el-button>
             <el-button
               v-hasPermi="['product:spu:update']"
               link
               type="primary"
-              @click="handleStatus02Change(row, ProductSpuStatusEnum.DISABLE.status)"
+              @click="openForm(row.id)"
             >
-              {{ t('common.restore') }}
+              {{ t('common.edit') }}
             </el-button>
-          </template>
-          <template v-else>
-            <el-button
-              v-hasPermi="['product:spu:update']"
-              link
-              type="danger"
-              @click="handleStatus02Change(row, ProductSpuStatusEnum.RECYCLE.status)"
-            >
-              {{ t('common.recycle') }}
-            </el-button>
-          </template>
+            <template v-if="queryParams.tabType === 4">
+              <el-button
+                v-hasPermi="['product:spu:delete']"
+                link
+                type="danger"
+                @click="handleDelete(row.id)"
+              >
+                {{ t('common.delete') }}
+              </el-button>
+              <el-button
+                v-hasPermi="['product:spu:update']"
+                link
+                type="primary"
+                @click="handleStatus02Change(row, ProductSpuStatusEnum.DISABLE.status)"
+              >
+                {{ t('common.restore') }}
+              </el-button>
+            </template>
+            <template v-else>
+              <el-button
+                v-hasPermi="['product:spu:update']"
+                link
+                type="danger"
+                @click="handleStatus02Change(row, ProductSpuStatusEnum.RECYCLE.status)"
+              >
+                {{ t('common.recycle') }}
+              </el-button>
+            </template>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>
@@ -332,7 +336,10 @@ const getTabsCount = async () => {
 const handleStatus02Change = async (row: any, newStatus: number) => {
   try {
     // 二次确认
-    const text = newStatus === ProductSpuStatusEnum.RECYCLE.status ? t('spu.addToRecycleBin') : t('spu.restoreToWarehouse')
+    const text =
+      newStatus === ProductSpuStatusEnum.RECYCLE.status
+        ? t('spu.addToRecycleBin')
+        : t('spu.restoreToWarehouse')
     await message.confirm(t('common.confirmText', { text: `"${row.name}"${text}` }))
     // 发起修改
     await ProductSpuApi.updateStatus({ id: row.id, status: newStatus })

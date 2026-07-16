@@ -4,12 +4,7 @@
 
   <ContentWrap>
     <!-- 搜索工作栏 -->
-    <el-form
-      ref="queryFormRef"
-      :model="queryParams"
-      class="-mb-15px"
-      label-width="auto"
-    >
+    <el-form ref="queryFormRef" :model="queryParams" class="-mb-15px" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('system.role.name')" prop="name">
@@ -35,7 +30,12 @@
         </el-col>
         <el-col :span="8">
           <el-form-item :label="t('system.role.status')" prop="status">
-            <el-select v-model="queryParams.status" class="!w-240px" clearable :placeholder="t('common.selectText')">
+            <el-select
+              v-model="queryParams.status"
+              class="!w-240px"
+              clearable
+              :placeholder="t('common.selectText')"
+            >
               <el-option
                 v-for="dict in getIntDictOptions(DICT_TYPE.COMMON_STATUS)"
                 :key="dict.value"
@@ -107,7 +107,12 @@
 
   <!-- 列表 -->
   <ContentWrap>
-    <el-table v-loading="loading" :data="list" :table-layout="'auto'" @selection-change="handleRowCheckboxChange">
+    <el-table
+      v-loading="loading"
+      :data="list"
+      :table-layout="'auto'"
+      @selection-change="handleRowCheckboxChange"
+    >
       <el-table-column type="selection" width="55" />
       <el-table-column align="center" :label="t('system.role.id')" prop="id" />
       <el-table-column align="center" :label="t('system.role.name')" prop="name" />
@@ -131,44 +136,46 @@
         prop="createTime"
         min-width="180"
       />
-      <el-table-column :min-width="300" align="center" :label="t('common.operation')">
+      <el-table-column :min-width="300" align="center" :label="t('common.operation')" width="140">
         <template #default="scope">
-          <el-button
-            v-hasPermi="['system:role:update']"
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-          >
-            {{ t('action.edit') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['system:permission:assign-role-menu']"
-            link
-            preIcon="ep:basketball"
-            :title="t('system.role.assignMenu')"
-            type="primary"
-            @click="openAssignMenuForm(scope.row)"
-          >
-            {{ t('system.role.assignMenu') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['system:permission:assign-role-data-scope']"
-            link
-            preIcon="ep:coin"
-            :title="t('system.role.assignDataScope')"
-            type="primary"
-            @click="openDataPermissionForm(scope.row)"
-          >
-            {{ t('system.role.assignDataScope') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['system:role:delete']"
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-          >
-            {{ t('action.del') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              v-hasPermi="['system:role:update']"
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+            >
+              {{ t('action.edit') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['system:permission:assign-role-menu']"
+              link
+              preIcon="ep:basketball"
+              :title="t('system.role.assignMenu')"
+              type="primary"
+              @click="openAssignMenuForm(scope.row)"
+            >
+              {{ t('system.role.assignMenu') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['system:permission:assign-role-data-scope']"
+              link
+              preIcon="ep:coin"
+              :title="t('system.role.assignDataScope')"
+              type="primary"
+              @click="openDataPermissionForm(scope.row)"
+            >
+              {{ t('system.role.assignDataScope') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['system:role:delete']"
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+            >
+              {{ t('action.del') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

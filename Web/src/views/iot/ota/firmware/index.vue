@@ -1,12 +1,7 @@
 ﻿<template>
   <ContentWrap>
     <!-- 搜索工作栏 -->
-    <el-form
-      class="-mb-15px"
-      :model="queryParams"
-      ref="queryFormRef"
-      label-width="auto"
-    >
+    <el-form class="-mb-15px" :model="queryParams" ref="queryFormRef" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('ota.firmware.name')" prop="name">
@@ -54,8 +49,12 @@
       <el-row>
         <el-col :span="24">
           <el-form-item>
-            <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> {{ t('common.search') }}</el-button>
-            <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> {{ t('common.reset') }}</el-button>
+            <el-button @click="handleQuery"
+              ><Icon icon="ep:search" class="mr-5px" /> {{ t('common.search') }}</el-button
+            >
+            <el-button @click="resetQuery"
+              ><Icon icon="ep:refresh" class="mr-5px" /> {{ t('common.reset') }}</el-button
+            >
             <el-button
               type="primary"
               plain
@@ -78,10 +77,15 @@
       :data="list"
       :stripe="true"
       :show-overflow-tooltip="true"
-     :table-layout="'auto'">
+      :table-layout="'auto'"
+    >
       <el-table-column :label="t('ota.firmware.id')" align="center" prop="id" />
       <el-table-column :label="t('ota.firmware.name')" align="center" prop="name" />
-      <el-table-column :label="t('ota.firmware.firmwareVersion')" align="center" prop="description" />
+      <el-table-column
+        :label="t('ota.firmware.firmwareVersion')"
+        align="center"
+        prop="description"
+      />
       <el-table-column :label="t('ota.firmware.version')" align="center" prop="version" />
       <el-table-column :label="t('ota.firmware.productId')" align="center" prop="productId">
         <template #default="scope">
@@ -108,32 +112,35 @@
         prop="createTime"
         :formatter="dateFormatter"
         min-width="180"
-       fixed="right" />
-      <el-table-column :label="t('common.operation')" align="center" min-width="180px">
+        fixed="right"
+      />
+      <el-table-column :label="t('common.operation')" align="center" width="140">
         <template #default="scope">
-          <el-button
-            link
-            @click="openFirmwareDetail(scope.row.id)"
-            v-hasPermi="['iot:ota-firmware:query']"
-          >
-            {{ t('common.detail') }}
-          </el-button>
-          <el-button
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-            v-hasPermi="['iot:ota-firmware:update']"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-            v-hasPermi="['iot:ota-firmware:delete']"
-          >
-            {{ t('common.del') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              link
+              @click="openFirmwareDetail(scope.row.id)"
+              v-hasPermi="['iot:ota-firmware:query']"
+            >
+              {{ t('common.detail') }}
+            </el-button>
+            <el-button
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+              v-hasPermi="['iot:ota-firmware:update']"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+              v-hasPermi="['iot:ota-firmware:delete']"
+            >
+              {{ t('common.del') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

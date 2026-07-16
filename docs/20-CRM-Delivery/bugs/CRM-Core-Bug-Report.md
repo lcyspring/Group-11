@@ -46,7 +46,7 @@
 | PODMAN-MIGRATION-BUG-009 | 部署一致性 | P1 | 模板修复未改变已发送正文；按稳定模板 code 和正确 JSON 参数重建三类历史工单站内信，避免整串字符集反转 | 历史 ID 11～15 正确，双重编码特征 0 | 已关闭 |
 | PODMAN-BUILD-BUG-008 | 构建证据 | P1 | 缓存镜像内置旧入口，静默忽略新增 Infra 测试开关；容器改为执行仓库当前入口，镜像只承载 Ubuntu 工具链 | 未重建镜像仍执行 Infra 28/28 并产出 JaCoCo | 已关闭 |
 | CRM-CUSTOMER-360-BUG-002 | GAP-CUS-003、GAP-FIN-001/002、GAP-RPT-002 | P0/财务 | 客户 360 未冲减已审批退款/冲销，错误高估有效回款；新增毛回款、已退款/冲销、净回款并按净额计算待回款 | Service 3/3、Mapper 1/1、CRM 232/232、Web build | 已关闭 |
-| CRM-DATA-BUG-003 | 历史数据一致性 | P1 | 1 条审批通过回款引用已删除客户或合同；新链路已有校验，历史记录缺少权威新归属，不擅自删除或重绑 | 有效对象联查孤儿计数 1 | 待数据治理 |
+| CRM-DATA-BUG-003 | 历史数据一致性 | P1 | 1 条审批通过回款引用已删除客户与合同；增加四级引用状态、原始 ID 保留、异常编辑/跳转保护及客户统计/财务台账双口径 | 状态 30；台账 17002、客户统计 16914、差额 88；历史行前后不变 | 已关闭 |
 | CRM-IAM-BUG-001 | GAP-IAM-003、ADR-013 | P0/权限 | CRM `owner_user_id` 未接入系统角色部门范围；新增统一授权服务，把 ALL/CUSTOM/DEPT/DEPT_AND_CHILD/SELF 转为只读负责人范围 | 授权专项 7/7、CRM 239/239 | 已关闭 |
 | CRM-IAM-BUG-004 | GAP-IAM-003、ADR-012/013 | P0/安全 | 旧切面和导出把下属对象权限隐式提升给上级；下属视图改为组织范围交集，写与导出只认当前用户直接 WRITE/OWNER | 导出负向、授权专项、CRM 239/239 | 已关闭 |
 | CRM-INVOICE-UI-BUG-001 | GAP-FIN-004、GAP-IAM-003 | P1 | 发票后端支持 `sceneType`，前端未提交导致财务角色固定本人范围；补四类归属 Tab 和三语标签 | 专项 ESLint、Web build | 已关闭 |
@@ -65,6 +65,12 @@
 | CRM-CONTRACT-AMENDMENT-BUG-001 | GAP-CTR-001/002 | P0 | 补充协议候选轨迹被错误当作有效版本，创建后提交立即版本冲突；当前版本只读取有效生命周期动作 | 生命周期回归、CRM 426/426、第二轮真实审批生效 | 已关闭 |
 | CRM-CONTRACT-AMENDMENT-BUG-002 | GAP-CTR-001、GAP-IAM-003 | P1/API | `amendmentId` 错放在签署响应，附件响应丢失补充协议归属；字段迁移到 Attachment 并对齐前端类型 | Controller 回归、CRM 426/426、真实附件锁定和归属识别 | 已关闭 |
 | CRM-CUSTOMER-GARBAGE-BUG-006 | GAP-CUS-001 | P1 | 转入垃圾池错误复用公海提示，缓存页不刷新且双操作可能裁切；增加专属错误码、成功失效通知、激活刷新和不换行固定操作列 | Service 9/9、前端专项 3/3、CRM 433/433、Ubuntu Server/Web build | 已关闭 |
+| WEB-TABLE-BUG-001 | 管理端体验 | P1 | 多模块固定操作列塞入三至八个按钮并被省略号裁切；新增统一横排/弹出菜单组件、迁移高密度页面并增加全量静态门禁 | 788 个 Vue 文件、320 个操作列、52 个菜单及 86 个双操作迁移、高风险 0、Ubuntu Web build | 已关闭 |
+| BPM-TASK-FE-BUG-001 | GAP-APR-001/003 | P1 | KeepAlive 待办、已办和 CRM BPM 待办只在挂载时加载；增加重新激活刷新并避免首次双请求 | 缓存刷新 1/1、专项 ESLint、Ubuntu Web build | 已关闭 |
+| CRM-FIN-I18N-BUG-001 | GAP-FIN-001/004/005 | P2 | 财务弹窗引用不存在的 `dialog.confirm/cancel` 并回退英文；统一改用 `common` 多语言键 | 九个弹窗契约、专项 ESLint、Ubuntu Web build | 已关闭 |
+| WEB-I18N-BUG-002 | GAP-APR-001/003 | P1 | 审批详情等隐藏路由在模块加载时提前翻译并固化英文标题；改为保存翻译键，由页签按当前语言实时解析 | 45/45 隐藏路由三语键、审批详情三语精确标题、Ubuntu Web build | 已关闭 |
+| PODMAN-MIGRATION-BUG-010 | 部署一致性 | P0 | 业绩目标等五个 CRM 幂等迁移未进入兼容清单；补齐 manifest、增加全部 CRM 新迁移反向完整性门禁及前端失败态 | 表 1、权限 2、三语 6、列表成功、完成度 12 个月 | 已关闭 |
+| WEB-I18N-BUG-003 | 管理端启动回归 | P0 | 静态路由移除模块级翻译函数后仍残留个人中心 `t()` 调用；改为翻译键并将门禁扩大到禁止该模块全部 `t()` | 残留 0、专项 6/6、Ubuntu Web build | 已关闭 |
 
 ## 边界说明
 

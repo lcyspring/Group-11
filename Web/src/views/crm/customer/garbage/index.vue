@@ -71,26 +71,28 @@
       <el-table-column :label="t('poolCycleCount')" prop="poolCycleCount" align="center" min-width="120" />
       <el-table-column :label="t('garbageTime')" prop="garbageTime" :formatter="dateFormatter" align="center" min-width="180" />
       <el-table-column :label="t('garbageReason')" prop="garbageReason" align="center" min-width="220" />
-      <el-table-column :label="t('common.action')" align="center" fixed="right" width="320">
+      <el-table-column :label="t('common.action')" align="center" fixed="right" width="220">
         <template #default="scope">
-          <div class="garbage-actions">
-            <el-button
-              v-hasPermi="['crm:customer-garbage:manage']"
-              link
-              type="primary"
-              @click="handleRestore(scope.row)"
-            >
-              {{ t('restoreToPublic') }}
-            </el-button>
-            <el-button
-              v-hasPermi="['crm:customer-garbage:delete']"
-              link
-              type="danger"
-              @click="handlePermanentDelete(scope.row)"
-            >
-              {{ t('permanentDelete') }}
-            </el-button>
-          </div>
+          <TableActions>
+            <div class="garbage-actions">
+              <el-button
+                v-hasPermi="['crm:customer-garbage:manage']"
+                link
+                type="primary"
+                @click="handleRestore(scope.row)"
+              >
+                {{ t('restoreToPublic') }}
+              </el-button>
+              <el-button
+                v-hasPermi="['crm:customer-garbage:delete']"
+                link
+                type="danger"
+                @click="handlePermanentDelete(scope.row)"
+              >
+                {{ t('permanentDelete') }}
+              </el-button>
+            </div>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

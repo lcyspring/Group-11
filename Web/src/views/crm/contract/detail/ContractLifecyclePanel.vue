@@ -114,22 +114,24 @@
       </el-table-column>
       <el-table-column :label="t('crm.contract.amendmentAmountAfter')" prop="amountAfter" width="140" />
       <el-table-column :label="t('crm.contract.amendmentAmountDelta')" prop="amountDelta" width="140" />
-      <el-table-column :label="t('common.action')" width="180" fixed="right">
+      <el-table-column :label="t('common.action')" fixed="right" width="220">
         <template #default="scope">
-          <el-button
-            v-if="[0, 30, 40].includes(scope.row.auditStatus)"
-            v-hasPermi="['crm:contract:amendment']"
-            link
-            type="primary"
-            @click="amendmentDialogRef?.open(scope.row.id)"
-          >{{ t('action.edit') }}</el-button>
-          <el-button
-            v-if="scope.row.auditStatus === 0"
-            v-hasPermi="['crm:contract:amendment']"
-            link
-            type="success"
-            @click="submitAmendment(scope.row)"
-          >{{ t('crm.contract.submitAudit') }}</el-button>
+          <TableActions>
+            <el-button
+              v-if="[0, 30, 40].includes(scope.row.auditStatus)"
+              v-hasPermi="['crm:contract:amendment']"
+              link
+              type="primary"
+              @click="amendmentDialogRef?.open(scope.row.id)"
+            >{{ t('action.edit') }}</el-button>
+            <el-button
+              v-if="scope.row.auditStatus === 0"
+              v-hasPermi="['crm:contract:amendment']"
+              link
+              type="success"
+              @click="submitAmendment(scope.row)"
+            >{{ t('crm.contract.submitAudit') }}</el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

@@ -3,12 +3,7 @@
 
   <ContentWrap>
     <!-- 搜索工作栏 -->
-    <el-form
-      ref="queryFormRef"
-      :model="queryParams"
-      class="-mb-15px"
-      label-width="auto"
-    >
+    <el-form ref="queryFormRef" :model="queryParams" class="-mb-15px" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('form.name')" prop="name">
@@ -60,35 +55,37 @@
         :label="t('common.createTime')"
         prop="createTime"
       />
-      <el-table-column align="center" :label="t('common.operation')">
+      <el-table-column align="center" :label="t('common.operation')" width="140">
         <template #default="scope">
-          <el-button
-            v-hasPermi="['bpm:form:update']"
-            link
-            type="primary"
-            @click="openForm('copy', scope.row.id)"
-          >
-            {{ t('common.copy') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['bpm:form:update']"
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button v-hasPermi="['bpm:form:query']" link @click="openDetail(scope.row.id)">
-            {{ t('common.detail') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['bpm:form:delete']"
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              v-hasPermi="['bpm:form:update']"
+              link
+              type="primary"
+              @click="openForm('copy', scope.row.id)"
+            >
+              {{ t('common.copy') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['bpm:form:update']"
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button v-hasPermi="['bpm:form:query']" link @click="openDetail(scope.row.id)">
+              {{ t('common.detail') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['bpm:form:delete']"
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

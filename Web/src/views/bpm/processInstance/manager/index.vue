@@ -150,25 +150,27 @@
         </template>
       </el-table-column>
       <el-table-column :label="t('process.instance.id')" align="center" prop="id" min-width="320px" />
-      <el-table-column :label="t('common.action')" align="center" fixed="right" min-width="180">
+      <el-table-column :label="t('common.action')" align="center" fixed="right" width="220">
         <template #default="scope">
-          <el-button
-            link
-            type="primary"
-            v-hasPermi="['bpm:process-instance:cancel']"
-            @click="handleDetail(scope.row)"
-          >
-            {{ t('process.instance.detail') }}
-          </el-button>
-          <el-button
-            link
-            type="primary"
-            v-if="scope.row.status === 1"
-            v-hasPermi="['bpm:process-instance:query']"
-            @click="handleCancel(scope.row)"
-          >
-            {{ t('process.instance.cancelProcess') }}
-          </el-button>
+          <TableActions>
+            <el-button
+              link
+              type="primary"
+              v-hasPermi="['bpm:process-instance:cancel']"
+              @click="handleDetail(scope.row)"
+            >
+              {{ t('process.instance.detail') }}
+            </el-button>
+            <el-button
+              link
+              type="primary"
+              v-if="scope.row.status === 1"
+              v-hasPermi="['bpm:process-instance:query']"
+              @click="handleCancel(scope.row)"
+            >
+              {{ t('process.instance.cancelProcess') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

@@ -14,17 +14,27 @@
         </template>
       </el-table-column>
       <el-table-column :label="t('reimbursement.categorySort')" width="90" prop="sort" />
-      <el-table-column :label="t('reimbursement.categoryDescription')" min-width="160" prop="description" />
-      <el-table-column fixed="right" :label="t('common.action')" width="130">
+      <el-table-column
+        :label="t('reimbursement.categoryDescription')"
+        min-width="160"
+        prop="description"
+      />
+      <el-table-column fixed="right" :label="t('common.action')" width="220">
         <template #default="{ row }">
-          <el-button link type="primary" @click="edit(row)">{{ t('common.edit') }}</el-button>
-          <el-button link type="danger" @click="remove(row.id)">{{ t('common.delete') }}</el-button>
+          <TableActions>
+            <el-button link type="primary" @click="edit(row)">{{ t('common.edit') }}</el-button>
+            <el-button link type="danger" @click="remove(row.id)">{{ t('common.delete') }}</el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>
   </Dialog>
 
-  <Dialog v-model="formVisible" :title="formData.id ? t('reimbursement.updateCategory') : t('reimbursement.createCategory')" width="560px">
+  <Dialog
+    v-model="formVisible"
+    :title="formData.id ? t('reimbursement.updateCategory') : t('reimbursement.createCategory')"
+    width="560px"
+  >
     <el-form ref="formRef" :model="formData" :rules="rules" label-width="110px">
       <el-form-item :label="t('reimbursement.categoryCode')" prop="code">
         <el-input v-model="formData.code" maxlength="40" @input="normalizeCode" />
@@ -42,12 +52,20 @@
         <el-input-number v-model="formData.sort" :max="9999" :min="0" />
       </el-form-item>
       <el-form-item :label="t('reimbursement.categoryDescription')" prop="description">
-        <el-input v-model="formData.description" maxlength="500" :rows="3" show-word-limit type="textarea" />
+        <el-input
+          v-model="formData.description"
+          maxlength="500"
+          :rows="3"
+          show-word-limit
+          type="textarea"
+        />
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button :loading="saving" type="primary" @click="save">{{ t('dialog.confirm') }}</el-button>
-      <el-button @click="formVisible = false">{{ t('dialog.cancel') }}</el-button>
+      <el-button :loading="saving" type="primary" @click="save">{{
+        t('common.confirm')
+      }}</el-button>
+      <el-button @click="formVisible = false">{{ t('common.cancel') }}</el-button>
     </template>
   </Dialog>
 </template>
@@ -68,7 +86,11 @@ const required = (key: string) => ({ required: true, message: t(key), trigger: [
 const rules = reactive({
   code: [
     required('reimbursement.categoryCodeRequired'),
-    { pattern: /^[A-Z][A-Z0-9_-]{1,39}$/, message: t('reimbursement.categoryCodeInvalid'), trigger: 'blur' }
+    {
+      pattern: /^[A-Z][A-Z0-9_-]{1,39}$/,
+      message: t('reimbursement.categoryCodeInvalid'),
+      trigger: 'blur'
+    }
   ],
   name: [required('reimbursement.categoryNameRequired')],
   status: [required('reimbursement.categoryStatusRequired')],

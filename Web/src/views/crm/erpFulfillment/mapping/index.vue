@@ -11,10 +11,12 @@
           <el-table-column :label="t('crm.erpFulfillment.crmCustomer')" min-width="180" prop="crmCustomerName" />
           <el-table-column :label="t('crm.erpFulfillment.erpCustomer')" min-width="180" prop="erpCustomerName" />
           <el-table-column :label="t('crm.erpFulfillment.remark')" min-width="180" prop="remark" />
-          <el-table-column :label="t('common.action')" fixed="right" width="150">
+          <el-table-column :label="t('common.action')" fixed="right" width="220">
             <template #default="{ row }">
-              <el-button v-hasPermi="['crm:erp-mapping:update']" link type="primary" @click="openCustomer(row)">{{ t('common.edit') }}</el-button>
-              <el-button v-hasPermi="['crm:erp-mapping:delete']" link type="danger" @click="removeCustomer(row.id)">{{ t('common.delete') }}</el-button>
+              <TableActions>
+                <el-button v-hasPermi="['crm:erp-mapping:update']" link type="primary" @click="openCustomer(row)">{{ t('common.edit') }}</el-button>
+                <el-button v-hasPermi="['crm:erp-mapping:delete']" link type="danger" @click="removeCustomer(row.id)">{{ t('common.delete') }}</el-button>
+              </TableActions>
             </template>
           </el-table-column>
         </el-table>
@@ -34,10 +36,12 @@
             <template #default="{ row }">{{ row.erpProductBarCode || '-' }} · {{ row.erpProductName }}</template>
           </el-table-column>
           <el-table-column :label="t('crm.erpFulfillment.remark')" min-width="180" prop="remark" />
-          <el-table-column :label="t('common.action')" fixed="right" width="150">
+          <el-table-column :label="t('common.action')" fixed="right" width="220">
             <template #default="{ row }">
-              <el-button v-hasPermi="['crm:erp-mapping:update']" link type="primary" @click="openProduct(row)">{{ t('common.edit') }}</el-button>
-              <el-button v-hasPermi="['crm:erp-mapping:delete']" link type="danger" @click="removeProduct(row.id)">{{ t('common.delete') }}</el-button>
+              <TableActions>
+                <el-button v-hasPermi="['crm:erp-mapping:update']" link type="primary" @click="openProduct(row)">{{ t('common.edit') }}</el-button>
+                <el-button v-hasPermi="['crm:erp-mapping:delete']" link type="danger" @click="removeProduct(row.id)">{{ t('common.delete') }}</el-button>
+              </TableActions>
             </template>
           </el-table-column>
         </el-table>

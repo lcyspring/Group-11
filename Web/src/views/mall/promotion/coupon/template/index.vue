@@ -164,25 +164,26 @@
         class-name="small-padding fixed-width"
         fixed="right"
         :label="t('common.operation')"
-        min-width="120"
-      >
+       width="220">
         <template #default="scope">
-          <el-button
-            v-hasPermi="['promotion:coupon-template:update']"
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-          >
-            {{ t('action.edit') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['promotion:coupon-template:delete']"
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-          >
-            {{ t('action.del') }}
-          </el-button>
+          <TableActions>
+            <el-button
+              v-hasPermi="['promotion:coupon-template:update']"
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+            >
+              {{ t('action.edit') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['promotion:coupon-template:delete']"
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+            >
+              {{ t('action.del') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

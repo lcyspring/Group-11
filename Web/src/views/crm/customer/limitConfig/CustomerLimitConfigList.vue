@@ -51,24 +51,26 @@
       :formatter="dateFormatter"
       min-width="180"
     />
-    <el-table-column :label="t('common.action')" align="center" min-width="150" fixed="right">
+    <el-table-column :label="t('common.action')" align="center" fixed="right" width="220">
       <template #default="scope">
-        <el-button
-          link
-          type="primary"
-          @click="openForm('update', scope.row.id)"
-          v-hasPermi="['crm:customer-limit-config:update']"
-        >
-          {{ t('common.edit') }}
-        </el-button>
-        <el-button
-          link
-          type="danger"
-          @click="handleDelete(scope.row.id)"
-          v-hasPermi="['crm:customer-limit-config:delete']"
-        >
-          {{ t('common.delete') }}
-        </el-button>
+        <TableActions>
+          <el-button
+            link
+            type="primary"
+            @click="openForm('update', scope.row.id)"
+            v-hasPermi="['crm:customer-limit-config:update']"
+          >
+            {{ t('common.edit') }}
+          </el-button>
+          <el-button
+            link
+            type="danger"
+            @click="handleDelete(scope.row.id)"
+            v-hasPermi="['crm:customer-limit-config:delete']"
+          >
+            {{ t('common.delete') }}
+          </el-button>
+        </TableActions>
       </template>
     </el-table-column>
   </el-table>

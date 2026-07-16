@@ -12,7 +12,12 @@
       </el-form-item>
       <el-form-item :label="t('refund.auditStatus')" prop="auditStatus">
         <el-select v-model="queryParams.auditStatus" class="!w-160px" clearable @change="query">
-          <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
+          <el-option
+            v-for="item in statusOptions"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
         </el-select>
       </el-form-item>
       <el-form-item :label="t('refund.refundTime')" prop="refundTime">
@@ -49,7 +54,9 @@
     <el-table v-loading="loading" :data="list" stripe>
       <el-table-column fixed="left" :label="t('refund.no')" min-width="170" prop="no">
         <template #default="{ row }">
-          <el-link :underline="false" type="primary" @click="detailRef.open(row.id)">{{ row.no }}</el-link>
+          <el-link :underline="false" type="primary" @click="detailRef.open(row.id)">{{
+            row.no
+          }}</el-link>
         </template>
       </el-table-column>
       <el-table-column :label="t('refund.sourceReceivable')" min-width="170" prop="receivableNo" />
@@ -65,45 +72,52 @@
       <el-table-column align="right" :label="t('refund.amount')" min-width="120" prop="amount">
         <template #default="{ row }">{{ money(row.amount) }}</template>
       </el-table-column>
-      <el-table-column :formatter="dateFormatter" :label="t('refund.refundTime')" min-width="170" prop="refundTime" />
+      <el-table-column
+        :formatter="dateFormatter"
+        :label="t('refund.refundTime')"
+        min-width="170"
+        prop="refundTime"
+      />
       <el-table-column :label="t('refund.owner')" min-width="100" prop="ownerUserName" />
       <el-table-column fixed="right" :label="t('refund.auditStatus')" min-width="110">
         <template #default="{ row }">
           <el-tag :type="statusTag(row.auditStatus)">{{ statusLabel(row.auditStatus) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column fixed="right" :label="t('common.action')" min-width="260">
+      <el-table-column fixed="right" :label="t('common.action')" width="340">
         <template #default="{ row }">
-          <el-button
-            v-if="[0, 30, 40].includes(row.auditStatus)"
-            v-hasPermi="['crm:receivable-refund:update']"
-            link
-            type="primary"
-            @click="formRef.open('update', row.id)"
-          >
-            {{ row.auditStatus === 0 ? t('common.edit') : t('refund.revise') }}
-          </el-button>
-          <el-button
-            v-if="row.auditStatus === 0"
-            v-hasPermi="['crm:receivable-refund:update']"
-            link
-            type="success"
-            @click="submit(row)"
-          >
-            {{ t('refund.submit') }}
-          </el-button>
-          <el-button v-if="row.processInstanceId" link type="primary" @click="viewProcess(row)">
-            {{ t('refund.viewApproval') }}
-          </el-button>
-          <el-button
-            v-if="row.auditStatus === 0 && !row.processInstanceId"
-            v-hasPermi="['crm:receivable-refund:delete']"
-            link
-            type="danger"
-            @click="remove(row.id)"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions>
+            <el-button
+              v-if="[0, 30, 40].includes(row.auditStatus)"
+              v-hasPermi="['crm:receivable-refund:update']"
+              link
+              type="primary"
+              @click="formRef.open('update', row.id)"
+            >
+              {{ row.auditStatus === 0 ? t('common.edit') : t('refund.revise') }}
+            </el-button>
+            <el-button
+              v-if="row.auditStatus === 0"
+              v-hasPermi="['crm:receivable-refund:update']"
+              link
+              type="success"
+              @click="submit(row)"
+            >
+              {{ t('refund.submit') }}
+            </el-button>
+            <el-button v-if="row.processInstanceId" link type="primary" @click="viewProcess(row)">
+              {{ t('refund.viewApproval') }}
+            </el-button>
+            <el-button
+              v-if="row.auditStatus === 0 && !row.processInstanceId"
+              v-hasPermi="['crm:receivable-refund:delete']"
+              link
+              type="danger"
+              @click="remove(row.id)"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>
@@ -123,6 +137,7 @@
 import * as RefundApi from '@/api/crm/refund'
 import RefundForm from './RefundForm.vue'
 import RefundDetail from './RefundDetail.vue'
+import TableActions from '@/components/TableActions/index.vue'
 import { dateFormatter } from '@/utils/formatTime'
 
 defineOptions({ name: 'CrmReceivableRefund' })
@@ -158,7 +173,10 @@ const statusTag = (value?: number) =>
 const typeLabel = (value: number) =>
   value === 2 ? t('refund.typeBusinessReversal') : t('refund.typeCustomerRefund')
 const money = (value?: number) =>
-  Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })
+  Number(value || 0).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 6
+  })
 const getList = async () => {
   loading.value = true
   try {
@@ -175,7 +193,13 @@ const query = () => {
 }
 const reset = () => {
   queryFormRef.value?.resetFields()
-  Object.assign(queryParams, { pageNo: 1, no: '', type: undefined, auditStatus: undefined, refundTime: undefined })
+  Object.assign(queryParams, {
+    pageNo: 1,
+    no: '',
+    type: undefined,
+    auditStatus: undefined,
+    refundTime: undefined
+  })
   getList()
 }
 const submit = async (row: RefundApi.ReceivableRefundVO) => {

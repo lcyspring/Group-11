@@ -275,52 +275,49 @@
           <dict-tag :type="DICT_TYPE.CRM_AUDIT_STATUS" :value="scope.row.auditStatus" />
         </template>
       </el-table-column>
-      <el-table-column fixed="right" :label="t('common.action')" min-width="250">
+      <el-table-column fixed="right" :label="t('common.action')" width="220">
         <template #default="scope">
-          <el-button
-            v-if="[0, 30, 40].includes(scope.row.auditStatus)"
-            v-hasPermi="['crm:contract:update']"
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-          >
-            {{ scope.row.auditStatus === 0 ? t('common.edit') : t('crm.contract.revise') }}
-          </el-button>
-          <el-button
-            v-if="scope.row.auditStatus === 0"
-            v-hasPermi="['crm:contract:update']"
-            link
-            type="primary"
-            @click="handleSubmit(scope.row)"
-          >
-            {{ t('crm.contract.submitAudit') }}
-          </el-button>
-          <el-button
-            v-if="scope.row.processInstanceId"
-            link
-            v-hasPermi="['crm:contract:update']"
-            type="primary"
-            @click="handleProcessDetail(scope.row)"
-          >
-            {{ t('crm.contract.viewApproval') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['crm:contract:query']"
-            link
-            type="primary"
-            @click="openDetail(scope.row.id)"
-          >
-            {{ t('common.detail') }}
-          </el-button>
-          <el-button
-            v-if="scope.row.auditStatus === 0 && !scope.row.processInstanceId"
-            v-hasPermi="['crm:contract:delete']"
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-          >
-            {{ t('common.del') }}
-          </el-button>
+          <TableActions>
+            <el-button
+              v-hasPermi="['crm:contract:query']"
+              link
+              type="primary"
+              @click="openDetail(scope.row.id)"
+            >
+              {{ t('common.detail') }}
+            </el-button>
+            <template #more>
+              <el-dropdown-item
+                v-if="[0, 30, 40].includes(scope.row.auditStatus)"
+                v-hasPermi="['crm:contract:update']"
+                @click="openForm('update', scope.row.id)"
+              >
+                {{ scope.row.auditStatus === 0 ? t('common.edit') : t('crm.contract.revise') }}
+              </el-dropdown-item>
+              <el-dropdown-item
+                v-if="scope.row.auditStatus === 0"
+                v-hasPermi="['crm:contract:update']"
+                @click="handleSubmit(scope.row)"
+              >
+                {{ t('crm.contract.submitAudit') }}
+              </el-dropdown-item>
+              <el-dropdown-item
+                v-if="scope.row.processInstanceId"
+                v-hasPermi="['crm:contract:update']"
+                @click="handleProcessDetail(scope.row)"
+              >
+                {{ t('crm.contract.viewApproval') }}
+              </el-dropdown-item>
+              <el-dropdown-item
+                v-if="scope.row.auditStatus === 0 && !scope.row.processInstanceId"
+                v-hasPermi="['crm:contract:delete']"
+                divided
+                @click="handleDelete(scope.row.id)"
+              >
+                {{ t('common.del') }}
+              </el-dropdown-item>
+            </template>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>
@@ -341,6 +338,7 @@ import { dateFormatter, dateFormatter2 } from '@/utils/formatTime'
 import download from '@/utils/download'
 import * as ContractApi from '@/api/crm/contract'
 import ContractForm from './ContractForm.vue'
+import TableActions from '@/components/TableActions/index.vue'
 import { DICT_TYPE } from '@/utils/dict'
 import { erpPriceInputFormatter, erpPriceTableColumnFormatter } from '@/utils'
 import * as CustomerApi from '@/api/crm/customer'

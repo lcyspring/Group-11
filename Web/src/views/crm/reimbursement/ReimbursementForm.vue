@@ -15,7 +15,12 @@
               :loading="customerLoading"
               @change="customerChanged"
             >
-              <el-option v-for="item in customers" :key="item.id" :label="item.name" :value="item.id" />
+              <el-option
+                v-for="item in customers"
+                :key="item.id"
+                :label="item.name"
+                :value="item.id"
+              />
             </el-select>
           </el-form-item>
         </el-col>
@@ -42,12 +47,22 @@
       <el-row :gutter="16">
         <el-col :span="12">
           <el-form-item :label="t('reimbursement.expenseStartDate')" prop="expenseStartDate">
-            <el-date-picker v-model="formData.expenseStartDate" class="!w-full" type="date" value-format="YYYY-MM-DD" />
+            <el-date-picker
+              v-model="formData.expenseStartDate"
+              class="!w-full"
+              type="date"
+              value-format="YYYY-MM-DD"
+            />
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item :label="t('reimbursement.expenseEndDate')" prop="expenseEndDate">
-            <el-date-picker v-model="formData.expenseEndDate" class="!w-full" type="date" value-format="YYYY-MM-DD" />
+            <el-date-picker
+              v-model="formData.expenseEndDate"
+              class="!w-full"
+              type="date"
+              value-format="YYYY-MM-DD"
+            />
           </el-form-item>
         </el-col>
       </el-row>
@@ -55,7 +70,13 @@
         <el-input v-model="formData.reason" maxlength="500" minlength="5" show-word-limit />
       </el-form-item>
       <el-form-item :label="t('reimbursement.remark')" prop="remark">
-        <el-input v-model="formData.remark" maxlength="1000" :rows="2" show-word-limit type="textarea" />
+        <el-input
+          v-model="formData.remark"
+          maxlength="1000"
+          :rows="2"
+          show-word-limit
+          type="textarea"
+        />
       </el-form-item>
 
       <div class="mb-10px flex items-center justify-between">
@@ -80,7 +101,12 @@
         </el-table-column>
         <el-table-column :label="t('reimbursement.occurredDate')" min-width="145">
           <template #default="{ row }">
-            <el-date-picker v-model="row.occurredDate" class="!w-full" type="date" value-format="YYYY-MM-DD" />
+            <el-date-picker
+              v-model="row.occurredDate"
+              class="!w-full"
+              type="date"
+              value-format="YYYY-MM-DD"
+            />
           </template>
         </el-table-column>
         <el-table-column :label="t('reimbursement.amount')" min-width="135">
@@ -89,10 +115,14 @@
           </template>
         </el-table-column>
         <el-table-column :label="t('reimbursement.description')" min-width="170">
-          <template #default="{ row }"><el-input v-model="row.description" maxlength="500" /></template>
+          <template #default="{ row }"
+            ><el-input v-model="row.description" maxlength="500"
+          /></template>
         </el-table-column>
         <el-table-column :label="t('reimbursement.invoiceNo')" min-width="130">
-          <template #default="{ row }"><el-input v-model="row.invoiceNo" maxlength="100" /></template>
+          <template #default="{ row }"
+            ><el-input v-model="row.invoiceNo" maxlength="100"
+          /></template>
         </el-table-column>
         <el-table-column :label="t('reimbursement.attachments')" min-width="230">
           <template #default="{ row }">
@@ -103,14 +133,18 @@
         </el-table-column>
         <el-table-column fixed="right" :label="t('common.action')" width="80">
           <template #default="{ $index }">
-            <el-button link type="danger" @click="removeItem($index)">{{ t('common.delete') }}</el-button>
+            <el-button link type="danger" @click="removeItem($index)">{{
+              t('common.delete')
+            }}</el-button>
           </template>
         </el-table-column>
       </el-table>
     </el-form>
     <template #footer>
-      <el-button :loading="loading" type="primary" @click="submit">{{ t('dialog.confirm') }}</el-button>
-      <el-button @click="visible = false">{{ t('dialog.cancel') }}</el-button>
+      <el-button :loading="loading" type="primary" @click="submit">{{
+        t('common.confirm')
+      }}</el-button>
+      <el-button @click="visible = false">{{ t('common.cancel') }}</el-button>
     </template>
   </Dialog>
 </template>
@@ -151,7 +185,9 @@ const enabledCategories = computed(() =>
       item.status === 0 && item.id !== undefined
   )
 )
-const pageTotal = computed(() => calculateReimbursementTotal(formData.value.items.map((item) => item.amount)))
+const pageTotal = computed(() =>
+  calculateReimbursementTotal(formData.value.items.map((item) => item.amount))
+)
 const required = (key: string) => ({ required: true, message: t(key), trigger: ['blur', 'change'] })
 const rules = reactive({
   expenseStartDate: [required('reimbursement.expenseStartRequired')],
@@ -175,7 +211,13 @@ function emptyItem(): EditableItem {
 }
 function emptyForm(): EditableReimbursement {
   const today = dayjs().format('YYYY-MM-DD')
-  return { expenseStartDate: today, expenseEndDate: today, reason: '', remark: '', items: [emptyItem()] }
+  return {
+    expenseStartDate: today,
+    expenseEndDate: today,
+    reason: '',
+    remark: '',
+    items: [emptyItem()]
+  }
 }
 const fileName = (url: string) => {
   const raw = url.split('/').pop()?.split('?')[0] || t('reimbursement.attachment')
@@ -212,7 +254,10 @@ const buildPayload = (): ReimbursementApi.ReimbursementVO => ({
   }))
 })
 const money = (value?: number) =>
-  Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })
+  Number(value || 0).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 6
+  })
 const addItem = () => formData.value.items.push(emptyItem())
 const removeItem = (index: number) => {
   if (formData.value.items.length === 1) {
@@ -267,11 +312,22 @@ const validateItems = () => {
     return false
   }
   for (const [index, item] of formData.value.items.entries()) {
-    if (!item.categoryId || !item.occurredDate || Number(item.amount) <= 0 || !item.description.trim()) {
+    if (
+      !item.categoryId ||
+      !item.occurredDate ||
+      Number(item.amount) <= 0 ||
+      !item.description.trim()
+    ) {
       message.warning(t('reimbursement.itemInvalid', { index: index + 1 }))
       return false
     }
-    if (!isOccurredDateInRange(item.occurredDate, formData.value.expenseStartDate, formData.value.expenseEndDate)) {
+    if (
+      !isOccurredDateInRange(
+        item.occurredDate,
+        formData.value.expenseStartDate,
+        formData.value.expenseEndDate
+      )
+    ) {
       message.warning(t('reimbursement.itemDateInvalid', { index: index + 1 }))
       return false
     }
@@ -311,7 +367,9 @@ const submit = async () => {
       formData.value.id = id
       mode.value = 'update'
     }
-    const hasPendingFiles = formData.value.items.some((item) => item.files.some((file) => file.raw && !file.url))
+    const hasPendingFiles = formData.value.items.some((item) =>
+      item.files.some((file) => file.raw && !file.url)
+    )
     if (hasPendingFiles) {
       await uploadPendingFiles(id!)
       await ReimbursementApi.updateReimbursement(buildPayload())

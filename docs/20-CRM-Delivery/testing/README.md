@@ -63,6 +63,8 @@
 | `crm-statistics-runtime-security/` | 临时 SELF 用户真实数据对账、跨人员/跨域/跨租户负向和清理 |
 | `crm-statistics-ui-regressions/` | 乱码 ref、分页、年份模型和 loading 异常路径的 SFC 契约回归 |
 | `deal-cycle-data-quality/` | 负成交周期保留、负样本显式标记、四类 API/MySQL 对账和覆盖率 |
+| `receivable-reference-integrity/` | 回款历史引用四级状态、原始 ID、查询保护和统计双口径对账 |
+| `performance-target-runtime-migration/` | 业绩目标迁移清单、运行表/权限/三语数据、API 和失败态 |
 | `crm-receivable-refund/` | 回款退款/冲销金额守恒、审批状态机、对象权限、动作轨迹和运行验收 |
 | `crm-resource-security/` | 八类导出对象权限、合同受保护附件、公共文件隔离和历史通知乱码 |
 | `customer-360-refund/` | 退款/冲销审批金额、净回款、待回款和客户明细入口 |
@@ -77,6 +79,7 @@
 | `crm-work-order-service-governance/` | 移动签到、地理围栏、SLA 工作日历、暂停恢复和自动升级 |
 | `crm-marketing/` | 营销活动、竞争对手、客户关怀、同意/退订、审核和短信/邮件群发 |
 | `admin-legacy-media-orb/` | 管理端退休媒体源、历史头像、响应/缓存归一化和 ORB 防护 |
+| `table-action-and-approval-ui/` | 全量操作列收敛、财务弹窗本地化及 BPM 缓存待办自动刷新 |
 
 运行入口统一为：
 
