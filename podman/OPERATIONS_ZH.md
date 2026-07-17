@@ -18,8 +18,8 @@
 | CRM 诊断包 | `collect-crm-diagnostics.sh <yaml>` | 健康、容器、日志、数据库与宿主 SLI 诊断 |
 | 配置门禁 | `tests/runtime-config/run.sh <yaml>` | 无状态检查 YAML、manifest、脚本和 Pod 不变性 |
 
-`build-assets.sh` 只给已经安装 JDK/Node/pnpm 的 Ubuntu 26.04 成员宿主机使用；本工作站统一使用
-`build-in-ubuntu.sh`。项目原 Docker/Compose 不进入本流程。
+宿主 JDK/Node/pnpm 构建入口已删除，所有成员统一使用 `build-in-ubuntu.sh`。项目原
+Docker/Compose 不进入本流程。
 
 ## 标准流程
 

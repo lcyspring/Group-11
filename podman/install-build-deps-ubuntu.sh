@@ -12,7 +12,7 @@ usage() {
     cat <<'EOF'
 Usage: bash ./install-build-deps-ubuntu.sh
 
-Installs the Ubuntu host-side requirements for podman/build-assets.sh:
+Installs Ubuntu host-side requirements for the rootless Podman workflows:
   - OpenJDK 17 and Maven
   - Node.js 20 and pnpm 9
   - Podman, Pasta (`passt`), and rootless-storage helpers
@@ -143,6 +143,6 @@ podman --version
 
 cat <<'EOF'
 
-HBuilderX CLI is not installed by this script. Install HBuilderX CLI 3.1.5+
-separately, then run: bash ./build-mall-h5.sh --check
+Mall H5 is built in the dedicated Ubuntu image:
+bash ./build-mall-h5-in-ubuntu.sh ./config/build-mall-h5-ubuntu-26.04.yaml
 EOF

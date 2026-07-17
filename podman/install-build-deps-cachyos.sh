@@ -12,7 +12,7 @@ usage() {
     cat <<'EOF'
 Usage: bash ./install-build-deps-cachyos.sh [--check]
 
-Installs the CachyOS/Arch host-side requirements for podman/build-assets.sh:
+Installs the CachyOS/Arch host-side requirements for rootless Podman workflows:
   - OpenJDK 17 and Maven
   - Node.js and pnpm
   - Podman with rootless networking/storage helpers
@@ -140,6 +140,6 @@ fi
 
 cat <<'EOF'
 
-HBuilderX CLI is not installed by this script. It is needed only when the Mall
-H5 output must be regenerated; use: bash ./build-mall-h5.sh --check
+Mall H5 is built in the dedicated Ubuntu image:
+bash ./build-mall-h5-in-ubuntu.sh ./config/build-mall-h5-ubuntu-26.04.yaml
 EOF

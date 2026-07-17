@@ -13,7 +13,7 @@ bash ./build-in-ubuntu.sh ./config/build-ubuntu-26.04.yaml
 bash ./build-mall-h5-in-ubuntu.sh ./config/build-mall-h5-ubuntu-26.04.yaml
 ```
 
-`build-assets.sh` 仅供其他 Ubuntu 26.04 主机成员使用；本机使用上面的容器入口。
+不再提供宿主 JDK/Node/pnpm 构建入口，所有成员统一使用上面的 Ubuntu 26.04 容器入口。
 
 ## 运行
 

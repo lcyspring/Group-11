@@ -71,9 +71,8 @@ builds use the resulting self-contained image without reading or mounting the
 host HBuilderX installation. `MallFrontend/unpackage/` is generated locally
 and ignored by Git; build it before packaging a deployment image.
 
-`build-assets.sh` remains the Ubuntu 26.04 host-toolchain helper for other
-project members. This workstation should use the two container entry points
-above.
+Host JDK/Node/pnpm build helpers have been removed. Every project member uses
+the two Ubuntu 26.04 container entry points above.
 
 Required runtime artifacts are:
 
