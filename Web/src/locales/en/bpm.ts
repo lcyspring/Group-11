@@ -243,7 +243,7 @@ export default {
   },
   oa: {
     title: 'OA Approval',
-    event: { title: 'Calendar', titleLabel: 'Event Title', startTime: 'Start Time', endTime: 'End Time', location: 'Location' },
+    event: { title: 'Calendar', titleLabel: 'Event Title', startTime: 'Start Time', endTime: 'End Time', location: 'Location', day: 'Day', week: 'Week', month: 'Month', previous: 'Previous', next: 'Next', today: 'Today' },
     leave: {
       title: 'Leave Application',
       type: 'Leave Type',
