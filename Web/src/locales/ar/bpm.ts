@@ -244,6 +244,7 @@ export default {
   oa: {
     title: 'موافقة OA',
     event: { title: 'إدارة التقويم', titleLabel: 'عنوان الحدث', startTime: 'وقت البدء', endTime: 'وقت الانتهاء', location: 'الموقع', day: 'يوم', week: 'أسبوع', month: 'شهر', previous: 'السابق', next: 'التالي', today: 'اليوم' },
+    task: { title: 'مساحة المهام', titleLabel: 'عنوان المهمة', create: 'إنشاء مهمة', assignee: 'معرف المسؤول', dueTime: 'وقت الاستحقاق', priority: 'الأولوية', status: 'الحالة', description: 'الوصف', todo: 'لم تبدأ', processing: 'قيد التنفيذ', done: 'مكتملة', start: 'بدء', complete: 'إكمال' },
     leave: {
       title: 'طلب إجازة',
       type: 'نوع الإجازة',

@@ -244,6 +244,7 @@ export default {
   oa: {
     title: 'OA Approval',
     event: { title: 'Calendar', titleLabel: 'Event Title', startTime: 'Start Time', endTime: 'End Time', location: 'Location', day: 'Day', week: 'Week', month: 'Month', previous: 'Previous', next: 'Next', today: 'Today' },
+    task: { title: 'Task Workspace', titleLabel: 'Task title', create: 'Create task', assignee: 'Assignee ID', dueTime: 'Due time', priority: 'Priority', status: 'Status', description: 'Description', todo: 'To do', processing: 'In progress', done: 'Completed', start: 'Start', complete: 'Complete' },
     leave: {
       title: 'Leave Application',
       type: 'Leave Type',

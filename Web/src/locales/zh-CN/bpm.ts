@@ -244,6 +244,7 @@ export default {
   oa: {
     title: 'OA审批',
     event: { title: '日程管理', titleLabel: '日程标题', startTime: '开始时间', endTime: '结束时间', location: '地点', day: '日视图', week: '周视图', month: '月视图', previous: '上一周期', next: '下一周期', today: '今天' },
+    task: { title: '任务工作台', titleLabel: '任务标题', create: '新建任务', assignee: '负责人 ID', dueTime: '截止时间', priority: '优先级', status: '状态', description: '任务说明', todo: '待开始', processing: '进行中', done: '已完成', start: '开始', complete: '完成' },
     leave: {
       title: '请假申请',
       type: '请假类型',

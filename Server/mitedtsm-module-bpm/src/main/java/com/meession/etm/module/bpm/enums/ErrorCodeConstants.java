@@ -26,6 +26,8 @@ public interface ErrorCodeConstants {
     ErrorCode OA_LOAN_REPAYMENT_STATUS_INVALID = new ErrorCode(1_009_001_012, "当前借款状态不允许还款");
     ErrorCode OA_LOAN_REPAYMENT_EXCEEDS_OUTSTANDING = new ErrorCode(1_009_001_013, "还款金额超过剩余未还金额 {}");
     ErrorCode OA_LOAN_REPAYMENT_TIME_INVALID = new ErrorCode(1_009_001_014, "还款时间不能晚于当前时间");
+    ErrorCode OA_TASK_NOT_EXISTS = new ErrorCode(1_009_001_015, "OA 任务不存在或无权访问");
+    ErrorCode OA_TASK_STATUS_INVALID = new ErrorCode(1_009_001_016, "当前 OA 任务状态不允许该操作");
 
     // ========== 流程模型 1-009-002-000 ==========
     ErrorCode MODEL_KEY_EXISTS = new ErrorCode(1_009_002_000, "已经存在流程标识为【{}】的流程");
