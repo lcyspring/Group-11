@@ -20,6 +20,8 @@ import com.meession.etm.module.marketing.service.mail.MarketingMailTemplateServi
 import com.meession.etm.module.marketing.service.sms.MarketingSmsTemplateService;
 import com.meession.etm.module.member.api.user.MemberUserApi;
 import com.meession.etm.module.member.api.user.dto.MemberUserRespDTO;
+import com.meession.etm.module.system.service.mail.MailTemplateService;
+import com.meession.etm.module.system.service.sms.SmsTemplateService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -49,6 +51,12 @@ public class MarketingCampaignServiceImpl implements MarketingCampaignService {
 
     @Resource
     private BpmProcessInstanceApi bpmProcessInstanceApi;
+
+    @Resource
+    private SmsTemplateService smsTemplateService;
+
+    @Resource
+    private MailTemplateService mailTemplateService;
 
     @Resource
     private MarketingSmsTemplateService marketingSmsTemplateService;
@@ -169,13 +177,20 @@ public class MarketingCampaignServiceImpl implements MarketingCampaignService {
      */
     private void executeBatchSend(MarketingCampaignDO campaign) {
         try {
-            // 1. 获取目标用户列表
+            // 1. 解析 templateId → templateCode
+            String templateCode = resolveTemplateCode(campaign);
+            if (StrUtil.isBlank(templateCode)) {
+                log.error("[executeBatchSend][营销活动({})模板ID({})无法解析到模板编码]",
+                        campaign.getId(), campaign.getTemplateId());
+                return;
+            }
+            // 2. 获取目标用户列表
             List<MemberUserRespDTO> targetUsers = resolveTargetUsers(campaign);
             if (CollUtil.isEmpty(targetUsers)) {
                 log.warn("[executeBatchSend][营销活动({})没有找到目标用户]", campaign.getId());
                 return;
             }
-            // 2. 根据活动类型分发发送
+            // 3. 根据活动类型分发发送
             List<Long> sendLogIds;
             if (CampaignTypeEnum.isSms(campaign.getType())) {
                 List<String> mobiles = targetUsers.stream()
@@ -183,15 +198,16 @@ public class MarketingCampaignServiceImpl implements MarketingCampaignService {
                         .filter(StrUtil::isNotBlank)
                         .collect(Collectors.toList());
                 sendLogIds = marketingSmsTemplateService.batchSendSmsByTemplate(
-                        mobiles, null, Collections.emptyMap()); // 模板参数后续从 campaign 扩展
+                        mobiles, templateCode, Collections.emptyMap());
             } else {
+                // 邮件类型：注意 MemberUserRespDTO 不含 email 字段，此处需后续扩展
                 List<String> emails = targetUsers.stream()
-                        .map(u -> "") // MemberUserRespDTO 无 email 字段，后续扩展
+                        .map(u -> "")
                         .collect(Collectors.toList());
                 sendLogIds = marketingMailTemplateService.batchSendMailByTemplate(
-                        emails, null, Collections.emptyMap());
+                        emails, templateCode, Collections.emptyMap());
             }
-            // 3. 写入关联记录
+            // 4. 写入关联记录
             String channel = CampaignTypeEnum.isSms(campaign.getType()) ? "SMS" : "MAIL";
             List<MarketingSendRecordDO> records = new ArrayList<>();
             for (Long logId : sendLogIds) {
@@ -202,10 +218,27 @@ public class MarketingCampaignServiceImpl implements MarketingCampaignService {
                 records.add(record);
             }
             sendRecordMapper.insertBatch(records);
-            // 4. 更新统计
+            // 5. 更新统计
             updateSendStatistics(campaign.getId(), sendLogIds.size(), sendLogIds.size(), 0);
         } catch (Exception e) {
             log.error("[executeBatchSend][营销活动({})批量发送异常]", campaign.getId(), e);
+        }
+    }
+
+    /**
+     * 解析模板编码：根据活动类型从对应模板服务获取 templateCode
+     */
+    private String resolveTemplateCode(MarketingCampaignDO campaign) {
+        Long templateId = campaign.getTemplateId();
+        if (templateId == null) {
+            return null;
+        }
+        if (CampaignTypeEnum.isSms(campaign.getType())) {
+            var template = smsTemplateService.getSmsTemplate(templateId);
+            return template != null ? template.getCode() : null;
+        } else {
+            var template = mailTemplateService.getMailTemplate(templateId);
+            return template != null ? template.getCode() : null;
         }
     }
 

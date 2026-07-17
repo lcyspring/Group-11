@@ -1,7 +1,5 @@
 package com.meession.etm.module.marketing.service.campaign;
 
-import com.meession.etm.framework.common.pojo.PageResult;
-import com.meession.etm.framework.common.pojo.PageParam;
 import com.meession.etm.module.bpm.api.event.BpmProcessInstanceStatusEvent;
 import com.meession.etm.module.bpm.api.event.BpmProcessInstanceStatusEventListener;
 import com.meession.etm.module.bpm.enums.task.BpmProcessInstanceStatusEnum;
