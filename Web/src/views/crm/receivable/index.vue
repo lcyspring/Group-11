@@ -283,6 +283,11 @@
               {{ t('contract.viewApproval') }}
             </el-button>
             <el-button
+              v-if="scope.row.auditStatus === 20"
+              v-hasPermi="['crm:receivable:write-off']"
+              link type="success" @click="openWriteOff(scope.row)"
+            >{{ t('receivable.writeOff') }}</el-button>
+            <el-button
               v-if="scope.row.auditStatus === 0 && !scope.row.processInstanceId"
               v-hasPermi="['crm:receivable:delete']"
               link
@@ -306,6 +311,16 @@
 
   <!-- 表单弹窗：添加/修改 -->
   <ReceivableForm ref="formRef" @success="getList" />
+  <Dialog v-model="writeOffVisible" :title="t('receivable.writeOff')" width="620px">
+    <el-form :model="writeOffForm" label-width="110px">
+      <el-form-item :label="t('receivable.writeOffAmount')"><el-input-number v-model="writeOffForm.amount" :min="0.01" :max="writeOffRemaining" :precision="2" controls-position="right" /></el-form-item>
+      <el-form-item :label="t('receivable.writeOffTime')"><el-date-picker v-model="writeOffForm.writeOffTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" /></el-form-item>
+      <el-form-item :label="t('receivable.writeOffSource')"><el-select v-model="writeOffForm.sourceType"><el-option :label="t('receivable.writeOffManual')" :value="1" /><el-option :label="t('receivable.writeOffBank')" :value="2" /><el-option :label="t('receivable.writeOffImport')" :value="3" /></el-select></el-form-item>
+      <el-form-item :label="t('receivable.writeOffReference')"><el-input v-model="writeOffForm.referenceNo" /></el-form-item>
+      <el-form-item :label="t('receivable.remark')"><el-input v-model="writeOffForm.remark" type="textarea" /></el-form-item>
+    </el-form>
+    <template #footer><el-button @click="writeOffVisible=false">{{ t('common.cancel') }}</el-button><el-button type="primary" :loading="writeOffSaving" @click="saveWriteOff">{{ t('common.confirm') }}</el-button></template>
+  </Dialog>
 </template>
 <script lang="ts" setup>
 import { DICT_TYPE } from '@/utils/dict'
@@ -356,6 +371,8 @@ const queryFormRef = ref() // 搜索的表单
 const exportLoading = ref(false) // 导出的加载中
 const activeName = ref('1') // 列表 tab
 const customerList = ref<CustomerApi.CustomerVO[]>([]) // 客户列表
+const writeOffVisible = ref(false); const writeOffSaving = ref(false); const writeOffRemaining = ref(0)
+const writeOffForm = reactive<any>({ receivableId: undefined, amount: undefined, writeOffTime: undefined, sourceType: 1, referenceNo: '', remark: '' })
 
 /** tab 切换 */
 const handleTabClick = (tab: TabsPaneContext) => {
@@ -417,6 +434,18 @@ const handleSubmit = async (row: ReceivableApi.ReceivableVO) => {
 /** 查看审批 */
 const handleProcessDetail = (row: ReceivableApi.ReceivableVO) => {
   push({ name: 'BpmProcessInstanceDetail', query: { id: row.processInstanceId } })
+}
+const openWriteOff = async (row: ReceivableApi.ReceivableVO) => {
+  const rows = await ReceivableApi.getReceivableWriteOffList(row.id)
+  const used = rows.filter(item => item.status === 0).reduce((sum, item) => sum + Number(item.amount), 0)
+  writeOffRemaining.value = Math.max(0, Number(row.price) - used)
+  Object.assign(writeOffForm, { receivableId: row.id, amount: undefined, writeOffTime: new Date(), sourceType: 1, referenceNo: '', remark: '' })
+  writeOffVisible.value = true
+}
+const saveWriteOff = async () => {
+  if (!writeOffForm.amount || writeOffForm.amount > writeOffRemaining.value) return
+  writeOffSaving.value = true
+  try { await ReceivableApi.createReceivableWriteOff(writeOffForm); message.success(t('receivable.writeOffSuccess')); writeOffVisible.value = false } finally { writeOffSaving.value = false }
 }
 
 /** 打开回款详情 */

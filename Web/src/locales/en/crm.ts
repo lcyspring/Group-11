@@ -1031,6 +1031,9 @@ export default {
     referenceBothInvalid: 'Customer Reference Missing and Contract Reference Invalid',
     missingCustomerReference: 'Original customer is missing (ID: {id})',
     missingContractReference: 'Original contract is missing or belongs to another customer (ID: {id})',
+    writeOff: 'Receivable Write-off', writeOffAmount: 'Write-off Amount', writeOffTime: 'Write-off Time', writeOffSource: 'Source',
+    writeOffManual: 'Manual', writeOffBank: 'Bank Transaction', writeOffImport: 'Import', writeOffReference: 'External Reference',
+    writeOffSuccess: 'Receivable write-off created',
     referenceArchiveNotice:
       'This approved receivable remains as financial history and will not be deleted or rebound automatically. Original customer ID: {customerId}; original contract ID: {contractId}'
   },

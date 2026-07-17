@@ -145,6 +145,11 @@ public interface ErrorCodeConstants {
     ErrorCode RECEIVABLE_DELETE_FAIL_IS_APPROVE = new ErrorCode(1_020_004_008, "删除回款失败，原因：回款审批已通过");
     ErrorCode RECEIVABLE_DELETE_FAIL_NOT_NEW_DRAFT = new ErrorCode(1_020_004_009,
             "删除回款失败，只有从未提交审批且未关联计划的草稿可以删除");
+    ErrorCode RECEIVABLE_WRITE_OFF_NOT_EXISTS = new ErrorCode(1_020_004_010, "回款核销记录不存在");
+    ErrorCode RECEIVABLE_WRITE_OFF_REQUIRES_APPROVED = new ErrorCode(1_020_004_011, "只有审批通过的回款可以核销");
+    ErrorCode RECEIVABLE_WRITE_OFF_AMOUNT_EXCEEDS_REMAINING = new ErrorCode(1_020_004_012, "核销金额超过回款剩余未核销金额");
+    ErrorCode RECEIVABLE_WRITE_OFF_REFERENCE_EXISTS = new ErrorCode(1_020_004_013, "外部流水号已用于其他核销记录");
+    ErrorCode RECEIVABLE_WRITE_OFF_ALREADY_REVERSED = new ErrorCode(1_020_004_014, "核销记录已经冲销");
 
     // ========== 回款计划 1-020-005-000 ==========
     ErrorCode RECEIVABLE_PLAN_NOT_EXISTS = new ErrorCode(1_020_005_000, "回款计划不存在");

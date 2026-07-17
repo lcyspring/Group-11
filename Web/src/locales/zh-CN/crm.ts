@@ -1018,6 +1018,9 @@ export default {
     referenceBothInvalid: '客户引用缺失且合同引用无效',
     missingCustomerReference: '原客户已不存在（ID: {id}）',
     missingContractReference: '原合同不存在或不属于原客户（ID: {id}）',
+    writeOff: '回款核销', writeOffAmount: '核销金额', writeOffTime: '核销时间', writeOffSource: '核销来源',
+    writeOffManual: '人工登记', writeOffBank: '银行流水', writeOffImport: '批量导入', writeOffReference: '外部流水号',
+    writeOffSuccess: '回款核销成功',
     referenceArchiveNotice:
       '该回款作为已审批财务历史保留，不会自动删除或重绑。原客户 ID: {customerId}，原合同 ID: {contractId}'
   },

@@ -13,14 +13,17 @@ import com.meession.etm.module.crm.controller.admin.contract.vo.contract.CrmCont
 import com.meession.etm.module.crm.controller.admin.receivable.vo.receivable.CrmReceivablePageReqVO;
 import com.meession.etm.module.crm.controller.admin.receivable.vo.receivable.CrmReceivableRespVO;
 import com.meession.etm.module.crm.controller.admin.receivable.vo.receivable.CrmReceivableSaveReqVO;
+import com.meession.etm.module.crm.controller.admin.receivable.vo.writeoff.CrmReceivableWriteOffCreateReqVO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.receivable.CrmReceivableDO;
+import com.meession.etm.module.crm.dal.dataobject.receivable.CrmReceivableWriteOffDO;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.enums.receivable.CrmReceivableReferenceStatusEnum;
 import com.meession.etm.module.crm.service.contract.CrmContractService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
 import com.meession.etm.module.crm.service.receivable.CrmReceivableService;
+import com.meession.etm.module.crm.service.receivable.CrmReceivableWriteOffService;
 import com.meession.etm.module.crm.service.permission.CrmPermissionService;
 import com.meession.etm.module.system.api.dept.DeptApi;
 import com.meession.etm.module.system.api.dept.dto.DeptRespDTO;
@@ -59,6 +62,8 @@ public class CrmReceivableController {
 
     @Resource
     private CrmReceivableService receivableService;
+    @Resource
+    private CrmReceivableWriteOffService writeOffService;
     @Resource
     private CrmContractService contractService;
     @Resource
@@ -194,6 +199,28 @@ public class CrmReceivableController {
     @PreAuthorize("@ss.hasPermission('crm:receivable:query')")
     public CommonResult<Long> getAuditReceivableCount() {
         return success(receivableService.getAuditReceivableCount(getLoginUserId()));
+    }
+
+    @PostMapping("/write-off/create")
+    @Operation(summary = "创建回款核销")
+    @PreAuthorize("@ss.hasPermission('crm:receivable:write-off')")
+    public CommonResult<Long> createWriteOff(@Valid @RequestBody CrmReceivableWriteOffCreateReqVO reqVO) {
+        return success(writeOffService.create(reqVO));
+    }
+
+    @GetMapping("/write-off/list")
+    @Operation(summary = "获得回款核销台账")
+    @PreAuthorize("@ss.hasPermission('crm:receivable:query')")
+    public CommonResult<List<CrmReceivableWriteOffDO>> getWriteOffList(@RequestParam("receivableId") Long receivableId) {
+        return success(writeOffService.getList(receivableId));
+    }
+
+    @PutMapping("/write-off/reverse")
+    @Operation(summary = "冲销回款核销")
+    @PreAuthorize("@ss.hasPermission('crm:receivable:write-off')")
+    public CommonResult<Boolean> reverseWriteOff(@RequestParam Long receivableId, @RequestParam Long id) {
+        writeOffService.reverse(receivableId, id);
+        return success(true);
     }
 
 }

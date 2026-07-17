@@ -1025,6 +1025,9 @@ export default {
     referenceBothInvalid: 'مرجع العميل مفقود ومرجع العقد غير صالح',
     missingCustomerReference: 'العميل الأصلي مفقود (المعرف: {id})',
     missingContractReference: 'العقد الأصلي مفقود أو تابع لعميل آخر (المعرف: {id})',
+    writeOff: 'تسوية المستحق', writeOffAmount: 'مبلغ التسوية', writeOffTime: 'وقت التسوية', writeOffSource: 'مصدر التسوية',
+    writeOffManual: 'يدوي', writeOffBank: 'حركة بنكية', writeOffImport: 'استيراد', writeOffReference: 'المرجع الخارجي',
+    writeOffSuccess: 'تم إنشاء تسوية المستحق',
     referenceArchiveNotice:
       'يبقى هذا التحصيل المعتمد كسجل مالي تاريخي ولن يُحذف أو يُعاد ربطه تلقائياً. معرف العميل الأصلي: {customerId}؛ معرف العقد الأصلي: {contractId}'
   },
