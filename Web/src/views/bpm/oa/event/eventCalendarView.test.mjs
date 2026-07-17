@@ -18,6 +18,10 @@ test('event API converts display timestamps to Spring LocalDateTime ISO format',
   assert.match(source, /oa\.event\.empty/)
 })
 
+test('event page explicitly imports dayjs for runtime setup', () => {
+  assert.match(source, /import dayjs from 'dayjs'/)
+})
+
 test('calendar navigation reloads its selected period', () => {
   assert.match(source, /const movePeriod = async/)
   assert.match(source, /const goToday = async/)

@@ -8,6 +8,7 @@
 </template>
 <script setup lang="ts">
 import * as Api from '@/api/bpm/oaEvent'
+import dayjs from 'dayjs'
 defineOptions({ name: 'OaEvent' })
 const { t } = useI18n('bpm'); const message = useMessage(); const loading = ref(false); const list = ref<Api.OaEventVO[]>([])
 type ViewMode = 'day' | 'week' | 'month'

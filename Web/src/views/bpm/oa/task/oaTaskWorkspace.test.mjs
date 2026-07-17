@@ -12,4 +12,5 @@ test('OA task workspace exposes independent lifecycle operations', () => {
   assert.match(page, /row\.status === 0/)
   assert.match(page, /row\.status === 1/)
   assert.match(page, /oa\.task\.empty/)
+  assert.match(page, /import dayjs from 'dayjs'/)
 })

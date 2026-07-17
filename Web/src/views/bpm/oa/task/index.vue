@@ -8,6 +8,7 @@
 </template>
 <script setup lang="ts">
 import * as Api from '@/api/bpm/oaTask'
+import dayjs from 'dayjs'
 defineOptions({ name: 'OaTask' })
 const { t } = useI18n('bpm'); const message = useMessage(); const loading = ref(false); const visible = ref(false); const status = ref<number>(); const list = ref<Api.OaTaskVO[]>([])
 const form = reactive<Api.OaTaskVO>({ title: '', assigneeUserId: 1, dueTime: dayjs().add(1, 'day').format('YYYY-MM-DD HH:mm:ss'), priority: 1 })
