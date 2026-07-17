@@ -67,8 +67,11 @@ This entry point likewise accepts only its YAML path. It does not start the
 HBuilderX IDE, Qt, X11, or Xvfb. When the configured image does not exist (or
 `image.rebuild` is `true`), it copies only HBuilderX's bundled Node, Vue 3/Vite
 uni-app compiler, and Dart Sass runtime from `hbuilderx.source_dir`. Normal
-builds use the resulting self-contained image without reading or mounting the
-host HBuilderX installation. `MallFrontend/unpackage/` is generated locally
+builds prefer the published `ghcr.io/elel-code/group-11-hbuilderx-ubuntu:26.04-5.05`
+image and never read or mount the host HBuilderX installation. Mall project
+dependencies are installed at container runtime into Podman named volumes by
+`ghcr.io/elel-code/group-11-build-ubuntu:26.04`; the offline compiler mounts
+that volume instead of host `node_modules`. `MallFrontend/unpackage/` is generated locally
 and ignored by Git; build it before packaging a deployment image.
 
 Host JDK/Node/pnpm build helpers have been removed. Every project member uses

@@ -7,9 +7,9 @@ registry:
   host: ghcr.io
 
 image:
-  server_builder_source: localhost/mitedtsm-build-ubuntu:26.04
+  server_builder_source: ghcr.io/elel-code/group-11-build-ubuntu:26.04
   server_builder_destination: ghcr.io/elel-code/group-11-build-ubuntu:26.04
-  mall_builder_source: localhost/mitedtsm-hbuilderx-ubuntu:26.04-5.05
+  mall_builder_source: ghcr.io/elel-code/group-11-hbuilderx-ubuntu:26.04-5.05
   mall_builder_destination: ghcr.io/elel-code/group-11-hbuilderx-ubuntu:26.04-5.05
 
 archive:

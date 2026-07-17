@@ -43,6 +43,11 @@ esac
     printf 'Mall H5 project directory is missing: %s\n' "$PROJECT_DIR" >&2
     exit 1
 }
+[[ -d "$PROJECT_DIR/node_modules/.pnpm" ]] || {
+    printf 'Mall dependency volume is missing or incomplete: %s/node_modules\n' "$PROJECT_DIR" >&2
+    printf 'Dependencies must be installed by the runtime dependency container.\n' >&2
+    exit 1
+}
 [[ -x "$NODE" && -f "$UNI_CLI" ]] || {
     printf 'The image does not contain the HBuilderX headless uni-app compiler.\n' >&2
     exit 1

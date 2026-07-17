@@ -35,6 +35,8 @@ bash ./podman/up.sh ./podman/config/runtime-local.yaml
 - 后端产物：`Server/mitedtsm-server/target/mitedtsm-server.jar`；
 - 管理端产物：`Web/dist-prod/`，进入独立 Nginx 镜像；
 - Mall H5：`MallFrontend/unpackage/dist/build/web/`，本地生成且 Git 忽略，进入独立 Nginx 镜像；
+- Mall 项目依赖由 Ubuntu 26.04 容器运行时安装到 Podman named volume，Host
+  `node_modules` 不参与；依赖阶段可联网，HBuilderX 编译阶段固定断网；
 - 前端不会打进后端 JAR/WAR；
 - Ubuntu Server/Web 与 HBuilderX 编译工具链镜像推荐 save 或上传 OCI 仓库；
 - `ghcr.io/elel-code` 下两个编译工具链镜像当前为 public，pull 无需登录，push 仍需维护者登录；

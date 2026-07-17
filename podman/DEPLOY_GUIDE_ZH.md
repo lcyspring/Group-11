@@ -60,6 +60,10 @@ pnpm；具体版本以 `Containerfile.build-ubuntu` 和 YAML 为准。
 Mall H5 构建产物位于被 Git 忽略的 `MallFrontend/unpackage/dist/build/web/`，Mall 源码变化后必须
 使用 Ubuntu 26.04 HBuilderX 容器重新生成，不能依赖仓库中的旧产物。
 
+Mall 的 `pnpm install` 由 Ubuntu 26.04 依赖容器在运行时执行，依赖写入专用
+Podman named volume。不要在 Host 执行 Mall 的依赖安装；HBuilderX 编译容器挂载该卷并
+使用 `--network=none`，只把最终 `unpackage` 构建产物写回工作区。
+
 ## 4. 运行配置
 
 `config/runtime-local-check.yaml` 是安全模板，其启动和停止模式都是

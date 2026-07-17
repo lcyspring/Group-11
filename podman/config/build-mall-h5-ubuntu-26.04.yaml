@@ -2,7 +2,8 @@ schema_version: 1
 
 image:
   base: docker.io/library/ubuntu:26.04
-  name: localhost/mitedtsm-hbuilderx-ubuntu:26.04-5.05
+  name: ghcr.io/elel-code/group-11-hbuilderx-ubuntu:26.04-5.05
+  dependency: ghcr.io/elel-code/group-11-build-ubuntu:26.04
   rebuild: false
 
 hbuilderx:
@@ -12,12 +13,22 @@ build:
   platform: h5
   clean_output: true
 
+dependency:
+  frozen_lockfile: true
+
+cache:
+  pnpm_store_volume: mitedtsm-mall-h5-pnpm-store
+  pnpm_store_path: /pnpm-store
+  node_modules_volume: mitedtsm-mall-h5-node-modules
+
 media:
   legacy_origins: "http://test.yudao.iocoder.cn"
   legacy_fallback: /static/goods-empty.png
 
 network:
   mode: none
+  dependency_mode: pasta
+  use_host_proxy: false
 
 runtime:
   memory: 4g

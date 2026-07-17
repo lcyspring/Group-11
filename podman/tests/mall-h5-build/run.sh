@@ -16,6 +16,8 @@ fi
 source "${PODMAN_DIR}/lib/yaml-config.sh"
 yaml_config_init "$1"
 BUILD_IMAGE="$(yaml_require image.name)"
+DEPENDENCY_IMAGE="$(yaml_require image.dependency)"
+NODE_MODULES_VOLUME="$(yaml_require cache.node_modules_volume)"
 OUTPUT_DIR="${PROJECT_ROOT}/MallFrontend/unpackage/dist/build/web"
 
 pass_count=0
@@ -45,6 +47,14 @@ expect_status 2 "$BUILD_SCRIPT"
 expect_status 2 "$BUILD_SCRIPT" "$1" unexpected-extra-argument
 pass 'build command accepts exactly one YAML path'
 
+rg -q --fixed-strings -- \
+    '--volume "$NODE_MODULES_VOLUME:/workspace/MallFrontend/node_modules:rw"' \
+    "$BUILD_SCRIPT"
+rg -q --fixed-strings -- \
+    '--entrypoint /workspace/podman/mall-dependencies-entrypoint.sh' \
+    "$BUILD_SCRIPT"
+pass 'dependency install and H5 compile both use the Podman node_modules volume'
+
 build_log="$(mktemp)"
 trap 'rm -f -- "$build_log"' EXIT
 if ! "$BUILD_SCRIPT" "$1" >"$build_log" 2>&1; then
@@ -52,7 +62,13 @@ if ! "$BUILD_SCRIPT" "$1" >"$build_log" 2>&1; then
     exit 1
 fi
 tail -n 4 "$build_log"
-pass 'Mall H5 builds in the configured image'
+pass 'Mall dependencies install at container runtime and H5 builds offline'
+
+podman run --rm --pull=never --network=none \
+    --volume "$NODE_MODULES_VOLUME:/node_modules:ro" \
+    --entrypoint /bin/sh "$DEPENDENCY_IMAGE" -eu -c \
+    'test -d /node_modules/.pnpm && test -f /node_modules/dayjs/package.json'
+pass 'runtime dependency volume contains Mall packages independently of the host directory'
 
 podman run --rm --pull=never --network=none \
     --entrypoint /bin/sh "$BUILD_IMAGE" -eu -c '

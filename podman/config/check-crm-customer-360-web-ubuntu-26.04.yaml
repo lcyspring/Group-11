@@ -2,7 +2,7 @@ schema_version: 1
 
 image:
   base: docker.io/library/ubuntu:26.04
-  name: localhost/mitedtsm-build-ubuntu:26.04
+  name: ghcr.io/elel-code/group-11-build-ubuntu:26.04
   rebuild: false
 
 toolchain:

@@ -37,11 +37,11 @@
 
 | 本地/仓库镜像 | 构建来源 | 作用 | 交付建议 |
 |---|---|---|---|
-| `localhost/mitedtsm-build-ubuntu:26.04` / `ghcr.io/elel-code/group-11-build-ubuntu:26.04` | Ubuntu 26.04 + OpenJDK 17 + Maven + Node.js + pnpm 11.3.0 + 项目构建入口 | 编译 Server、InitService、Web，并运行 CRM 测试和 JaCoCo | 推荐上传版本化 OCI 仓库，同时保留带 SHA-256 的 OCI tar |
-| `localhost/mitedtsm-hbuilderx-ubuntu:26.04-5.05` / `ghcr.io/elel-code/group-11-hbuilderx-ubuntu:26.04-5.05` | Ubuntu 26.04 + 本机 HBuilderX 5.05 提取出的 Node、uni-app Vite 和 Sass 无图形组件 | 在容器内编译 Mall H5，不依赖图形 IDE | 推荐上传受控 OCI 仓库，同时保留带 SHA-256 的 OCI tar |
+| `ghcr.io/elel-code/group-11-build-ubuntu:26.04` | Ubuntu 26.04 + OpenJDK 17 + Maven + Node.js + pnpm 11.3.0 + 项目构建入口 | 编译 Server、InitService、Web，并在运行容器中安装 Web/Mall 依赖 | 已公开，脚本默认优先拉取；离线环境使用带 SHA-256 的 OCI tar |
+| `ghcr.io/elel-code/group-11-hbuilderx-ubuntu:26.04-5.05` | Ubuntu 26.04 + HBuilderX 5.05 提取出的 Node、uni-app Vite 和 Sass 无图形组件 | 挂载 Mall 依赖卷并断网编译 H5 | 已公开，脚本默认优先拉取；离线环境使用带 SHA-256 的 OCI tar |
 
-HBuilderX 工具链镜像不是从 Docker Hub 下载的现成镜像；首次重建必须从 YAML 的
-`hbuilderx.source_dir` 读取团队有权使用的 HBuilderX 安装目录。GHCR 中两个镜像是本项目已经构建的
+HBuilderX 工具链镜像不是从 Docker Hub 下载的现成镜像。普通成员直接使用上面的公共 GHCR image；
+仅工具链维护者在 YAML 显式设置 `image.rebuild: true` 时，才从 `hbuilderx.source_dir` 读取团队有权使用的 HBuilderX 安装目录。GHCR 中两个镜像是本项目已经构建的
 编译制品，不是上游官方镜像。`elel-code` 命名空间下这两个 package 当前均为 public，其他成员 pull
 不需要登录；只有维护者 push 新标签时才需要 `podman login ghcr.io`。成员可直接 pull/load，通常无需
 在宿主安装 JDK、pnpm 或 HBuilderX。
