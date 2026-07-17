@@ -26,6 +26,7 @@ public class CrmReimbursementDO extends BaseDO {
     private Long departmentId;
     private Long customerId;
     private Long contractId;
+    private Long tripId;
     private String currency;
     private BigDecimal totalAmount;
     private LocalDate expenseStartDate;

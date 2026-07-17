@@ -338,6 +338,8 @@ export default {
     bpmProcessInstanceReport: 'Data Report',
     oaLeaveCreate: 'Create OA Leave',
     oaLeaveDetail: 'View OA Leave',
+    oaTripCreate: 'Create OA Trip',
+    oaTripDetail: 'View OA Trip',
     bpmModelCreate: 'Create Process',
     bpmModelUpdate: 'Edit Process',
     bpmTaskAssign: 'Pending Tasks',

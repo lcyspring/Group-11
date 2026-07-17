@@ -8,6 +8,7 @@ import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.framework.common.util.json.JsonUtils;
 import com.meession.etm.module.bpm.api.task.BpmProcessInstanceApi;
 import com.meession.etm.module.bpm.api.task.dto.BpmProcessInstanceCreateReqDTO;
+import com.meession.etm.module.bpm.service.oa.BpmOATripService;
 import com.meession.etm.module.crm.controller.admin.reimbursement.vo.CrmReimbursementItemSaveReqVO;
 import com.meession.etm.module.crm.controller.admin.reimbursement.vo.CrmReimbursementPageReqVO;
 import com.meession.etm.module.crm.controller.admin.reimbursement.vo.CrmReimbursementSaveReqVO;
@@ -61,6 +62,7 @@ public class CrmReimbursementServiceImpl implements CrmReimbursementService {
     @Resource private CrmNoRedisDAO noRedisDAO;
     @Resource private CrmPermissionService permissionService;
     @Resource private BpmProcessInstanceApi bpmProcessInstanceApi;
+    @Resource private BpmOATripService tripService;
     @Resource private AdminUserApi adminUserApi;
     @Resource private FileApi fileApi;
     @Resource private CrmReimbursementProperties properties;
@@ -81,6 +83,7 @@ public class CrmReimbursementServiceImpl implements CrmReimbursementService {
             adminUserApi.validateUser(userId);
         }
         LinkSnapshot link = validateLink(reqVO.getCustomerId(), reqVO.getContractId(), userId);
+        validateTrip(reqVO, userId);
         BigDecimal total = validateAndSumItems(reqVO);
         String no = noRedisDAO.generateMonthly(properties.getNumberPrefix());
         if (reimbursementMapper.selectByNo(no) != null) {
@@ -90,6 +93,7 @@ public class CrmReimbursementServiceImpl implements CrmReimbursementService {
                 .setNo(no).setApplicantUserId(userId).setOwnerUserId(userId)
                 .setDepartmentId(applicant == null ? null : applicant.getDeptId())
                 .setCustomerId(link.customerId()).setContractId(link.contractId())
+                .setTripId(reqVO.getTripId())
                 .setCurrency(properties.getDefaultCurrency()).setTotalAmount(total)
                 .setExpenseStartDate(reqVO.getExpenseStartDate()).setExpenseEndDate(reqVO.getExpenseEndDate())
                 .setReason(reqVO.getReason()).setRemark(reqVO.getRemark())
@@ -115,9 +119,11 @@ public class CrmReimbursementServiceImpl implements CrmReimbursementService {
             throw exception(REIMBURSEMENT_EDIT_STATUS_INVALID);
         }
         LinkSnapshot link = validateLink(reqVO.getCustomerId(), reqVO.getContractId(), userId);
+        validateTrip(reqVO, userId);
         BigDecimal total = validateAndSumItems(reqVO);
         CrmReimbursementDO update = new CrmReimbursementDO().setId(old.getId()).setVersion(old.getVersion())
                 .setCustomerId(link.customerId()).setContractId(link.contractId()).setTotalAmount(total)
+                .setTripId(reqVO.getTripId())
                 .setExpenseStartDate(reqVO.getExpenseStartDate()).setExpenseEndDate(reqVO.getExpenseEndDate())
                 .setReason(reqVO.getReason()).setRemark(reqVO.getRemark())
                 .setAuditStatus(CrmAuditStatusEnum.DRAFT.getStatus());
@@ -290,6 +296,14 @@ public class CrmReimbursementServiceImpl implements CrmReimbursementService {
             requireReadPermission(CrmBizTypeEnum.CRM_CUSTOMER, resolvedCustomerId, userId);
         }
         return new LinkSnapshot(resolvedCustomerId, contractId);
+    }
+
+    private void validateTrip(CrmReimbursementSaveReqVO request, Long userId) {
+        if (request.getTripId() == null) {
+            return;
+        }
+        tripService.validateReimbursableTrip(userId, request.getTripId(),
+                request.getExpenseStartDate(), request.getExpenseEndDate());
     }
 
     private void requireReadPermission(CrmBizTypeEnum bizType, Long bizId, Long userId) {

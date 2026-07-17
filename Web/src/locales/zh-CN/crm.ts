@@ -930,6 +930,9 @@ export default {
     actionReject: '审批驳回', actionCancel: '审批取消', actionDelete: '删除新草稿'
   },
   reimbursement: {
+    trip: '关联出差',
+    tripPlaceholder: '请选择已审批通过且已结束的出差',
+    tripHint: '仅显示本人已通过且已结束的出差；报销日期必须覆盖出差起止日期。',
     title: '报销管理', detail: '报销详情', no: '报销编号', applicant: '申请人', customer: '客户',
     contract: '合同', currency: '币种', totalAmount: '服务端总额', expenseDate: '费用日期',
     expenseStartDate: '费用开始日期', expenseEndDate: '费用结束日期', reason: '报销事由', remark: '备注',

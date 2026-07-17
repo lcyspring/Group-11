@@ -318,6 +318,30 @@ const remainingRouter: AppRouteRecordRaw[] = [
         }
       },
       {
+        path: 'oa/trip/create',
+        component: () => import('@/views/bpm/oa/trip/create.vue'),
+        name: 'OATripCreate',
+        meta: {
+          noCache: true,
+          hidden: true,
+          canTo: true,
+          title: 'common.router.oaTripCreate',
+          activeMenu: '/bpm/oa/trip'
+        }
+      },
+      {
+        path: 'oa/trip/detail',
+        component: () => import('@/views/bpm/oa/trip/detail.vue'),
+        name: 'OATripDetail',
+        meta: {
+          noCache: true,
+          hidden: true,
+          canTo: true,
+          title: 'common.router.oaTripDetail',
+          activeMenu: '/bpm/oa/trip'
+        }
+      },
+      {
         path: 'manager/model/create',
         component: () => import('@/views/bpm/model/form/index.vue'),
         name: 'BpmModelCreate',

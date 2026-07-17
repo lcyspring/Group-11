@@ -44,6 +44,12 @@
           </el-form-item>
         </el-col>
       </el-row>
+      <el-form-item :label="t('reimbursement.trip')" prop="tripId">
+        <el-select v-model="formData.tripId" class="w-full" clearable filterable :placeholder="t('reimbursement.tripPlaceholder')">
+          <el-option v-for="trip in trips" :key="trip.id" :label="tripLabel(trip)" :value="trip.id" />
+        </el-select>
+        <div class="text-12px text-gray-500">{{ t('reimbursement.tripHint') }}</div>
+      </el-form-item>
       <el-row :gutter="16">
         <el-col :span="12">
           <el-form-item :label="t('reimbursement.expenseStartDate')" prop="expenseStartDate">
@@ -155,6 +161,7 @@ import type { UploadUserFile } from 'element-plus'
 import * as ContractApi from '@/api/crm/contract'
 import * as CustomerApi from '@/api/crm/customer'
 import * as ReimbursementApi from '@/api/crm/reimbursement'
+import * as TripApi from '@/api/bpm/trip'
 import { calculateReimbursementTotal, isOccurredDateInRange } from './constants'
 
 interface EditableItem extends ReimbursementApi.ReimbursementItemVO {
@@ -175,6 +182,7 @@ const formRef = ref()
 const customers = ref<CustomerApi.CustomerVO[]>([])
 const contracts = ref<ContractApi.ContractVO[]>([])
 const categories = ref<ReimbursementApi.ExpenseCategoryVO[]>([])
+const trips = ref<TripApi.TripVO[]>([])
 const formData = ref<EditableReimbursement>(emptyForm())
 const title = computed(() =>
   mode.value === 'create' ? t('reimbursement.createDraft') : t('reimbursement.updateDraft')
@@ -239,6 +247,7 @@ const buildPayload = (): ReimbursementApi.ReimbursementVO => ({
   id: formData.value.id,
   customerId: formData.value.customerId,
   contractId: formData.value.contractId,
+  tripId: formData.value.tripId,
   expenseStartDate: formData.value.expenseStartDate,
   expenseEndDate: formData.value.expenseEndDate,
   reason: formData.value.reason,
@@ -258,6 +267,8 @@ const money = (value?: number) =>
     minimumFractionDigits: 2,
     maximumFractionDigits: 6
   })
+const tripLabel = (trip: TripApi.TripVO) =>
+  `${trip.destination} · ${dayjs(trip.startTime).format('YYYY-MM-DD HH:mm')} - ${dayjs(trip.endTime).format('YYYY-MM-DD HH:mm')}`
 const addItem = () => formData.value.items.push(emptyItem())
 const removeItem = (index: number) => {
   if (formData.value.items.length === 1) {
@@ -350,6 +361,12 @@ const open = async (type: 'create' | 'update', id?: number) => {
     const data = id ? await ReimbursementApi.getReimbursement(id) : undefined
     if (data) formData.value = toEditable(data)
     categories.value = await ReimbursementApi.getExpenseCategoryList()
+    const availableTrips = await TripApi.getReimbursableTrips()
+    trips.value = availableTrips
+    if (data?.tripId && !trips.value.some((trip) => trip.id === data.tripId)) {
+      const selectedTrip = await TripApi.getTrip(data.tripId)
+      trips.value.unshift(selectedTrip)
+    }
     await Promise.all([loadCustomers(data?.customerId), loadContracts(data?.contractId)])
   } finally {
     loading.value = false

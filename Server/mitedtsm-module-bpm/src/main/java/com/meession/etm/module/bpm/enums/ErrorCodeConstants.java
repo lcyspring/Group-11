@@ -16,6 +16,10 @@ public interface ErrorCodeConstants {
     ErrorCode OA_LEAVE_BALANCE_INSUFFICIENT = new ErrorCode(1_009_001_002, "假期余额不足，可用 {} 天，本次申请 {} 天");
     ErrorCode OA_LEAVE_BALANCE_CONFIG_MISSING = new ErrorCode(1_009_001_003, "请假类型 {} 未配置年度默认余额");
     ErrorCode OA_LEAVE_NO_WORKDAY = new ErrorCode(1_009_001_004, "所选时间范围不包含可请假的工作日");
+    ErrorCode OA_TRIP_NOT_EXISTS = new ErrorCode(1_009_001_005, "出差申请不存在或无权查看");
+    ErrorCode OA_TRIP_NOT_APPROVED = new ErrorCode(1_009_001_006, "仅审批通过的出差可以关联报销");
+    ErrorCode OA_TRIP_NOT_ENDED = new ErrorCode(1_009_001_007, "出差结束后才能关联报销");
+    ErrorCode OA_TRIP_EXPENSE_RANGE_INVALID = new ErrorCode(1_009_001_008, "报销费用日期必须覆盖所关联出差的起止日期");
 
     // ========== 流程模型 1-009-002-000 ==========
     ErrorCode MODEL_KEY_EXISTS = new ErrorCode(1_009_002_000, "已经存在流程标识为【{}】的流程");

@@ -12,6 +12,7 @@ public class CrmReimbursementSaveReqVO {
     private Long id;
     private Long customerId;
     private Long contractId;
+    private Long tripId;
 
     @NotNull(message = "费用开始日期不能为空")
     private LocalDate expenseStartDate;

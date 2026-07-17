@@ -338,6 +338,8 @@ export default {
     bpmProcessInstanceReport: 'تقرير البيانات',
     oaLeaveCreate: 'إنشاء إجازة OA',
     oaLeaveDetail: 'عرض إجازة OA',
+    oaTripCreate: 'إنشاء رحلة عمل OA',
+    oaTripDetail: 'عرض رحلة عمل OA',
     bpmModelCreate: 'إنشاء عملية',
     bpmModelUpdate: 'تعديل العملية',
     bpmTaskAssign: 'المهام المعلقة',

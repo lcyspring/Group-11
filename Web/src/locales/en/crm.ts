@@ -939,6 +939,9 @@ export default {
     actionApprove: 'Approve', actionReject: 'Reject', actionCancel: 'Cancel', actionDelete: 'Delete New Draft'
   },
   reimbursement: {
+    trip: 'Business Trip',
+    tripPlaceholder: 'Select an approved and completed trip',
+    tripHint: 'Only your approved and completed trips are shown; expense dates must cover the trip period.',
     title: 'Reimbursement Management', detail: 'Reimbursement Details', no: 'Reimbursement No.',
     applicant: 'Applicant', customer: 'Customer', contract: 'Contract', currency: 'Currency',
     totalAmount: 'Server Total', expenseDate: 'Expense Date', expenseStartDate: 'Expense Start Date',

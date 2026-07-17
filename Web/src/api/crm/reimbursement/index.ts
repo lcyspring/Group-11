@@ -30,6 +30,7 @@ export interface ReimbursementVO {
   customerId?: number
   customerName?: string
   contractId?: number
+  tripId?: number
   contractNo?: string
   contractName?: string
   currency?: string

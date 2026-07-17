@@ -935,6 +935,9 @@ export default {
     actionReject: 'رفض', actionCancel: 'إلغاء', actionDelete: 'حذف مسودة جديدة'
   },
   reimbursement: {
+    trip: 'رحلة العمل المرتبطة',
+    tripPlaceholder: 'اختر رحلة معتمدة ومنتهية',
+    tripHint: 'تظهر فقط رحلاتك المعتمدة والمنتهية، ويجب أن تغطي تواريخ المصروفات فترة الرحلة.',
     title: 'إدارة المصروفات', detail: 'تفاصيل المصروف', no: 'رقم المصروف', applicant: 'مقدم الطلب',
     customer: 'العميل', contract: 'العقد', currency: 'العملة', totalAmount: 'إجمالي الخادم',
     expenseDate: 'تاريخ المصروف', expenseStartDate: 'تاريخ البداية', expenseEndDate: 'تاريخ النهاية',
