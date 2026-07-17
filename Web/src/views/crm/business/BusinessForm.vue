@@ -209,7 +209,10 @@ watch(
     if (!val) {
       return
     }
-    const totalProductPrice = val.products.reduce((prev, curr) => prev + curr.totalPrice, 0)
+    const totalProductPrice = val.products.reduce(
+      (prev, curr) => prev + Number(curr.totalPrice || 0),
+      0
+    )
     const discountPrice =
       val.discountPercent != null
         ? erpPriceMultiply(totalProductPrice, val.discountPercent / 100.0)
