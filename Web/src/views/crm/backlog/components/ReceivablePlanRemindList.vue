@@ -1,7 +1,15 @@
 <!-- 待回款提醒 -->
 <template>
   <ContentWrap>
-    <div class="pb-5 text-xl">{{ t('backlog.receivablePlanRemind') }}</div>
+    <div class="mb-12px flex flex-wrap items-center justify-between gap-8px">
+      <div class="text-xl">{{ pageTitle }}</div>
+      <el-tag :type="queryParams.remindType === 2 ? 'danger' : queryParams.remindType === 3 ? 'success' : 'warning'">
+        {{ t('backlog.currentResult', { count: total }) }}
+      </el-tag>
+    </div>
+    <el-alert class="mb-16px" :closable="false" :type="queryParams.remindType === 2 ? 'error' : 'info'" show-icon>
+      <template #title>{{ pageGuidance }}</template>
+    </el-alert>
     <!-- 搜索工作区 -->
     <el-form
       ref="queryFormRef"
@@ -59,6 +67,16 @@
         prop="contractNo"
         min-width="200"
       />
+      <el-table-column
+        v-if="queryParams.remindType === 2"
+        align="center"
+        :label="t('backlog.overdueDays')"
+        min-width="110"
+      >
+        <template #default="scope">
+          <el-tag type="danger">{{ t('backlog.overdueDaysValue', { days: getOverdueDays(scope.row.returnTime) }) }}</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column align="center" :label="t('receivablePlan.period')" prop="period">
         <template #default="scope">
           <el-link :underline="false" type="primary" @click="openDetail(scope.row.id)">
@@ -179,7 +197,7 @@
             @click="openReceivableForm(scope.row)"
             :disabled="scope.row.receivableId"
           >
-            {{ t('backlog.createReceivable') }}
+            {{ t('backlog.registerReceivable') }}
           </el-button>
         </template>
       </el-table-column>
@@ -204,8 +222,10 @@ import * as ReceivablePlanApi from '@/api/crm/receivable/plan'
 import { RECEIVABLE_REMIND_TYPE } from './common'
 import { erpPriceInputFormatter, erpPriceTableColumnFormatter } from '@/utils'
 import ReceivableForm from '@/views/crm/receivable/ReceivableForm.vue'
+import dayjs from 'dayjs'
 
 defineOptions({ name: 'ReceivablePlanRemindList' })
+const props = withDefaults(defineProps<{ initialRemindType?: number }>(), { initialRemindType: 1 })
 
 const { t } = useI18n('crm') // 国际化
 const loading = ref(true) // 列表的加载中
@@ -214,9 +234,17 @@ const list = ref([]) // 列表的数据
 const queryParams = reactive({
   pageNo: 1,
   pageSize: 10,
-  remindType: 1
+  remindType: props.initialRemindType
 })
 const queryFormRef = ref() // 搜索的表单
+const pageTitle = computed(() => queryParams.remindType === 2
+  ? t('backlog.receivablePlanOverdueTitle')
+  : queryParams.remindType === 3 ? t('backlog.receivablePlanDoneTitle') : t('backlog.receivablePlanPendingTitle'))
+const pageGuidance = computed(() => queryParams.remindType === 2
+  ? t('backlog.receivablePlanOverdueGuidance')
+  : queryParams.remindType === 3 ? t('backlog.receivablePlanDoneGuidance') : t('backlog.receivablePlanPendingGuidance'))
+const getOverdueDays = (returnTime?: string | number) => returnTime
+  ? Math.max(1, dayjs().startOf('day').diff(dayjs(returnTime).startOf('day'), 'day')) : 0
 
 const getStatusType = (status: number) => {
   if (status === ReceivablePlanApi.ReceivablePlanStatus.RECEIVED) return 'success'
