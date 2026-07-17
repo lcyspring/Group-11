@@ -1223,6 +1223,19 @@ export default {
     contractStatus: 'حالة العقد',
     remindType: 'نوع التذكير'
   },
+  customerVisit: {
+    id: 'رقم الزيارة', create: 'إنشاء زيارة عميل', detail: 'تفاصيل زيارة العميل', customer: 'العميل', contact: 'جهة الاتصال',
+    plannedStart: 'البدء المخطط', plannedEnd: 'الانتهاء المخطط', location: 'الموقع', purpose: 'غرض الزيارة', participants: 'المشاركون',
+    attachments: 'مرفقات الطلب', auditStatus: 'حالة الموافقة', progress: 'تقدم الموافقة', resultStatus: 'حالة النتيجة',
+    pending: 'بانتظار النتيجة', completed: 'مكتملة', recordResult: 'تسجيل نتيجة الزيارة', actualStart: 'البدء الفعلي', actualEnd: 'الانتهاء الفعلي',
+    resultContent: 'نتيجة الزيارة', nextContact: 'موعد الاتصال التالي', resultAttachments: 'مرفقات النتيجة', followUpRecord: 'رقم سجل المتابعة',
+    customerRequired: 'الرجاء اختيار العميل', startRequired: 'الرجاء اختيار وقت البدء', endRequired: 'الرجاء اختيار وقت الانتهاء',
+    endAfterStart: 'يجب أن يكون الانتهاء بعد البدء', locationRequired: 'الرجاء إدخال موقع الزيارة', purposeRequired: 'الرجاء إدخال غرض الزيارة',
+    purposeLength: 'يجب أن يتراوح الغرض بين 5 و1000 حرف', actualStartRequired: 'الرجاء اختيار البدء الفعلي',
+    actualEndRequired: 'الرجاء اختيار الانتهاء الفعلي', resultRequired: 'الرجاء إدخال نتيجة الزيارة',
+    resultLength: 'يجب أن تتراوح النتيجة بين 5 و2000 حرف', nextContactRequired: 'الرجاء اختيار موعد الاتصال التالي',
+    resultSuccess: 'تم تسجيل النتيجة وإنشاء متابعة العميل', processModelNotFound: 'عملية الموافقة على زيارة العميل غير مكوّنة'
+  },
   statistics: {
     title: 'الإحصائيات',
     // Common search

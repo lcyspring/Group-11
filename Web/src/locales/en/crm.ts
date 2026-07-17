@@ -1229,6 +1229,19 @@ export default {
     contractStatus: 'Contract Status',
     remindType: 'Remind Type'
   },
+  customerVisit: {
+    id: 'Visit ID', create: 'Create Customer Visit', detail: 'Customer Visit Details', customer: 'Customer', contact: 'Contact',
+    plannedStart: 'Planned Start', plannedEnd: 'Planned End', location: 'Location', purpose: 'Purpose', participants: 'Participants',
+    attachments: 'Request Attachments', auditStatus: 'Approval Status', progress: 'Approval Progress', resultStatus: 'Result Status',
+    pending: 'Pending', completed: 'Completed', recordResult: 'Record Visit Result', actualStart: 'Actual Start', actualEnd: 'Actual End',
+    resultContent: 'Visit Result', nextContact: 'Next Contact Time', resultAttachments: 'Result Attachments', followUpRecord: 'Follow-up Record ID',
+    customerRequired: 'Please select a customer', startRequired: 'Please select the planned start', endRequired: 'Please select the planned end',
+    endAfterStart: 'Planned end must be later than planned start', locationRequired: 'Please enter the visit location',
+    purposeRequired: 'Please enter the visit purpose', purposeLength: 'Purpose must contain 5 to 1000 characters',
+    actualStartRequired: 'Please select the actual start', actualEndRequired: 'Please select the actual end', resultRequired: 'Please enter the visit result',
+    resultLength: 'Visit result must contain 5 to 2000 characters', nextContactRequired: 'Please select the next contact time',
+    resultSuccess: 'Visit result recorded and customer follow-up created', processModelNotFound: 'The customer visit approval process is not configured'
+  },
   statistics: {
     title: 'Statistics',
     // Common search

@@ -1215,6 +1215,19 @@ export default {
     contractStatus: '合同状态',
     remindType: '提醒类型'
   },
+  customerVisit: {
+    id: '拜访编号', create: '发起客户拜访', detail: '客户拜访详情', customer: '客户', contact: '联系人',
+    plannedStart: '计划开始', plannedEnd: '计划结束', location: '拜访地点', purpose: '拜访目的',
+    participants: '参与人员', attachments: '申请附件', auditStatus: '审批状态', progress: '审批进度',
+    resultStatus: '结果状态', pending: '待回填', completed: '已完成', recordResult: '登记拜访结果',
+    actualStart: '实际开始', actualEnd: '实际结束', resultContent: '拜访结果', nextContact: '下次联系时间',
+    resultAttachments: '结果附件', followUpRecord: '客户跟进记录编号', customerRequired: '请选择客户',
+    startRequired: '请选择计划开始时间', endRequired: '请选择计划结束时间', endAfterStart: '计划结束时间必须晚于计划开始时间',
+    locationRequired: '请输入拜访地点', purposeRequired: '请输入拜访目的', purposeLength: '拜访目的需填写 5 至 1000 个字符',
+    actualStartRequired: '请选择实际开始时间', actualEndRequired: '请选择实际结束时间', resultRequired: '请输入拜访结果',
+    resultLength: '拜访结果需填写 5 至 2000 个字符', nextContactRequired: '请选择下次联系时间',
+    resultSuccess: '拜访结果已登记并生成客户跟进记录', processModelNotFound: '客户拜访审批流程未配置，请检查'
+  },
   statistics: {
     title: '统计分析',
     // 通用搜索

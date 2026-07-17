@@ -342,6 +342,8 @@ export default {
     oaTripDetail: 'عرض رحلة عمل OA',
     oaLoanCreate: 'إنشاء سلفة OA',
     oaLoanDetail: 'عرض سلفة OA',
+    crmCustomerVisitCreate: 'إنشاء زيارة عميل',
+    crmCustomerVisitDetail: 'عرض زيارة العميل',
     bpmModelCreate: 'إنشاء عملية',
     bpmModelUpdate: 'تعديل العملية',
     bpmTaskAssign: 'المهام المعلقة',

@@ -87,6 +87,7 @@ required_examples=(
     bpm-provision-refund.example.yaml
     bpm-provision-trip.example.yaml
     bpm-provision-loan.example.yaml
+    bpm-provision-customer-visit.example.yaml
     bpm-provision-all.example.yaml
 )
 for example in "${required_examples[@]}"; do

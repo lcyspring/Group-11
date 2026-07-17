@@ -366,6 +366,30 @@ const remainingRouter: AppRouteRecordRaw[] = [
         }
       },
       {
+        path: 'crm/customer-visit/create',
+        component: () => import('@/views/crm/customerVisit/create.vue'),
+        name: 'CrmCustomerVisitCreate',
+        meta: {
+          noCache: true,
+          hidden: true,
+          canTo: true,
+          title: 'common.router.crmCustomerVisitCreate',
+          activeMenu: '/crm/customer-visit'
+        }
+      },
+      {
+        path: 'crm/customer-visit/detail',
+        component: () => import('@/views/crm/customerVisit/detail.vue'),
+        name: 'CrmCustomerVisitDetail',
+        meta: {
+          noCache: true,
+          hidden: true,
+          canTo: true,
+          title: 'common.router.crmCustomerVisitDetail',
+          activeMenu: '/crm/customer-visit'
+        }
+      },
+      {
         path: 'manager/model/create',
         component: () => import('@/views/bpm/model/form/index.vue'),
         name: 'BpmModelCreate',

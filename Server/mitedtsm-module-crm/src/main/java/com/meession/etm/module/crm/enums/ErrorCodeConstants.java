@@ -437,4 +437,11 @@ public interface ErrorCodeConstants {
     ErrorCode CONTRACT_FULFILLMENT_SNAPSHOT_CONFLICT = new ErrorCode(1_020_021_019,
             "合同已有不同的履约请求快照，已阻止重复生成 ERP 订单");
 
+    // ========== 客户拜访 1_020_022_000 ==========
+    ErrorCode CUSTOMER_VISIT_NOT_EXISTS = new ErrorCode(1_020_022_000, "客户拜访不存在或无权访问");
+    ErrorCode CUSTOMER_VISIT_CONTACT_MISMATCH = new ErrorCode(1_020_022_001, "所选联系人不属于当前客户");
+    ErrorCode CUSTOMER_VISIT_RESULT_STATUS_INVALID = new ErrorCode(1_020_022_002, "只有审批通过且未回填结果的拜访可以登记结果");
+    ErrorCode CUSTOMER_VISIT_RESULT_TIME_INVALID = new ErrorCode(1_020_022_003, "实际结束时间不能早于实际开始时间或晚于当前时间");
+    ErrorCode CUSTOMER_VISIT_RESULT_ALREADY_RECORDED = new ErrorCode(1_020_022_004, "拜访结果已登记，不能重复生成客户跟进记录");
+
 }

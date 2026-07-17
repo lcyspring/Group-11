@@ -342,6 +342,8 @@ export default {
     oaTripDetail: 'View OA Trip',
     oaLoanCreate: 'Create OA Loan',
     oaLoanDetail: 'View OA Loan',
+    crmCustomerVisitCreate: 'Create Customer Visit',
+    crmCustomerVisitDetail: 'View Customer Visit',
     bpmModelCreate: 'Create Process',
     bpmModelUpdate: 'Edit Process',
     bpmTaskAssign: 'Pending Tasks',
