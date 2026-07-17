@@ -78,6 +78,35 @@ class CrmReceivableServiceImplTest {
         assertFalse(processCreated.get());
     }
 
+    @Test
+    void submitReceivableNeverReportsNegativeRemainingAmountForLegacyOverbooking() {
+        long receivableId = 12L;
+        long contractId = 22L;
+        CrmReceivableDO draft = new CrmReceivableDO().setId(receivableId).setContractId(contractId)
+                .setNo("HK-12").setPrice(BigDecimal.ONE)
+                .setAuditStatus(CrmAuditStatusEnum.DRAFT.getStatus());
+        CrmReceivableDO approved = new CrmReceivableDO().setId(13L).setContractId(contractId)
+                .setPrice(new BigDecimal("110")).setAuditStatus(CrmAuditStatusEnum.APPROVE.getStatus());
+
+        CrmReceivableServiceImpl service = new CrmReceivableServiceImpl();
+        ReflectionTestUtils.setField(service, "receivableMapper", proxy(CrmReceivableMapper.class,
+                (proxy, method, args) -> switch (method.getName()) {
+                    case "selectById", "selectByIdForUpdate" -> draft;
+                    case "selectContractIdForUpdate" -> contractId;
+                    case "selectListByContractIdAndStatus" -> new ArrayList<>(List.of(approved));
+                    default -> throw new AssertionError("未预期的 Mapper 调用 " + method.getName());
+                }));
+        ReflectionTestUtils.setField(service, "contractService", proxy(CrmContractService.class,
+                (proxy, method, args) -> new CrmContractDO().setId(contractId).setTotalPrice(new BigDecimal("100"))));
+        ReflectionTestUtils.setField(service, "bpmProcessInstanceApi", proxy(BpmProcessInstanceApi.class,
+                (proxy, method, args) -> {
+                    throw new AssertionError("额度不足时不应创建审批流程");
+                }));
+
+        assertServiceException(() -> service.submitReceivable(receivableId, 1L),
+                RECEIVABLE_CREATE_FAIL_PRICE_EXCEEDS_LIMIT, BigDecimal.ZERO);
+    }
+
     private static <T> T proxy(Class<T> type, java.lang.reflect.InvocationHandler handler) {
         return type.cast(Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[]{type}, handler));
     }

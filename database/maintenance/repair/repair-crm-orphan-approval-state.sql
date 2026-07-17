@@ -92,6 +92,83 @@ SET source.audit_status=40,source.process_instance_id=NULL,
     source.updater='crm-orphan-approval-repair',source.update_time=NOW()
 WHERE source.deleted=b'0' AND source.audit_status=10 AND flow.ID_ IS NULL;
 
+-- 已结束审批保留业务结果，但失效的历史实例编号不能继续向用户暴露“查看审批”入口。
+-- 原编号、状态和修复原因先写入审计表，再仅清空孤立编号；该处理覆盖所有 CRM 审批域。
+INSERT IGNORE INTO crm_approval_repair_record
+  (biz_type,biz_id,tenant_id,old_process_instance_id,old_audit_status,new_audit_status,reason)
+SELECT 'contract',source.id,source.tenant_id,source.process_instance_id,
+       source.audit_status,source.audit_status,'已结束审批不存在对应 Flowable 历史实例，保留审批结果并移除失效查看入口'
+FROM crm_contract source
+LEFT JOIN ACT_HI_PROCINST flow ON flow.ID_=source.process_instance_id
+WHERE source.deleted=b'0' AND source.audit_status IN (20,30,40)
+  AND source.process_instance_id IS NOT NULL AND flow.ID_ IS NULL;
+
+UPDATE crm_contract source
+LEFT JOIN ACT_HI_PROCINST flow ON flow.ID_=source.process_instance_id
+SET source.process_instance_id=NULL,source.updater='crm-orphan-approval-repair',source.update_time=NOW()
+WHERE source.deleted=b'0' AND source.audit_status IN (20,30,40)
+  AND source.process_instance_id IS NOT NULL AND flow.ID_ IS NULL;
+
+INSERT IGNORE INTO crm_approval_repair_record
+  (biz_type,biz_id,tenant_id,old_process_instance_id,old_audit_status,new_audit_status,reason)
+SELECT 'receivable',source.id,source.tenant_id,source.process_instance_id,
+       source.audit_status,source.audit_status,'已结束审批不存在对应 Flowable 历史实例，保留审批结果并移除失效查看入口'
+FROM crm_receivable source
+LEFT JOIN ACT_HI_PROCINST flow ON flow.ID_=source.process_instance_id
+WHERE source.deleted=b'0' AND source.audit_status IN (20,30,40)
+  AND source.process_instance_id IS NOT NULL AND flow.ID_ IS NULL;
+
+UPDATE crm_receivable source
+LEFT JOIN ACT_HI_PROCINST flow ON flow.ID_=source.process_instance_id
+SET source.process_instance_id=NULL,source.updater='crm-orphan-approval-repair',source.update_time=NOW()
+WHERE source.deleted=b'0' AND source.audit_status IN (20,30,40)
+  AND source.process_instance_id IS NOT NULL AND flow.ID_ IS NULL;
+
+INSERT IGNORE INTO crm_approval_repair_record
+  (biz_type,biz_id,tenant_id,old_process_instance_id,old_audit_status,new_audit_status,reason)
+SELECT 'refund',source.id,source.tenant_id,source.process_instance_id,
+       source.audit_status,source.audit_status,'已结束审批不存在对应 Flowable 历史实例，保留审批结果并移除失效查看入口'
+FROM crm_receivable_refund source
+LEFT JOIN ACT_HI_PROCINST flow ON flow.ID_=source.process_instance_id
+WHERE source.deleted=b'0' AND source.audit_status IN (20,30,40)
+  AND source.process_instance_id IS NOT NULL AND flow.ID_ IS NULL;
+
+UPDATE crm_receivable_refund source
+LEFT JOIN ACT_HI_PROCINST flow ON flow.ID_=source.process_instance_id
+SET source.process_instance_id=NULL,source.updater='crm-orphan-approval-repair',source.update_time=NOW()
+WHERE source.deleted=b'0' AND source.audit_status IN (20,30,40)
+  AND source.process_instance_id IS NOT NULL AND flow.ID_ IS NULL;
+
+INSERT IGNORE INTO crm_approval_repair_record
+  (biz_type,biz_id,tenant_id,old_process_instance_id,old_audit_status,new_audit_status,reason)
+SELECT 'reimbursement',source.id,source.tenant_id,source.process_instance_id,
+       source.audit_status,source.audit_status,'已结束审批不存在对应 Flowable 历史实例，保留审批结果并移除失效查看入口'
+FROM crm_reimbursement source
+LEFT JOIN ACT_HI_PROCINST flow ON flow.ID_=source.process_instance_id
+WHERE source.deleted=b'0' AND source.audit_status IN (20,30,40)
+  AND source.process_instance_id IS NOT NULL AND flow.ID_ IS NULL;
+
+UPDATE crm_reimbursement source
+LEFT JOIN ACT_HI_PROCINST flow ON flow.ID_=source.process_instance_id
+SET source.process_instance_id=NULL,source.updater='crm-orphan-approval-repair',source.update_time=NOW()
+WHERE source.deleted=b'0' AND source.audit_status IN (20,30,40)
+  AND source.process_instance_id IS NOT NULL AND flow.ID_ IS NULL;
+
+INSERT IGNORE INTO crm_approval_repair_record
+  (biz_type,biz_id,tenant_id,old_process_instance_id,old_audit_status,new_audit_status,reason)
+SELECT 'contract-amendment',source.id,source.tenant_id,source.process_instance_id,
+       source.audit_status,source.audit_status,'已结束审批不存在对应 Flowable 历史实例，保留审批结果并移除失效查看入口'
+FROM crm_contract_amendment source
+LEFT JOIN ACT_HI_PROCINST flow ON flow.ID_=source.process_instance_id
+WHERE source.deleted=b'0' AND source.audit_status IN (20,30,40)
+  AND source.process_instance_id IS NOT NULL AND flow.ID_ IS NULL;
+
+UPDATE crm_contract_amendment source
+LEFT JOIN ACT_HI_PROCINST flow ON flow.ID_=source.process_instance_id
+SET source.process_instance_id=NULL,source.updater='crm-orphan-approval-repair',source.update_time=NOW()
+WHERE source.deleted=b'0' AND source.audit_status IN (20,30,40)
+  AND source.process_instance_id IS NOT NULL AND flow.ID_ IS NULL;
+
 END IF;
 END$$
 

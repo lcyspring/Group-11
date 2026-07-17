@@ -126,7 +126,8 @@ public class CrmReceivableServiceImpl implements CrmReceivableService {
             receivables.removeIf(receivable -> ObjectUtil.equal(receivable.getId(), reqVO.getId()));
         }
         BigDecimal notReceivablePrice = contract.getTotalPrice().subtract(
-                CollectionUtils.getSumValue(receivables, CrmReceivableDO::getPrice, BigDecimal::add, BigDecimal.ZERO));
+                CollectionUtils.getSumValue(receivables, CrmReceivableDO::getPrice, BigDecimal::add, BigDecimal.ZERO))
+                .max(BigDecimal.ZERO);
         // 2. 校验金额是否超过
         if (reqVO.getPrice().compareTo(notReceivablePrice) > 0) {
             throw exception(RECEIVABLE_CREATE_FAIL_PRICE_EXCEEDS_LIMIT, notReceivablePrice);
