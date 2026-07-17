@@ -1,6 +1,8 @@
 -- OA menu foundation. Idempotent for existing Podman volumes.
 -- Business collaboration remains separate from the generic BPM approval center.
 
+SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 UPDATE system_menu
 SET name = '办公协作', path = 'collaboration', icon = 'ep:office-building',
     updater = 'oa-menu-foundation', update_time = NOW()

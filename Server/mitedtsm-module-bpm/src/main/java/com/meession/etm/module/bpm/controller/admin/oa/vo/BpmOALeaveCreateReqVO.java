@@ -11,6 +11,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.List;
 
 import static com.meession.etm.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
 
@@ -37,12 +38,21 @@ public class BpmOALeaveCreateReqVO {
     @Size(min = 10, max = 200, message = "请假原因长度必须在 10 到 200 个字符之间")
     private String reason;
 
+    @Schema(description = "附件 URL 列表")
+    @Size(max = 10, message = "请假附件不能超过 10 个")
+    private List<@Size(max = 1024, message = "附件地址不能超过 1024 个字符") String> attachmentUrls;
+
     @Schema(description = "发起人自选审批人 Map", example = "{taskKey1: [1, 2]}")
     private Map<String, List<Long>> startUserSelectAssignees;
 
     @AssertTrue(message = "结束时间，需要在开始时间之后")
     public boolean isEndTimeValid() {
         return startTime == null || endTime == null || endTime.isAfter(startTime);
+    }
+
+    @AssertTrue(message = "单张请假申请不能跨自然年度，请按年度拆分申请")
+    public boolean isSameCalendarYear() {
+        return startTime == null || endTime == null || startTime.getYear() == endTime.getYear();
     }
 
 }

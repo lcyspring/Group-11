@@ -40,8 +40,21 @@
           <el-form-item :label="t('oa.leave.reason')" prop="reason">
             <el-input v-model="formData.reason" :placeholder="t('oa.leave.reasonPlaceholder')" type="textarea" maxlength="200" show-word-limit />
           </el-form-item>
+          <el-form-item :label="t('oa.leave.attachments')" prop="attachmentUrls">
+            <UploadFile v-model="formData.attachmentUrls" :limit="10" />
+          </el-form-item>
           <el-form-item :label="t('oa.leave.days')">
             <el-input :model-value="workingDays" disabled />
+          </el-form-item>
+          <el-form-item v-if="leaveBalance?.balanceRequired" :label="t('oa.leave.balance')">
+            <el-alert :closable="false" type="info">
+              {{ t('oa.leave.balanceSummary', {
+                total: leaveBalance.totalDays,
+                reserved: leaveBalance.reservedDays,
+                used: leaveBalance.usedDays,
+                available: leaveBalance.availableDays
+              }) }}
+            </el-alert>
           </el-form-item>
           <el-form-item>
             <el-button :disabled="formLoading" type="primary" @click="submitForm">
@@ -91,7 +104,8 @@ const formData = ref({
   type: undefined,
   reason: undefined,
   startTime: undefined,
-  endTime: undefined
+  endTime: undefined,
+  attachmentUrls: [] as string[]
 })
 const formRules = reactive({
   type: [{ required: true, message: t('oa.leave.type') + t('common.notEmpty'), trigger: 'blur' }],
@@ -104,6 +118,19 @@ const formRules = reactive({
 })
 const formRef = ref() // 表单 Ref
 const workingDays = computed(() => calculateWorkingDays(formData.value.startTime, formData.value.endTime))
+const leaveBalance = ref<LeaveApi.LeaveBalanceVO>()
+
+const loadBalance = async () => {
+  const type = formData.value.type
+  const startTime = formData.value.startTime
+  if (!type || !startTime) {
+    leaveBalance.value = undefined
+    return
+  }
+  leaveBalance.value = await LeaveApi.getLeaveBalance(type, new Date(Number(startTime)).getFullYear())
+}
+
+watch(() => [formData.value.type, formData.value.startTime], loadBalance)
 
 // 审批相关：变量
 const processDefineKey = 'oa_leave' // 流程定义 Key
@@ -211,7 +238,8 @@ const getDetail = async (id: number) => {
       type: data.type,
       reason: data.reason,
       startTime: data.startTime,
-      endTime: data.endTime
+      endTime: data.endTime,
+      attachmentUrls: data.attachmentUrls || []
     }
   } finally {
     formLoading.value = false

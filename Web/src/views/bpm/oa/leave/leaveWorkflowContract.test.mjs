@@ -10,6 +10,9 @@ test('leave creation shows working days and enforces meaningful reason', () => {
   assert.match(create, /workingDays/)
   assert.match(create, /min: 10, max: 200/)
   assert.match(create, /oa\.leave\.reasonLength/)
+  assert.match(create, /UploadFile v-model="formData\.attachmentUrls"/)
+  assert.match(create, /getLeaveBalance/)
+  assert.match(create, /oa\.leave\.balanceSummary/)
 })
 
 test('leave cancellation sends the Flowable process instance id', () => {

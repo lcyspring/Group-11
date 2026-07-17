@@ -8,7 +8,20 @@ export type LeaveVO = {
   processInstanceId: string
   startTime: string
   endTime: string
+  day?: number
+  attachmentUrls?: string[]
   createTime: string
+  startUserSelectAssignees?: Record<string, number[]>
+}
+
+export type LeaveBalanceVO = {
+  leaveType: number
+  year: number
+  totalDays: number
+  reservedDays: number
+  usedDays: number
+  availableDays: number
+  balanceRequired: boolean
 }
 
 // 创建请假申请
@@ -24,4 +37,8 @@ export const getLeave = async (id: number) => {
 // 获得请假申请分页
 export const getLeavePage = async (params: PageParam) => {
   return await request.get({ url: '/bpm/oa/leave/page', params })
+}
+
+export const getLeaveBalance = async (type: number, year: number) => {
+  return await request.get<LeaveBalanceVO>({ url: '/bpm/oa/leave/balance', params: { type, year } })
 }

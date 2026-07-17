@@ -269,6 +269,15 @@ mitedtsm:
 --- #################### 密讯相关配置 ####################
 
 mitedtsm:
+  bpm:
+    oa:
+      leave:
+        # 4 年假、5 调休；只有这些类型需要余额预占与审批结算。
+        balance-required-types: [4, 5]
+        # 新用户首次查询或申请时初始化的年度余额；生产环境应按公司制度显式覆盖。
+        default-annual-days:
+          4: 5
+          5: 0
   infra:
     file-security:
       protected-path-prefixes: [crm-protected/]

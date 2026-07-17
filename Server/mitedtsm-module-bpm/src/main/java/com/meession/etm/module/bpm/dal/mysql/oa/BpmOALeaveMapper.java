@@ -6,6 +6,7 @@ import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.framework.mybatis.core.mapper.BaseMapperX;
 import com.meession.etm.framework.mybatis.core.query.LambdaQueryWrapperX;
 import org.apache.ibatis.annotations.Mapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 
 /**
  * 请假申请 Mapper
@@ -15,6 +16,11 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface BpmOALeaveMapper extends BaseMapperX<BpmOALeaveDO> {
+
+    default BpmOALeaveDO selectByIdForUpdate(Long id) {
+        return selectOne(new LambdaQueryWrapper<BpmOALeaveDO>()
+                .eq(BpmOALeaveDO::getId, id).last("FOR UPDATE"));
+    }
 
     default PageResult<BpmOALeaveDO> selectPage(Long userId, BpmOALeavePageReqVO reqVO) {
         return selectPage(reqVO, new LambdaQueryWrapperX<BpmOALeaveDO>()

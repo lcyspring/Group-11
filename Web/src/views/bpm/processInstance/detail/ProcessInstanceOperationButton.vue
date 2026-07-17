@@ -1062,9 +1062,26 @@ const isShowButton = (btnType: OperationButtonType): boolean => {
 
 /** 获取按钮的显示名称 */
 const getButtonDisplayName = (btnType: OperationButtonType) => {
-  let displayName = OPERATION_BUTTON_NAME.get(btnType)
+  const localeKeys = new Map<OperationButtonType, string>([
+    [OperationButtonType.APPROVE, 'approval.approve'],
+    [OperationButtonType.REJECT, 'approval.reject'],
+    [OperationButtonType.TRANSFER, 'approval.transfer'],
+    [OperationButtonType.DELEGATE, 'approval.delegate'],
+    [OperationButtonType.ADD_SIGN, 'approval.addSign'],
+    [OperationButtonType.RETURN, 'approval.return'],
+    [OperationButtonType.COPY, 'approval.copy']
+  ])
+  const builtInNames = new Set([
+    OPERATION_BUTTON_NAME.get(btnType),
+    'Approve', 'Reject', 'Transfer', 'Delegate', 'Add Sign', 'Return', 'Copy'
+  ])
+  let displayName = t(localeKeys.get(btnType) || 'approval.confirm')
   if (runningTask.value?.buttonsSetting && runningTask.value?.buttonsSetting[btnType]) {
-    displayName = runningTask.value.buttonsSetting[btnType].displayName
+    const configuredName = runningTask.value.buttonsSetting[btnType].displayName
+    // 历史流程把内置按钮英文或中文固化进模型时，仍按当前语言显示；真正的自定义名称保持原样。
+    if (configuredName && !builtInNames.has(configuredName)) {
+      displayName = configuredName
+    }
   }
   return displayName
 }

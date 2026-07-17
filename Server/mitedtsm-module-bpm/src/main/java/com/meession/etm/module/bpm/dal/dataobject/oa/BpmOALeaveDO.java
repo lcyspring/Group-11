@@ -5,12 +5,15 @@ import com.meession.etm.module.bpm.enums.task.BpmTaskStatusEnum;
 import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * OA 请假申请 DO
@@ -20,7 +23,7 @@ import java.time.LocalDateTime;
  * @author jason
  * @author 密讯
  */
-@TableName("bpm_oa_leave")
+@TableName(value = "bpm_oa_leave", autoResultMap = true)
 @KeySequence("bpm_oa_leave_seq") // 用于 Oracle、PostgreSQL、Kingbase、DB2、H2 数据库的主键自增。如果是 MySQL 等数据库，可不写。
 @Data
 @Builder
@@ -47,6 +50,9 @@ public class BpmOALeaveDO extends BaseDO {
      * 原因
      */
     private String reason;
+    /** 申请附件 URL */
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<String> attachmentUrls;
     /**
      * 开始时间
      */
@@ -73,5 +79,10 @@ public class BpmOALeaveDO extends BaseDO {
      * 关联 ProcessInstance 的 id 属性
      */
     private String processInstanceId;
+
+    /** 是否已预占假期余额 */
+    private Boolean balanceReserved;
+    /** 是否已把预占余额转为实际使用 */
+    private Boolean balanceDeducted;
 
 }

@@ -6,6 +6,8 @@ import com.meession.etm.framework.common.util.object.BeanUtils;
 import com.meession.etm.module.bpm.controller.admin.oa.vo.BpmOALeaveCreateReqVO;
 import com.meession.etm.module.bpm.controller.admin.oa.vo.BpmOALeavePageReqVO;
 import com.meession.etm.module.bpm.controller.admin.oa.vo.BpmOALeaveRespVO;
+import com.meession.etm.module.bpm.controller.admin.oa.vo.BpmOALeaveBalanceRespVO;
+import com.meession.etm.module.bpm.dal.dataobject.oa.BpmOALeaveBalanceDO;
 import com.meession.etm.module.bpm.dal.dataobject.oa.BpmOALeaveDO;
 import com.meession.etm.module.bpm.service.oa.BpmOALeaveService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -57,6 +59,19 @@ public class BpmOALeaveController {
     public CommonResult<PageResult<BpmOALeaveRespVO>> getLeavePage(@Valid BpmOALeavePageReqVO pageVO) {
         PageResult<BpmOALeaveDO> pageResult = leaveService.getLeavePage(getLoginUserId(), pageVO);
         return success(BeanUtils.toBean(pageResult, BpmOALeaveRespVO.class));
+    }
+
+    @GetMapping("/balance")
+    @PreAuthorize("@ss.hasPermission('bpm:oa-leave:query')")
+    @Operation(summary = "获得当前用户的年度假期余额")
+    public CommonResult<BpmOALeaveBalanceRespVO> getLeaveBalance(
+            @RequestParam("type") Integer type, @RequestParam("year") Integer year) {
+        if (!leaveService.isBalanceRequired(type)) {
+            return success(new BpmOALeaveBalanceRespVO(type, year, 0L, 0L, 0L, 0L, false));
+        }
+        BpmOALeaveBalanceDO balance = leaveService.getOrCreateBalance(getLoginUserId(), type, year);
+        return success(new BpmOALeaveBalanceRespVO(type, year, balance.getTotalDays(),
+                balance.getReservedDays(), balance.getUsedDays(), balance.availableDays(), true));
     }
 
 }
