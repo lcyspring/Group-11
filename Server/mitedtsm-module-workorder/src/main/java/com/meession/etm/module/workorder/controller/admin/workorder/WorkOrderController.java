@@ -103,6 +103,35 @@ public class WorkOrderController {
         return success(true);
     }
 
+    @PutMapping("/return")
+    @Operation(summary = "退回工单")
+    @PreAuthorize("@ss.hasPermission('workorder:work-order:update')")
+    public CommonResult<Boolean> returnWorkOrder(@Valid @RequestBody WorkOrderReturnReqVO returnReqVO) {
+        workOrderService.returnWorkOrder(returnReqVO);
+        return success(true);
+    }
+
+    @GetMapping("/statistics")
+    @Operation(summary = "获取工单统计")
+    @PreAuthorize("@ss.hasPermission('workorder:work-order:query')")
+    public CommonResult<WorkOrderStatisticsRespVO> getWorkOrderStatistics() {
+        return success(workOrderService.getWorkOrderStatistics());
+    }
+
+    @GetMapping("/efficiency-analysis")
+    @Operation(summary = "获取工单效率分析")
+    @PreAuthorize("@ss.hasPermission('workorder:work-order:query')")
+    public CommonResult<WorkOrderEfficiencyRespVO> getWorkOrderEfficiencyAnalysis() {
+        return success(workOrderService.getWorkOrderEfficiencyAnalysis());
+    }
+
+    @GetMapping("/trend-analysis")
+    @Operation(summary = "获取工单趋势分析")
+    @PreAuthorize("@ss.hasPermission('workorder:work-order:query')")
+    public CommonResult<WorkOrderTrendRespVO> getWorkOrderTrendAnalysis(WorkOrderTrendReqVO reqVO) {
+        return success(workOrderService.getWorkOrderTrendAnalysis(reqVO));
+    }
+
     @DeleteMapping("/delete")
     @Operation(summary = "删除工单")
     @Parameter(name = "id", description = "工单编号", required = true)

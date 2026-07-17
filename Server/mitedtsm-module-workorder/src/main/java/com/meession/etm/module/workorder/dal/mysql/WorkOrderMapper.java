@@ -7,6 +7,9 @@ import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder
 import com.meession.etm.module.workorder.dal.dataobject.WorkOrderDO;
 import org.apache.ibatis.annotations.Mapper;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 /**
  * 工单 Mapper
  *
@@ -32,6 +35,28 @@ public interface WorkOrderMapper extends BaseMapperX<WorkOrderDO> {
 
     default Long selectCountByStatus(Integer status) {
         return selectCount(WorkOrderDO::getStatus, status);
+    }
+
+    default Long selectCountByPriority(Integer priority) {
+        return selectCount(WorkOrderDO::getPriority, priority);
+    }
+
+    default List<WorkOrderDO> selectListByStatus(Integer status) {
+        return selectList(WorkOrderDO::getStatus, status);
+    }
+
+    default List<WorkOrderDO> selectListByCreateTimeBetween(LocalDateTime beginTime, LocalDateTime endTime) {
+        return selectList(new LambdaQueryWrapperX<WorkOrderDO>()
+                .between(WorkOrderDO::getCreateTime, beginTime, endTime));
+    }
+
+    default List<WorkOrderDO> selectListByFinishTimeBetween(LocalDateTime beginTime, LocalDateTime endTime) {
+        return selectList(new LambdaQueryWrapperX<WorkOrderDO>()
+                .between(WorkOrderDO::getFinishTime, beginTime, endTime));
+    }
+
+    default List<WorkOrderDO> selectAll() {
+        return selectList();
     }
 
 }

@@ -77,6 +77,11 @@ export const completeWorkOrder = (data: { id: number; result: string }) => {
   return request.put({ url: '/workorder/work-order/complete', data })
 }
 
+// 退回工单
+export const returnWorkOrder = (data: { id: number; result: string }) => {
+  return request.put({ url: '/workorder/work-order/return', data })
+}
+
 // 删除工单
 export const deleteWorkOrder = (id: number) => {
   return request.delete({ url: '/workorder/work-order/delete?id=' + id })

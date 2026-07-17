@@ -21,6 +21,7 @@ public interface ErrorCodeConstants {
     ErrorCode WORK_ORDER_PROCESS_FAIL_STATUS = new ErrorCode(1_021_000_006, "处理工单失败，原因：当前状态不允许处理");
     ErrorCode WORK_ORDER_COMPLETE_FAIL_STATUS = new ErrorCode(1_021_000_007, "完结工单失败，原因：当前状态不允许完结");
     ErrorCode WORK_ORDER_COMPLETE_FAIL_RESULT_REQUIRED = new ErrorCode(1_021_000_008, "完结工单失败，原因：处理结果不能为空");
+    ErrorCode WORK_ORDER_RETURN_FAIL_STATUS = new ErrorCode(1_021_000_009, "退回工单失败，原因：当前状态不允许退回");
 
     // ========== 工单类型管理 1-021-001-000 ==========
     ErrorCode WORK_ORDER_TYPE_NOT_EXISTS = new ErrorCode(1_021_001_000, "工单类型不存在");

@@ -114,6 +114,14 @@
             >
               <Icon icon="ep:download" class="mr-5px" /> 导出
             </el-button>
+            <el-button
+              type="info"
+              plain
+              @click="openStatistics"
+              v-hasPermi="['workorder:work-order:query']"
+            >
+              <Icon icon="ep:data-analysis" class="mr-5px" /> 统计分析
+            </el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -145,7 +153,7 @@
         min-width="170"
         :formatter="dateFormatter"
       />
-      <el-table-column label="操作" align="center" min-width="400" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" min-width="480" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button
             link
@@ -200,6 +208,15 @@
           </el-button>
           <el-button
             link
+            type="danger"
+            @click="openReturnForm(scope.row.id, scope.row.status)"
+            v-hasPermi="['workorder:work-order:update']"
+            v-if="scope.row.status === 1"
+          >
+            退回
+          </el-button>
+          <el-button
+            link
             type="warning"
             @click="openStatusForm(scope.row.id)"
             v-hasPermi="['workorder:work-order:update']"
@@ -237,6 +254,10 @@
   <WorkOrderAssignForm ref="assignFormRef" @success="getList" />
   <!-- 完结弹窗 -->
   <WorkOrderCompleteForm ref="completeFormRef" @success="getList" />
+  <!-- 退回弹窗 -->
+  <WorkOrderReturnForm ref="returnFormRef" @success="getList" />
+  <!-- 统计分析弹窗 -->
+  <WorkOrderStatistics ref="statisticsRef" />
   <!-- 详情弹窗 -->
   <WorkOrderDetail ref="detailRef" />
 </template>
@@ -250,6 +271,8 @@ import WorkOrderStatusForm from './WorkOrderStatusForm.vue'
 import WorkOrderPriorityForm from './WorkOrderPriorityForm.vue'
 import WorkOrderAssignForm from './WorkOrderAssignForm.vue'
 import WorkOrderCompleteForm from './WorkOrderCompleteForm.vue'
+import WorkOrderReturnForm from './WorkOrderReturnForm.vue'
+import WorkOrderStatistics from './WorkOrderStatistics.vue'
 import WorkOrderDetail from './WorkOrderDetail.vue'
 
 defineOptions({ name: 'WorkOrder' })
@@ -341,6 +364,18 @@ const handleProcess = async (row: any) => {
 const completeFormRef = ref()
 const openCompleteForm = (id: number, currentStatus: number) => {
   completeFormRef.value.open(id, currentStatus)
+}
+
+/** 退回操作 */
+const returnFormRef = ref()
+const openReturnForm = (id: number, currentStatus: number) => {
+  returnFormRef.value.open(id, currentStatus)
+}
+
+/** 统计分析操作 */
+const statisticsRef = ref()
+const openStatistics = () => {
+  statisticsRef.value.open()
 }
 
 /** 删除按钮操作 */

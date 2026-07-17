@@ -3,9 +3,14 @@ package com.meession.etm.module.workorder.service;
 import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderAssignReqVO;
 import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderCompleteReqVO;
+import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderEfficiencyRespVO;
 import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderPageReqVO;
 import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderProcessReqVO;
+import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderReturnReqVO;
 import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderSaveReqVO;
+import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderStatisticsRespVO;
+import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderTrendReqVO;
+import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderTrendRespVO;
 import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderUpdatePriorityReqVO;
 import com.meession.etm.module.workorder.controller.admin.workorder.vo.workorder.WorkOrderUpdateStatusReqVO;
 import com.meession.etm.module.workorder.dal.dataobject.WorkOrderDO;
@@ -75,6 +80,35 @@ public interface WorkOrderService {
      * @param reqVO 完结请求
      */
     void completeWorkOrder(WorkOrderCompleteReqVO reqVO);
+
+    /**
+     * 退回工单
+     *
+     * @param reqVO 退回请求
+     */
+    void returnWorkOrder(WorkOrderReturnReqVO reqVO);
+
+    /**
+     * 获取工单统计
+     *
+     * @return 统计数据
+     */
+    WorkOrderStatisticsRespVO getWorkOrderStatistics();
+
+    /**
+     * 获取工单效率分析
+     *
+     * @return 效率分析数据
+     */
+    WorkOrderEfficiencyRespVO getWorkOrderEfficiencyAnalysis();
+
+    /**
+     * 获取工单趋势分析
+     *
+     * @param reqVO 趋势分析请求
+     * @return 趋势数据
+     */
+    WorkOrderTrendRespVO getWorkOrderTrendAnalysis(WorkOrderTrendReqVO reqVO);
 
     /**
      * 删除工单
