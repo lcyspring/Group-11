@@ -59,5 +59,7 @@ const repayment = ref<LoanApi.LoanRepaymentVO>({ loanId: 0, amount: 0 })
 const repaymentRules = { amount: [{ required: true, message: t('oa.loan.repaymentAmountRequired'), trigger: 'change' }] }
 const repay = (row: LoanApi.LoanVO) => { selectedLoan.value = row; repayment.value = { loanId: row.id!, amount: Number(row.outstandingAmount), repaidAt: Date.now() }; repaymentVisible.value = true }
 const submitRepayment = async () => { if (!await repaymentRef.value?.validate()) return; repaymentLoading.value = true; try { await LoanApi.createRepayment(repayment.value); message.success(t('oa.loan.repaymentSuccess')); repaymentVisible.value = false; await load() } finally { repaymentLoading.value = false } }
-onMounted(load)
+let initialized = false
+onMounted(async () => { await load(); initialized = true })
+onActivated(() => { if (initialized) load() })
 </script>

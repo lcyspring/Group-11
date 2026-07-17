@@ -1525,6 +1525,7 @@ export default {
       nickname: 'Signer',
       deptName: 'Department',
       count: 'Contract Price',
+      contractCount2: 'Contract Count',
       amount: 'Amount',
       productName: 'Product Name',
       productCount: 'Sales',

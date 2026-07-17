@@ -1510,6 +1510,7 @@ export default {
       nickname: '签订人',
       deptName: '部门',
       count: '合同金额（元）',
+      contractCount2: '合同数量',
       amount: '金额（元）',
       productName: '产品名称',
       productCount: '销量',

@@ -32,6 +32,12 @@ import { Layout } from '@/utils/routerHelper'
  **/
 const remainingRouter: AppRouteRecordRaw[] = [
   {
+    path: '/bpm/oa/event',
+    component: () => import('@/views/bpm/oa/event/index.vue'),
+    name: 'OaEvent',
+    meta: { canTo: true, title: 'bpm.oa.event.title', icon: 'ep:calendar', activeMenu: '/bpm/oa/event' }
+  },
+  {
     path: '/redirect',
     component: Layout,
     name: 'Redirect',

@@ -1518,6 +1518,7 @@ export default {
       nickname: 'الموقع',
       deptName: 'القسم',
       count: 'سعر العقد',
+      contractCount2: 'عدد العقود',
       amount: 'المبلغ',
       productName: 'اسم المنتج',
       productCount: 'المبيعات',

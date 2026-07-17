@@ -243,6 +243,7 @@ export default {
   },
   oa: {
     title: 'OA审批',
+    event: { title: '日程管理', titleLabel: '日程标题', startTime: '开始时间', endTime: '结束时间', location: '地点' },
     leave: {
       title: '请假申请',
       type: '请假类型',

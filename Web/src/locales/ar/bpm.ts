@@ -243,6 +243,7 @@ export default {
   },
   oa: {
     title: 'موافقة OA',
+    event: { title: 'إدارة التقويم', titleLabel: 'عنوان الحدث', startTime: 'وقت البدء', endTime: 'وقت الانتهاء', location: 'الموقع' },
     leave: {
       title: 'طلب إجازة',
       type: 'نوع الإجازة',
