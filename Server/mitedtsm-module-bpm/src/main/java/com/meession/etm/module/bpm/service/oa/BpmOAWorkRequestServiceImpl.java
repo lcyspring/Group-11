@@ -22,10 +22,13 @@ public class BpmOAWorkRequestServiceImpl implements BpmOAWorkRequestService {
     public Long create(Long userId, BpmOAWorkRequestCreateReqVO req) {
         BpmOAWorkRequestDO row = BeanUtils.toBean(req, BpmOAWorkRequestDO.class).setUserId(userId).setStatus(1);
         mapper.insert(row);
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("title", row.getTitle());
+        variables.put("urgency", row.getUrgency());
         String processId = processInstanceApi.createProcessInstance(userId,
                 new BpmProcessInstanceCreateReqDTO().setProcessDefinitionKey(PROCESS_KEY)
                         .setBusinessKey(String.valueOf(row.getId()))
-                        .setVariables(Map.of("title", row.getTitle(), "urgency", row.getUrgency()))
+                        .setVariables(variables)
                         .setStartUserSelectAssignees(req.getStartUserSelectAssignees()));
         mapper.updateById(new BpmOAWorkRequestDO().setId(row.getId()).setProcessInstanceId(processId));
         return row.getId();

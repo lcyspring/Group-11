@@ -15,6 +15,7 @@ test('event workspace offers day week and month ranges without reusing the edit 
 
 test('event API converts display timestamps to Spring LocalDateTime ISO format', () => {
   assert.match(api, /value\.replace\(' ', 'T'\)/)
+  assert.match(api, /new Date\(toLocalDateTime\(data\.startTime\)\)\.getTime\(\)/)
   assert.match(source, /oa\.event\.empty/)
 })
 
