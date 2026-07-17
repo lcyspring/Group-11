@@ -4,7 +4,7 @@
     <el-form ref="queryRef" :model="query" class="-mb-15px" label-width="auto"><el-row :gutter="16">
       <el-col :span="6"><el-form-item :label="t('workReport.type')"><el-select v-model="query.reportType" clearable><el-option v-for="item in types" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item></el-col>
       <el-col :span="6"><el-form-item :label="t('workReport.status')"><el-select v-model="query.status" clearable><el-option :label="t('workReport.draft')" :value="0" /><el-option :label="t('workReport.submitted')" :value="1" /></el-select></el-form-item></el-col>
-      <el-col :span="12"><el-form-item><el-button @click="search"><Icon icon="ep:search" />{{ t('common.search') }}</el-button><el-button @click="reset"><Icon icon="ep:refresh" />{{ t('common.reset') }}</el-button><el-button v-if="scope === 'mine'" v-hasPermi="['crm:work-report:create']" type="primary" @click="openForm()"><Icon icon="ep:plus" />{{ t('common.create') }}</el-button></el-form-item></el-col>
+      <el-col :span="12"><el-form-item><el-button @click="search"><Icon icon="ep:search" />{{ t('common.search') }}</el-button><el-button @click="reset"><Icon icon="ep:refresh" />{{ t('common.reset') }}</el-button><el-button v-if="scope === 'mine'" v-hasPermi="['crm:work-report:create']" type="primary" @click="openForm()"><Icon icon="ep:plus" />{{ t('workReport.create') }}</el-button></el-form-item></el-col>
     </el-row></el-form>
   </ContentWrap>
   <ContentWrap>

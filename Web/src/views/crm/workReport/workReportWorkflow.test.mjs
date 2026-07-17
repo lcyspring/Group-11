@@ -28,5 +28,7 @@ test('work report fields and localizations cover the full reporting contract', (
     assert.match(view, new RegExp(field))
   }
   assert.match(view, /UserApi\.getSimpleUserList\(\)/)
+  assert.match(view, /t\('workReport\.create'\)/)
+  assert.doesNotMatch(view, /t\('common\.create'\)/)
   assert.equal([...response.matchAll(/@JsonFormat\(pattern = "yyyy-MM-dd"\)/g)].length, 3)
 })
