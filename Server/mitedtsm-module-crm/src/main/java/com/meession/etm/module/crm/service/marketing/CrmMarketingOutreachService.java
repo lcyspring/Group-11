@@ -78,7 +78,6 @@ public class CrmMarketingOutreachService {
         row.setSuppressedCount(recipients.size() - row.getValidCount());
         row.setSentCount(0).setFailedCount(0);
         broadcastMapper.updateById(row);
-        if (row.getValidCount() == 0) throw exception(MARKETING_RECIPIENT_NOT_FOUND);
         return row.getId();
     }
 
@@ -194,6 +193,9 @@ public class CrmMarketingOutreachService {
     public void submitReview(Long id, Long userId) {
         CrmMarketingBroadcastDO row = requireBroadcast(id);
         requireCreatorOrAdmin(row, userId);
+        if (row.getValidCount() == null || row.getValidCount() <= 0) {
+            throw exception(MARKETING_RECIPIENT_NONE_SENDABLE);
+        }
         if (broadcastMapper.transition(id, List.of(CrmMarketingBroadcastStatusEnum.DRAFT.getStatus()),
                 CrmMarketingBroadcastStatusEnum.PENDING_REVIEW.getStatus()) == 0) {
             throw exception(MARKETING_BROADCAST_STATUS_INVALID);

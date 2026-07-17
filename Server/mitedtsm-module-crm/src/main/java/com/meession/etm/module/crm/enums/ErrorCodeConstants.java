@@ -25,6 +25,8 @@ public interface ErrorCodeConstants {
     ErrorCode MARKETING_REVIEWER_INVALID = new ErrorCode(1_020_014_012, "群发审核人不能是创建者");
     ErrorCode MARKETING_QUOTA_EXCEEDED = new ErrorCode(1_020_014_013, "营销群发超过配置的频控或月度配额");
     ErrorCode MARKETING_RECIPIENT_NOT_FOUND = new ErrorCode(1_020_014_014, "没有可用的 CRM 联系人或客户名单");
+    ErrorCode MARKETING_RECIPIENT_NONE_SENDABLE = new ErrorCode(1_020_014_021,
+            "当前群发没有可发送的收件人，请查看收件人结果并补充手机号/邮箱或渠道授权");
     ErrorCode MARKETING_CONSENT_NOT_EXISTS = new ErrorCode(1_020_014_015, "营销同意记录不存在");
     ErrorCode MARKETING_CARE_PLAN_NOT_EXISTS = new ErrorCode(1_020_014_016, "客户关怀计划不存在");
     ErrorCode MARKETING_CARE_PLAN_CODE_EXISTS = new ErrorCode(1_020_014_017, "客户关怀计划编码已存在");

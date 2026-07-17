@@ -53,3 +53,11 @@ test('review, sending and retry commands are available and guarded by backend ow
   assert.match(service, /reviewIfPending/)
   assert.match(service, /MARKETING_REVIEW_COMMENT_REQUIRED/)
 })
+
+test('zero-sendable drafts remain inspectable instead of being rolled back', () => {
+  assert.doesNotMatch(service, /if \(row\.getValidCount\(\) == 0\) throw exception\(MARKETING_RECIPIENT_NOT_FOUND\)/)
+  assert.match(service, /MARKETING_RECIPIENT_NONE_SENDABLE/)
+  assert.match(page, /saved\.validCount/)
+  assert.match(page, /noSendableRecipients/)
+  assert.match(page, /openRecipients\(saved\)/)
+})

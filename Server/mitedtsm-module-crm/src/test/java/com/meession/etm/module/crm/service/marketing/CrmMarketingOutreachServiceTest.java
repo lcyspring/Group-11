@@ -20,6 +20,7 @@ import com.meession.etm.module.crm.framework.permission.CrmAuthorizationService;
 import com.meession.etm.module.crm.framework.permission.CrmOwnerReadScope;
 import com.meession.etm.module.crm.controller.admin.marketing.vo.CrmMarketingReviewReqVO;
 import com.meession.etm.module.crm.controller.admin.marketing.vo.CrmMarketingBroadcastPageReqVO;
+import com.meession.etm.module.crm.controller.admin.marketing.vo.CrmMarketingBroadcastSaveReqVO;
 import com.meession.etm.framework.common.exception.ServiceException;
 import com.meession.etm.module.system.api.sms.SmsSendApi;
 import com.meession.etm.module.system.api.sms.dto.SmsSendStatusRespDTO;
@@ -196,7 +197,7 @@ class CrmMarketingOutreachServiceTest {
     @Test
     void submitReviewUsesAtomicStatusTransition() {
         CrmMarketingBroadcastDO broadcast = new CrmMarketingBroadcastDO().setId(14L)
-                .setStatus(CrmMarketingBroadcastStatusEnum.DRAFT.getStatus());
+                .setStatus(CrmMarketingBroadcastStatusEnum.DRAFT.getStatus()).setValidCount(1);
         broadcast.setCreator("7");
         when(broadcastMapper.selectById(14L)).thenReturn(broadcast);
         when(broadcastMapper.transition(eq(14L), any(),
@@ -350,6 +351,45 @@ class CrmMarketingOutreachServiceTest {
         assertEquals(1, summary.getEmailAcceptedCount());
         assertEquals(1, summary.getEmailOpenedCount());
         assertEquals("100.00", summary.getEmailOpenRate().toPlainString());
+    }
+
+    @Test
+    void draftWithOnlySuppressedRecipientsIsSavedForDiagnosis() {
+        CrmMarketingBroadcastSaveReqVO request = new CrmMarketingBroadcastSaveReqVO()
+                .setName("短信群发诊断").setChannel(1).setSmsTemplateCode("crm-sms")
+                .setCustomerIds(List.of(12L));
+        CrmCustomerDO customer = new CrmCustomerDO().setId(12L).setOwnerUserId(7L).setName("测试客户");
+        when(customerMapper.selectBatchIds(org.mockito.ArgumentMatchers.anyCollection())).thenReturn(List.of(customer));
+        when(contactMapper.selectPrimaryContactListByCustomerIds(List.of(12L))).thenReturn(List.of());
+        when(authorizationService.isCrmAdmin(7L)).thenReturn(true);
+        doAnswer(invocation -> {
+            invocation.<CrmMarketingBroadcastDO>getArgument(0).setId(30L);
+            return 1;
+        }).when(broadcastMapper).insert((CrmMarketingBroadcastDO) any(CrmMarketingBroadcastDO.class));
+
+        assertEquals(30L, service.saveBroadcast(request, 7L));
+        ArgumentCaptor<CrmMarketingBroadcastRecipientDO> recipientCaptor =
+                ArgumentCaptor.forClass(CrmMarketingBroadcastRecipientDO.class);
+        verify(recipientMapper).insert((CrmMarketingBroadcastRecipientDO) recipientCaptor.capture());
+        assertEquals(CrmMarketingRecipientStatusEnum.SUPPRESSED.getStatus(), recipientCaptor.getValue().getStatus());
+        assertEquals("手机号为空", recipientCaptor.getValue().getSuppressedReason());
+        ArgumentCaptor<CrmMarketingBroadcastDO> broadcastCaptor =
+                ArgumentCaptor.forClass(CrmMarketingBroadcastDO.class);
+        verify(broadcastMapper).updateById((CrmMarketingBroadcastDO) broadcastCaptor.capture());
+        assertEquals(0, broadcastCaptor.getValue().getValidCount());
+        assertEquals(1, broadcastCaptor.getValue().getSuppressedCount());
+    }
+
+    @Test
+    void reviewSubmissionExplainsHowToRepairZeroSendableRecipients() {
+        CrmMarketingBroadcastDO broadcast = new CrmMarketingBroadcastDO().setId(31L)
+                .setStatus(CrmMarketingBroadcastStatusEnum.DRAFT.getStatus()).setValidCount(0);
+        broadcast.setCreator("7");
+        when(broadcastMapper.selectById(31L)).thenReturn(broadcast);
+
+        ServiceException error = assertThrows(ServiceException.class, () -> service.submitReview(31L, 7L));
+        org.junit.jupiter.api.Assertions.assertTrue(error.getMessage().contains("查看收件人结果"));
+        verify(broadcastMapper, never()).transition(anyLong(), any(), anyInt());
     }
 
     private static CrmMarketingBroadcastRecipientDO pending(Long id, Long broadcastId) {

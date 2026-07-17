@@ -450,10 +450,15 @@ const save = async () => {
   await formRef.value?.validate()
   formLoading.value = true
   try {
-    await MarketingApi.saveBroadcast(formData.value)
+    const id = await MarketingApi.saveBroadcast(formData.value)
+    const saved = await MarketingApi.getBroadcast(id)
     message.success(t('crm.marketing.broadcastSaved'))
     formVisible.value = false
     await getList()
+    if ((saved.validCount ?? 0) === 0) {
+      message.warning(t('crm.marketing.noSendableRecipients'))
+      await openRecipients(saved)
+    }
   } finally {
     formLoading.value = false
   }
