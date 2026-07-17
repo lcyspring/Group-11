@@ -28,6 +28,23 @@ class CrmActivityPropertiesTest {
                 violation.getMessage().contains("valid ZoneId")));
     }
 
+    @Test
+    void validatesReceivableOverduePolicy() {
+        CrmActivityProperties.ReceivableOverdue policy = new CrmActivityProperties.ReceivableOverdue();
+        policy.setCron("0 15 9 * * ?");
+        policy.setZone("Asia/Shanghai");
+        policy.setLockKey("crm:receivable:overdue");
+        policy.setLockLeaseSeconds(1800);
+        policy.setBatchSize(200);
+        policy.setMaxBatchSize(2000);
+        policy.setMaxBatches(20);
+        policy.setMaxRetries(5);
+        assertEquals(0, validator.validate(policy).size());
+        policy.setBatchSize(2001);
+        assertTrue(validator.validate(policy).stream().anyMatch(violation ->
+                violation.getMessage().contains("receivable overdue batch size")));
+    }
+
     private static CrmActivityProperties.TaskOverdue policy(int batch, int max, String zone) {
         CrmActivityProperties.TaskOverdue policy = new CrmActivityProperties.TaskOverdue();
         policy.setCron("0 0 * * * ?");

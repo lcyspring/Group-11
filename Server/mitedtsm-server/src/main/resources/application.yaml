@@ -350,6 +350,16 @@ mitedtsm:
         batch-size: 500
         max-batch-size: 5000
         max-batches: 20
+      receivable-overdue:
+        enabled: ${MITEDTSM_CRM_RECEIVABLE_OVERDUE_ENABLED:true}
+        cron: ${MITEDTSM_CRM_RECEIVABLE_OVERDUE_CRON:0 15 9 * * ?}
+        zone: ${MITEDTSM_CRM_RECEIVABLE_OVERDUE_ZONE:Asia/Shanghai}
+        lock-key: ${MITEDTSM_CRM_RECEIVABLE_OVERDUE_LOCK_KEY:crm:receivable:overdue}
+        lock-lease-seconds: ${MITEDTSM_CRM_RECEIVABLE_OVERDUE_LOCK_LEASE_SECONDS:1800}
+        batch-size: ${MITEDTSM_CRM_RECEIVABLE_OVERDUE_BATCH_SIZE:200}
+        max-batch-size: ${MITEDTSM_CRM_RECEIVABLE_OVERDUE_MAX_BATCH_SIZE:2000}
+        max-batches: ${MITEDTSM_CRM_RECEIVABLE_OVERDUE_MAX_BATCHES:20}
+        max-retries: ${MITEDTSM_CRM_RECEIVABLE_OVERDUE_MAX_RETRIES:5}
     marketing:
       provider-mode: ${MITEDTSM_CRM_MARKETING_PROVIDER_MODE:record-only}
       care-enabled: true

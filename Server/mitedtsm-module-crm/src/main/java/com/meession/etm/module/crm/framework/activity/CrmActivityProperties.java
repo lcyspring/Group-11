@@ -27,6 +27,9 @@ public class CrmActivityProperties {
     @Valid
     @NotNull
     private TaskOverdue taskOverdue = new TaskOverdue();
+    @Valid
+    @NotNull
+    private ReceivableOverdue receivableOverdue = new ReceivableOverdue();
 
     @Data
     public static class TaskOverdue {
@@ -53,6 +56,43 @@ public class CrmActivityProperties {
         }
 
         @AssertTrue(message = "CRM task overdue scheduler zone must be a valid ZoneId")
+        public boolean isZoneValid() {
+            try {
+                ZoneId.of(zone);
+                return true;
+            } catch (RuntimeException ex) {
+                return false;
+            }
+        }
+    }
+
+    @Data
+    public static class ReceivableOverdue {
+        private boolean enabled;
+        @NotBlank
+        private String cron;
+        @NotBlank
+        private String zone;
+        @NotBlank
+        private String lockKey;
+        @Min(60)
+        private int lockLeaseSeconds;
+        @Min(1)
+        private int batchSize;
+        @Min(1)
+        private int maxBatchSize;
+        @Min(1)
+        @Max(100)
+        private int maxBatches;
+        @Min(1)
+        private int maxRetries;
+
+        @AssertTrue(message = "CRM receivable overdue batch size must not exceed its YAML safety limit")
+        public boolean isBatchSizeWithinSafetyLimit() {
+            return batchSize <= maxBatchSize;
+        }
+
+        @AssertTrue(message = "CRM receivable overdue scheduler zone must be a valid ZoneId")
         public boolean isZoneValid() {
             try {
                 ZoneId.of(zone);
