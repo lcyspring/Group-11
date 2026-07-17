@@ -37,7 +37,7 @@ public class BpmOATaskServiceImpl implements BpmOATaskService {
     }
     @Override public void delete(Long userId, Long id) {
         BpmOATaskDO old = require(userId, id);
-        if (!userId.equals(old.getCreatorUserId()) || old.getStatus() >= 2) throw exception(OA_TASK_STATUS_INVALID);
+        if (!userId.equals(old.getCreatorUserId())) throw exception(OA_TASK_STATUS_INVALID);
         mapper.deleteById(id);
     }
     @Override public void start(Long userId, Long id) {

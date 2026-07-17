@@ -23,6 +23,7 @@ test('event page explicitly imports dayjs for runtime setup', () => {
   assert.match(source, /import dayjs from 'dayjs'/)
   assert.match(source, /oa\.event\.create/)
   assert.doesNotMatch(source, /common\.create/)
+  assert.match(source, /flex flex-wrap gap-8px/)
 })
 
 test('calendar navigation reloads its selected period', () => {
