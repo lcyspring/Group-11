@@ -2,6 +2,19 @@
 
 返回：[Podman 中文 README](README_ZH.md)。
 
+## 开始前必须确认
+
+日常编译不是“可选地优先”使用公共镜像，而是统一使用以下固定工具链：
+
+```text
+Server / InitService / Web / 测试：ghcr.io/elel-code/group-11-build-ubuntu:26.04
+Mall H5：                         ghcr.io/elel-code/group-11-hbuilderx-ubuntu:26.04-5.05
+```
+
+普通成员直接运行下方 YAML 命令即可，首次运行由 Podman 拉取 public image，不需要先执行镜像构建，
+也不需要在 Host 安装 JDK、Node、pnpm 或 HBuilderX。日常配置必须使用 `image.rebuild: false`；
+`image.rebuild: true` 仅用于维护者发布新版工具链镜像，不属于项目编译步骤。
+
 ## 职责边界
 
 | 阶段 | 命令 | 输出/作用 |
@@ -18,8 +31,8 @@
 | CRM 诊断包 | `collect-crm-diagnostics.sh <yaml>` | 健康、容器、日志、数据库与宿主 SLI 诊断 |
 | 配置门禁 | `tests/runtime-config/run.sh <yaml>` | 无状态检查 YAML、manifest、脚本和 Pod 不变性 |
 
-宿主 JDK/Node/pnpm 构建入口已删除，所有成员统一使用 `build-in-ubuntu.sh`。项目原
-Docker/Compose 不进入本流程。
+宿主 JDK/Node/pnpm 构建入口已删除，所有成员统一通过 `build-in-ubuntu.sh` 使用上述 `elel-code`
+公共镜像。项目原 Docker/Compose 不进入本流程。
 
 ## 标准流程
 

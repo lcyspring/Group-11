@@ -35,6 +35,9 @@
 
 ### 编译工具链镜像
 
+> 明确规则：普通成员编译项目时必须使用下表两个 `ghcr.io/elel-code` 公共镜像，不需要先构建镜像。
+> `docker.io/library/ubuntu:26.04` 只是维护者重建工具链镜像时的基座，不是日常项目编译入口。
+
 | 本地/仓库镜像 | 构建来源 | 作用 | 交付建议 |
 |---|---|---|---|
 | `ghcr.io/elel-code/group-11-build-ubuntu:26.04` | Ubuntu 26.04 + OpenJDK 17 + Maven + Node.js + pnpm 11.3.0 + 项目构建入口 | 编译 Server、InitService、Web，并在运行容器中安装 Web/Mall 依赖 | 已公开，脚本默认优先拉取；离线环境使用带 SHA-256 的 OCI tar |
