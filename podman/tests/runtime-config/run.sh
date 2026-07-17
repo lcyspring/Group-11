@@ -58,6 +58,7 @@ bash -n "${PODMAN_DIR}/lib/yaml-config.sh"
 bash -n "${PODMAN_DIR}/init/init-mysql.sh"
 bash -n "${PODMAN_DIR}/database-backup.sh"
 bash -n "${PODMAN_DIR}/database-restore.sh"
+bash -n "${PODMAN_DIR}/database-dataset.sh"
 bash -n "${PODMAN_DIR}/build-image-archives.sh"
 bash -n "${PODMAN_DIR}/verify-crm-receivable-reference-integrity.sh"
 bash -n "${PODMAN_DIR}/verify-crm-performance-target-runtime.sh"
@@ -66,6 +67,11 @@ bash -n "${PODMAN_DIR}/verify-crm-user-guide.sh"
 
 bash "${PODMAN_DIR}/database-backup.sh" "${PODMAN_DIR}/config/database-backup-check.yaml"
 bash "${PODMAN_DIR}/database-restore.sh" "${PODMAN_DIR}/config/database-backup-check.yaml"
+bash "${PODMAN_DIR}/database-dataset.sh" "${PODMAN_DIR}/config/database-dataset-check.yaml"
+expect_exit_2 bash "${PODMAN_DIR}/database-dataset.sh" \
+    "${SCRIPT_DIR}/fixtures/dataset-replace-unconfirmed.yaml"
+expect_exit_2 bash "${PODMAN_DIR}/database-dataset.sh" \
+    "${SCRIPT_DIR}/fixtures/dataset-cleanup-not-authorized.yaml"
 bash "${PODMAN_DIR}/build-image-archives.sh" "${PODMAN_DIR}/config/build-image-archives-check.yaml"
 
 validate_sql_manifest() {
@@ -91,6 +97,29 @@ bootstrap_manifest="${DATABASE_DIR}/manifests/mysql-bootstrap.manifest"
 compatibility_manifest="${DATABASE_DIR}/manifests/mysql-compatibility.manifest"
 validate_sql_manifest "$bootstrap_manifest"
 validate_sql_manifest "$compatibility_manifest"
+
+validate_dataset_manifest() {
+    local manifest="$1" manifest_dir entry resolved
+    [[ -s "$manifest" ]] || fail "dataset manifest is missing: $manifest"
+    manifest_dir="$(dirname -- "$manifest")"
+    while IFS= read -r entry || [[ -n "$entry" ]]; do
+        [[ -n "$entry" && "$entry" != \#* ]] || continue
+        [[ "$entry" != /* ]] || fail "dataset manifest contains an absolute path: $entry"
+        resolved="$(realpath -m -- "${manifest_dir}/${entry}")"
+        [[ "$resolved" == "${DATABASE_DIR}/"* ]] || fail "dataset manifest escapes database root: $entry"
+        [[ -s "$resolved" ]] || fail "dataset entry is missing: $entry"
+        [[ "$resolved" != "${DATABASE_DIR}/teardown/"* ]] || fail "dataset must not execute teardown SQL: $entry"
+    done < "$manifest"
+}
+
+for dataset_manifest in "${DATABASE_DIR}"/datasets/*.manifest; do
+    validate_dataset_manifest "$dataset_manifest"
+done
+rg -q --fixed-strings '../maintenance/cleanup/cleanup-upstream-crm-demo.sql' \
+    "${DATABASE_DIR}/datasets/none.manifest" || fail 'none dataset must remove upstream CRM demo rows'
+if rg -q 'maintenance/cleanup' "$bootstrap_manifest" "$compatibility_manifest"; then
+    fail 'cleanup SQL must never enter bootstrap or compatibility manifests'
+fi
 
 missing_from_bootstrap="$(comm -23 \
     <(sed '/^[[:space:]]*#/d; /^[[:space:]]*$/d' "$compatibility_manifest" | sort) \
@@ -136,6 +165,9 @@ expect_exit_1 bash "${PODMAN_DIR}/image-archives.sh" \
     "${SCRIPT_DIR}/fixtures/archive-check-missing.yaml"
 
 yaml_config_init "$CONFIG_PATH"
+dataset_name="$(yaml_require mysql.dataset)"
+[[ "$dataset_name" =~ ^[a-z0-9][a-z0-9._-]*$ ]] || fail 'mysql.dataset has invalid characters'
+[[ -s "${DATABASE_DIR}/datasets/${dataset_name}.manifest" ]] || fail 'selected dataset manifest is missing'
 [[ "$(yaml_bool security.mock_login_enabled)" == "false" ]] || fail 'mock login must be explicitly disabled'
 [[ "$(yaml_positive_integer security.password_encoder_length)" -ge 10 ]] || fail 'BCrypt strength must be explicit'
 [[ "$(yaml_bool security.xss_enabled)" == "true" ]] || fail 'XSS filtering must be explicitly enabled'

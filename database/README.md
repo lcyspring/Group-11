@@ -16,3 +16,16 @@
 `bootstrap/` 保留上游 dump 的原子性，其中的 `DROP TABLE IF EXISTS` 只用于新库导入，不代表可在
 运行库执行。新增功能不得再使用 `base/`、`new/` 这类含义不清的目录，也不得把清理或销毁脚本加入
 自动清单。
+
+## 数据集与持久化
+
+运行 YAML 的 `mysql.dataset` 仅供 MySQL 官方入口在新建空数据卷时选择初始数据集。已有卷不会因
+切换该字段而重新导入、清理或覆盖，因此正常重启和部署保持数据持久化。
+
+已有数据库需要替换数据集时，只能使用 `podman/database-dataset.sh <yaml>`。配置必须显式声明：
+
+- `mysql.cleanup_existing_before_dataset`：是否允许执行数据集内的 cleanup SQL；
+- `mysql.confirm_persistent_data_change`：在 `replace` 模式下确认修改持久数据。
+
+清理开关与 manifest 内容不一致，或持久数据确认未开启时，脚本拒绝执行。生产操作前仍应先使用
+`database-backup.sh` 备份；数据集替换不是普通启动步骤。

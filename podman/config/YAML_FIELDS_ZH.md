@@ -48,11 +48,25 @@
 | `container.*` | 八个容器的稳定名称，供启动、探针和验收脚本引用 |
 | `volume.mysql/redis/rabbitmq/tdengine` | 四个持久数据卷名称 |
 | `mysql.database` | 主业务库名 |
+| `mysql.dataset` | 仅空数据卷初始化时选择的数据集；切换它不会修改已有持久卷 |
 | `mysql.root_password` | 本地 MySQL root 密码；真实值只能在忽略的本机 YAML |
 | `mysql.character_set/collation` | 建库、客户端和迁移字符集/排序规则 |
 | `mysql.authentication_plugin` | MySQL 认证插件 |
 | `mysql.timezone` | MySQL 容器时区 |
 | `mysql.compatibility_migration_manifest` | 已有数据卷每次部署前执行的幂等迁移清单 |
+
+### 已有数据库的数据集替换配置
+
+`database-dataset.sh` 只接收一个 YAML 路径，不由 `up.sh` 自动调用。
+
+| 字段 | 作用 |
+|---|---|
+| `operation.dataset_mode` | `check` 只校验；`replace` 才执行持久数据替换 |
+| `container.mysql` | 目标 MySQL 容器名 |
+| `mysql.database/username/password` | 目标库与执行账号；真实密码只写 ignored YAML |
+| `mysql.dataset` | 要应用的显式数据集 manifest 名称 |
+| `mysql.cleanup_existing_before_dataset` | 是否允许 manifest 执行 cleanup SQL；必须与 manifest 内容一致 |
+| `mysql.confirm_persistent_data_change` | `replace` 模式修改持久数据的第二道显式确认 |
 | `rabbitmq.username/password` | RabbitMQ 运行账号 |
 | `tdengine.host/port/fqdn` | 应用访问 TDengine 及容器 FQDN 配置 |
 | `tdengine.username/password` | TDengine 数据源账号 |

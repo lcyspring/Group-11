@@ -4,6 +4,7 @@ set -Eeuo pipefail
 
 readonly SQL_ROOT="/podman-init-sql"
 readonly BOOTSTRAP_MANIFEST="${SQL_ROOT}/manifests/mysql-bootstrap.manifest"
+readonly DATASET_NAME="${MYSQL_DATASET:?MYSQL_DATASET is required}"
 
 mysql_utf8() {
     command mysql --default-character-set=utf8mb4 "$@"
@@ -55,4 +56,11 @@ done
 
 printf 'Executing explicit MySQL bootstrap manifest.\n'
 execute_manifest "$BOOTSTRAP_MANIFEST"
+[[ "$DATASET_NAME" =~ ^[a-z0-9][a-z0-9._-]*$ ]] || {
+    printf 'MYSQL_DATASET contains unsupported characters: %s\n' "$DATASET_NAME" >&2
+    exit 2
+}
+readonly DATASET_MANIFEST="${SQL_ROOT}/datasets/${DATASET_NAME}.manifest"
+printf 'Applying explicit empty-volume dataset: %s\n' "$DATASET_NAME"
+execute_manifest "$DATASET_MANIFEST"
 printf 'MySQL bootstrap completed successfully.\n'

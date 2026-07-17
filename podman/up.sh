@@ -81,12 +81,22 @@ RABBITMQ_VOLUME="$(yaml_require volume.rabbitmq)"
 TDENGINE_VOLUME="$(yaml_require volume.tdengine)"
 
 MYSQL_DATABASE="$(yaml_require mysql.database)"
+MYSQL_DATASET="$(yaml_require mysql.dataset)"
 MYSQL_ROOT_PASSWORD="$(yaml_require mysql.root_password)"
 MYSQL_CHARACTER_SET="$(yaml_require mysql.character_set)"
 MYSQL_COLLATION="$(yaml_require mysql.collation)"
 MYSQL_AUTHENTICATION_PLUGIN="$(yaml_require mysql.authentication_plugin)"
 MYSQL_TIMEZONE="$(yaml_require mysql.timezone)"
 MYSQL_COMPATIBILITY_MIGRATION_MANIFEST="$(yaml_path mysql.compatibility_migration_manifest)"
+
+[[ "$MYSQL_DATASET" =~ ^[a-z0-9][a-z0-9._-]*$ ]] || {
+    printf 'mysql.dataset contains unsupported characters: %s\n' "$MYSQL_DATASET" >&2
+    exit 2
+}
+[[ -s "${PROJECT_ROOT}/database/datasets/${MYSQL_DATASET}.manifest" ]] || {
+    printf 'Selected MySQL dataset manifest is missing: %s\n' "$MYSQL_DATASET" >&2
+    exit 2
+}
 RABBITMQ_USERNAME="$(yaml_require rabbitmq.username)"
 RABBITMQ_PASSWORD="$(yaml_require rabbitmq.password)"
 TDENGINE_HOST="$(yaml_require tdengine.host)"
@@ -925,6 +935,7 @@ printf 'Starting infrastructure containers.\n'
 podman_cmd run -d --replace --name "$MYSQL_CONTAINER" --pod "$POD_NAME" --pull=never \
     --volume "${MYSQL_VOLUME}:/var/lib/mysql" \
     --env "MYSQL_DATABASE=${MYSQL_DATABASE}" \
+    --env "MYSQL_DATASET=${MYSQL_DATASET}" \
     --env "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}" \
     --env "TZ=${MYSQL_TIMEZONE}" \
     "$MYSQL_IMAGE" \
