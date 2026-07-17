@@ -16,6 +16,11 @@
 | CRM 性能基线 | `verify-crm-performance-baseline.example.yaml` | 只读并发负载与阈值共享模板 |
 | CRM 诊断包 | `crm-diagnostics.example.yaml` | SLI 阈值、日志窗口和本机诊断输出模板 |
 
+共享运行模板默认使用 `network.host_address: 0.0.0.0`，因此 Server、Web 和 Mall 会监听全部主机网络接口；
+`security.cors_allowed_origins: "*"` 允许任意浏览器来源携带显式 `Authorization`、`tenant-id` 等请求头，
+并要求 `security.cors_allow_credentials: false`。这里的 credentials 指 Cookie/HTTP 凭据模式，不影响
+Bearer Token。部署主机必须用 UFW、云安全组或上游反向代理限制可信来源，不能把数据库和消息中间件端口暴露出去。
+
 ## BPM 流程恢复示例
 
 所有 `.example.yaml` 都是必须提交、可审查的配置契约，不能加入 `.gitignore`。示例只能使用

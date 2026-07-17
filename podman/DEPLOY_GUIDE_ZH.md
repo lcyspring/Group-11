@@ -1,5 +1,8 @@
 # Mitedtsm Rootless Podman 全流程指南
 
+> 默认运行模板将 8080、8081、8082 绑定到 `0.0.0.0`，并允许任意 CORS 来源。该默认值方便团队成员从
+> 其他 Host 验收，但部署者必须通过 UFW/安全组限制访问网段。Bearer Token 登录不依赖 credentialed CORS。
+
 返回：[Podman 中文 README](README_ZH.md)。
 
 ## 1. 统一原则

@@ -15,7 +15,7 @@ resolve_config() {
     if [[ "$configured" == /* ]]; then printf '%s' "$configured"; else printf '%s/%s' "$CONFIG_DIR" "$configured"; fi
 }
 
-for key in receivable reimbursement contract refund trip loan; do
+for key in leave receivable reimbursement contract refund trip loan customer_visit; do
     configured="$(yaml_require "models.${key}")"
     model_config="$(resolve_config "$configured")"
     [[ -f "$model_config" ]] || { printf 'BPM model config is missing for %s: %s\n' "$key" "$model_config" >&2; exit 1; }

@@ -62,6 +62,10 @@ bash -n "${PODMAN_DIR}/database-dataset.sh"
 bash -n "${PODMAN_DIR}/build-image-archives.sh"
 bash -n "${PODMAN_DIR}/provision-bpm-model.sh"
 bash -n "${PODMAN_DIR}/provision-bpm-models.sh"
+for bpm_key in leave receivable reimbursement contract refund trip loan customer_visit; do
+    grep -Eq "for key in .*${bpm_key}" "${PODMAN_DIR}/provision-bpm-models.sh" ||
+        fail "BPM aggregate provisioner does not include configured model: ${bpm_key}"
+done
 bash -n "${PODMAN_DIR}/verify-crm-receivable-reference-integrity.sh"
 bash -n "${PODMAN_DIR}/verify-crm-performance-target-runtime.sh"
 bash -n "${PODMAN_DIR}/verify-crm-runtime-security.sh"
