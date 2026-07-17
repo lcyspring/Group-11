@@ -18,11 +18,16 @@ const repayments = ref<LoanApi.LoanRepaymentVO[]>([])
 onMounted(async () => {
   const rawId = route.query.loanId ?? route.query.id
   const id = Number(rawId)
-  if (!Number.isSafeInteger(id) || id <= 0) {
-    message.error(t('oa.loan.invalidId'))
-    return
-  }
   loading.value = true
-  try { [loan.value, repayments.value] = await Promise.all([LoanApi.getLoan(id), LoanApi.getRepayments(id)]) } finally { loading.value = false }
+  try {
+    if (Number.isSafeInteger(id) && id > 0) {
+      ;[loan.value, repayments.value] = await Promise.all([LoanApi.getLoan(id), LoanApi.getRepayments(id)])
+    } else if (typeof rawId === 'string' && rawId.length > 0) {
+      loan.value = await LoanApi.getLoanByProcessInstance(rawId)
+      repayments.value = await LoanApi.getRepayments(loan.value.id!)
+    } else {
+      message.error(t('oa.loan.invalidId'))
+    }
+  } finally { loading.value = false }
 })
 </script>

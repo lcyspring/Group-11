@@ -122,6 +122,13 @@ public class BpmOALoanServiceImpl implements BpmOALoanService {
     }
 
     @Override
+    public BpmOALoanDO getLoanByProcessInstanceId(Long userId, String processInstanceId) {
+        BpmOALoanDO loan = loanMapper.selectByProcessInstanceId(processInstanceId);
+        if (loan == null || !Objects.equals(loan.getUserId(), userId)) throw exception(OA_LOAN_NOT_EXISTS);
+        return loan;
+    }
+
+    @Override
     public PageResult<BpmOALoanDO> getLoanPage(Long userId, BpmOALoanPageReqVO request) {
         return loanMapper.selectPage(userId, request);
     }

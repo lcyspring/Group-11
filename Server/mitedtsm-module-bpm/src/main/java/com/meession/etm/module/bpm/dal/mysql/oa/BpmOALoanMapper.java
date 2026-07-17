@@ -30,4 +30,8 @@ public interface BpmOALoanMapper extends BaseMapperX<BpmOALoanDO> {
     default BpmOALoanDO selectByIdForUpdate(Long id) {
         return selectOne(new LambdaQueryWrapper<BpmOALoanDO>().eq(BpmOALoanDO::getId, id).last("FOR UPDATE"));
     }
+
+    default BpmOALoanDO selectByProcessInstanceId(String processInstanceId) {
+        return selectOne(BpmOALoanDO::getProcessInstanceId, processInstanceId);
+    }
 }

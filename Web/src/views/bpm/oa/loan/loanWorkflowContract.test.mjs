@@ -38,5 +38,6 @@ test('loan detail never sends NaN and uses an explicit loanId route parameter', 
   assert.match(listPage, /query: \{ loanId: String\(row\.id\) \}/)
   assert.match(detailPage, /route\.query\.loanId \?\? route\.query\.id/)
   assert.match(detailPage, /Number\.isSafeInteger\(id\)/)
-  assert.match(detailPage, /invalidId/)
+  assert.match(detailPage, /getLoanByProcessInstance\(rawId\)/)
+  assert.match(api, /get-by-process-instance/)
 })

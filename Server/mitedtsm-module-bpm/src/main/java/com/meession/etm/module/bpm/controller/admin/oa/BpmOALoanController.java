@@ -34,6 +34,11 @@ public class BpmOALoanController {
     public CommonResult<BpmOALoanRespVO> get(@RequestParam Long id) {
         return success(BeanUtils.toBean(loanService.getLoan(getLoginUserId(), id), BpmOALoanRespVO.class));
     }
+    @GetMapping("/get-by-process-instance") @PreAuthorize("@ss.hasPermission('bpm:oa-loan:query')")
+    public CommonResult<BpmOALoanRespVO> getByProcessInstance(@RequestParam String processInstanceId) {
+        return success(BeanUtils.toBean(loanService.getLoanByProcessInstanceId(getLoginUserId(), processInstanceId),
+                BpmOALoanRespVO.class));
+    }
     @GetMapping("/page") @PreAuthorize("@ss.hasPermission('bpm:oa-loan:query')")
     public CommonResult<PageResult<BpmOALoanRespVO>> page(@Valid BpmOALoanPageReqVO request) {
         PageResult<BpmOALoanDO> page = loanService.getLoanPage(getLoginUserId(), request);

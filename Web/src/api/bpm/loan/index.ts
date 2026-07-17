@@ -32,6 +32,7 @@ export interface LoanLimitVO { employeeLevel: string; approvalLimit: number }
 
 export const createLoan = (data: LoanVO) => request.post<number>({ url: '/bpm/oa/loan/create', data })
 export const getLoan = (id: number) => request.get<LoanVO>({ url: '/bpm/oa/loan/get', params: { id } })
+export const getLoanByProcessInstance = (processInstanceId: string) => request.get<LoanVO>({ url: '/bpm/oa/loan/get-by-process-instance', params: { processInstanceId } })
 export const getLoanPage = (params: PageParam) => request.get({ url: '/bpm/oa/loan/page', params })
 export const createRepayment = (data: LoanRepaymentVO) => request.post<number>({ url: '/bpm/oa/loan/repayment/create', data })
 export const getRepayments = (loanId: number) => request.get<LoanRepaymentVO[]>({ url: '/bpm/oa/loan/repayment/list', params: { loanId } })

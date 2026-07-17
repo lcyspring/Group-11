@@ -14,6 +14,7 @@ import java.util.List;
 public interface BpmOALoanService {
     Long createLoan(Long userId, @Valid BpmOALoanCreateReqVO request);
     BpmOALoanDO getLoan(Long userId, Long id);
+    BpmOALoanDO getLoanByProcessInstanceId(Long userId, String processInstanceId);
     PageResult<BpmOALoanDO> getLoanPage(Long userId, BpmOALoanPageReqVO request);
     void updateLoanStatus(Long id, Integer status);
     Long createRepayment(Long userId, @Valid BpmOALoanRepaymentCreateReqVO request);
