@@ -225,7 +225,6 @@ import ReceivableForm from '@/views/crm/receivable/ReceivableForm.vue'
 import dayjs from 'dayjs'
 
 defineOptions({ name: 'ReceivablePlanRemindList' })
-const props = withDefaults(defineProps<{ initialRemindType?: number }>(), { initialRemindType: 1 })
 
 const { t } = useI18n('crm') // 国际化
 const loading = ref(true) // 列表的加载中
@@ -234,7 +233,7 @@ const list = ref([]) // 列表的数据
 const queryParams = reactive({
   pageNo: 1,
   pageSize: 10,
-  remindType: props.initialRemindType
+  remindType: 1
 })
 const queryFormRef = ref() // 搜索的表单
 const pageTitle = computed(() => queryParams.remindType === 2

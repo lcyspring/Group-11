@@ -24,8 +24,7 @@
       <ContractRemindList v-if="leftMenu === 'contractRemind'" />
       <CustomerFollowList v-if="leftMenu === 'customerFollow'" />
       <CustomerPutPoolRemindList v-if="leftMenu === 'customerPutPoolRemind'" />
-      <ReceivablePlanRemindList v-if="leftMenu === 'receivablePlanPending'" :initial-remind-type="1" />
-      <ReceivablePlanRemindList v-if="leftMenu === 'receivablePlanOverdue'" :initial-remind-type="2" />
+      <ReceivablePlanRemindList v-if="leftMenu === 'receivablePlanRemind'" />
       <WorkOrderBacklogList v-if="leftMenu === 'workOrder'" />
       <BpmTaskBacklogList v-if="leftMenu === 'bpmTask'" />
     </el-col>
@@ -65,8 +64,7 @@ const customerTodayContactCount = ref(0)
 const contractAuditCount = ref(0)
 const contractRemindCount = ref(0)
 const receivableAuditCount = ref(0)
-const receivablePlanPendingCount = ref(0)
-const receivablePlanOverdueCount = ref(0)
+const receivablePlanRemindCount = ref(0)
 const workOrderCount = ref(0)
 const bpmTaskCount = ref(0)
 const canQueryBpmTask = checkPermi(['bpm:task:query'])
@@ -103,14 +101,9 @@ const leftSides = computed(() => [
     count: receivableAuditCount.value
   },
   {
-    name: t('backlog.receivablePlanPending'),
-    menu: 'receivablePlanPending',
-    count: receivablePlanPendingCount.value
-  },
-  {
-    name: t('backlog.receivablePlanOverdue'),
-    menu: 'receivablePlanOverdue',
-    count: receivablePlanOverdueCount.value
+    name: t('backlog.receivablePlanRemind'),
+    menu: 'receivablePlanRemind',
+    count: receivablePlanRemindCount.value
   },
   {
     name: t('backlog.contractRemind'),
@@ -144,11 +137,8 @@ const getCount = () => {
   ContractApi.getAuditContractCount().then((count) => (contractAuditCount.value = count))
   ContractApi.getRemindContractCount().then((count) => (contractRemindCount.value = count))
   ReceivableApi.getAuditReceivableCount().then((count) => (receivableAuditCount.value = count))
-  ReceivablePlanApi.getReceivablePlanPage({ pageNo: 1, pageSize: 1, remindType: 1 }).then(
-    (data) => (receivablePlanPendingCount.value = data.total)
-  )
-  ReceivablePlanApi.getReceivablePlanPage({ pageNo: 1, pageSize: 1, remindType: 2 }).then(
-    (data) => (receivablePlanOverdueCount.value = data.total)
+  ReceivablePlanApi.getReceivablePlanRemindCount().then(
+    (count) => (receivablePlanRemindCount.value = count)
   )
   WorkOrderApi.getWorkOrderPage({ pageNo: 1, pageSize: 1, backlog: true }).then(
     (data) => (workOrderCount.value = data.total)

@@ -1186,7 +1186,7 @@ export default {
     contractAudit: '待审核合同',
     contractRemind: '即将到期的合同',
     receivableAudit: '待审核回款',
-    receivablePlanRemind: '待回款提醒',
+    receivablePlanRemind: '回款计划与逾期',
     receivablePlanPending: '待回款计划',
     receivablePlanOverdue: '逾期回款计划',
     receivablePlanPendingTitle: '待回款计划',

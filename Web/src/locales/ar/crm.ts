@@ -1194,7 +1194,7 @@ export default {
     contractAudit: 'تدقيق العقد',
     contractRemind: 'عقد ينتهي قريباً',
     receivableAudit: 'تدقيق المستحق',
-    receivablePlanRemind: 'تذكير خطة المستحق',
+    receivablePlanRemind: 'خطط التحصيل والمتأخرات',
     receivablePlanPending: 'خطط التحصيل المنتظرة',
     receivablePlanOverdue: 'خطط التحصيل المتأخرة',
     receivablePlanPendingTitle: 'خطط التحصيل المنتظرة',

@@ -1200,7 +1200,7 @@ export default {
     contractAudit: 'Contract Audit',
     contractRemind: 'Contract Expiring',
     receivableAudit: 'Receivable Audit',
-    receivablePlanRemind: 'Receivable Plan Remind',
+    receivablePlanRemind: 'Receivable Plans & Overdue',
     receivablePlanPending: 'Pending Receivables',
     receivablePlanOverdue: 'Overdue Receivables',
     receivablePlanPendingTitle: 'Pending Receivable Plans',
