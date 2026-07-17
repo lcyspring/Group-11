@@ -185,6 +185,21 @@
 | `restore.allow_live_database_replace` | 目标等于运行真源库时的第二道显式授权 |
 | `restore.drop_after_verify` | 验证核心表和表数后是否删除演练库 |
 
+## CRM 客户画像临时数据验收配置
+
+`verify-crm-customer-portrait-runtime.sh` 会写入并自动清理唯一前缀临时客户。账号和密码必须放在
+ignored 的 `verify-*-local.yaml`，仓库只提供 `.example.yaml` 字段模板。
+
+| 字段 | 作用 |
+|---|---|
+| `endpoint.base_url/tenant_id` | 管理端 API 根地址和验收租户 |
+| `account.username/password` | 调用客户画像 API 的管理端账号 |
+| `mysql.container/user/password/database` | 构造和清理临时数据的运行库连接 |
+| `acceptance.dept_id/owner_user_id` | 客户画像查询部门和临时客户负责人 |
+| `acceptance.area_id` | 有效的最细地区编号，用于省份聚合与区域钻取 |
+| `acceptance.name_prefix` | 临时客户唯一前缀，只允许字母、数字、下划线和连字符 |
+| `acceptance.start_time/end_time` | 与临时客户创建时间隔离的验收时间窗口 |
+
 ## 编译工具链镜像归档配置
 
 | 字段 | 作用 |

@@ -64,6 +64,7 @@ bash -n "${PODMAN_DIR}/verify-crm-receivable-reference-integrity.sh"
 bash -n "${PODMAN_DIR}/verify-crm-performance-target-runtime.sh"
 bash -n "${PODMAN_DIR}/verify-crm-runtime-security.sh"
 bash -n "${PODMAN_DIR}/verify-crm-user-guide.sh"
+bash -n "${PODMAN_DIR}/verify-crm-customer-portrait-runtime.sh"
 
 bash "${PODMAN_DIR}/database-backup.sh" "${PODMAN_DIR}/config/database-backup-check.yaml"
 bash "${PODMAN_DIR}/database-restore.sh" "${PODMAN_DIR}/config/database-backup-check.yaml"
