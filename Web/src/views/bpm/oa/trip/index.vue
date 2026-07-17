@@ -42,5 +42,12 @@ const reset = () => { queryFormRef.value?.resetFields(); search() }
 const create = () => router.push({ name: 'OATripCreate' })
 const detail = (row: TripApi.TripVO) => router.push({ name: 'OATripDetail', query: { id: row.id } })
 const progress = (row: TripApi.TripVO) => router.push({ name: 'BpmProcessInstanceDetail', query: { id: row.processInstanceId } })
-onMounted(load)
+let initialized = false
+onMounted(async () => {
+  await load()
+  initialized = true
+})
+onActivated(() => {
+  if (initialized) load()
+})
 </script>

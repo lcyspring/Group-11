@@ -22,10 +22,30 @@ import * as TripApi from '@/api/bpm/trip'
 import * as UserApi from '@/api/system/user'
 defineOptions({ name: 'BpmOATripDetail' })
 const { t } = useI18n('bpm')
+const message = useMessage()
 const route = useRoute()
+const props = defineProps<{ id?: string | number }>()
 const loading = ref(false)
 const data = ref<TripApi.TripVO>({} as TripApi.TripVO)
 const users = ref<any[]>([])
 const companionNames = computed(() => (data.value.companionUserIds || []).map((id) => users.value.find((u) => u.id === id)?.nickname || id).join('、') || '-')
-onMounted(async () => { loading.value = true; try { [data.value, users.value] = await Promise.all([TripApi.getTrip(Number(route.query.id)), UserApi.getSimpleUserList()]) } finally { loading.value = false } })
+const resolveTripId = () => Number(props.id ?? route.query.id)
+onMounted(async () => {
+  const id = resolveTripId()
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    message.error(t('process.instance.queryProcessError'))
+    return
+  }
+  loading.value = true
+  try {
+    const [trip, userList] = await Promise.all([
+      TripApi.getTrip(id),
+      UserApi.getSimpleUserList()
+    ])
+    data.value = trip
+    users.value = userList
+  } finally {
+    loading.value = false
+  }
+})
 </script>
