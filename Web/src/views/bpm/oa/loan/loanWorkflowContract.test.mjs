@@ -24,6 +24,7 @@ test('loan routes and pages expose approval progress and repayment lifecycle', (
   assert.match(listPage, /createRepayment/)
   assert.match(detailPage, /getRepayments/)
   assert.match(detailPage, /repaymentRecords/)
+  assert.match(listPage, /onActivated\(\(\) => \{ if \(initialized\) load\(\) \}/)
 })
 
 test('repayment API is explicit and separate from loan approval', () => {
