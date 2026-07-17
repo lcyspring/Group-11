@@ -347,6 +347,7 @@ export default {
     }
   },
   approval: {
+    approval: '审批',
     approve: '通过',
     reject: '拒绝',
     cancel: '取消',

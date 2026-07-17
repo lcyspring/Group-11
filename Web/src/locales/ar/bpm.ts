@@ -330,6 +330,7 @@ export default {
     }
   },
   approval: {
+    approval: 'موافقة',
     approve: 'موافقة',
     reject: 'رفض',
     cancel: 'إلغاء',

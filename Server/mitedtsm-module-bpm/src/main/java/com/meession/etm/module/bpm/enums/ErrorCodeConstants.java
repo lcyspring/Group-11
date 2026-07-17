@@ -100,5 +100,6 @@ public interface ErrorCodeConstants {
 
     // ========== BPM 流程表达式 1-009-014-000 ==========
     ErrorCode PROCESS_EXPRESSION_NOT_EXISTS = new ErrorCode(1_009_014_000, "流程表达式不存在");
+    ErrorCode OA_EVENT_NOT_EXISTS = new ErrorCode(1_009_015_000, "日程不存在或无权访问");
 
 }
