@@ -226,7 +226,7 @@
       <el-table-column align="center" :label="t('common.operation')" fixed="right" width="220">
         <template #default="scope">
           <TableActions>
-            <el-button v-if="scope.row.processInstance" link type="warning" @click="handleWithdraw(scope.row)">{{
+            <el-button v-if="scope.row.withdrawable === true" link type="warning" @click="handleWithdraw(scope.row)">{{
               t('process.task.withdraw')
             }}</el-button>
             <el-button link type="primary" @click="handleAudit(scope.row)">{{
