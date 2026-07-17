@@ -360,6 +360,30 @@ public class TradeOrderDO extends BaseDO {
      */
     private Long pointActivityId;
 
+    // ========== 审批基本信息 ==========
+
+    /**
+     * 审批状态
+     *
+     * 枚举 {@link TradeOrderApprovalStatusEnum}
+     */
+    private Integer approvalStatus;
+
+    /**
+     * BPM 流程实例编号
+     */
+    private String processInstanceId;
+
+    /**
+     * 审批意见
+     */
+    private String approvalComment;
+
+    /**
+     * 审批时间
+     */
+    private LocalDateTime approvalTime;
+
     @TableField(exist = false)
     private List<TradeOrderItemDO> items;
 
