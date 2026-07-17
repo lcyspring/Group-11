@@ -14,13 +14,18 @@ import java.util.List;
 
 @Mapper
 public interface CrmMarketingBroadcastMapper extends BaseMapperX<CrmMarketingBroadcastDO> {
-    default PageResult<CrmMarketingBroadcastDO> selectPage(CrmMarketingBroadcastPageReqVO request) {
-        return selectPage(request, new LambdaQueryWrapperX<CrmMarketingBroadcastDO>()
+    default PageResult<CrmMarketingBroadcastDO> selectPage(CrmMarketingBroadcastPageReqVO request,
+                                                            boolean readAll, String creator) {
+        LambdaQueryWrapperX<CrmMarketingBroadcastDO> query = new LambdaQueryWrapperX<CrmMarketingBroadcastDO>()
                 .likeIfPresent(CrmMarketingBroadcastDO::getName, request.getName())
                 .eqIfPresent(CrmMarketingBroadcastDO::getChannel, request.getChannel())
                 .eqIfPresent(CrmMarketingBroadcastDO::getStatus, request.getStatus())
                 .eqIfPresent(CrmMarketingBroadcastDO::getCampaignId, request.getCampaignId())
-                .orderByDesc(CrmMarketingBroadcastDO::getId));
+                .orderByDesc(CrmMarketingBroadcastDO::getId);
+        if (!readAll) {
+            query.eq(CrmMarketingBroadcastDO::getCreator, creator);
+        }
+        return selectPage(request, query);
     }
 
     default int updateEditable(CrmMarketingBroadcastDO row, Collection<Integer> expectedStatuses) {

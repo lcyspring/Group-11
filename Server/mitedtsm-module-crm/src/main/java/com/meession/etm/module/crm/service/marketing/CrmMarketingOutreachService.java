@@ -75,8 +75,10 @@ public class CrmMarketingOutreachService {
         return row.getId();
     }
 
-    public PageResult<CrmMarketingBroadcastDO> getBroadcastPage(CrmMarketingBroadcastPageReqVO request) {
-        return broadcastMapper.selectPage(request);
+    public PageResult<CrmMarketingBroadcastDO> getBroadcastPage(CrmMarketingBroadcastPageReqVO request,
+                                                                 Long userId, boolean privilegedReader) {
+        boolean readAll = privilegedReader || authorizationService.isCrmAdmin(userId);
+        return broadcastMapper.selectPage(request, readAll, String.valueOf(userId));
     }
 
     public List<Long> getDueScheduledBroadcastIds() {
@@ -116,8 +118,20 @@ public class CrmMarketingOutreachService {
         return requireBroadcast(id);
     }
 
+    public CrmMarketingBroadcastDO getBroadcast(Long id, Long userId, boolean privilegedReader) {
+        CrmMarketingBroadcastDO row = requireBroadcast(id);
+        requireReadable(row, userId, privilegedReader);
+        return row;
+    }
+
     public List<CrmMarketingBroadcastRecipientDO> getBroadcastRecipients(Long id) {
         requireBroadcast(id);
+        return recipientMapper.selectList(CrmMarketingBroadcastRecipientDO::getBroadcastId, id);
+    }
+
+    public List<CrmMarketingBroadcastRecipientDO> getBroadcastRecipients(Long id, Long userId,
+                                                                          boolean privilegedReader) {
+        requireReadable(requireBroadcast(id), userId, privilegedReader);
         return recipientMapper.selectList(CrmMarketingBroadcastRecipientDO::getBroadcastId, id);
     }
 
@@ -132,6 +146,12 @@ public class CrmMarketingOutreachService {
     }
 
     public PageResult<CrmMarketingBroadcastRecipientDO> getRecipientPage(CrmMarketingRecipientPageReqVO request) {
+        return recipientMapper.selectPage(request);
+    }
+
+    public PageResult<CrmMarketingBroadcastRecipientDO> getRecipientPage(CrmMarketingRecipientPageReqVO request,
+                                                                         Long userId, boolean privilegedReader) {
+        requireReadable(requireBroadcast(request.getBroadcastId()), userId, privilegedReader);
         return recipientMapper.selectPage(request);
     }
 
@@ -329,6 +349,14 @@ public class CrmMarketingOutreachService {
         CrmMarketingBroadcastDO row = broadcastMapper.selectById(id);
         if (row == null) throw exception(MARKETING_BROADCAST_NOT_EXISTS);
         return row;
+    }
+
+    private void requireReadable(CrmMarketingBroadcastDO row, Long userId, boolean privilegedReader) {
+        if (privilegedReader || authorizationService.isCrmAdmin(userId)
+                || Objects.equals(parseCreatorUserId(row.getCreator()), userId)) {
+            return;
+        }
+        throw exception(MARKETING_PERMISSION_DENIED);
     }
 
     private Map<String, Object> parseParams(String raw) {

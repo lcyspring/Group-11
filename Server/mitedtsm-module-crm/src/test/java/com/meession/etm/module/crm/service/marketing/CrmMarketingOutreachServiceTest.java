@@ -18,6 +18,7 @@ import com.meession.etm.module.crm.framework.marketing.CrmMarketingProperties;
 import com.meession.etm.module.crm.framework.permission.CrmAuthorizationService;
 import com.meession.etm.module.crm.framework.permission.CrmOwnerReadScope;
 import com.meession.etm.module.crm.controller.admin.marketing.vo.CrmMarketingReviewReqVO;
+import com.meession.etm.module.crm.controller.admin.marketing.vo.CrmMarketingBroadcastPageReqVO;
 import com.meession.etm.framework.common.exception.ServiceException;
 import com.meession.etm.module.system.api.sms.SmsSendApi;
 import org.junit.jupiter.api.BeforeEach;
@@ -207,6 +208,43 @@ class CrmMarketingOutreachServiceTest {
 
         assertEquals(List.of(own), customers);
         assertEquals(List.of(ownContact), contacts);
+    }
+
+    @Test
+    void queryOnlyUserCannotReadAnotherCreatorsBroadcastOrRecipients() {
+        CrmMarketingBroadcastDO broadcast = new CrmMarketingBroadcastDO().setId(41L);
+        broadcast.setCreator("7");
+        when(broadcastMapper.selectById(41L)).thenReturn(broadcast);
+        when(authorizationService.isCrmAdmin(8L)).thenReturn(false);
+
+        assertThrows(ServiceException.class, () -> service.getBroadcast(41L, 8L, false));
+        assertThrows(ServiceException.class, () -> service.getBroadcastRecipients(41L, 8L, false));
+        verify(recipientMapper, never()).selectList(any(SFunction.class), any());
+    }
+
+    @Test
+    void creatorAndPrivilegedReviewerCanReadBroadcastRecipients() {
+        CrmMarketingBroadcastDO broadcast = new CrmMarketingBroadcastDO().setId(42L);
+        broadcast.setCreator("7");
+        when(broadcastMapper.selectById(42L)).thenReturn(broadcast);
+        when(recipientMapper.selectList(any(SFunction.class), eq(42L))).thenReturn(List.of());
+
+        assertSame(broadcast, service.getBroadcast(42L, 7L, false));
+        service.getBroadcastRecipients(42L, 8L, true);
+
+        verify(recipientMapper).selectList(any(SFunction.class), eq(42L));
+    }
+
+    @Test
+    void queryOnlyPageIsCreatorScopedWhileReviewerCanReadAll() {
+        CrmMarketingBroadcastPageReqVO request = new CrmMarketingBroadcastPageReqVO();
+        when(authorizationService.isCrmAdmin(8L)).thenReturn(false);
+
+        service.getBroadcastPage(request, 8L, false);
+        service.getBroadcastPage(request, 8L, true);
+
+        verify(broadcastMapper).selectPage(request, false, "8");
+        verify(broadcastMapper).selectPage(request, true, "8");
     }
 
     private static CrmMarketingBroadcastRecipientDO pending(Long id, Long broadcastId) {

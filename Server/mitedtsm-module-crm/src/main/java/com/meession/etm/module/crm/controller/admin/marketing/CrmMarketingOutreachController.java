@@ -7,6 +7,7 @@ import com.meession.etm.module.crm.controller.admin.marketing.vo.*;
 import com.meession.etm.module.crm.dal.dataobject.marketing.CrmMarketingBroadcastDO;
 import com.meession.etm.module.crm.dal.dataobject.marketing.CrmMarketingBroadcastRecipientDO;
 import com.meession.etm.module.crm.service.marketing.CrmMarketingOutreachService;
+import com.meession.etm.framework.security.core.service.SecurityFrameworkService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -27,6 +28,7 @@ import java.util.List;
 @Validated
 public class CrmMarketingOutreachController {
     @Resource private CrmMarketingOutreachService service;
+    @Resource private SecurityFrameworkService securityFrameworkService;
 
     @PostMapping("/consent/save")
     @Operation(summary = "保存客户营销同意或退订")
@@ -60,10 +62,12 @@ public class CrmMarketingOutreachController {
     @Operation(summary = "获得群发任务详情")
     @PreAuthorize("@ss.hasPermission('crm:marketing-outreach:query')")
     public CommonResult<CrmMarketingBroadcastRespVO> getBroadcast(@RequestParam Long id) {
-        CrmMarketingBroadcastDO row = service.getBroadcast(id);
+        Long userId = getLoginUserId();
+        boolean privilegedReader = canReadAllBroadcasts();
+        CrmMarketingBroadcastDO row = service.getBroadcast(id, userId, privilegedReader);
         CrmMarketingBroadcastRespVO response = toResponse(row);
         response.setCustomerIds(new ArrayList<>()).setContactIds(new ArrayList<>());
-        service.getBroadcastRecipients(id).stream().forEach(recipient -> {
+        service.getBroadcastRecipients(id, userId, privilegedReader).stream().forEach(recipient -> {
             if (recipient.getContactId() == null && recipient.getCustomerId() != null
                     && !response.getCustomerIds().contains(recipient.getCustomerId())) {
                 response.getCustomerIds().add(recipient.getCustomerId());
@@ -87,7 +91,8 @@ public class CrmMarketingOutreachController {
     @Operation(summary = "获得群发任务分页")
     @PreAuthorize("@ss.hasPermission('crm:marketing-outreach:query')")
     public CommonResult<PageResult<CrmMarketingBroadcastRespVO>> getBroadcastPage(@Valid CrmMarketingBroadcastPageReqVO request) {
-        PageResult<CrmMarketingBroadcastDO> page = service.getBroadcastPage(request);
+        PageResult<CrmMarketingBroadcastDO> page = service.getBroadcastPage(
+                request, getLoginUserId(), canReadAllBroadcasts());
         return success(new PageResult<>(page.getList().stream().map(this::toResponse).toList(), page.getTotal()));
     }
 
@@ -100,7 +105,8 @@ public class CrmMarketingOutreachController {
     @Operation(summary = "获得群发收件人结果")
     @PreAuthorize("@ss.hasPermission('crm:marketing-outreach:query')")
     public CommonResult<PageResult<CrmMarketingRecipientRespVO>> getRecipientPage(@Valid CrmMarketingRecipientPageReqVO request) {
-        PageResult<CrmMarketingBroadcastRecipientDO> page = service.getRecipientPage(request);
+        PageResult<CrmMarketingBroadcastRecipientDO> page = service.getRecipientPage(
+                request, getLoginUserId(), canReadAllBroadcasts());
         return success(new PageResult<>(BeanUtils.toBean(page.getList(), CrmMarketingRecipientRespVO.class), page.getTotal()));
     }
 
@@ -128,4 +134,9 @@ public class CrmMarketingOutreachController {
     @Operation(summary = "重试失败收件人")
     @PreAuthorize("@ss.hasPermission('crm:marketing-outreach:send')")
     public CommonResult<Boolean> retry(@RequestParam Long id) { service.retryFailed(id); return success(true); }
+
+    private boolean canReadAllBroadcasts() {
+        return securityFrameworkService.hasAnyPermissions(
+                "crm:marketing-outreach:review", "crm:marketing-outreach:send");
+    }
 }
