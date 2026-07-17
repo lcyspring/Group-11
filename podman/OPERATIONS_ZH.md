@@ -44,6 +44,28 @@ bash ./podman/tests/runtime-config/run.sh ./podman/config/runtime-local-check.ya
 bash ./podman/up.sh ./podman/config/runtime-local.yaml
 ```
 
+全新数据库卷会同时清空 Flowable 已部署定义。`runtime-local.yaml` 应显式设置
+`bpm.provision_after_start: true` 和 `bpm.provision_manifest: bpm-provision-all-local.yaml`；`up.sh full`
+在 Server 健康后、暴露前端前自动恢复回款、报销、合同、退款、出差和借款流程。若任一模型失败，部署
+立即失败，不会继续显示一个看似可用但提交审批必然报错的前端。
+
+## 停服、清产物与数据重置
+
+三种操作必须分开选择：
+
+| 目标 | 配置/入口 | 结果 |
+|---|---|---|
+| 日常停服 | `down.sh config/cleanup-stop.example.yaml` | 删除 Pod，保留四个持久卷和全部构建产物 |
+| 重新编译 | 对应 Ubuntu 26.04 构建 YAML 的 `build.clean: true` | 清理并重建所选源码产物，不触碰业务数据 |
+| 全新数据环境 | 复制 `cleanup-reset.example.yaml` 为 ignored `runtime-reset-local.yaml` 后执行 `down.sh` | 永久删除 MySQL、Redis、RabbitMQ、TDengine 卷 |
+
+执行全新数据环境前必须先备份并核对 YAML 中的四个卷名。之后使用 `up.sh full` 重建；运行 YAML
+必须开启 BPM 自动恢复。`down.sh` 会逐个打印被保留或被删除的卷，不再静默完成数据销毁。
+
+所有 `.example.yaml` 都属于仓库交付内容，不得加入 `.gitignore`；真实账号、密码和环境地址写入
+对应 ignored `*-local.yaml`。BPM 各单模型示例、聚合清单和字段含义见
+`config/README_ZH.md` 与 `config/YAML_FIELDS_ZH.md`。
+
 管理端和 Mall 产物分别进入独立 Nginx 镜像，后端只打成可执行 JAR，前端不会塞入 JAR/WAR。
 
 ## 按变更选择模式

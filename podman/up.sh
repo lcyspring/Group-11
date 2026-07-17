@@ -118,6 +118,15 @@ SECURITY_CORS_MAX_AGE_SECONDS="$(yaml_positive_integer security.cors_max_age_sec
 SECURITY_API_DOCS_ENABLED="$(yaml_bool security.api_docs_enabled)"
 SECURITY_DRUID_CONSOLE_ENABLED="$(yaml_bool security.druid_console_enabled)"
 SECURITY_ACTUATOR_EXPOSURE="$(yaml_require security.actuator_exposure)"
+BPM_PROVISION_AFTER_START="$(yaml_get bpm.provision_after_start)"
+BPM_PROVISION_AFTER_START="${BPM_PROVISION_AFTER_START:-false}"
+case "${BPM_PROVISION_AFTER_START,,}" in
+    true|false) ;;
+    *) printf 'bpm.provision_after_start must be true or false; got: %s\n' "$BPM_PROVISION_AFTER_START" >&2; exit 2 ;;
+esac
+if [[ "${BPM_PROVISION_AFTER_START,,}" == "true" ]]; then
+    BPM_PROVISION_MANIFEST="$(yaml_path bpm.provision_manifest)"
+fi
 SECURITY_API_ENCRYPTION_ENABLED="$(yaml_bool security.api_encryption_enabled)"
 SECURITY_CAPTCHA_ENABLED="$(yaml_bool security.captcha_enabled)"
 SECURITY_BOOT_ADMIN_CLIENT_ENABLED="$(yaml_bool security.boot_admin_client_enabled)"
@@ -992,6 +1001,10 @@ printf 'Starting server and frontends.\n'
 start_server
 # Do not expose a ready-looking Web UI while its API upstream is still booting.
 wait_for 'Spring Boot server' "$SERVER_ATTEMPTS" host_curl --fail --silent --show-error "http://${HEALTH_HTTP_HOST}:${SERVER_PORT}${SERVER_HEALTH_PATH}"
+if [[ "${BPM_PROVISION_AFTER_START,,}" == "true" ]]; then
+    printf 'Provisioning governed BPM models from explicit manifest.\n'
+    bash "${SCRIPT_DIR}/provision-bpm-models.sh" "$BPM_PROVISION_MANIFEST"
+fi
 start_frontends
 wait_for_frontends
 show_access_urls

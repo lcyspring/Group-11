@@ -278,6 +278,13 @@ mitedtsm:
         default-annual-days:
           4: 5
           5: 0
+      loan:
+        # 额度和岗位编码均显式配置；岗位未匹配时按 employee-limit。
+        employee-limit: 5000
+        manager-limit: 20000
+        director-limit: 50000
+        manager-post-codes: [manager]
+        director-post-codes: [director]
   infra:
     file-security:
       protected-path-prefixes: [crm-protected/]

@@ -298,6 +298,23 @@ export default {
       reasonLength: 'يجب أن يتراوح سبب الرحلة بين 5 و1000 حرف',
       processModelNotFound: 'نموذج عملية رحلة العمل غير مكوّن'
     },
+    loan: {
+      id: 'رقم السلفة', create: 'إنشاء سلفة', detail: 'تفاصيل السلفة', type: 'نوع السلفة',
+      typeTravel: 'سلفة سفر', typePurchase: 'سلفة شراء', typeOther: 'سلفة أخرى',
+      amount: 'المبلغ', trip: 'رحلة العمل المرتبطة', reason: 'الغرض', status: 'حالة الموافقة',
+      progress: 'تقدم الموافقة', level: 'مستوى الحد', limit: 'حد الوظيفة',
+      escalated: 'موافقة مصعّدة', outstanding: 'المبلغ المتبقي',
+      currentLimit: 'المستوى الحالي: {level}، حد السلفة: {limit}',
+      limitHint: 'يتجاوز المبلغ حد الوظيفة {limit} وتتطلب المعاملة موافقة مصعّدة',
+      typeRequired: 'الرجاء اختيار نوع السلفة', amountRequired: 'الرجاء إدخال المبلغ',
+      reasonRequired: 'الرجاء إدخال غرض السلفة',
+      reasonLength: 'يجب أن يتراوح غرض السلفة بين 5 و1000 حرف',
+      processModelNotFound: 'نموذج عملية سلفة OA غير مكوّن', repay: 'تسجيل السداد',
+      repaymentAmount: 'مبلغ السداد', repaymentAmountRequired: 'الرجاء إدخال مبلغ السداد',
+      repaidAt: 'وقت السداد', referenceNo: 'مرجع المعاملة', remark: 'ملاحظة السداد',
+      outstandingHint: 'المبلغ المتبقي الحالي: {amount}', repaymentSuccess: 'تم تسجيل السداد',
+      repaymentRecords: 'سجلات السداد'
+    },
     bpm: {
       title: 'مركز الموافقة',
       processName: 'اسم العملية',

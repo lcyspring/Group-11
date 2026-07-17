@@ -1,0 +1,18 @@
+schema_version: 1
+
+operation:
+  shutdown_mode: stop
+  remove_volumes_on_down: false
+
+deployment:
+  pod_name: mitedtsm
+  stop_timeout_seconds: 30
+
+container:
+  server: mitedtsm-server
+
+volume:
+  mysql: mitedtsm-mysql-data
+  redis: mitedtsm-redis-data
+  rabbitmq: mitedtsm-rabbitmq-data
+  tdengine: mitedtsm-tdengine-data

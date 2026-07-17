@@ -340,6 +340,8 @@ export default {
     oaLeaveDetail: 'عرض إجازة OA',
     oaTripCreate: 'إنشاء رحلة عمل OA',
     oaTripDetail: 'عرض رحلة عمل OA',
+    oaLoanCreate: 'إنشاء سلفة OA',
+    oaLoanDetail: 'عرض سلفة OA',
     bpmModelCreate: 'إنشاء عملية',
     bpmModelUpdate: 'تعديل العملية',
     bpmTaskAssign: 'المهام المعلقة',

@@ -79,9 +79,16 @@ else
 fi
 
 if [[ "$REMOVE_VOLUMES" == true ]]; then
+    printf 'Persistent-data reset is enabled. The following named volumes will be permanently removed:\n'
+    printf '  - %s\n' "${VOLUMES[@]}"
     for volume in "${VOLUMES[@]}"; do
         if podman volume inspect "$volume" >/dev/null 2>&1; then
+            printf 'Removing persistent volume: %s\n' "$volume"
             podman volume rm "$volume"
+        else
+            printf 'Persistent volume is already absent: %s\n' "$volume"
         fi
     done
+else
+    printf 'Persistent volumes were preserved (operation.remove_volumes_on_down=false).\n'
 fi

@@ -133,23 +133,31 @@ bash ./up.sh ./config/runtime-local.yaml
 
 ## 7. 停止与数据删除
 
-普通停止需在本机配置中设置：
-
-```yaml
-operation:
-  shutdown_mode: stop
-  remove_volumes_on_down: false
-```
-
-然后运行：
+仓库提供两份不含凭据、不可忽略的显式示例。日常停服直接使用保留数据的示例：
 
 ```bash
-bash ./down.sh ./config/runtime-local.yaml
+bash ./down.sh ./config/cleanup-stop.example.yaml
 ```
 
-只有明确需要永久删除 MySQL、Redis、RabbitMQ、TDengine 数据时，才把
-`remove_volumes_on_down` 改为 `true`。此行为不再提供命令行快捷开关，避免
-误操作。
+它会删除运行 Pod，但保留 MySQL、Redis、RabbitMQ、TDengine 四个 named volume。构建产物也不会被
+删除。
+
+只有灾难恢复演练、演示数据全量替换或明确要求建立全新环境时，才复制销毁示例：
+
+```bash
+cp ./config/cleanup-reset.example.yaml ./config/runtime-reset-local.yaml
+bash ./database-backup.sh ./config/database-backup-local.yaml
+bash ./down.sh ./config/runtime-reset-local.yaml
+```
+
+`cleanup-reset.example.yaml` 显式设置 `remove_volumes_on_down: true`，会永久删除四个数据卷；
+`runtime-reset-local.yaml` 被 Git 忽略，用于记录操作者核对后的本机卷名。该操作没有命令行快捷开关。
+重建后使用 `up.sh full`，并确保 `bpm.provision_after_start: true`，否则空数据库中不存在 Flowable
+流程定义，回款、报销、合同、退款、出差和借款提交审批都会失败。
+
+清理构建产物与销毁数据是两类操作：Server 的 Maven `target`、`Web/dist-prod` 和 Mall
+`unpackage/dist` 由各 Ubuntu 26.04 构建 YAML 的 clean 开关控制；不要通过删数据卷来解决旧前端或
+旧 JAR 问题。
 
 ## 8. 离线镜像与代理
 

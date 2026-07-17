@@ -10,6 +10,10 @@ deployment:
   pod_name: mitedtsm-rootless
   stop_timeout_seconds: 120
 
+bpm:
+  provision_after_start: false
+  provision_manifest: bpm-provision-all.example.yaml
+
 network:
   host_address: 127.0.0.1
   server_host_port: 8080

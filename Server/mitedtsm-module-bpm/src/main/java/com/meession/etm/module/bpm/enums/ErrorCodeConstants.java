@@ -20,6 +20,12 @@ public interface ErrorCodeConstants {
     ErrorCode OA_TRIP_NOT_APPROVED = new ErrorCode(1_009_001_006, "仅审批通过的出差可以关联报销");
     ErrorCode OA_TRIP_NOT_ENDED = new ErrorCode(1_009_001_007, "出差结束后才能关联报销");
     ErrorCode OA_TRIP_EXPENSE_RANGE_INVALID = new ErrorCode(1_009_001_008, "报销费用日期必须覆盖所关联出差的起止日期");
+    ErrorCode OA_LOAN_NOT_EXISTS = new ErrorCode(1_009_001_009, "借款申请不存在或无权访问");
+    ErrorCode OA_LOAN_OUTSTANDING_EXISTS = new ErrorCode(1_009_001_010, "您有未还借款 {} 元，请先还款");
+    ErrorCode OA_LOAN_USER_NOT_EXISTS = new ErrorCode(1_009_001_011, "借款申请人不存在");
+    ErrorCode OA_LOAN_REPAYMENT_STATUS_INVALID = new ErrorCode(1_009_001_012, "当前借款状态不允许还款");
+    ErrorCode OA_LOAN_REPAYMENT_EXCEEDS_OUTSTANDING = new ErrorCode(1_009_001_013, "还款金额超过剩余未还金额 {}");
+    ErrorCode OA_LOAN_REPAYMENT_TIME_INVALID = new ErrorCode(1_009_001_014, "还款时间不能晚于当前时间");
 
     // ========== 流程模型 1-009-002-000 ==========
     ErrorCode MODEL_KEY_EXISTS = new ErrorCode(1_009_002_000, "已经存在流程标识为【{}】的流程");

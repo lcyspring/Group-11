@@ -298,6 +298,23 @@ export default {
       reasonLength: 'Trip reason must contain 5 to 1000 characters',
       processModelNotFound: 'The OA trip process model is not configured'
     },
+    loan: {
+      id: 'Loan ID', create: 'Create Loan', detail: 'Loan Details', type: 'Loan Type',
+      typeTravel: 'Travel Loan', typePurchase: 'Purchase Loan', typeOther: 'Other Loan',
+      amount: 'Amount', trip: 'Related Trip', reason: 'Purpose', status: 'Approval Status',
+      progress: 'Approval Progress', level: 'Limit Level', limit: 'Position Limit',
+      escalated: 'Escalated Approval', outstanding: 'Outstanding Amount',
+      currentLimit: 'Current level: {level}; per-loan limit: {limit}',
+      limitHint: 'Amount exceeds the position limit {limit}; escalated approval is required',
+      typeRequired: 'Please select a loan type', amountRequired: 'Please enter the amount',
+      reasonRequired: 'Please enter the loan purpose',
+      reasonLength: 'Loan purpose must contain 5 to 1000 characters',
+      processModelNotFound: 'The OA loan process model is not configured', repay: 'Record Repayment',
+      repaymentAmount: 'Repayment Amount', repaymentAmountRequired: 'Please enter the repayment amount',
+      repaidAt: 'Repaid At', referenceNo: 'Transaction Reference', remark: 'Repayment Note',
+      outstandingHint: 'Current outstanding amount: {amount}', repaymentSuccess: 'Repayment recorded',
+      repaymentRecords: 'Repayment Records'
+    },
     bpm: {
       title: 'Approval Center',
       processName: 'Process Name',

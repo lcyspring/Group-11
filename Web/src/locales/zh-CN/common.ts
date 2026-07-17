@@ -343,6 +343,8 @@ export default {
     oaLeaveDetail: '查看 OA 请假',
     oaTripCreate: '发起 OA 出差',
     oaTripDetail: '查看 OA 出差',
+    oaLoanCreate: '发起 OA 借款',
+    oaLoanDetail: '查看 OA 借款',
     bpmModelCreate: '创建流程',
     bpmModelUpdate: '修改流程',
     bpmTaskAssign: '待办任务',

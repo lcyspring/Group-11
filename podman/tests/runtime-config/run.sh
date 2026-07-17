@@ -60,6 +60,8 @@ bash -n "${PODMAN_DIR}/database-backup.sh"
 bash -n "${PODMAN_DIR}/database-restore.sh"
 bash -n "${PODMAN_DIR}/database-dataset.sh"
 bash -n "${PODMAN_DIR}/build-image-archives.sh"
+bash -n "${PODMAN_DIR}/provision-bpm-model.sh"
+bash -n "${PODMAN_DIR}/provision-bpm-models.sh"
 bash -n "${PODMAN_DIR}/verify-crm-receivable-reference-integrity.sh"
 bash -n "${PODMAN_DIR}/verify-crm-performance-target-runtime.sh"
 bash -n "${PODMAN_DIR}/verify-crm-runtime-security.sh"
@@ -74,6 +76,28 @@ expect_exit_2 bash "${PODMAN_DIR}/database-dataset.sh" \
 expect_exit_2 bash "${PODMAN_DIR}/database-dataset.sh" \
     "${SCRIPT_DIR}/fixtures/dataset-cleanup-not-authorized.yaml"
 bash "${PODMAN_DIR}/build-image-archives.sh" "${PODMAN_DIR}/config/build-image-archives-check.yaml"
+
+required_examples=(
+    cleanup-stop.example.yaml
+    cleanup-reset.example.yaml
+    bpm-provision.example.yaml
+    bpm-provision-receivable.example.yaml
+    bpm-provision-contract.example.yaml
+    bpm-provision-amendment.example.yaml
+    bpm-provision-refund.example.yaml
+    bpm-provision-trip.example.yaml
+    bpm-provision-loan.example.yaml
+    bpm-provision-all.example.yaml
+)
+for example in "${required_examples[@]}"; do
+    example_path="${PODMAN_DIR}/config/${example}"
+    [[ -s "$example_path" ]] || fail "required example configuration is missing: $example"
+    if git -C "${PODMAN_DIR}/.." check-ignore -q "podman/config/${example}"; then
+        fail "example configuration must not be ignored: $example"
+    fi
+    git -C "${PODMAN_DIR}/.." ls-files --error-unmatch "podman/config/${example}" >/dev/null 2>&1 || \
+        fail "required example configuration must be tracked by Git: $example"
+done
 
 validate_sql_manifest() {
     local manifest="$1"

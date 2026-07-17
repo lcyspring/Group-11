@@ -117,6 +117,46 @@
 | `health.rabbitmq_os_user` | 执行 RabbitMQ 诊断命令的容器用户 |
 | `health.tdengine_query` | TDengine 就绪 SQL |
 | `health.server_path/web_path/mall_path` | 三个应用的健康路径 |
+| `bpm.provision_after_start` | Server 就绪后是否根据显式清单创建/更新并部署全部受管 BPM 模型；全新数据库卷应设为 `true` |
+| `bpm.provision_manifest` | BPM 聚合清单路径；清单再引用各模型的 ignored local YAML，真实账号不写入运行脚本或仓库 |
+
+## BPM 模型恢复配置
+
+单模型示例为 `bpm-provision*.example.yaml`，聚合示例为
+`bpm-provision-all.example.yaml`。示例必须保留在 Git 中，真实凭据仅写入 ignored
+`*-local.yaml`。
+
+| 分组/字段 | 作用 |
+|---|---|
+| `schema_version` | 配置协议版本，当前固定为 `1` |
+| `endpoint.base_url` | 管理端 API 根地址，通常为 `http://127.0.0.1:8080/admin-api` |
+| `endpoint.tenant_id` | 创建角色、分类和模型所属租户 |
+| `account.username/password` | 执行恢复的管理员账号；示例密码必须为占位值 |
+| `approval.role_code/role_name/role_sort` | 审批角色的稳定编码、显示名和排序 |
+| `approval.approver_username` | 被授予审批角色并绑定到流程节点的用户 |
+| `approval.permission_codes` | 审批角色需要的权限编码，使用逗号分隔 |
+| `category.code/name/sort` | BPM 流程分类的稳定编码、名称和排序 |
+| `model.key` | Flowable 流程定义 key，必须与业务提交审批时使用的 key 完全一致 |
+| `model.name/description` | 模型显示名和业务边界说明 |
+| `model.form_create_path/form_view_path` | 发起页和详情页前端路由 |
+| `model.approval_node_name` | 审批任务节点显示名 |
+| `models.*` | 聚合清单内各受管模型配置路径，相对聚合 YAML 所在目录解析 |
+
+单模型恢复使用 `provision-bpm-model.sh`，全模型恢复使用
+`provision-bpm-models.sh`；两者命令行都只能传一个 YAML 路径。聚合恢复任一模型失败时整体返回
+失败，防止部署表面成功但提交审批仍报“流程定义不存在”。
+
+## 清理配置
+
+| 示例 | 数据影响 |
+|---|---|
+| `cleanup-stop.example.yaml` | 删除运行 Pod，四个 named volume 全部保留 |
+| `cleanup-reset.example.yaml` | 删除运行 Pod，并永久删除四个 named volume |
+
+`down.sh` 只读取 `schema_version`、`operation.shutdown_mode`、
+`operation.remove_volumes_on_down`、`deployment.*`、`container.server` 和 `volume.*`。
+`remove_volumes_on_down` 必须显式填写；日常值为 `false`。只有已备份且确实需要空数据库、空缓存、
+空消息队列和空时序库时才复制 reset 示例到 ignored 本机配置并改为 `true`。
 
 ## Ubuntu 26.04 Server/Web 构建配置
 

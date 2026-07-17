@@ -340,6 +340,8 @@ export default {
     oaLeaveDetail: 'View OA Leave',
     oaTripCreate: 'Create OA Trip',
     oaTripDetail: 'View OA Trip',
+    oaLoanCreate: 'Create OA Loan',
+    oaLoanDetail: 'View OA Loan',
     bpmModelCreate: 'Create Process',
     bpmModelUpdate: 'Edit Process',
     bpmTaskAssign: 'Pending Tasks',

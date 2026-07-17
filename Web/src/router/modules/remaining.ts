@@ -342,6 +342,30 @@ const remainingRouter: AppRouteRecordRaw[] = [
         }
       },
       {
+        path: 'oa/loan/create',
+        component: () => import('@/views/bpm/oa/loan/create.vue'),
+        name: 'OALoanCreate',
+        meta: {
+          noCache: true,
+          hidden: true,
+          canTo: true,
+          title: 'common.router.oaLoanCreate',
+          activeMenu: '/bpm/oa/loan'
+        }
+      },
+      {
+        path: 'oa/loan/detail',
+        component: () => import('@/views/bpm/oa/loan/detail.vue'),
+        name: 'OALoanDetail',
+        meta: {
+          noCache: true,
+          hidden: true,
+          canTo: true,
+          title: 'common.router.oaLoanDetail',
+          activeMenu: '/bpm/oa/loan'
+        }
+      },
+      {
         path: 'manager/model/create',
         component: () => import('@/views/bpm/model/form/index.vue'),
         name: 'BpmModelCreate',
