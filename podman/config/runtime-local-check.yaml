@@ -132,6 +132,10 @@ file:
   client_id: 4
   public_base_url: http://127.0.0.1:8080
 
+crm_customer_import:
+  max_rows: 2000
+  preview_ttl_minutes: 60
+
 crm_marketing:
   provider_mode: record-only
   tracking_enabled: true

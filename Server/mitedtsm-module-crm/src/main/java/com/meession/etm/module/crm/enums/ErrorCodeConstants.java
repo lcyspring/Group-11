@@ -212,6 +212,12 @@ public interface ErrorCodeConstants {
             "客户【{}】存在进行中的商机，不能转入垃圾池");
     ErrorCode CUSTOMER_GARBAGE_ACTIVE_CONTRACT = new ErrorCode(1_020_006_034,
             "客户【{}】存在未完结销售单据，不能转入垃圾池");
+    ErrorCode CUSTOMER_IMPORT_PREVIEW_NOT_EXISTS = new ErrorCode(1_020_006_035, "客户导入预检任务不存在");
+    ErrorCode CUSTOMER_IMPORT_PREVIEW_EXPIRED = new ErrorCode(1_020_006_036, "客户导入预检已过期，请重新预检");
+    ErrorCode CUSTOMER_IMPORT_MAPPING_INVALID = new ErrorCode(1_020_006_037, "客户导入字段映射无效：{}");
+    ErrorCode CUSTOMER_IMPORT_ROW_LIMIT = new ErrorCode(1_020_006_038, "客户导入单次不能超过 {} 行");
+    ErrorCode CUSTOMER_IMPORT_PREVIEW_NO_VALID_ROWS = new ErrorCode(1_020_006_039, "预检没有可导入的客户行");
+    ErrorCode CUSTOMER_IMPORT_PREVIEW_STATUS_INVALID = new ErrorCode(1_020_006_040, "客户导入预检状态不允许确认");
 
     // ========== 权限管理 1_020_007_000 ==========
     ErrorCode CRM_PERMISSION_NOT_EXISTS = new ErrorCode(1_020_007_000, "数据权限不存在");

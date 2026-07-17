@@ -20,6 +20,7 @@ import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerOwnerRecor
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.service.contact.CrmContactService;
 import com.meession.etm.module.crm.service.customer.CrmCustomer360Service;
+import com.meession.etm.module.crm.service.customer.CrmCustomerImportPreviewService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
 import com.meession.etm.module.crm.service.permission.CrmPermissionService;
 import com.meession.etm.module.system.api.dept.DeptApi;
@@ -60,6 +61,8 @@ public class CrmCustomerController {
 
     @Resource
     private CrmCustomerService customerService;
+    @Resource
+    private CrmCustomerImportPreviewService customerImportPreviewService;
     @Resource
     private CrmCustomer360Service customer360Service;
     @Resource
@@ -346,6 +349,29 @@ public class CrmCustomerController {
             throws Exception {
         List<CrmCustomerImportExcelVO> list = ExcelUtils.read(importReqVO.getFile(), CrmCustomerImportExcelVO.class);
         return success(customerService.importCustomerList(list, importReqVO));
+    }
+
+    @PostMapping("/import-preview")
+    @Operation(summary = "预检客户导入文件和字段映射")
+    @PreAuthorize("@ss.hasPermission('crm:customer:import')")
+    public CommonResult<CrmCustomerImportPreviewRespVO> previewImport(
+            @Valid CrmCustomerImportPreviewReqVO request) throws IOException {
+        return success(customerImportPreviewService.createPreview(request, getLoginUserId()));
+    }
+
+    @GetMapping("/import-preview/get")
+    @Operation(summary = "获得客户导入预检结果")
+    @PreAuthorize("@ss.hasPermission('crm:customer:import')")
+    public CommonResult<CrmCustomerImportPreviewRespVO> getImportPreview(@RequestParam("id") Long id) {
+        return success(customerImportPreviewService.getPreview(id, getLoginUserId()));
+    }
+
+    @PostMapping("/import-preview/confirm")
+    @Operation(summary = "确认客户导入预检")
+    @PreAuthorize("@ss.hasPermission('crm:customer:import')")
+    public CommonResult<CrmCustomerImportRespVO> confirmImportPreview(
+            @Valid @RequestBody CrmCustomerImportConfirmReqVO request) {
+        return success(customerImportPreviewService.confirmPreview(request.getId(), getLoginUserId()));
     }
 
     @PutMapping("/transfer")

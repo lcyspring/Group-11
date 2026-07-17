@@ -47,6 +47,41 @@ export interface CustomerVO {
   duplicateCheckConfirmed?: boolean // 是否已确认疑似重复客户
 }
 
+export interface CustomerImportPreviewFieldVO {
+  key: string
+  label: string
+  required: boolean
+}
+
+export interface CustomerImportPreviewRowVO {
+  rowNumber: number
+  action: 'CREATE' | 'UPDATE' | 'FAILURE'
+  existingCustomerId?: number
+  errors: string[]
+  customer: Partial<CustomerVO>
+}
+
+export interface CustomerImportPreviewVO {
+  id: number
+  fileName: string
+  status: number
+  expiresAt: string | number
+  totalCount: number
+  createCount: number
+  updateCount: number
+  failureCount: number
+  fieldMapping: Record<string, string>
+  headers: string[]
+  fields: CustomerImportPreviewFieldVO[]
+  rows: CustomerImportPreviewRowVO[]
+}
+
+export interface CustomerImportResultVO {
+  createCustomerNames: string[]
+  updateCustomerNames: string[]
+  failureCustomerNames: Record<string, string>
+}
+
 export enum CustomerLifecycleStatus {
   POTENTIAL = 10,
   INTENTIONAL = 20,
@@ -232,6 +267,22 @@ export const importCustomerTemplate = () => {
 // 导入客户
 export const handleImport = async (formData) => {
   return await request.upload({ url: `/crm/customer/import`, data: formData })
+}
+
+export const previewImport = async (formData: FormData) => {
+  return await request.upload({ url: '/crm/customer/import-preview', data: formData })
+}
+
+export const getImportPreview = async (id: number) => {
+  return await request.get<CustomerImportPreviewVO>({
+    url: '/crm/customer/import-preview/get', params: { id }
+  })
+}
+
+export const confirmImportPreview = async (id: number) => {
+  return await request.post<CustomerImportResultVO>({
+    url: '/crm/customer/import-preview/confirm', data: { id }
+  })
 }
 
 // 客户列表

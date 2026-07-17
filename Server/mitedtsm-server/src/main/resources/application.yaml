@@ -378,6 +378,9 @@ mitedtsm:
       tracking-enabled: ${MITEDTSM_CRM_MARKETING_TRACKING_ENABLED:true}
       public-base-url: ${MITEDTSM_CRM_MARKETING_PUBLIC_BASE_URL:http://127.0.0.1:8080}
       delivery-sync-batch-size: ${MITEDTSM_CRM_MARKETING_DELIVERY_SYNC_BATCH_SIZE:200}
+    customer-import:
+      max-rows: ${MITEDTSM_CRM_CUSTOMER_IMPORT_MAX_ROWS:2000}
+      preview-ttl-minutes: ${MITEDTSM_CRM_CUSTOMER_IMPORT_PREVIEW_TTL_MINUTES:60}
     authorization:
       # 平台超级管理员和专用 CRM 管理员均可执行 CRM 管理命令；普通角色仍受功能权限和数据范围约束。
       admin-role-codes: [super_admin, crm_admin]

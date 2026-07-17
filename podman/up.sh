@@ -152,6 +152,8 @@ CRM_MARKETING_PROVIDER_MODE="$(yaml_require crm_marketing.provider_mode)"
 CRM_MARKETING_TRACKING_ENABLED="$(yaml_bool crm_marketing.tracking_enabled)"
 CRM_MARKETING_PUBLIC_BASE_URL="$(yaml_require crm_marketing.public_base_url)"
 CRM_MARKETING_DELIVERY_SYNC_BATCH_SIZE="$(yaml_positive_integer crm_marketing.delivery_sync_batch_size)"
+CRM_CUSTOMER_IMPORT_MAX_ROWS="$(yaml_positive_integer crm_customer_import.max_rows)"
+CRM_CUSTOMER_IMPORT_PREVIEW_TTL_MINUTES="$(yaml_positive_integer crm_customer_import.preview_ttl_minutes)"
 
 HEALTH_INTERVAL="$(yaml_positive_integer health.interval_seconds)"
 HEALTH_HTTP_HOST="$(yaml_require health.http_host)"
@@ -384,6 +386,8 @@ start_server() {
         --env "MITEDTSM_CRM_MARKETING_TRACKING_ENABLED=${CRM_MARKETING_TRACKING_ENABLED}" \
         --env "MITEDTSM_CRM_MARKETING_PUBLIC_BASE_URL=${CRM_MARKETING_PUBLIC_BASE_URL}" \
         --env "MITEDTSM_CRM_MARKETING_DELIVERY_SYNC_BATCH_SIZE=${CRM_MARKETING_DELIVERY_SYNC_BATCH_SIZE}" \
+        --env "MITEDTSM_CRM_CUSTOMER_IMPORT_MAX_ROWS=${CRM_CUSTOMER_IMPORT_MAX_ROWS}" \
+        --env "MITEDTSM_CRM_CUSTOMER_IMPORT_PREVIEW_TTL_MINUTES=${CRM_CUSTOMER_IMPORT_PREVIEW_TTL_MINUTES}" \
         "$SERVER_IMAGE"
 }
 

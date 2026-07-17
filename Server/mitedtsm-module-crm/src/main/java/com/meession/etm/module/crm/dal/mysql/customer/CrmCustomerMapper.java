@@ -1,6 +1,7 @@
 package com.meession.etm.module.crm.dal.mysql.customer;
 
 import cn.hutool.core.date.LocalDateTimeUtil;
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
 import com.meession.etm.framework.common.pojo.PageResult;
@@ -234,6 +235,27 @@ public interface CrmCustomerMapper extends BaseMapperX<CrmCustomerDO> {
 
     default CrmCustomerDO selectByCustomerName(String name) {
         return selectOne(CrmCustomerDO::getName, name);
+    }
+
+    /** 批量加载导入预检涉及的同名或同手机号客户，避免逐行查重产生 N+1 查询。 */
+    default List<CrmCustomerDO> selectListByNamesOrMobiles(Collection<String> names, Collection<String> mobiles) {
+        if (CollUtil.isEmpty(names) && CollUtil.isEmpty(mobiles)) {
+            return java.util.Collections.emptyList();
+        }
+        LambdaQueryWrapper<CrmCustomerDO> query = new LambdaQueryWrapper<>();
+        query.and(condition -> {
+            boolean hasNames = CollUtil.isNotEmpty(names);
+            if (hasNames) {
+                condition.in(CrmCustomerDO::getName, names);
+            }
+            if (CollUtil.isNotEmpty(mobiles)) {
+                if (hasNames) {
+                    condition.or();
+                }
+                condition.in(CrmCustomerDO::getMobile, mobiles);
+            }
+        }).orderByAsc(CrmCustomerDO::getId);
+        return selectList(query);
     }
 
     /**

@@ -11,6 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Excel 工具类
@@ -50,6 +51,21 @@ public class ExcelUtils {
             return FastExcelFactory.read(inputStream, head, null)
                     .autoCloseStream(false) // 不要自动关闭，交给 Servlet 自己处理
                     .doReadAllSync();
+        }
+    }
+
+    /**
+     * 按原始单元格读取 Excel，首行也作为普通数据返回。
+     *
+     * <p>用于需要先识别并映射用户表头的导入预检场景，调用方负责校验表头和业务字段。</p>
+     */
+    public static List<Map<Integer, String>> readRows(MultipartFile file) throws IOException {
+        try (InputStream inputStream = file.getInputStream()) {
+            return FastExcelFactory.read(inputStream, null, null)
+                    .headRowNumber(0)
+                    .autoCloseStream(false)
+                    .sheet(0)
+                    .doReadSync();
         }
     }
 

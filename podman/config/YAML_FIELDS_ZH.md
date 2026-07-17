@@ -109,6 +109,8 @@
 | `crm_marketing.tracking_enabled` | 是否为系统邮件追加不可猜测的打开追踪像素 |
 | `crm_marketing.public_base_url` | 邮件像素公开基地址；真实邮件必须使用外部可访问的 HTTPS 地址 |
 | `crm_marketing.delivery_sync_batch_size` | 每轮调度最多回收的短信/邮件提供商结果数 |
+| `crm_customer_import.max_rows` | 单次客户导入预检允许的数据行上限，防止超大文件占满内存 |
+| `crm_customer_import.preview_ttl_minutes` | 预检快照允许确认的分钟数，过期后必须重新预检 |
 | `health.http_host` | 宿主健康探针地址 |
 | `health.interval_seconds` | 重试间隔 |
 | `health.*_attempts` | 各服务最大探测次数 |
