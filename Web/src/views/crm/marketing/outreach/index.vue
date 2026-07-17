@@ -267,6 +267,23 @@
       <el-table-column min-width="220" show-overflow-tooltip :label="t('crm.marketing.resultReason')">
         <template #default="{ row }">{{ row.failureReason || row.suppressedReason || '-' }}</template>
       </el-table-column>
+      <el-table-column fixed="right" min-width="150" :label="t('common.action')">
+        <template #default="{ row }">
+          <TableActions>
+            <el-button
+              v-if="recipientBroadcastEditable && row.status === RecipientStatus.SUPPRESSED"
+              v-hasPermi="['crm:marketing-outreach:consent']"
+              :disabled="!recipientAddress(row)"
+              link type="success" @click="setRecipientConsent(row, 1)"
+            >{{ t('crm.marketing.grantConsent') }}</el-button>
+            <el-button
+              v-if="recipientBroadcastEditable && recipientAddress(row)"
+              v-hasPermi="['crm:marketing-outreach:consent']"
+              link type="danger" @click="setRecipientConsent(row, 2)"
+            >{{ t('crm.marketing.optOut') }}</el-button>
+          </TableActions>
+        </template>
+      </el-table-column>
     </el-table>
     <Pagination
       v-model:page="recipientQuery.pageNo"
@@ -314,6 +331,7 @@ const formRef = ref<FormInstance>()
 const formVisible = ref(false)
 const recipientVisible = ref(false)
 const recipientTitle = ref('')
+const recipientBroadcastStatus = ref<number>()
 const recipients = ref<MarketingApi.MarketingRecipientVO[]>([])
 const recipientTotal = ref(0)
 const deliverySummary = ref<MarketingApi.MarketingDeliverySummaryVO>()
@@ -367,6 +385,10 @@ const recipientStatuses = computed(() => [
   { value: RecipientStatus.FAILED, label: t('crm.marketing.failedCount') },
   { value: RecipientStatus.RECORDED, label: t('crm.marketing.recorded') }
 ])
+const recipientBroadcastEditable = computed(() =>
+  recipientBroadcastStatus.value === BroadcastStatus.DRAFT ||
+  recipientBroadcastStatus.value === BroadcastStatus.REJECTED
+)
 const validateTemplates = (_rule: unknown, _value: string, callback: (error?: Error) => void) => {
   if (channelNeedsSms(formData.value.channel) && !formData.value.smsTemplateCode?.trim()) {
     callback(new Error(t('crm.marketing.smsTemplateRequired')))
@@ -506,11 +528,28 @@ const deleteDraft = async (row: MarketingApi.MarketingBroadcastVO) => {
 }
 const openRecipients = async (row: MarketingApi.MarketingBroadcastVO) => {
   recipientTitle.value = row.name
+  recipientBroadcastStatus.value = row.status
   recipientQuery.broadcastId = row.id!
   recipientQuery.pageNo = 1
   recipientQuery.status = undefined
   recipientVisible.value = true
   await Promise.all([getRecipients(), getDeliverySummary()])
+}
+const recipientAddress = (row: MarketingApi.MarketingRecipientVO) =>
+  row.channel === 1 ? row.mobile : row.email
+const setRecipientConsent = async (row: MarketingApi.MarketingRecipientVO, status: number) => {
+  await MarketingApi.saveConsent({
+    customerId: row.customerId,
+    contactId: row.contactId,
+    channel: row.channel,
+    status,
+    source: 'broadcast-recipient-result'
+  })
+  const validCount = await MarketingApi.refreshBroadcastRecipients(recipientQuery.broadcastId)
+  await Promise.all([getRecipients(), getDeliverySummary(), getList()])
+  message.success(status === 1
+    ? t('crm.marketing.consentGranted', { count: validCount })
+    : t('crm.marketing.optOutSaved'))
 }
 const getRecipients = async () => {
   recipientLoading.value = true

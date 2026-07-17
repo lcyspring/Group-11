@@ -142,6 +142,42 @@ public class CrmMarketingOutreachService {
     }
 
     @Transactional(rollbackFor = Exception.class)
+    public int refreshDraftRecipients(Long id, Long userId) {
+        CrmMarketingBroadcastDO row = requireBroadcast(id);
+        requireCreatorOrAdmin(row, userId);
+        if (!List.of(CrmMarketingBroadcastStatusEnum.DRAFT.getStatus(),
+                CrmMarketingBroadcastStatusEnum.REJECTED.getStatus()).contains(row.getStatus())) {
+            throw exception(MARKETING_BROADCAST_STATUS_INVALID);
+        }
+        List<CrmMarketingBroadcastRecipientDO> oldRecipients = recipientMapper.selectList(
+                CrmMarketingBroadcastRecipientDO::getBroadcastId, id);
+        CrmMarketingBroadcastSaveReqVO request = BeanUtils.toBean(row, CrmMarketingBroadcastSaveReqVO.class).setId(id);
+        Map<String, CrmMarketingBroadcastRecipientDO> rebuilt = new LinkedHashMap<>();
+        for (CrmMarketingBroadcastRecipientDO oldRecipient : oldRecipients) {
+            CrmCustomerDO customer = customerMapper.selectById(oldRecipient.getCustomerId());
+            if (customer == null) {
+                continue;
+            }
+            checkReadable(customer, userId);
+            CrmContactDO contact = oldRecipient.getContactId() == null
+                    ? null : contactMapper.selectById(oldRecipient.getContactId());
+            if (contact != null && !Objects.equals(contact.getCustomerId(), customer.getId())) {
+                contact = null;
+            }
+            addTarget(rebuilt, request, id, customer, contact);
+        }
+        recipientMapper.delete(CrmMarketingBroadcastRecipientDO::getBroadcastId, id);
+        List<CrmMarketingBroadcastRecipientDO> recipients = new ArrayList<>(rebuilt.values());
+        recipients.forEach(recipientMapper::insert);
+        int validCount = (int) recipients.stream().filter(item ->
+                CrmMarketingRecipientStatusEnum.PENDING.getStatus().equals(item.getStatus())).count();
+        broadcastMapper.updateById(new CrmMarketingBroadcastDO().setId(id)
+                .setTotalCount(recipients.size()).setValidCount(validCount)
+                .setSuppressedCount(recipients.size() - validCount));
+        return validCount;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
     public void deleteBroadcast(Long id, Long userId) {
         CrmMarketingBroadcastDO row = requireBroadcast(id);
         requireCreatorOrAdmin(row, userId);

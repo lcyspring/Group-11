@@ -392,6 +392,31 @@ class CrmMarketingOutreachServiceTest {
         verify(broadcastMapper, never()).transition(anyLong(), any(), anyInt());
     }
 
+    @Test
+    void consentRepairRebuildsDraftRecipientsWithoutRecreatingBroadcast() {
+        CrmMarketingBroadcastDO broadcast = new CrmMarketingBroadcastDO().setId(32L).setChannel(2)
+                .setStatus(CrmMarketingBroadcastStatusEnum.DRAFT.getStatus());
+        broadcast.setCreator("7");
+        CrmMarketingBroadcastRecipientDO old = new CrmMarketingBroadcastRecipientDO()
+                .setBroadcastId(32L).setCustomerId(12L).setContactId(21L).setChannel(2)
+                .setStatus(CrmMarketingRecipientStatusEnum.SUPPRESSED.getStatus());
+        CrmCustomerDO customer = new CrmCustomerDO().setId(12L).setOwnerUserId(7L);
+        CrmContactDO contact = new CrmContactDO().setId(21L).setCustomerId(12L).setEmail("mail@example.com");
+        when(broadcastMapper.selectById(32L)).thenReturn(broadcast);
+        when(recipientMapper.selectList(any(SFunction.class), eq(32L))).thenReturn(List.of(old));
+        when(customerMapper.selectById(12L)).thenReturn(customer);
+        when(contactMapper.selectById(21L)).thenReturn(contact);
+        when(authorizationService.isCrmAdmin(7L)).thenReturn(true);
+        when(consentMapper.selectTarget(12L, 21L, 2)).thenReturn(new CrmMarketingConsentDO()
+                .setStatus(CrmMarketingConsentStatusEnum.OPTED_IN.getStatus()));
+
+        assertEquals(1, service.refreshDraftRecipients(32L, 7L));
+        verify(recipientMapper).delete(any(SFunction.class), eq(32L));
+        verify(recipientMapper, atLeastOnce()).insert((CrmMarketingBroadcastRecipientDO) any(CrmMarketingBroadcastRecipientDO.class));
+        verify(broadcastMapper).updateById((CrmMarketingBroadcastDO) any(CrmMarketingBroadcastDO.class));
+        verify(contactMapper, never()).selectPrimaryContactListByCustomerIds(anyList());
+    }
+
     private static CrmMarketingBroadcastRecipientDO pending(Long id, Long broadcastId) {
         return new CrmMarketingBroadcastRecipientDO().setId(id).setBroadcastId(broadcastId).setChannel(1)
                 .setStatus(CrmMarketingRecipientStatusEnum.PENDING.getStatus()).setAttemptCount(0);

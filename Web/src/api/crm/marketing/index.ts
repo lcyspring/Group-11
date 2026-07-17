@@ -167,6 +167,8 @@ export const deleteCompetitor = (id: number) =>
   request.delete({ url: '/crm/marketing/competitor/delete', params: { id } })
 export const saveConsent = (data: any) =>
   request.post({ url: '/crm/marketing/outreach/consent/save', data })
+export const refreshBroadcastRecipients = (id: number) =>
+  request.put({ url: '/crm/marketing/outreach/broadcast/refresh-recipients', params: { id } })
 export const saveBroadcast = (data: MarketingBroadcastVO) =>
   request.post({ url: '/crm/marketing/outreach/broadcast/save', data })
 export const getBroadcast = (id: number) =>

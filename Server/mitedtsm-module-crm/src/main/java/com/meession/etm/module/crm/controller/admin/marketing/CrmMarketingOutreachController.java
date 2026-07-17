@@ -124,6 +124,13 @@ public class CrmMarketingOutreachController {
         return success(service.syncDeliveryResults(id, getLoginUserId(), canReadAllBroadcasts()));
     }
 
+    @PutMapping("/broadcast/refresh-recipients")
+    @Operation(summary = "重新解析群发草稿收件人")
+    @PreAuthorize("@ss.hasPermission('crm:marketing-outreach:update')")
+    public CommonResult<Integer> refreshRecipients(@RequestParam Long id) {
+        return success(service.refreshDraftRecipients(id, getLoginUserId()));
+    }
+
     @PutMapping("/broadcast/submit-review")
     @Operation(summary = "提交群发审核")
     @PreAuthorize("@ss.hasPermission('crm:marketing-outreach:update')")
