@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.meession.etm.module.crm.dal.mysql.statistics.CrmStatisticsWinAnalysisMapper">
+
+    <select id="selectBusinessWinSummary" resultType="java.util.Map">
+        SELECT
+            COUNT(*) AS total_count,
+            SUM(CASE WHEN end_status = 1 THEN 1 ELSE 0 END) AS win_count,
+            COALESCE(SUM(CASE WHEN end_status = 1 THEN total_price ELSE 0 END), 0) AS win_amount
+        FROM crm_business
+        WHERE deleted = 0
+          AND owner_user_id IN
+        <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+            #{userId}
+        </foreach>
+        AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND
+        #{times[1],javaType=java.time.LocalDateTime}
+    </select>
+
+    <select id="selectWinRateByDate"
+            resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.win.CrmStatisticsWinAnalysisRespVO$WinRateByDateItem">
+        SELECT
+            DATE_FORMAT(create_time, '%Y-%m-%d') AS time,
+            COUNT(*) AS businessCount,
+            SUM(CASE WHEN end_status = 1 THEN 1 ELSE 0 END) AS winCount,
+            ROUND(SUM(CASE WHEN end_status = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS winRate
+        FROM crm_business
+        WHERE deleted = 0
+          AND owner_user_id IN
+        <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+            #{userId}
+        </foreach>
+        AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND
+        #{times[1],javaType=java.time.LocalDateTime}
+        GROUP BY DATE_FORMAT(create_time, '%Y-%m-%d')
+        ORDER BY time
+    </select>
+
+    <select id="selectWinAmountByIndustry"
+            resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.win.CrmStatisticsWinAnalysisRespVO$WinAmountByIndustryItem">
+        SELECT
+            c.industry AS industry,
+            COUNT(*) AS winCount,
+            COALESCE(SUM(b.total_price), 0) AS winAmount
+        FROM crm_business b
+        LEFT JOIN crm_customer c ON b.customer_id = c.id
+        WHERE b.deleted = 0
+          AND b.end_status = 1
+          AND b.owner_user_id IN
+        <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+            #{userId}
+        </foreach>
+        AND b.create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND
+        #{times[1],javaType=java.time.LocalDateTime}
+        GROUP BY c.industry
+        ORDER BY winAmount DESC
+    </select>
+
+    <select id="selectWinAmountByCustomerLevel"
+            resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.win.CrmStatisticsWinAnalysisRespVO$WinAmountByCustomerLevelItem">
+        SELECT
+            c.level AS customerLevel,
+            COUNT(*) AS winCount,
+            COALESCE(SUM(b.total_price), 0) AS winAmount
+        FROM crm_business b
+        LEFT JOIN crm_customer c ON b.customer_id = c.id
+        WHERE b.deleted = 0
+          AND b.end_status = 1
+          AND b.owner_user_id IN
+        <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+            #{userId}
+        </foreach>
+        AND b.create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND
+        #{times[1],javaType=java.time.LocalDateTime}
+        GROUP BY c.level
+        ORDER BY winAmount DESC
+    </select>
+
+</mapper>

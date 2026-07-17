@@ -70,7 +70,7 @@ spring:
           password: 1234
         tdengine: # IoT 数据库（需要 IoT 物联网再开启噢！）
           lazy: true # 开启懒加载，保证启动速度
-          url: jdbc:TAOS-WS://127.0.0.1:6041/mitedtsm_database?varcharAsString=true
+          url: jdbc:TAOS-WS://mitedtsm-rootless-tdengine:6041/mitedtsm_database?varcharAsString=true
           driver-class-name: com.taosdata.jdbc.ws.WebSocketDriver
           username: root
           password: taosdata

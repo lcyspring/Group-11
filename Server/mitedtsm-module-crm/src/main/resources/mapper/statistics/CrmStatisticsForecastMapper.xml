@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.meession.etm.module.crm.dal.mysql.statistics.CrmStatisticsForecastMapper">
+
+    <select id="selectWinBusinessByDate" resultType="java.util.Map">
+        SELECT
+            DATE_FORMAT(create_time, '%Y-%m') AS time,
+            SUM(total_price) AS win_amount,
+            COUNT(*) AS win_count
+        FROM crm_business
+        WHERE deleted = 0
+          AND end_status = 1
+          AND owner_user_id IN
+        <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+            #{userId}
+        </foreach>
+        AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND
+        #{times[1],javaType=java.time.LocalDateTime}
+        GROUP BY time
+        ORDER BY time
+    </select>
+
+    <select id="selectBusinessCountByDate" resultType="java.util.Map">
+        SELECT
+            DATE_FORMAT(create_time, '%Y-%m') AS time,
+            COUNT(*) AS business_count
+        FROM crm_business
+        WHERE deleted = 0
+          AND owner_user_id IN
+        <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+            #{userId}
+        </foreach>
+        AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND
+        #{times[1],javaType=java.time.LocalDateTime}
+        GROUP BY time
+        ORDER BY time
+    </select>
+
+    <select id="selectTotalWinAmount" resultType="java.math.BigDecimal">
+        SELECT
+            COALESCE(SUM(total_price), 0)
+        FROM crm_business
+        WHERE deleted = 0
+          AND end_status = 1
+          AND owner_user_id IN
+        <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+            #{userId}
+        </foreach>
+        AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND
+        #{times[1],javaType=java.time.LocalDateTime}
+    </select>
+
+    <select id="selectWinBusinessCount" resultType="java.lang.Long">
+        SELECT
+            COUNT(*)
+        FROM crm_business
+        WHERE deleted = 0
+          AND end_status = 1
+          AND owner_user_id IN
+        <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+            #{userId}
+        </foreach>
+        AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND
+        #{times[1],javaType=java.time.LocalDateTime}
+    </select>
+
+    <select id="selectTotalBusinessAmount" resultType="java.math.BigDecimal">
+        SELECT
+            COALESCE(SUM(total_price), 0)
+        FROM crm_business
+        WHERE deleted = 0
+          AND owner_user_id IN
+        <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+            #{userId}
+        </foreach>
+        AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND
+        #{times[1],javaType=java.time.LocalDateTime}
+    </select>
+
+    <select id="selectBusinessCount" resultType="java.lang.Long">
+        SELECT
+            COUNT(*)
+        FROM crm_business
+        WHERE deleted = 0
+          AND owner_user_id IN
+        <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+            #{userId}
+        </foreach>
+        AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND
+        #{times[1],javaType=java.time.LocalDateTime}
+    </select>
+
+</mapper>

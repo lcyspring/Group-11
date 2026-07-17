@@ -52,14 +52,21 @@ public class CrmPermissionAspect {
         // 1.2 处理兼容多个 bizId 的情况
         Object object = expressionValues.get(crmPermission.bizId()); // 模块数据编号
         Set<Long> bizIds = new HashSet<>();
-        if (object instanceof Collection<?>) {
-            bizIds.addAll(convertSet((Collection<?>) object, item -> Long.parseLong(item.toString())));
-        } else {
-            bizIds.add(Long.parseLong(object.toString()));
+        if (object != null) {
+            if (object instanceof Collection<?>) {
+                bizIds.addAll(convertSet((Collection<?>) object, item -> Long.parseLong(item.toString())));
+            } else {
+                bizIds.add(Long.parseLong(object.toString()));
+            }
         }
         Integer permissionLevel = crmPermission.level().getLevel(); // 需要的权限级别
 
-        // 2. 逐个校验权限
+        // 2. 如果 bizIds 为空（如分页查询未指定业务ID），跳过权限校验
+        if (bizIds.isEmpty()) {
+            return;
+        }
+
+        // 3. 逐个校验权限
         List<CrmPermissionDO> permissionList = crmPermissionService.getPermissionListByBiz(bizType, bizIds);
         Map<Long, List<CrmPermissionDO>> multiMap = convertMultiMap(permissionList, CrmPermissionDO::getBizId);
         bizIds.forEach(bizId -> validatePermission(bizType, multiMap.get(bizId), permissionLevel));
