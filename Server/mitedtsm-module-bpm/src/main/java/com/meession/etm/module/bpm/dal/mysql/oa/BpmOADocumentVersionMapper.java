@@ -1,0 +1,1 @@
+package com.meession.etm.module.bpm.dal.mysql.oa; import com.meession.etm.framework.mybatis.core.mapper.BaseMapperX; import com.meession.etm.module.bpm.dal.dataobject.oa.BpmOADocumentVersionDO; import org.apache.ibatis.annotations.Mapper; @Mapper public interface BpmOADocumentVersionMapper extends BaseMapperX<BpmOADocumentVersionDO> { }
