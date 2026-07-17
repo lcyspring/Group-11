@@ -110,6 +110,20 @@ public class CrmMarketingOutreachController {
         return success(new PageResult<>(BeanUtils.toBean(page.getList(), CrmMarketingRecipientRespVO.class), page.getTotal()));
     }
 
+    @GetMapping("/broadcast/delivery-summary")
+    @Operation(summary = "获得群发送达与打开分析")
+    @PreAuthorize("@ss.hasPermission('crm:marketing-outreach:query')")
+    public CommonResult<CrmMarketingDeliverySummaryRespVO> getDeliverySummary(@RequestParam Long id) {
+        return success(service.getDeliverySummary(id, getLoginUserId(), canReadAllBroadcasts()));
+    }
+
+    @PutMapping("/broadcast/sync-results")
+    @Operation(summary = "刷新群发提供商结果")
+    @PreAuthorize("@ss.hasPermission('crm:marketing-outreach:query')")
+    public CommonResult<Integer> syncDeliveryResults(@RequestParam Long id) {
+        return success(service.syncDeliveryResults(id, getLoginUserId(), canReadAllBroadcasts()));
+    }
+
     @PutMapping("/broadcast/submit-review")
     @Operation(summary = "提交群发审核")
     @PreAuthorize("@ss.hasPermission('crm:marketing-outreach:update')")

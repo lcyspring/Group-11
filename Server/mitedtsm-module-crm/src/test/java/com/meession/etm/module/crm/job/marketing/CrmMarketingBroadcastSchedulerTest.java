@@ -43,12 +43,14 @@ class CrmMarketingBroadcastSchedulerTest {
         doNothing().when(service).send(1L);
         doThrow(new IllegalStateException("provider unavailable")).when(service).send(2L);
         doNothing().when(service).send(3L);
+        when(service.syncPendingDeliveryResults()).thenReturn(4);
 
         String result = new CrmMarketingBroadcastJob(service).execute(null);
 
-        assertEquals("CRM scheduled broadcasts sent=2, failed=1", result);
+        assertEquals("CRM scheduled broadcasts sent=2, failed=1, delivery-results=4", result);
         verify(service).send(1L);
         verify(service).send(2L);
         verify(service).send(3L);
+        verify(service).syncPendingDeliveryResults();
     }
 }

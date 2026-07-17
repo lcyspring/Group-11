@@ -211,7 +211,28 @@
           <el-option v-for="item in recipientStatuses" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
       </el-form-item>
+      <el-form-item>
+        <el-button :loading="deliverySyncing" type="primary" @click="syncDeliveryResults">
+          <Icon class="mr-5px" icon="ep:refresh" />{{ t('crm.marketing.refreshDeliveryResults') }}
+        </el-button>
+      </el-form-item>
     </el-form>
+    <el-descriptions v-if="deliverySummary" :column="4" border class="mb-16px">
+      <el-descriptions-item :label="t('crm.marketing.smsDelivered')">
+        {{ deliverySummary.smsDeliveredCount }} / {{ deliverySummary.smsSentCount }}
+        ({{ formatMetricRate(deliverySummary.smsDeliveryRate) }})
+      </el-descriptions-item>
+      <el-descriptions-item :label="t('crm.marketing.emailAccepted')">
+        {{ deliverySummary.emailAcceptedCount }} / {{ deliverySummary.emailSentCount }}
+      </el-descriptions-item>
+      <el-descriptions-item :label="t('crm.marketing.emailOpened')">
+        {{ deliverySummary.emailOpenedCount }}
+        ({{ formatMetricRate(deliverySummary.emailOpenRate) }})
+      </el-descriptions-item>
+      <el-descriptions-item :label="t('crm.marketing.providerPending')">
+        {{ deliverySummary.providerPendingCount }} / {{ deliverySummary.unknownCount }}
+      </el-descriptions-item>
+    </el-descriptions>
     <el-table v-loading="recipientLoading" :data="recipients" max-height="520" stripe>
       <el-table-column min-width="160" :label="t('crm.marketing.customers')">
         <template #default="{ row }">{{ customerName(row.customerId) }}</template>
@@ -228,6 +249,21 @@
       <el-table-column min-width="120" :label="t('crm.marketing.recipientStatus')">
         <template #default="{ row }"><el-tag>{{ recipientStatusLabel(row.status) }}</el-tag></template>
       </el-table-column>
+      <el-table-column min-width="130" :label="t('crm.marketing.deliveryStatus')">
+        <template #default="{ row }"><el-tag>{{ deliveryStatusLabel(row.deliveryStatus, row.channel) }}</el-tag></template>
+      </el-table-column>
+      <el-table-column
+        min-width="170"
+        prop="deliveredAt"
+        :formatter="dateFormatter"
+        :label="t('crm.marketing.deliveredAt')"
+      />
+      <el-table-column
+        min-width="170"
+        prop="openedAt"
+        :formatter="dateFormatter"
+        :label="t('crm.marketing.openedAt')"
+      />
       <el-table-column min-width="220" show-overflow-tooltip :label="t('crm.marketing.resultReason')">
         <template #default="{ row }">{{ row.failureReason || row.suppressedReason || '-' }}</template>
       </el-table-column>
@@ -249,12 +285,14 @@ import { useUserStore } from '@/store/modules/user'
 import { dateFormatter } from '@/utils/formatTime'
 import {
   BroadcastStatus,
+  DeliveryStatus,
   RecipientStatus,
   broadcastActionVisibility,
   channelNeedsEmail,
   channelNeedsSms,
   hasTargets,
-  isValidTemplateParams
+  isValidTemplateParams,
+  formatMetricRate
 } from './outreachManagement.mjs'
 
 defineOptions({ name: 'CrmMarketingOutreach' })
@@ -265,6 +303,7 @@ const currentUserId = useUserStore().getUser.id
 const loading = ref(false)
 const formLoading = ref(false)
 const recipientLoading = ref(false)
+const deliverySyncing = ref(false)
 const list = ref<MarketingApi.MarketingBroadcastVO[]>([])
 const total = ref(0)
 const customers = ref<MarketingApi.MarketingTargetOptionsVO['customers']>([])
@@ -277,6 +316,7 @@ const recipientVisible = ref(false)
 const recipientTitle = ref('')
 const recipients = ref<MarketingApi.MarketingRecipientVO[]>([])
 const recipientTotal = ref(0)
+const deliverySummary = ref<MarketingApi.MarketingDeliverySummaryVO>()
 
 const queryParams = reactive({
   pageNo: 1,
@@ -356,6 +396,14 @@ const actionsFor = (status?: number) => broadcastActionVisibility(status)
 const channelLabel = (channel?: number) => channels.value.find((item) => item.value === channel)?.label ?? '-'
 const statusLabel = (status?: number) => statuses.value.find((item) => item.value === status)?.label ?? '-'
 const recipientStatusLabel = (status?: number) => recipientStatuses.value.find((item) => item.value === status)?.label ?? '-'
+const deliveryStatusLabel = (status?: number, channel?: number) => {
+  if (status === DeliveryStatus.PROVIDER_PENDING) return t('crm.marketing.providerPending')
+  if (status === DeliveryStatus.DELIVERED) return t('crm.marketing.smsDelivered')
+  if (status === DeliveryStatus.FAILED) return t('crm.marketing.providerFailed')
+  if (status === DeliveryStatus.ACCEPTED) return channel === 2
+    ? t('crm.marketing.emailAccepted') : t('crm.marketing.smsDelivered')
+  return t('crm.marketing.deliveryUnknown')
+}
 const statusType = (status?: number) => {
   if (status === BroadcastStatus.SENT || status === BroadcastStatus.READY) return 'success'
   if (status === BroadcastStatus.REJECTED || status === BroadcastStatus.PARTIAL_FAILED) return 'danger'
@@ -457,7 +505,7 @@ const openRecipients = async (row: MarketingApi.MarketingBroadcastVO) => {
   recipientQuery.pageNo = 1
   recipientQuery.status = undefined
   recipientVisible.value = true
-  await getRecipients()
+  await Promise.all([getRecipients(), getDeliverySummary()])
 }
 const getRecipients = async () => {
   recipientLoading.value = true
@@ -472,6 +520,19 @@ const getRecipients = async () => {
 const handleRecipientQuery = () => {
   recipientQuery.pageNo = 1
   void getRecipients()
+}
+const getDeliverySummary = async () => {
+  deliverySummary.value = await MarketingApi.getBroadcastDeliverySummary(recipientQuery.broadcastId)
+}
+const syncDeliveryResults = async () => {
+  deliverySyncing.value = true
+  try {
+    const changed = await MarketingApi.syncBroadcastDeliveryResults(recipientQuery.broadcastId)
+    await Promise.all([getRecipients(), getDeliverySummary(), getList()])
+    message.success(t('crm.marketing.deliveryRefreshSuccess', { count: changed }))
+  } finally {
+    deliverySyncing.value = false
+  }
 }
 
 const initialize = async () => {

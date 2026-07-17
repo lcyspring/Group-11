@@ -78,6 +78,9 @@ BUILD_COMMON_TEST_PATTERN="${BUILD_COMMON_TEST_PATTERN:-}"
 BUILD_FRAMEWORK_TESTS="$(bool_value "${BUILD_FRAMEWORK_TESTS:-false}")"
 BUILD_FRAMEWORK_COVERAGE="$(bool_value "${BUILD_FRAMEWORK_COVERAGE:-false}")"
 BUILD_FRAMEWORK_TEST_PATTERN="${BUILD_FRAMEWORK_TEST_PATTERN:-}"
+BUILD_SYSTEM_TESTS="$(bool_value "${BUILD_SYSTEM_TESTS:-false}")"
+BUILD_SYSTEM_COVERAGE="$(bool_value "${BUILD_SYSTEM_COVERAGE:-false}")"
+BUILD_SYSTEM_TEST_PATTERN="${BUILD_SYSTEM_TEST_PATTERN:-}"
 PNPM_FROZEN_LOCKFILE="$(bool_value "${PNPM_FROZEN_LOCKFILE:-true}")"
 BUILD_CI="$(bool_value "${BUILD_CI:-true}")"
 PNPM_STORE_PATH="${PNPM_STORE_PATH:-/pnpm-store}"
@@ -112,6 +115,14 @@ if [[ "$BUILD_FRAMEWORK_COVERAGE" == "true" && "$BUILD_FRAMEWORK_TESTS" != "true
 fi
 if [[ "$BUILD_FRAMEWORK_TESTS" == "true" && ! "$BUILD_FRAMEWORK_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?,]+$ ]]; then
     printf 'BUILD_FRAMEWORK_TEST_PATTERN is required for framework tests and contains unsupported characters.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_SYSTEM_COVERAGE" == "true" && "$BUILD_SYSTEM_TESTS" != "true" ]]; then
+    printf 'System coverage requires system tests to be enabled.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_SYSTEM_TESTS" == "true" && ! "$BUILD_SYSTEM_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?,]+$ ]]; then
+    printf 'BUILD_SYSTEM_TEST_PATTERN is required for system tests and contains unsupported characters.\n' >&2
     exit 2
 fi
 
@@ -183,6 +194,32 @@ if [[ "$BUILD_FRAMEWORK_TESTS" == "true" ]]; then
     if [[ "$BUILD_FRAMEWORK_COVERAGE" == "true" ]]; then
         require_file /workspace/Server/mitedtsm-framework/mitedtsm-spring-boot-starter-security/target/site/jacoco/jacoco.csv
         require_file /workspace/Server/mitedtsm-framework/mitedtsm-spring-boot-starter-web/target/site/jacoco/jacoco.csv
+    fi
+fi
+
+if [[ "$BUILD_SYSTEM_TESTS" == "true" ]]; then
+    printf 'Running System module tests%s inside Ubuntu 26.04.\n' \
+        "$([[ "$BUILD_SYSTEM_COVERAGE" == "true" ]] && printf ' with JaCoCo' || true)"
+    rm -f /workspace/Server/mitedtsm-module-system/target/jacoco.exec
+    rm -rf /workspace/Server/mitedtsm-module-system/target/site/jacoco
+    system_test_args=(
+        -pl mitedtsm-module-system
+        -am
+        "-Dtest=${BUILD_SYSTEM_TEST_PATTERN}"
+        -Dsurefire.failIfNoSpecifiedTests=false
+    )
+    if [[ "$BUILD_SYSTEM_COVERAGE" == "true" ]]; then
+        system_test_args+=(
+            org.jacoco:jacoco-maven-plugin:0.8.13:prepare-agent
+            test
+            org.jacoco:jacoco-maven-plugin:0.8.13:report
+        )
+    else
+        system_test_args+=(test)
+    fi
+    maven_goal /workspace/Server/pom.xml "${system_test_args[@]}"
+    if [[ "$BUILD_SYSTEM_COVERAGE" == "true" ]]; then
+        require_file /workspace/Server/mitedtsm-module-system/target/site/jacoco/jacoco.csv
     fi
 fi
 

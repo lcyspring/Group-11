@@ -129,6 +129,10 @@ INTEGRATION_EXPRESS_KD100_CUSTOMER="$(yaml_require integration.express_kd100_cus
 FILE_STORAGE_MODE="$(yaml_require file.storage_mode)"
 FILE_CLIENT_ID="$(yaml_positive_integer file.client_id)"
 FILE_PUBLIC_BASE_URL="$(yaml_require file.public_base_url)"
+CRM_MARKETING_PROVIDER_MODE="$(yaml_require crm_marketing.provider_mode)"
+CRM_MARKETING_TRACKING_ENABLED="$(yaml_bool crm_marketing.tracking_enabled)"
+CRM_MARKETING_PUBLIC_BASE_URL="$(yaml_require crm_marketing.public_base_url)"
+CRM_MARKETING_DELIVERY_SYNC_BATCH_SIZE="$(yaml_positive_integer crm_marketing.delivery_sync_batch_size)"
 
 HEALTH_INTERVAL="$(yaml_positive_integer health.interval_seconds)"
 HEALTH_HTTP_HOST="$(yaml_require health.http_host)"
@@ -357,6 +361,10 @@ start_server() {
         --env "MITEDTSM_EXPRESS_KDNIAO_REQUEST_TYPE=${INTEGRATION_EXPRESS_KDNIAO_REQUEST_TYPE}" \
         --env "MITEDTSM_EXPRESS_KD100_KEY=${INTEGRATION_EXPRESS_KD100_KEY}" \
         --env "MITEDTSM_EXPRESS_KD100_CUSTOMER=${INTEGRATION_EXPRESS_KD100_CUSTOMER}" \
+        --env "MITEDTSM_CRM_MARKETING_PROVIDER_MODE=${CRM_MARKETING_PROVIDER_MODE}" \
+        --env "MITEDTSM_CRM_MARKETING_TRACKING_ENABLED=${CRM_MARKETING_TRACKING_ENABLED}" \
+        --env "MITEDTSM_CRM_MARKETING_PUBLIC_BASE_URL=${CRM_MARKETING_PUBLIC_BASE_URL}" \
+        --env "MITEDTSM_CRM_MARKETING_DELIVERY_SYNC_BATCH_SIZE=${CRM_MARKETING_DELIVERY_SYNC_BATCH_SIZE}" \
         "$SERVER_IMAGE"
 }
 

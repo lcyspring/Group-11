@@ -17,9 +17,22 @@ test('broadcast maintenance exposes detail, draft deletion and recipient results
   assert.match(api, /broadcast\/get/)
   assert.match(api, /broadcast\/delete/)
   assert.match(api, /broadcast\/recipients/)
+  assert.match(api, /broadcast\/delivery-summary/)
+  assert.match(api, /broadcast\/sync-results/)
   assert.match(controller, /@GetMapping\("\/broadcast\/get"\)/)
   assert.match(controller, /@DeleteMapping\("\/broadcast\/delete"\)/)
   assert.match(page, /openRecipients/)
+  assert.match(page, /syncDeliveryResults/)
+  assert.match(page, /smsDeliveryRate/)
+  assert.match(page, /emailOpenRate/)
+})
+
+test('delivery analytics distinguishes SMS delivery from email acceptance and opening', () => {
+  assert.match(controller, /@GetMapping\("\/broadcast\/delivery-summary"\)/)
+  assert.match(controller, /@PutMapping\("\/broadcast\/sync-results"\)/)
+  assert.match(service, /SmsReceiveStatusEnum\.SUCCESS/)
+  assert.match(service, /MailSendStatusEnum\.SUCCESS/)
+  assert.match(service, /recordMailOpen/)
 })
 
 test('page uses actual customer and contact selectors instead of comma separated IDs', () => {

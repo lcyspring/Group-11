@@ -14,6 +14,7 @@ import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
 import com.meession.etm.module.crm.enums.marketing.CrmMarketingBroadcastStatusEnum;
 import com.meession.etm.module.crm.enums.marketing.CrmMarketingConsentStatusEnum;
 import com.meession.etm.module.crm.enums.marketing.CrmMarketingRecipientStatusEnum;
+import com.meession.etm.module.crm.enums.marketing.CrmMarketingDeliveryStatusEnum;
 import com.meession.etm.module.crm.framework.marketing.CrmMarketingProperties;
 import com.meession.etm.module.crm.framework.permission.CrmAuthorizationService;
 import com.meession.etm.module.crm.framework.permission.CrmOwnerReadScope;
@@ -21,6 +22,12 @@ import com.meession.etm.module.crm.controller.admin.marketing.vo.CrmMarketingRev
 import com.meession.etm.module.crm.controller.admin.marketing.vo.CrmMarketingBroadcastPageReqVO;
 import com.meession.etm.framework.common.exception.ServiceException;
 import com.meession.etm.module.system.api.sms.SmsSendApi;
+import com.meession.etm.module.system.api.sms.dto.SmsSendStatusRespDTO;
+import com.meession.etm.module.system.api.mail.MailSendApi;
+import com.meession.etm.module.system.api.mail.dto.MailSendStatusRespDTO;
+import com.meession.etm.module.system.enums.sms.SmsSendStatusEnum;
+import com.meession.etm.module.system.enums.sms.SmsReceiveStatusEnum;
+import com.meession.etm.module.system.enums.mail.MailSendStatusEnum;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,6 +36,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
+import java.time.LocalDateTime;
+import org.mockito.ArgumentCaptor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -43,6 +52,7 @@ class CrmMarketingOutreachServiceTest {
     @Mock CrmMarketingBroadcastRecipientMapper recipientMapper;
     @Mock CrmMarketingConsentMapper consentMapper;
     @Mock SmsSendApi smsSendApi;
+    @Mock MailSendApi mailSendApi;
     @Mock CrmAuthorizationService authorizationService;
     @Mock CrmCustomerMapper customerMapper;
     @Mock CrmContactMapper contactMapper;
@@ -57,10 +67,13 @@ class CrmMarketingOutreachServiceTest {
         properties.setBatchSize(2);
         properties.setMaxBatchSize(500);
         properties.setMonthlyRecipientLimit(10000);
+        properties.setPublicBaseUrl("https://crm.example.com");
+        properties.setDeliverySyncBatchSize(200);
         ReflectionTestUtils.setField(service, "broadcastMapper", broadcastMapper);
         ReflectionTestUtils.setField(service, "recipientMapper", recipientMapper);
         ReflectionTestUtils.setField(service, "consentMapper", consentMapper);
         ReflectionTestUtils.setField(service, "smsSendApi", smsSendApi);
+        ReflectionTestUtils.setField(service, "mailSendApi", mailSendApi);
         ReflectionTestUtils.setField(service, "authorizationService", authorizationService);
         ReflectionTestUtils.setField(service, "customerMapper", customerMapper);
         ReflectionTestUtils.setField(service, "contactMapper", contactMapper);
@@ -247,8 +260,113 @@ class CrmMarketingOutreachServiceTest {
         verify(broadcastMapper).selectPage(request, true, "8");
     }
 
+    @Test
+    void smsDeliveryReceiptBecomesDeliveredWithProviderTime() {
+        CrmMarketingBroadcastDO broadcast = readableBroadcast(51L, 7L);
+        LocalDateTime receivedAt = LocalDateTime.of(2026, 7, 17, 9, 30);
+        CrmMarketingBroadcastRecipientDO recipient = providerPending(1L, 51L, 1, 101L);
+        when(broadcastMapper.selectById(51L)).thenReturn(broadcast);
+        when(recipientMapper.selectList(any(SFunction.class), eq(51L))).thenReturn(List.of(recipient));
+        when(smsSendApi.getSmsSendStatus(101L)).thenReturn(new SmsSendStatusRespDTO()
+                .setSendStatus(SmsSendStatusEnum.SUCCESS.getStatus())
+                .setReceiveStatus(SmsReceiveStatusEnum.SUCCESS.getStatus()).setReceiveTime(receivedAt));
+
+        assertEquals(1, service.syncDeliveryResults(51L, 7L, false));
+
+        ArgumentCaptor<CrmMarketingBroadcastRecipientDO> update =
+                ArgumentCaptor.forClass(CrmMarketingBroadcastRecipientDO.class);
+        verify(recipientMapper).updateById(update.capture());
+        assertEquals(CrmMarketingDeliveryStatusEnum.DELIVERED.getStatus(), update.getValue().getDeliveryStatus());
+        assertEquals(receivedAt, update.getValue().getDeliveredAt());
+    }
+
+    @Test
+    void smsFailedReceiptPreservesProviderReason() {
+        CrmMarketingBroadcastDO broadcast = readableBroadcast(52L, 7L);
+        CrmMarketingBroadcastRecipientDO recipient = providerPending(2L, 52L, 1, 102L);
+        when(broadcastMapper.selectById(52L)).thenReturn(broadcast);
+        when(recipientMapper.selectList(any(SFunction.class), eq(52L))).thenReturn(List.of(recipient));
+        when(smsSendApi.getSmsSendStatus(102L)).thenReturn(new SmsSendStatusRespDTO()
+                .setSendStatus(SmsSendStatusEnum.SUCCESS.getStatus())
+                .setReceiveStatus(SmsReceiveStatusEnum.FAILURE.getStatus()).setReceiveMessage("carrier rejected"));
+
+        service.syncDeliveryResults(52L, 7L, false);
+
+        ArgumentCaptor<CrmMarketingBroadcastRecipientDO> update =
+                ArgumentCaptor.forClass(CrmMarketingBroadcastRecipientDO.class);
+        verify(recipientMapper).updateById(update.capture());
+        assertEquals(CrmMarketingDeliveryStatusEnum.FAILED.getStatus(), update.getValue().getDeliveryStatus());
+        assertEquals("carrier rejected", update.getValue().getFailureReason());
+    }
+
+    @Test
+    void successfulMailMeansAcceptedNotDelivered() {
+        CrmMarketingBroadcastDO broadcast = readableBroadcast(53L, 7L);
+        LocalDateTime acceptedAt = LocalDateTime.of(2026, 7, 17, 9, 31);
+        CrmMarketingBroadcastRecipientDO recipient = providerPending(3L, 53L, 2, 103L);
+        when(broadcastMapper.selectById(53L)).thenReturn(broadcast);
+        when(recipientMapper.selectList(any(SFunction.class), eq(53L))).thenReturn(List.of(recipient));
+        when(mailSendApi.getMailSendStatus(103L)).thenReturn(new MailSendStatusRespDTO()
+                .setSendStatus(MailSendStatusEnum.SUCCESS.getStatus()).setSendTime(acceptedAt));
+
+        service.syncDeliveryResults(53L, 7L, false);
+
+        ArgumentCaptor<CrmMarketingBroadcastRecipientDO> update =
+                ArgumentCaptor.forClass(CrmMarketingBroadcastRecipientDO.class);
+        verify(recipientMapper).updateById(update.capture());
+        assertEquals(CrmMarketingDeliveryStatusEnum.ACCEPTED.getStatus(), update.getValue().getDeliveryStatus());
+        assertEquals(acceptedAt, update.getValue().getDeliveredAt());
+    }
+
+    @Test
+    void trackingTokenIsChannelBoundIdempotentAndOpaqueForInvalidValues() {
+        CrmMarketingBroadcastRecipientDO email = new CrmMarketingBroadcastRecipientDO().setChannel(2);
+        when(recipientMapper.selectByTrackingToken("0123456789abcdef0123456789abcdef")).thenReturn(email);
+
+        service.recordMailOpen("0123456789abcdef0123456789abcdef");
+        service.recordMailOpen("bad-token");
+
+        verify(recipientMapper).markOpened(eq("0123456789abcdef0123456789abcdef"), any(LocalDateTime.class));
+        verify(recipientMapper, never()).selectByTrackingToken("bad-token");
+    }
+
+    @Test
+    void deliverySummarySeparatesSmsDeliveryAndEmailOpeningRates() {
+        CrmMarketingBroadcastDO broadcast = readableBroadcast(54L, 7L);
+        CrmMarketingBroadcastRecipientDO smsDelivered = providerPending(4L, 54L, 1, 104L)
+                .setDeliveryStatus(CrmMarketingDeliveryStatusEnum.DELIVERED.getStatus());
+        CrmMarketingBroadcastRecipientDO smsPending = providerPending(5L, 54L, 1, 105L);
+        CrmMarketingBroadcastRecipientDO mailOpened = providerPending(6L, 54L, 2, 106L)
+                .setDeliveryStatus(CrmMarketingDeliveryStatusEnum.ACCEPTED.getStatus())
+                .setOpenedAt(LocalDateTime.now());
+        when(broadcastMapper.selectById(54L)).thenReturn(broadcast);
+        when(recipientMapper.selectList(any(SFunction.class), eq(54L)))
+                .thenReturn(List.of(smsDelivered, smsPending, mailOpened));
+
+        var summary = service.getDeliverySummary(54L, 7L, false);
+
+        assertEquals(2, summary.getSmsSentCount());
+        assertEquals("50.00", summary.getSmsDeliveryRate().toPlainString());
+        assertEquals(1, summary.getEmailAcceptedCount());
+        assertEquals(1, summary.getEmailOpenedCount());
+        assertEquals("100.00", summary.getEmailOpenRate().toPlainString());
+    }
+
     private static CrmMarketingBroadcastRecipientDO pending(Long id, Long broadcastId) {
         return new CrmMarketingBroadcastRecipientDO().setId(id).setBroadcastId(broadcastId).setChannel(1)
                 .setStatus(CrmMarketingRecipientStatusEnum.PENDING.getStatus()).setAttemptCount(0);
+    }
+
+    private static CrmMarketingBroadcastRecipientDO providerPending(Long id, Long broadcastId,
+                                                                     int channel, Long logId) {
+        return new CrmMarketingBroadcastRecipientDO().setId(id).setBroadcastId(broadcastId).setChannel(channel)
+                .setProviderLogId(logId)
+                .setDeliveryStatus(CrmMarketingDeliveryStatusEnum.PROVIDER_PENDING.getStatus());
+    }
+
+    private static CrmMarketingBroadcastDO readableBroadcast(Long id, Long creatorUserId) {
+        CrmMarketingBroadcastDO broadcast = new CrmMarketingBroadcastDO().setId(id);
+        broadcast.setCreator(String.valueOf(creatorUserId));
+        return broadcast;
     }
 }

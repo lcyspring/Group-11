@@ -3,6 +3,7 @@ package com.meession.etm.module.crm.framework.marketing;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
@@ -37,6 +38,12 @@ public class CrmMarketingProperties {
     private String broadcastLockKey = "crm:marketing:broadcast";
     @Min(60)
     private int lockLeaseSeconds = 300;
+    private boolean trackingEnabled = true;
+    @NotBlank
+    @Pattern(regexp = "^https?://[^\\s]+$", message = "CRM marketing public-base-url must be an HTTP(S) URL")
+    private String publicBaseUrl;
+    @Min(1)
+    private int deliverySyncBatchSize = 200;
 
     @AssertTrue(message = "CRM marketing batch size must not exceed max-batch-size")
     public boolean isBatchWithinLimit() {

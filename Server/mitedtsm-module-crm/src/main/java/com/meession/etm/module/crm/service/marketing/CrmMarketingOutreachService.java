@@ -16,8 +16,13 @@ import com.meession.etm.module.crm.framework.marketing.CrmMarketingProperties;
 import com.meession.etm.module.crm.framework.permission.CrmAuthorizationService;
 import com.meession.etm.module.system.api.mail.MailSendApi;
 import com.meession.etm.module.system.api.mail.dto.MailSendSingleToUserReqDTO;
+import com.meession.etm.module.system.api.mail.dto.MailSendStatusRespDTO;
 import com.meession.etm.module.system.api.sms.SmsSendApi;
+import com.meession.etm.module.system.api.sms.dto.SmsSendStatusRespDTO;
 import com.meession.etm.module.system.api.sms.dto.send.SmsSendSingleToUserReqDTO;
+import com.meession.etm.module.system.enums.mail.MailSendStatusEnum;
+import com.meession.etm.module.system.enums.sms.SmsReceiveStatusEnum;
+import com.meession.etm.module.system.enums.sms.SmsSendStatusEnum;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +30,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 
 import static com.meession.etm.framework.common.exception.util.ServiceExceptionUtil.exception;
@@ -155,6 +162,35 @@ public class CrmMarketingOutreachService {
         return recipientMapper.selectPage(request);
     }
 
+    public CrmMarketingDeliverySummaryRespVO getDeliverySummary(Long id, Long userId, boolean privilegedReader) {
+        requireReadable(requireBroadcast(id), userId, privilegedReader);
+        return buildDeliverySummary(id, recipientMapper.selectList(
+                CrmMarketingBroadcastRecipientDO::getBroadcastId, id));
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public int syncDeliveryResults(Long id, Long userId, boolean privilegedReader) {
+        requireReadable(requireBroadcast(id), userId, privilegedReader);
+        return syncDeliveryResults(recipientMapper.selectList(
+                CrmMarketingBroadcastRecipientDO::getBroadcastId, id));
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public int syncPendingDeliveryResults() {
+        return syncDeliveryResults(recipientMapper.selectPendingDeliveryResults(properties.getDeliverySyncBatchSize()));
+    }
+
+    public void recordMailOpen(String token) {
+        if (!properties.isTrackingEnabled() || token == null || !token.matches("[0-9a-f]{32}")) {
+            return;
+        }
+        CrmMarketingBroadcastRecipientDO recipient = recipientMapper.selectByTrackingToken(token);
+        if (recipient == null || !Integer.valueOf(2).equals(recipient.getChannel())) {
+            return;
+        }
+        recipientMapper.markOpened(token, LocalDateTime.now());
+    }
+
     public void submitReview(Long id, Long userId) {
         CrmMarketingBroadcastDO row = requireBroadcast(id);
         requireCreatorOrAdmin(row, userId);
@@ -273,21 +309,29 @@ public class CrmMarketingOutreachService {
                 claimed++;
                 try {
                     if ("record-only".equals(properties.getProviderMode())) {
-                        recipient.setStatus(CrmMarketingRecipientStatusEnum.RECORDED.getStatus()).setSentAt(LocalDateTime.now());
+                        recipient.setStatus(CrmMarketingRecipientStatusEnum.RECORDED.getStatus()).setSentAt(LocalDateTime.now())
+                                .setDeliveryStatus(CrmMarketingDeliveryStatusEnum.UNKNOWN.getStatus());
                     } else {
-                        Map<String, Object> params = parseParams(broadcast.getTemplateParams());
+                        Map<String, Object> params = new HashMap<>(parseParams(broadcast.getTemplateParams()));
                         Long logId;
                         if (recipient.getChannel() == 1) {
                             SmsSendSingleToUserReqDTO req = new SmsSendSingleToUserReqDTO();
                             req.setMobile(recipient.getMobile()); req.setTemplateCode(broadcast.getSmsTemplateCode()); req.setTemplateParams(params);
                             logId = smsSendApi.sendSingleSmsToAdmin(req);
                         } else {
+                            if (properties.isTrackingEnabled()) {
+                                String trackingToken = UUID.randomUUID().toString().replace("-", "");
+                                recipient.setTrackingToken(trackingToken);
+                                params.put("__trackingPixelUrl", buildTrackingUrl(trackingToken));
+                            }
                             MailSendSingleToUserReqDTO req = new MailSendSingleToUserReqDTO();
                             req.setToMails(List.of(recipient.getEmail())); req.setTemplateCode(broadcast.getMailTemplateCode()); req.setTemplateParams(params);
                             logId = mailSendApi.sendSingleMailToAdmin(req);
                         }
                         if (logId == null) throw new IllegalStateException("消息提供商未返回发送日志编号");
-                        recipient.setProviderLogId(logId).setStatus(CrmMarketingRecipientStatusEnum.SENT.getStatus()).setSentAt(LocalDateTime.now());
+                        recipient.setProviderLogId(logId).setStatus(CrmMarketingRecipientStatusEnum.SENT.getStatus())
+                                .setSentAt(LocalDateTime.now())
+                                .setDeliveryStatus(CrmMarketingDeliveryStatusEnum.PROVIDER_PENDING.getStatus());
                     }
                 } catch (RuntimeException ex) {
                     recipient.setStatus(CrmMarketingRecipientStatusEnum.FAILED.getStatus()).setFailureReason(ex.getMessage());
@@ -307,6 +351,93 @@ public class CrmMarketingOutreachService {
                 .setStatus(failed > 0 ? CrmMarketingBroadcastStatusEnum.PARTIAL_FAILED.getStatus() : CrmMarketingBroadcastStatusEnum.SENT.getStatus())
                 .setSentAt(LocalDateTime.now());
         broadcastMapper.updateById(broadcast);
+    }
+
+    private int syncDeliveryResults(List<CrmMarketingBroadcastRecipientDO> recipients) {
+        int changed = 0;
+        for (CrmMarketingBroadcastRecipientDO recipient : recipients) {
+            if (recipient.getProviderLogId() == null
+                    || !Objects.equals(CrmMarketingDeliveryStatusEnum.PROVIDER_PENDING.getStatus(),
+                            recipient.getDeliveryStatus())) {
+                continue;
+            }
+            CrmMarketingBroadcastRecipientDO update = resolveProviderResult(recipient);
+            if (update != null) {
+                recipientMapper.updateById(update);
+                changed++;
+            }
+        }
+        return changed;
+    }
+
+    private CrmMarketingBroadcastRecipientDO resolveProviderResult(CrmMarketingBroadcastRecipientDO recipient) {
+        CrmMarketingBroadcastRecipientDO update = new CrmMarketingBroadcastRecipientDO().setId(recipient.getId());
+        if (Integer.valueOf(1).equals(recipient.getChannel())) {
+            SmsSendStatusRespDTO status = smsSendApi.getSmsSendStatus(recipient.getProviderLogId());
+            if (status == null || Objects.equals(SmsSendStatusEnum.INIT.getStatus(), status.getSendStatus())) return null;
+            if (Objects.equals(SmsSendStatusEnum.FAILURE.getStatus(), status.getSendStatus())
+                    || Objects.equals(SmsSendStatusEnum.IGNORE.getStatus(), status.getSendStatus())) {
+                return update.setDeliveryStatus(CrmMarketingDeliveryStatusEnum.FAILED.getStatus())
+                        .setFailureReason(Optional.ofNullable(status.getSendMessage()).orElse("短信提供商发送失败"));
+            }
+            if (Objects.equals(SmsReceiveStatusEnum.SUCCESS.getStatus(), status.getReceiveStatus())) {
+                return update.setDeliveryStatus(CrmMarketingDeliveryStatusEnum.DELIVERED.getStatus())
+                        .setDeliveredAt(status.getReceiveTime());
+            }
+            if (Objects.equals(SmsReceiveStatusEnum.FAILURE.getStatus(), status.getReceiveStatus())) {
+                return update.setDeliveryStatus(CrmMarketingDeliveryStatusEnum.FAILED.getStatus())
+                        .setFailureReason(Optional.ofNullable(status.getReceiveMessage()).orElse("短信送达失败"));
+            }
+            return null;
+        }
+        MailSendStatusRespDTO status = mailSendApi.getMailSendStatus(recipient.getProviderLogId());
+        if (status == null || Objects.equals(MailSendStatusEnum.INIT.getStatus(), status.getSendStatus())) return null;
+        if (Objects.equals(MailSendStatusEnum.SUCCESS.getStatus(), status.getSendStatus())) {
+            return update.setDeliveryStatus(CrmMarketingDeliveryStatusEnum.ACCEPTED.getStatus())
+                    .setDeliveredAt(status.getSendTime());
+        }
+        return update.setDeliveryStatus(CrmMarketingDeliveryStatusEnum.FAILED.getStatus())
+                .setFailureReason(Optional.ofNullable(status.getSendException()).orElse("邮件提供商发送失败"));
+    }
+
+    private CrmMarketingDeliverySummaryRespVO buildDeliverySummary(Long broadcastId,
+                                                                    List<CrmMarketingBroadcastRecipientDO> recipients) {
+        int smsSent = count(recipients, 1, null, false);
+        int smsDelivered = count(recipients, 1, CrmMarketingDeliveryStatusEnum.DELIVERED.getStatus(), false);
+        int smsFailed = count(recipients, 1, CrmMarketingDeliveryStatusEnum.FAILED.getStatus(), false);
+        int emailSent = count(recipients, 2, null, false);
+        int emailAccepted = count(recipients, 2, CrmMarketingDeliveryStatusEnum.ACCEPTED.getStatus(), false);
+        int emailFailed = count(recipients, 2, CrmMarketingDeliveryStatusEnum.FAILED.getStatus(), false);
+        int emailOpened = count(recipients, 2, null, true);
+        int pending = (int) recipients.stream().filter(item -> Objects.equals(
+                CrmMarketingDeliveryStatusEnum.PROVIDER_PENDING.getStatus(), item.getDeliveryStatus())).count();
+        int unknown = (int) recipients.stream().filter(item -> item.getDeliveryStatus() == null
+                || Objects.equals(CrmMarketingDeliveryStatusEnum.UNKNOWN.getStatus(), item.getDeliveryStatus())).count();
+        return new CrmMarketingDeliverySummaryRespVO().setBroadcastId(broadcastId)
+                .setSmsSentCount(smsSent).setSmsDeliveredCount(smsDelivered).setSmsFailedCount(smsFailed)
+                .setSmsDeliveryRate(rate(smsDelivered, smsSent))
+                .setEmailSentCount(emailSent).setEmailAcceptedCount(emailAccepted).setEmailFailedCount(emailFailed)
+                .setEmailOpenedCount(emailOpened).setEmailOpenRate(rate(emailOpened, emailAccepted))
+                .setProviderPendingCount(pending).setUnknownCount(unknown);
+    }
+
+    private int count(List<CrmMarketingBroadcastRecipientDO> recipients, int channel,
+                      Integer deliveryStatus, boolean opened) {
+        return (int) recipients.stream().filter(item -> Integer.valueOf(channel).equals(item.getChannel()))
+                .filter(item -> item.getProviderLogId() != null)
+                .filter(item -> deliveryStatus == null || deliveryStatus.equals(item.getDeliveryStatus()))
+                .filter(item -> !opened || item.getOpenedAt() != null).count();
+    }
+
+    private BigDecimal rate(int numerator, int denominator) {
+        if (denominator == 0) return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        return BigDecimal.valueOf(numerator).multiply(BigDecimal.valueOf(100))
+                .divide(BigDecimal.valueOf(denominator), 2, RoundingMode.HALF_UP);
+    }
+
+    private String buildTrackingUrl(String token) {
+        String baseUrl = properties.getPublicBaseUrl().replaceAll("/+$", "");
+        return baseUrl + "/app-api/crm/marketing/open/" + token + ".gif";
     }
 
     private void enforceQuota(Long broadcastId) {

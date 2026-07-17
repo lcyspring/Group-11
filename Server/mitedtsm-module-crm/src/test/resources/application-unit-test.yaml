@@ -48,6 +48,11 @@ mitedtsm:
   info:
     base-package: com.meession.etm
   crm:
+    marketing:
+      provider-mode: record-only
+      tracking-enabled: true
+      public-base-url: http://127.0.0.1:8080
+      delivery-sync-batch-size: 200
     work-order-dispatch:
       enabled: true
       auto-assign-on-create: true

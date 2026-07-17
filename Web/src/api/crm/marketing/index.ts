@@ -59,6 +59,23 @@ export interface MarketingRecipientVO {
   attemptCount?: number
   sentAt?: Date | string
   lastAttemptAt?: Date | string
+  deliveryStatus?: number
+  deliveredAt?: Date | string
+  openedAt?: Date | string
+}
+export interface MarketingDeliverySummaryVO {
+  broadcastId: number
+  smsSentCount: number
+  smsDeliveredCount: number
+  smsFailedCount: number
+  smsDeliveryRate: number
+  emailSentCount: number
+  emailAcceptedCount: number
+  emailFailedCount: number
+  emailOpenedCount: number
+  emailOpenRate: number
+  providerPendingCount: number
+  unknownCount: number
 }
 export interface MarketingTargetOptionsVO {
   customers: Array<{ id: number; name: string; mobile?: string; email?: string }>
@@ -167,6 +184,12 @@ export const getBroadcastPage = (params: any) =>
   request.get({ url: '/crm/marketing/outreach/broadcast/page', params })
 export const getRecipientPage = (params: any) =>
   request.get({ url: '/crm/marketing/outreach/broadcast/recipients', params })
+export const getBroadcastDeliverySummary = (id: number) =>
+  request.get<MarketingDeliverySummaryVO>({
+    url: '/crm/marketing/outreach/broadcast/delivery-summary', params: { id }
+  })
+export const syncBroadcastDeliveryResults = (id: number) =>
+  request.put<number>({ url: '/crm/marketing/outreach/broadcast/sync-results', params: { id } })
 export const submitBroadcastReview = (id: number) =>
   request.put({ url: '/crm/marketing/outreach/broadcast/submit-review', params: { id } })
 export const approveBroadcast = (data: any) =>

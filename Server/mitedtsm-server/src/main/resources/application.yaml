@@ -335,7 +335,7 @@ mitedtsm:
         max-batch-size: 5000
         max-batches: 20
     marketing:
-      provider-mode: record-only
+      provider-mode: ${MITEDTSM_CRM_MARKETING_PROVIDER_MODE:record-only}
       care-enabled: true
       batch-size: 50
       max-batch-size: 500
@@ -349,6 +349,9 @@ mitedtsm:
       broadcast-zone: Asia/Shanghai
       broadcast-lock-key: crm:marketing:broadcast
       lock-lease-seconds: 300
+      tracking-enabled: ${MITEDTSM_CRM_MARKETING_TRACKING_ENABLED:true}
+      public-base-url: ${MITEDTSM_CRM_MARKETING_PUBLIC_BASE_URL:http://127.0.0.1:8080}
+      delivery-sync-batch-size: ${MITEDTSM_CRM_MARKETING_DELIVERY_SYNC_BATCH_SIZE:200}
     authorization:
       # 唯一的 CRM 管理员绕过角色；普通角色仍由功能权限字符和数据范围共同授权。
       admin-role-codes: [crm_admin]

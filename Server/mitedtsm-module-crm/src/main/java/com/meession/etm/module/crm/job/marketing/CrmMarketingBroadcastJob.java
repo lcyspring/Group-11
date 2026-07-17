@@ -27,6 +27,8 @@ public class CrmMarketingBroadcastJob implements JobHandler {
                 log.error("Failed to send scheduled CRM marketing broadcast {}", id, ex);
             }
         }
-        return "CRM scheduled broadcasts sent=" + succeeded + ", failed=" + failed;
+        int deliveryResults = outreachService.syncPendingDeliveryResults();
+        return "CRM scheduled broadcasts sent=" + succeeded + ", failed=" + failed
+                + ", delivery-results=" + deliveryResults;
     }
 }

@@ -28,4 +28,8 @@ public class CrmMarketingBroadcastRecipientDO extends BaseDO {
     private Integer attemptCount;
     private LocalDateTime sentAt;
     private LocalDateTime lastAttemptAt;
+    private Integer deliveryStatus;
+    private LocalDateTime deliveredAt;
+    private LocalDateTime openedAt;
+    private String trackingToken;
 }

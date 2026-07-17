@@ -170,6 +170,15 @@ jq -e --argjson denied "$DENIED_CODE" '.code == $denied' >/dev/null <<<"$OTHER_D
 OTHER_RECIPIENTS="$(api_get "$QUERY_TOKEN" '/crm/marketing/outreach/broadcast/recipients' \
   --data-urlencode "broadcastId=${OTHER_BROADCAST_ID}" --data-urlencode 'pageNo=1' --data-urlencode 'pageSize=20')"
 jq -e --argjson denied "$DENIED_CODE" '.code == $denied and (.data == null)' >/dev/null <<<"$OTHER_RECIPIENTS"
+OWN_SUMMARY="$(api_get "$QUERY_TOKEN" '/crm/marketing/outreach/broadcast/delivery-summary' \
+  --data-urlencode "id=${OWN_BROADCAST_ID}")"
+jq -e --argjson own "$OWN_BROADCAST_ID" '.code == 0 and .data.broadcastId == $own' >/dev/null <<<"$OWN_SUMMARY"
+OTHER_SUMMARY="$(api_get "$QUERY_TOKEN" '/crm/marketing/outreach/broadcast/delivery-summary' \
+  --data-urlencode "id=${OTHER_BROADCAST_ID}")"
+jq -e --argjson denied "$DENIED_CODE" '.code == $denied and (.data == null)' >/dev/null <<<"$OTHER_SUMMARY"
+OTHER_SYNC="$(api_get "$QUERY_TOKEN" '/crm/marketing/outreach/broadcast/sync-results' \
+  --request PUT --data-urlencode "id=${OTHER_BROADCAST_ID}")"
+jq -e --argjson denied "$DENIED_CODE" '.code == $denied and (.data == null)' >/dev/null <<<"$OTHER_SYNC"
 
 REVIEW_PAGE="$(api_get "$REVIEW_TOKEN" '/crm/marketing/outreach/broadcast/page' \
   --data-urlencode 'pageNo=1' --data-urlencode 'pageSize=20' --data-urlencode "name=${PREFIX}")"
@@ -177,6 +186,12 @@ jq -e '.code == 0 and .data.total == 2' >/dev/null <<<"$REVIEW_PAGE"
 REVIEW_RECIPIENTS="$(api_get "$REVIEW_TOKEN" '/crm/marketing/outreach/broadcast/recipients' \
   --data-urlencode "broadcastId=${OTHER_BROADCAST_ID}" --data-urlencode 'pageNo=1' --data-urlencode 'pageSize=20')"
 jq -e '.code == 0 and .data.total == 1 and .data.list[0].mobile == "13800000002"' >/dev/null <<<"$REVIEW_RECIPIENTS"
+REVIEW_SUMMARY="$(api_get "$REVIEW_TOKEN" '/crm/marketing/outreach/broadcast/delivery-summary' \
+  --data-urlencode "id=${OTHER_BROADCAST_ID}")"
+jq -e --argjson other "$OTHER_BROADCAST_ID" '.code == 0 and .data.broadcastId == $other' >/dev/null <<<"$REVIEW_SUMMARY"
+REVIEW_SYNC="$(api_get "$REVIEW_TOKEN" '/crm/marketing/outreach/broadcast/sync-results' \
+  --request PUT --data-urlencode "id=${OTHER_BROADCAST_ID}")"
+jq -e '.code == 0 and .data == 0' >/dev/null <<<"$REVIEW_SYNC"
 
 ACCEPTED_QUERY_USER="$QUERY_USER_ID"
 ACCEPTED_REVIEW_USER="$REVIEW_USER_ID"
@@ -188,5 +203,5 @@ RESIDUAL="$(mysql_exec "SELECT
   (SELECT COUNT(*) FROM system_role WHERE code IN ('${QUERY_ROLE_CODE}','${REVIEW_ROLE_CODE}'));")"
 [[ "$RESIDUAL" == "0" ]]
 
-printf 'marketing-object-scope=ok\nquery-user=%s reviewer-user=%s list=1/2 detail=allow+deny recipients=allow+deny cleanup=0\n' \
+printf 'marketing-object-scope=ok\nquery-user=%s reviewer-user=%s list=1/2 detail=allow+deny recipients=allow+deny analytics=allow+deny cleanup=0\n' \
   "$ACCEPTED_QUERY_USER" "$ACCEPTED_REVIEW_USER"

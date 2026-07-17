@@ -2,12 +2,14 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
   BroadcastStatus,
+  DeliveryStatus,
   RecipientStatus,
   broadcastActionVisibility,
   channelNeedsEmail,
   channelNeedsSms,
   hasTargets,
-  isValidTemplateParams
+  isValidTemplateParams,
+  formatMetricRate
 } from './outreachManagement.mjs'
 
 test('action matrix exposes every lifecycle command only in its valid state', () => {
@@ -57,4 +59,12 @@ test('recipient status values match the backend delivery contract', () => {
   assert.deepEqual(RecipientStatus, {
     PENDING: 10, SENDING: 15, SENT: 20, FAILED: 30, SUPPRESSED: 40, RECORDED: 50
   })
+})
+
+test('provider result states and percentages preserve the metric contract', () => {
+  assert.deepEqual(DeliveryStatus, {
+    UNKNOWN: 0, PROVIDER_PENDING: 10, DELIVERED: 20, FAILED: 30, ACCEPTED: 40
+  })
+  assert.equal(formatMetricRate(81.5), '81.50%')
+  assert.equal(formatMetricRate(undefined), '0.00%')
 })

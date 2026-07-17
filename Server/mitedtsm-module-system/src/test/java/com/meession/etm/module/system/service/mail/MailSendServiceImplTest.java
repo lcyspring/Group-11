@@ -241,6 +241,21 @@ public class MailSendServiceImplTest extends BaseMockitoUnitTest {
     }
 
     @Test
+    public void appendTrackingPixelAcceptsOnlySafeAbsoluteHttpUrls() {
+        String tracked = mailSendService.appendTrackingPixel("<p>Hello</p>", Map.of(
+                MailSendServiceImpl.TRACKING_PIXEL_URL_PARAM,
+                "https://crm.example.com/app-api/crm/marketing/open/a.gif?x=1&y=2"));
+
+        assertTrue(tracked.startsWith("<p>Hello</p><img"));
+        assertTrue(tracked.contains("x=1&amp;y=2"));
+        assertEquals("body", mailSendService.appendTrackingPixel("body", Map.of()));
+        assertThrows(IllegalArgumentException.class, () -> mailSendService.appendTrackingPixel("body", Map.of(
+                MailSendServiceImpl.TRACKING_PIXEL_URL_PARAM, "javascript:alert(1)")));
+        assertThrows(IllegalArgumentException.class, () -> mailSendService.appendTrackingPixel("body", Map.of(
+                MailSendServiceImpl.TRACKING_PIXEL_URL_PARAM, "https://user@example.com/pixel.gif")));
+    }
+
+    @Test
     public void testSendSingleMail_noValidEmail() {
         // 准备参数
         Long userId = randomLongId();

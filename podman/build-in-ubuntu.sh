@@ -85,7 +85,7 @@ normalize_bool() {
 }
 
 BASE_IMAGE="$(config_value image.base docker.io/library/ubuntu:26.04)"
-BUILD_IMAGE="$(config_value image.name localhost/mitedtsm-build-ubuntu:26.04)"
+BUILD_IMAGE="$(config_value image.name ghcr.io/elel-code/group-11-build-ubuntu:26.04)"
 REBUILD_IMAGE="$(normalize_bool "$(config_value image.rebuild false)")"
 PNPM_VERSION="$(config_value toolchain.pnpm_version 11.3.0)"
 BUILD_SERVER="$(normalize_bool "$(config_value build.server true)")"
@@ -106,6 +106,9 @@ BUILD_COMMON_TEST_PATTERN="$(config_value build.common_test_pattern '')"
 BUILD_FRAMEWORK_TESTS="$(normalize_bool "$(config_value build.framework_tests false)")"
 BUILD_FRAMEWORK_COVERAGE="$(normalize_bool "$(config_value build.framework_coverage false)")"
 BUILD_FRAMEWORK_TEST_PATTERN="$(config_value build.framework_test_pattern '')"
+BUILD_SYSTEM_TESTS="$(normalize_bool "$(config_value build.system_tests false)")"
+BUILD_SYSTEM_COVERAGE="$(normalize_bool "$(config_value build.system_coverage false)")"
+BUILD_SYSTEM_TEST_PATTERN="$(config_value build.system_test_pattern '')"
 BUILD_CI="$(normalize_bool "$(config_value build.ci true)")"
 BAIDU_ANALYTICS_CODE="$(config_value web.baidu_analytics_code '')"
 WEB_LEGACY_MEDIA_ORIGINS="$(config_value web.legacy_media_origins '')"
@@ -158,6 +161,14 @@ if [[ "$BUILD_FRAMEWORK_TESTS" == "true" && ! "$BUILD_FRAMEWORK_TEST_PATTERN" =~
     printf 'build.framework_test_pattern is required for framework tests and contains unsupported characters.\n' >&2
     exit 2
 fi
+if [[ "$BUILD_SYSTEM_COVERAGE" == "true" && "$BUILD_SYSTEM_TESTS" != "true" ]]; then
+    printf 'System coverage requires system tests to be enabled.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_SYSTEM_TESTS" == "true" && ! "$BUILD_SYSTEM_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?,]+$ ]]; then
+    printf 'build.system_test_pattern is required for system tests and contains unsupported characters.\n' >&2
+    exit 2
+fi
 
 container_proxy_url() {
     local url="${1:-}"
@@ -180,7 +191,7 @@ command -v podman >/dev/null 2>&1 || {
     exit 1
 }
 
-if [[ "$REBUILD_IMAGE" == "true" ]] || ! podman image exists "$BUILD_IMAGE"; then
+if [[ "$REBUILD_IMAGE" == "true" ]]; then
     podman image exists "$BASE_IMAGE" || {
         printf 'Configured Ubuntu base image is not local: %s\n' "$BASE_IMAGE" >&2
         exit 1
@@ -192,6 +203,15 @@ if [[ "$REBUILD_IMAGE" == "true" ]] || ! podman image exists "$BUILD_IMAGE"; the
         --tag "$BUILD_IMAGE" \
         --file "$SCRIPT_DIR/Containerfile.build-ubuntu" \
         "$PROJECT_ROOT"
+elif ! podman image exists "$BUILD_IMAGE"; then
+    printf 'Pulling published Ubuntu toolchain image: %s\n' "$BUILD_IMAGE"
+    if [[ "$USE_HOST_PROXY" == "true" ]]; then
+        podman pull "$BUILD_IMAGE"
+    else
+        env -u http_proxy -u HTTP_PROXY -u https_proxy -u HTTPS_PROXY \
+            -u all_proxy -u ALL_PROXY -u no_proxy -u NO_PROXY \
+            podman pull "$BUILD_IMAGE"
+    fi
 fi
 
 podman volume inspect "$MAVEN_VOLUME" >/dev/null 2>&1 || podman volume create "$MAVEN_VOLUME" >/dev/null
@@ -233,6 +253,9 @@ podman run "${podman_proxy_args[@]}" --rm --pull=never \
     --env "BUILD_FRAMEWORK_TESTS=$BUILD_FRAMEWORK_TESTS" \
     --env "BUILD_FRAMEWORK_COVERAGE=$BUILD_FRAMEWORK_COVERAGE" \
     --env "BUILD_FRAMEWORK_TEST_PATTERN=$BUILD_FRAMEWORK_TEST_PATTERN" \
+    --env "BUILD_SYSTEM_TESTS=$BUILD_SYSTEM_TESTS" \
+    --env "BUILD_SYSTEM_COVERAGE=$BUILD_SYSTEM_COVERAGE" \
+    --env "BUILD_SYSTEM_TEST_PATTERN=$BUILD_SYSTEM_TEST_PATTERN" \
     --env "BUILD_CI=$BUILD_CI" \
     --env "BUILD_MAVEN_THREADS=$MAVEN_THREADS" \
     --env "PNPM_FROZEN_LOCKFILE=$PNPM_FROZEN_LOCKFILE" \

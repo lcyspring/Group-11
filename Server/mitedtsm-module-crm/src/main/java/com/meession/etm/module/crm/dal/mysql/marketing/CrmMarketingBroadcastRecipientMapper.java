@@ -6,6 +6,8 @@ import com.meession.etm.framework.mybatis.core.query.LambdaQueryWrapperX;
 import com.meession.etm.module.crm.controller.admin.marketing.vo.CrmMarketingRecipientPageReqVO;
 import com.meession.etm.module.crm.dal.dataobject.marketing.CrmMarketingBroadcastRecipientDO;
 import com.meession.etm.module.crm.enums.marketing.CrmMarketingRecipientStatusEnum;
+import com.meession.etm.module.crm.enums.marketing.CrmMarketingDeliveryStatusEnum;
+import com.meession.etm.framework.tenant.core.aop.TenantIgnore;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.time.LocalDateTime;
@@ -43,5 +45,35 @@ public interface CrmMarketingBroadcastRecipientMapper extends BaseMapperX<CrmMar
                 .eq(CrmMarketingBroadcastRecipientDO::getStatus, CrmMarketingRecipientStatusEnum.FAILED.getStatus())
                 .set(CrmMarketingBroadcastRecipientDO::getStatus, CrmMarketingRecipientStatusEnum.PENDING.getStatus())
                 .set(CrmMarketingBroadcastRecipientDO::getFailureReason, null));
+    }
+
+    default List<CrmMarketingBroadcastRecipientDO> selectPendingDeliveryResults(int limit) {
+        return selectList(new LambdaQueryWrapperX<CrmMarketingBroadcastRecipientDO>()
+                .isNotNull(CrmMarketingBroadcastRecipientDO::getProviderLogId)
+                .eq(CrmMarketingBroadcastRecipientDO::getDeliveryStatus,
+                        CrmMarketingDeliveryStatusEnum.PROVIDER_PENDING.getStatus())
+                .orderByAsc(CrmMarketingBroadcastRecipientDO::getId)
+                .last("LIMIT " + Math.max(1, limit)));
+    }
+
+    @TenantIgnore
+    default CrmMarketingBroadcastRecipientDO selectByTrackingToken(String token) {
+        return selectOne(CrmMarketingBroadcastRecipientDO::getTrackingToken, token);
+    }
+
+    @TenantIgnore
+    default int markOpened(String token, LocalDateTime openedAt) {
+        return update(new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<CrmMarketingBroadcastRecipientDO>()
+                .eq(CrmMarketingBroadcastRecipientDO::getTrackingToken, token)
+                .eq(CrmMarketingBroadcastRecipientDO::getChannel, 2)
+                .eq(CrmMarketingBroadcastRecipientDO::getStatus,
+                        CrmMarketingRecipientStatusEnum.SENT.getStatus())
+                .isNull(CrmMarketingBroadcastRecipientDO::getOpenedAt)
+                .and(wrapper -> wrapper.isNull(CrmMarketingBroadcastRecipientDO::getDeliveryStatus)
+                        .or().ne(CrmMarketingBroadcastRecipientDO::getDeliveryStatus,
+                                CrmMarketingDeliveryStatusEnum.FAILED.getStatus()))
+                .set(CrmMarketingBroadcastRecipientDO::getOpenedAt, openedAt)
+                .set(CrmMarketingBroadcastRecipientDO::getDeliveryStatus,
+                        CrmMarketingDeliveryStatusEnum.ACCEPTED.getStatus()));
     }
 }

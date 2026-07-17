@@ -91,6 +91,10 @@
 | `file.storage_mode` | 当前支持 `database`，选择数据库文件配置 |
 | `file.client_id` | `infra_file_config` 中作为 master 的配置 ID |
 | `file.public_base_url` | 文件公开基地址，只接受 HTTP(S) |
+| `crm_marketing.provider_mode` | 群发提供商模式；`record-only` 只留痕，`system` 调用系统短信/邮件提供商 |
+| `crm_marketing.tracking_enabled` | 是否为系统邮件追加不可猜测的打开追踪像素 |
+| `crm_marketing.public_base_url` | 邮件像素公开基地址；真实邮件必须使用外部可访问的 HTTPS 地址 |
+| `crm_marketing.delivery_sync_batch_size` | 每轮调度最多回收的短信/邮件提供商结果数 |
 | `health.http_host` | 宿主健康探针地址 |
 | `health.interval_seconds` | 重试间隔 |
 | `health.*_attempts` | 各服务最大探测次数 |
@@ -109,6 +113,8 @@
 | `build.server/init_service/web` | 是否构建对应产物 |
 | `build.clean` | Maven/Web 是否清理旧产物 |
 | `build.crm_tests/crm_coverage` | 是否执行 CRM 测试和 JaCoCo |
+| `build.system_tests/system_coverage` | 是否执行指定 System 模块测试和 JaCoCo |
+| `build.system_test_pattern` | System 模块 Surefire 测试类模式，不接受任意命令 |
 | `build.ci` | 使用 CI 行为和非交互输出 |
 | `build.maven_threads` | Maven reactor 并发线程 |
 | `build.pnpm_frozen_lockfile` | 是否禁止 lockfile 漂移 |
@@ -120,6 +126,25 @@
 | `runtime.memory/cpus` | 构建容器资源上限 |
 
 ## Mall H5 构建配置
+
+`build-mall-h5-in-ubuntu.sh` 同样只接受一个 YAML 路径。项目依赖不在 Host
+执行安装，也不写入工具链 image：先由 `image.dependency` 指定的 Ubuntu 26.04
+工具容器在运行时执行 pnpm，写入 `cache.node_modules_volume` 与
+`cache.pnpm_store_volume`；之后 HBuilderX 容器挂载同一 `node_modules` 卷并以
+`network.mode: none` 编译。Host 的 `MallFrontend/node_modules` 不参与构建。
+
+| 字段 | 作用 |
+|---|---|
+| `image.name` | 无图形 HBuilderX 编译工具链 image；默认优先使用已公开的 `ghcr.io/elel-code/group-11-hbuilderx-ubuntu:26.04-5.05`。 |
+| `image.dependency` | 运行时安装 Mall 项目依赖的 Ubuntu 26.04 Node/pnpm 工具 image；默认优先使用 `ghcr.io/elel-code/group-11-build-ubuntu:26.04`。 |
+| `image.rebuild` | 是否由工具链维护者从 `hbuilderx.source_dir` 重建 HBuilderX image；普通成员保持 `false`。 |
+| `dependency.frozen_lockfile` | 为 `true` 时要求 `package.json` 与 `pnpm-lock.yaml` 完全一致。 |
+| `cache.pnpm_store_volume` | Mall 专用 pnpm 包缓存卷，不与 Host pnpm store 混用。 |
+| `cache.pnpm_store_path` | pnpm store 在依赖容器内的绝对路径。 |
+| `cache.node_modules_volume` | Mall 专用 `node_modules` 卷，同时挂载给依赖容器和断网编译容器。 |
+| `network.dependency_mode` | 容器运行时下载依赖使用的 rootless Podman 网络模式。 |
+| `network.mode` | 正式 H5 编译网络；必须为 `none`。 |
+| `network.use_host_proxy` | 是否把显式 Host 代理环境传入依赖容器；默认 `false`。 |
 
 | 字段 | 作用 |
 |---|---|

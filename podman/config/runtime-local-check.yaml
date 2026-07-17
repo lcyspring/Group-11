@@ -127,6 +127,12 @@ file:
   client_id: 4
   public_base_url: http://127.0.0.1:8080
 
+crm_marketing:
+  provider_mode: record-only
+  tracking_enabled: true
+  public_base_url: http://127.0.0.1:8080
+  delivery_sync_batch_size: 200
+
 health:
   http_host: 127.0.0.1
   interval_seconds: 2

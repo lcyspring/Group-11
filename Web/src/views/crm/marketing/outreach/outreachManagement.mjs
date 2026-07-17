@@ -18,6 +18,16 @@ export const RecipientStatus = Object.freeze({
   RECORDED: 50
 })
 
+export const DeliveryStatus = Object.freeze({
+  UNKNOWN: 0,
+  PROVIDER_PENDING: 10,
+  DELIVERED: 20,
+  FAILED: 30,
+  ACCEPTED: 40
+})
+
+export const formatMetricRate = (value) => `${Number(value ?? 0).toFixed(2)}%`
+
 export const broadcastActionVisibility = (status) => ({
   edit: status === BroadcastStatus.DRAFT || status === BroadcastStatus.REJECTED,
   delete: status === BroadcastStatus.DRAFT,
