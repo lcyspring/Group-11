@@ -1,6 +1,5 @@
 package com.meession.etm.module.bpm.service.oa;
 
-import cn.hutool.core.date.LocalDateTimeUtil;
 import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.framework.common.util.object.BeanUtils;
 import com.meession.etm.module.bpm.api.task.BpmProcessInstanceApi;
@@ -15,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -46,7 +47,8 @@ public class BpmOALeaveServiceImpl implements BpmOALeaveService {
     @Transactional(rollbackFor = Exception.class)
     public Long createLeave(Long userId, BpmOALeaveCreateReqVO createReqVO) {
         // 插入 OA 请假单
-        long day = LocalDateTimeUtil.between(createReqVO.getStartTime(), createReqVO.getEndTime()).toDays();
+        long day = calculateWorkingDays(createReqVO.getStartTime().toLocalDate(),
+                createReqVO.getEndTime().toLocalDate());
         BpmOALeaveDO leave = BeanUtils.toBean(createReqVO, BpmOALeaveDO.class)
                 .setUserId(userId).setDay(day).setStatus(BpmTaskStatusEnum.RUNNING.getStatus());
         leaveMapper.insert(leave);
@@ -62,6 +64,16 @@ public class BpmOALeaveServiceImpl implements BpmOALeaveService {
         // 将工作流的编号，更新到 OA 请假单中
         leaveMapper.updateById(new BpmOALeaveDO().setId(leave.getId()).setProcessInstanceId(processInstanceId));
         return leave.getId();
+    }
+
+    static long calculateWorkingDays(LocalDate startDate, LocalDate endDate) {
+        long days = 0;
+        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+            if (date.getDayOfWeek() != DayOfWeek.SATURDAY && date.getDayOfWeek() != DayOfWeek.SUNDAY) {
+                days++;
+            }
+        }
+        return days;
     }
 
     @Override

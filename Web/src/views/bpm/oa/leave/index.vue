@@ -261,7 +261,7 @@ const cancelLeave = async (row) => {
     }
   )
   // 发起取消
-  await ProcessInstanceApi.cancelProcessInstanceByStartUser(row.id, value)
+  await ProcessInstanceApi.cancelProcessInstanceByStartUser(row.processInstanceId, value)
   message.success(t('instance.cancelSuccess'))
   // 刷新列表
   await getList()

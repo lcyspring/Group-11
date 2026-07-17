@@ -38,7 +38,10 @@
             />
           </el-form-item>
           <el-form-item :label="t('oa.leave.reason')" prop="reason">
-            <el-input v-model="formData.reason" :placeholder="t('oa.leave.reasonPlaceholder')" type="textarea" />
+            <el-input v-model="formData.reason" :placeholder="t('oa.leave.reasonPlaceholder')" type="textarea" maxlength="200" show-word-limit />
+          </el-form-item>
+          <el-form-item :label="t('oa.leave.days')">
+            <el-input :model-value="workingDays" disabled />
           </el-form-item>
           <el-form-item>
             <el-button :disabled="formLoading" type="primary" @click="submitForm">
@@ -73,6 +76,7 @@ import ProcessInstanceTimeline from '@/views/bpm/processInstance/detail/ProcessI
 import * as ProcessInstanceApi from '@/api/bpm/processInstance'
 import { CandidateStrategy, NodeId } from '@/components/SimpleProcessDesignerV2/src/consts'
 import { ApprovalNodeInfo } from '@/api/bpm/processInstance'
+import { calculateWorkingDays } from './workingDays.mjs'
 
 defineOptions({ name: 'BpmOALeaveCreate' })
 
@@ -91,11 +95,15 @@ const formData = ref({
 })
 const formRules = reactive({
   type: [{ required: true, message: t('oa.leave.type') + t('common.notEmpty'), trigger: 'blur' }],
-  reason: [{ required: true, message: t('oa.leave.reason') + t('common.notEmpty'), trigger: 'change' }],
+  reason: [
+    { required: true, message: t('oa.leave.reason') + t('common.notEmpty'), trigger: 'change' },
+    { min: 10, max: 200, message: t('oa.leave.reasonLength'), trigger: 'blur' }
+  ],
   startTime: [{ required: true, message: t('oa.leave.startTime') + t('common.notEmpty'), trigger: 'change' }],
   endTime: [{ required: true, message: t('oa.leave.endTime') + t('common.notEmpty'), trigger: 'change' }]
 })
 const formRef = ref() // 表单 Ref
+const workingDays = computed(() => calculateWorkingDays(formData.value.startTime, formData.value.endTime))
 
 // 审批相关：变量
 const processDefineKey = 'oa_leave' // 流程定义 Key
@@ -187,9 +195,7 @@ const selectUserConfirm = (id: string, userList: any[]) => {
 // 计算天数差
 // TODO @小北：可以搞到 formatTime 里面去，然后看看 dayjs 里面有没有现成的方法，或者辅助计算的方法。
 const daysDifference = () => {
-  const oneDay = 24 * 60 * 60 * 1000 // 一天的毫秒数
-  const diffTime = Math.abs(Number(formData.value.endTime) - Number(formData.value.startTime))
-  return Math.floor(diffTime / oneDay)
+  return calculateWorkingDays(formData.value.startTime, formData.value.endTime)
 }
 
 /** 获取请假数据，用于重新发起时自动填充 */

@@ -27,6 +27,9 @@ public class BpmOALeaveRespVO {
     @Schema(description = "请假的结束时间", requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDateTime endTime;
 
+    @Schema(description = "请假工作日天数", requiredMode = Schema.RequiredMode.REQUIRED, example = "3")
+    private Long day;
+
     @Schema(description = "流程编号")
     private String processInstanceId;
 
