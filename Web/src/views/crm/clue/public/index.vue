@@ -238,5 +238,6 @@ const resolvePoolReason = (reason?: string) => {
   return (reason && reasonMap[reason]) || reason || '-'
 }
 
-onMounted(getList)
+// 菜单页面使用 KeepAlive 缓存；每次重新进入公共池都重新读取服务端状态。
+onActivated(getList)
 </script>
