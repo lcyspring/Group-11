@@ -2,6 +2,10 @@ package com.meession.etm.module.marketing.service.care;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import com.meession.etm.framework.common.pojo.PageResult;
+import com.meession.etm.framework.common.util.object.BeanUtils;
+import com.meession.etm.module.marketing.controller.admin.care.vo.CustomerCareConfigPageReqVO;
+import com.meession.etm.module.marketing.controller.admin.care.vo.CustomerCareConfigSaveReqVO;
 import com.meession.etm.module.marketing.dal.dataobject.care.CustomerCareConfigDO;
 import com.meession.etm.module.marketing.dal.mysql.care.CustomerCareConfigMapper;
 import com.meession.etm.module.marketing.enums.CareSceneEnum;
@@ -17,6 +21,9 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+
+import static com.meession.etm.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static com.meession.etm.module.marketing.enums.ErrorCodeConstants.CARE_CONFIG_NOT_EXISTS;
 
 /**
  * 客户关怀 Service 实现类
@@ -41,6 +48,36 @@ public class CustomerCareServiceImpl implements CustomerCareService {
 
     @Resource
     private MailSendService mailSendService;
+
+    @Override
+    public Long createCareConfig(CustomerCareConfigSaveReqVO createReqVO) {
+        CustomerCareConfigDO config = BeanUtils.toBean(createReqVO, CustomerCareConfigDO.class);
+        careConfigMapper.insert(config);
+        return config.getId();
+    }
+
+    @Override
+    public void updateCareConfig(CustomerCareConfigSaveReqVO updateReqVO) {
+        validateCareConfigExists(updateReqVO.getId());
+        CustomerCareConfigDO config = BeanUtils.toBean(updateReqVO, CustomerCareConfigDO.class);
+        careConfigMapper.updateById(config);
+    }
+
+    @Override
+    public void deleteCareConfig(Long id) {
+        validateCareConfigExists(id);
+        careConfigMapper.deleteById(id);
+    }
+
+    @Override
+    public CustomerCareConfigDO getCareConfig(Long id) {
+        return careConfigMapper.selectById(id);
+    }
+
+    @Override
+    public PageResult<CustomerCareConfigDO> getCareConfigPage(CustomerCareConfigPageReqVO pageReqVO) {
+        return careConfigMapper.selectPage(pageReqVO);
+    }
 
     @Override
     public int executeBirthdayCare() {
@@ -79,6 +116,12 @@ public class CustomerCareServiceImpl implements CustomerCareService {
             sent += sendCare(config);
         }
         return sent;
+    }
+
+    private void validateCareConfigExists(Long id) {
+        if (id == null || careConfigMapper.selectById(id) == null) {
+            throw exception(CARE_CONFIG_NOT_EXISTS);
+        }
     }
 
     /**
