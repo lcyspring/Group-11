@@ -1,6 +1,7 @@
 package com.meession.etm.module.crm.dal.mysql.receivable;
 
 import cn.hutool.core.date.LocalDateTimeUtil;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.framework.mybatis.core.mapper.BaseMapperX;
 import com.meession.etm.framework.mybatis.core.query.MPJLambdaWrapperX;
@@ -26,6 +27,13 @@ import java.util.Objects;
  */
 @Mapper
 public interface CrmReceivablePlanMapper extends BaseMapperX<CrmReceivablePlanDO> {
+
+    default int clearReceivableIdIfMatches(Long id, Long receivableId) {
+        return update(null, new LambdaUpdateWrapper<CrmReceivablePlanDO>()
+                .eq(CrmReceivablePlanDO::getId, id)
+                .eq(CrmReceivablePlanDO::getReceivableId, receivableId)
+                .set(CrmReceivablePlanDO::getReceivableId, null));
+    }
 
     default CrmReceivablePlanDO selectByIdForUpdate(Long id) {
         return selectOne(new MPJLambdaWrapperX<CrmReceivablePlanDO>()

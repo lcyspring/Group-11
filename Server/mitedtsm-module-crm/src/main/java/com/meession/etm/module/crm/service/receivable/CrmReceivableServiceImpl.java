@@ -231,20 +231,26 @@ public class CrmReceivableServiceImpl implements CrmReceivableService {
     public void deleteReceivable(Long id) {
         // 1.1 锁定并校验存在
         CrmReceivableDO receivable = validateReceivableExistsForUpdate(id);
-        // 1.2 只允许删除从未提交且未关联回款计划的新草稿
+        // 1.2 只允许删除从未提交审批的新草稿；关联计划在同一事务中释放
         if (ObjUtil.notEqual(receivable.getAuditStatus(), CrmAuditStatusEnum.DRAFT.getStatus())
-                || receivable.getProcessInstanceId() != null || receivable.getPlanId() != null) {
+                || receivable.getProcessInstanceId() != null) {
             throw exception(RECEIVABLE_DELETE_FAIL_NOT_NEW_DRAFT);
         }
 
-        // 2.1 删除回款
+        // 2.1 在解除关联前读取日志所需的计划期数
+        Integer period = getReceivablePeriod(receivable.getPlanId());
+        // 2.2 释放计划占用，避免删除草稿后计划仍指向不存在的回款
+        if (receivable.getPlanId() != null) {
+            receivablePlanService.unlinkReceivablePlan(receivable.getPlanId(), receivable.getId());
+        }
+        // 2.3 删除回款
         receivableMapper.deleteById(id);
-        // 2.2 删除数据权限
+        // 2.4 删除数据权限
         permissionService.deletePermission(CrmBizTypeEnum.CRM_RECEIVABLE.getType(), id);
 
         // 3. 记录操作日志上下文
         LogRecordContext.putVariable("receivable", receivable);
-        LogRecordContext.putVariable("period", getReceivablePeriod(receivable.getPlanId()));
+        LogRecordContext.putVariable("period", period);
     }
 
     @Override

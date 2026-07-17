@@ -7,6 +7,7 @@ import com.meession.etm.module.bpm.enums.task.BpmProcessInstanceStatusEnum;
 import com.meession.etm.module.crm.controller.admin.receivable.vo.receivable.CrmReceivableSaveReqVO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
 import com.meession.etm.module.crm.dal.dataobject.receivable.CrmReceivableDO;
+import com.meession.etm.module.crm.dal.dataobject.receivable.CrmReceivablePlanDO;
 import com.meession.etm.module.crm.dal.mysql.receivable.CrmReceivableMapper;
 import com.meession.etm.module.crm.dal.redis.no.CrmNoRedisDAO;
 import com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum;
@@ -192,14 +193,17 @@ class CrmReceivableApprovalServiceImplTest {
     }
 
     @Test
-    void deleteReceivableRejectsPlanLinkedDraft() {
+    void deleteReceivableReleasesPlanLinkedDraft() {
         when(receivableMapper.selectByIdForUpdate(10L))
                 .thenReturn(receivable(CrmAuditStatusEnum.DRAFT, null).setPlanId(5L));
+        when(receivablePlanService.getReceivablePlan(5L))
+                .thenReturn(new CrmReceivablePlanDO().setId(5L).setPeriod(2));
 
-        ServiceException exception = assertThrows(ServiceException.class, () -> service.deleteReceivable(10L));
+        service.deleteReceivable(10L);
 
-        assertEquals(RECEIVABLE_DELETE_FAIL_NOT_NEW_DRAFT.getCode(), exception.getCode());
-        verify(receivableMapper, never()).deleteById(10L);
+        verify(receivablePlanService).unlinkReceivablePlan(5L, 10L);
+        verify(receivableMapper).deleteById(10L);
+        verify(permissionService).deletePermission(CrmBizTypeEnum.CRM_RECEIVABLE.getType(), 10L);
     }
 
     private void stubAvailableAmount() {

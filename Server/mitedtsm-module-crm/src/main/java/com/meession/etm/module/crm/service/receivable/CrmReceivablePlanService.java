@@ -40,6 +40,9 @@ public interface CrmReceivablePlanService {
      */
     void updateReceivablePlanReceivableId(Long id, Long receivableId);
 
+    /** 删除未提交回款时，按预期回款编号原子释放计划占用。 */
+    void unlinkReceivablePlan(Long id, Long receivableId);
+
     /**
      * 删除回款计划
      *

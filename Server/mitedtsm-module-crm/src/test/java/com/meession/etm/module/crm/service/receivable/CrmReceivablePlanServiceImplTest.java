@@ -27,6 +27,7 @@ import static com.meession.etm.module.crm.enums.ErrorCodeConstants.RECEIVABLE_PL
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.RECEIVABLE_PLAN_DELETE_FAIL_LINKED;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.RECEIVABLE_PLAN_EXISTS_RECEIVABLE;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.RECEIVABLE_PLAN_PRICE_EXCEEDS_CONTRACT;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.RECEIVABLE_PLAN_UPDATE_FAIL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.never;
@@ -129,6 +130,29 @@ class CrmReceivablePlanServiceImplTest {
 
         assertEquals(RECEIVABLE_PLAN_EXISTS_RECEIVABLE.getCode(), exception.getCode());
         verify(receivablePlanMapper, never()).updateById(any(CrmReceivablePlanDO.class));
+    }
+
+    @Test
+    void unlinkReceivablePlanClearsMatchingRelation() {
+        when(receivablePlanMapper.selectByIdForUpdate(70L)).thenReturn(
+                new CrmReceivablePlanDO().setId(70L).setReceivableId(80L));
+        when(receivablePlanMapper.clearReceivableIdIfMatches(70L, 80L)).thenReturn(1);
+
+        service.unlinkReceivablePlan(70L, 80L);
+
+        verify(receivablePlanMapper).clearReceivableIdIfMatches(70L, 80L);
+    }
+
+    @Test
+    void unlinkReceivablePlanRejectsChangedRelation() {
+        when(receivablePlanMapper.selectByIdForUpdate(70L)).thenReturn(
+                new CrmReceivablePlanDO().setId(70L).setReceivableId(81L));
+        when(receivablePlanMapper.clearReceivableIdIfMatches(70L, 80L)).thenReturn(0);
+
+        ServiceException exception = assertThrows(ServiceException.class,
+                () -> service.unlinkReceivablePlan(70L, 80L));
+
+        assertEquals(RECEIVABLE_PLAN_UPDATE_FAIL.getCode(), exception.getCode());
     }
 
     private static CrmReceivablePlanSaveReqVO request() {

@@ -167,6 +167,15 @@ public class CrmReceivablePlanServiceImpl implements CrmReceivablePlanService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    public void unlinkReceivablePlan(Long id, Long receivableId) {
+        validateReceivablePlanExistsForUpdate(id);
+        if (receivablePlanMapper.clearReceivableIdIfMatches(id, receivableId) == 0) {
+            throw exception(RECEIVABLE_PLAN_UPDATE_FAIL);
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     @LogRecord(type = CRM_RECEIVABLE_PLAN_TYPE, subType = CRM_RECEIVABLE_PLAN_DELETE_SUB_TYPE, bizNo = "{{#id}}",
             success = CRM_RECEIVABLE_PLAN_DELETE_SUCCESS)
     @CrmPermission(bizType = CrmBizTypeEnum.CRM_RECEIVABLE_PLAN, bizId = "#id", level = CrmPermissionLevelEnum.OWNER)

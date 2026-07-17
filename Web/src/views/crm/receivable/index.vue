@@ -283,9 +283,7 @@
               {{ t('contract.viewApproval') }}
             </el-button>
             <el-button
-              v-if="
-                scope.row.auditStatus === 0 && !scope.row.processInstanceId && !scope.row.planId
-              "
+              v-if="scope.row.auditStatus === 0 && !scope.row.processInstanceId"
               v-hasPermi="['crm:receivable:delete']"
               link
               type="danger"
