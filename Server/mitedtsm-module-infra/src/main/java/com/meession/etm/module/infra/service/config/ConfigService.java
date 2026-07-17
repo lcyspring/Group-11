@@ -1,8 +1,10 @@
 package com.meession.etm.module.infra.service.config;
 
 import com.meession.etm.framework.common.pojo.PageResult;
+import com.meession.etm.module.infra.controller.admin.config.vo.ConfigCategoryRespVO;
 import com.meession.etm.module.infra.controller.admin.config.vo.ConfigPageReqVO;
 import com.meession.etm.module.infra.controller.admin.config.vo.ConfigSaveReqVO;
+import com.meession.etm.module.infra.controller.admin.config.vo.NotificationConfigRespVO;
 import com.meession.etm.module.infra.dal.dataobject.config.ConfigDO;
 import jakarta.validation.Valid;
 
@@ -67,5 +69,36 @@ public interface ConfigService {
      * @return 分页列表
      */
     PageResult<ConfigDO> getConfigPage(ConfigPageReqVO reqVO);
+
+    /**
+     * 获得配置分类列表
+     *
+     * @return 配置分类列表
+     */
+    List<ConfigCategoryRespVO> getConfigCategoryList();
+
+    /**
+     * 分页查询指定分类的配置
+     *
+     * @param category 分类编号
+     * @param pageNo   页码
+     * @param pageSize 每页条数
+     * @return 分页列表
+     */
+    PageResult<ConfigDO> getConfigPageByCategory(Integer category, Integer pageNo, Integer pageSize);
+
+    /**
+     * 获得通知配置
+     *
+     * @return 通知配置
+     */
+    NotificationConfigRespVO getNotificationConfig();
+
+    /**
+     * 更新通知配置
+     *
+     * @param reqVO 通知配置
+     */
+    void updateNotificationConfig(NotificationConfigRespVO reqVO);
 
 }

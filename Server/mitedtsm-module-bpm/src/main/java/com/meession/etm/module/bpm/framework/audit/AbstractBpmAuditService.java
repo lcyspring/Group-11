@@ -175,8 +175,35 @@ public abstract class AbstractBpmAuditService<T> {
     }
 
     /**
+     * 取消审批
+     *
+     * @param id 业务实体 ID
+     * @param reason 取消原因
+     */
+    public void cancelApproval(Long id, String reason) {
+        T entity = validateEntityExists(id);
+        if (!isInProcessStatus(entity)) {
+            throw new RuntimeException("业务实体不处于审批中状态");
+        }
+        // 获取流程实例ID并取消
+        String processInstanceId = getProcessInstanceId(entity);
+        if (processInstanceId != null) {
+            bpmProcessInstanceApi.cancelProcessInstance(processInstanceId, reason);
+        }
+        updateEntityAuditStatus(id, BpmAuditStatusEnum.CANCEL.getStatus());
+    }
+
+    /**
+     * 获取业务实体的流程实例ID
+     *
+     * @param entity 业务实体
+     * @return 流程实例 ID
+     */
+    protected abstract String getProcessInstanceId(T entity);
+
+    /**
      * 判断业务实体是否处于审批中状态
-     * 
+     *
      * @param entity 业务实体
      * @return 是否处于审批中
      */

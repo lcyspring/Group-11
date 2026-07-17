@@ -6,6 +6,7 @@ import com.meession.etm.framework.common.util.object.BeanUtils;
 import com.meession.etm.framework.quartz.core.handler.JobHandler;
 import com.meession.etm.framework.quartz.core.scheduler.SchedulerManager;
 import com.meession.etm.framework.quartz.core.util.CronUtils;
+import com.meession.etm.module.infra.controller.admin.job.vo.JobStatisticsRespVO;
 import com.meession.etm.module.infra.controller.admin.job.vo.job.JobPageReqVO;
 import com.meession.etm.module.infra.controller.admin.job.vo.job.JobSaveReqVO;
 import com.meession.etm.module.infra.dal.dataobject.job.JobDO;
@@ -204,6 +205,25 @@ public class JobServiceImpl implements JobService {
     @Override
     public PageResult<JobDO> getJobPage(JobPageReqVO pageReqVO) {
         return jobMapper.selectPage(pageReqVO);
+    }
+
+    @Override
+    public JobStatisticsRespVO getJobStatistics() {
+        // 1. 查询任务总数
+        Long totalCount = jobMapper.selectCount();
+        // 2. 查询正常状态的任务数量
+        Long normalCount = jobMapper.selectCount(JobDO::getStatus, JobStatusEnum.NORMAL.getStatus());
+        // 3. 查询暂停状态的任务数量
+        Long stopCount = jobMapper.selectCount(JobDO::getStatus, JobStatusEnum.STOP.getStatus());
+        // 4. 计算异常状态的任务数量（非正常、非暂停的任务，例如初始化中）
+        Long errorCount = totalCount - normalCount - stopCount;
+        // 5. 拼接结果返回
+        return JobStatisticsRespVO.builder()
+                .totalCount(totalCount)
+                .normalCount(normalCount)
+                .stopCount(stopCount)
+                .errorCount(errorCount)
+                .build();
     }
 
     private static void fillJobMonitorTimeoutEmpty(JobDO job) {

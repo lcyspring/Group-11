@@ -134,6 +134,14 @@ public interface BpmProcessInstanceService {
     String createProcessInstance(Long userId, @Valid BpmProcessInstanceCreateReqDTO createReqDTO);
 
     /**
+     * 取消流程实例（提供给内部）
+     *
+     * @param processInstanceId 流程实例的编号
+     * @param reason            取消原因
+     */
+    void cancelProcessInstance(String processInstanceId, String reason);
+
+    /**
      * 发起人取消流程实例
      *
      * @param userId      用户编号

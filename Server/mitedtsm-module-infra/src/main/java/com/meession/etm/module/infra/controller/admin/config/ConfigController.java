@@ -5,9 +5,11 @@ import com.meession.etm.framework.common.pojo.CommonResult;
 import com.meession.etm.framework.common.pojo.PageParam;
 import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.framework.excel.core.util.ExcelUtils;
+import com.meession.etm.module.infra.controller.admin.config.vo.ConfigCategoryRespVO;
 import com.meession.etm.module.infra.controller.admin.config.vo.ConfigPageReqVO;
 import com.meession.etm.module.infra.controller.admin.config.vo.ConfigRespVO;
 import com.meession.etm.module.infra.controller.admin.config.vo.ConfigSaveReqVO;
+import com.meession.etm.module.infra.controller.admin.config.vo.NotificationConfigRespVO;
 import com.meession.etm.module.infra.convert.config.ConfigConvert;
 import com.meession.etm.module.infra.dal.dataobject.config.ConfigDO;
 import com.meession.etm.module.infra.enums.ErrorCodeConstants;
@@ -112,6 +114,40 @@ public class ConfigController {
         // 输出
         ExcelUtils.write(response, "参数配置.xls", "数据", ConfigRespVO.class,
                 ConfigConvert.INSTANCE.convertList(list));
+    }
+
+    @GetMapping("/category/list")
+    @Operation(summary = "获取配置分类列表")
+    @PreAuthorize("@ss.hasPermission('infra:config:query')")
+    public CommonResult<List<ConfigCategoryRespVO>> getConfigCategoryList() {
+        return success(configService.getConfigCategoryList());
+    }
+
+    @GetMapping("/category/page")
+    @Operation(summary = "分页查询指定分类的配置")
+    @Parameter(name = "category", description = "参数分类", required = true, example = "1")
+    @PreAuthorize("@ss.hasPermission('infra:config:query')")
+    public CommonResult<PageResult<ConfigRespVO>> getConfigPageByCategory(
+            @RequestParam("category") Integer category,
+            @RequestParam(value = "pageNo", defaultValue = "1") Integer pageNo,
+            @RequestParam(value = "pageSize", defaultValue = "10") Integer pageSize) {
+        PageResult<ConfigDO> page = configService.getConfigPageByCategory(category, pageNo, pageSize);
+        return success(ConfigConvert.INSTANCE.convertPage(page));
+    }
+
+    @GetMapping("/notification-config")
+    @Operation(summary = "获取通知配置")
+    @PreAuthorize("@ss.hasPermission('infra:config:query')")
+    public CommonResult<NotificationConfigRespVO> getNotificationConfig() {
+        return success(configService.getNotificationConfig());
+    }
+
+    @PutMapping("/notification-config")
+    @Operation(summary = "更新通知配置")
+    @PreAuthorize("@ss.hasPermission('infra:config:update')")
+    public CommonResult<Boolean> updateNotificationConfig(@RequestBody NotificationConfigRespVO reqVO) {
+        configService.updateNotificationConfig(reqVO);
+        return success(true);
     }
 
 }

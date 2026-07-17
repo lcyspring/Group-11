@@ -881,6 +881,12 @@ public class BpmProcessInstanceServiceImpl implements BpmProcessInstanceService 
     }
 
     @Override
+    public void cancelProcessInstance(String processInstanceId, String reason) {
+        updateProcessInstanceCancel(processInstanceId,
+                BpmReasonEnum.CANCEL_PROCESS_INSTANCE_BY_START_USER.format(reason));
+    }
+
+    @Override
     @DataPermission(enable = false) // 关闭数据权限，避免查询不到用户数据。相关案例：https://gitee.com/zhijiantianya/mitedtsm-cloud/issues/ID1UYA
     public void cancelProcessInstanceByStartUser(Long userId, @Valid BpmProcessInstanceCancelReqVO cancelReqVO) {
         // 1.1 校验流程实例存在

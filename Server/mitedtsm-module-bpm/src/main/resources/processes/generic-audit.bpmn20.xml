@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:flowable="http://flowable.org/bpmn"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+             targetNamespace="http://flowable.org/bpmn">
+    <process id="generic-audit" name="通用审批流程" isExecutable="true">
+
+        <!-- 开始节点 -->
+        <startEvent id="startEvent" name="开始"/>
+
+        <!-- 申请人提交节点 -->
+        <userTask id="applicantTask" name="申请人提交">
+            <extensionElements>
+                <flowable:candidateStrategy>36</flowable:candidateStrategy>
+            </extensionElements>
+        </userTask>
+
+        <!-- 部门经理审批节点 -->
+        <userTask id="deptManagerTask" name="部门经理审批">
+            <extensionElements>
+                <flowable:candidateStrategy>37</flowable:candidateStrategy>
+            </extensionElements>
+        </userTask>
+
+        <!-- 金额条件分支网关 -->
+        <exclusiveGateway id="amountGateway" name="金额判断"/>
+
+        <!-- 总经理审批节点 -->
+        <userTask id="generalManagerTask" name="总经理审批">
+            <extensionElements>
+                <flowable:candidateStrategy>10</flowable:candidateStrategy>
+                <flowable:candidateParam>general_manager</flowable:candidateParam>
+            </extensionElements>
+        </userTask>
+
+        <!-- 结束节点 -->
+        <endEvent id="endEvent" name="结束"/>
+
+        <!-- 流程连线 -->
+        <sequenceFlow id="flow1" sourceRef="startEvent" targetRef="applicantTask"/>
+        <sequenceFlow id="flow2" sourceRef="applicantTask" targetRef="deptManagerTask"/>
+        <sequenceFlow id="flow3" sourceRef="deptManagerTask" targetRef="amountGateway"/>
+        <!-- 金额大于 10000 时，需要总经理审批 -->
+        <sequenceFlow id="flow4" sourceRef="amountGateway" targetRef="generalManagerTask">
+            <conditionExpression xsi:type="tFormalExpression">${amount &gt; 10000}</conditionExpression>
+        </sequenceFlow>
+        <!-- 金额不大于 10000 时，直接结束 -->
+        <sequenceFlow id="flow5" sourceRef="amountGateway" targetRef="endEvent">
+            <conditionExpression xsi:type="tFormalExpression">${amount &lt;= 10000}</conditionExpression>
+        </sequenceFlow>
+        <sequenceFlow id="flow6" sourceRef="generalManagerTask" targetRef="endEvent"/>
+
+    </process>
+
+    <!-- BPMN 图形信息 -->
+    <bpmndi:BPMNDiagram id="BPMNDiagram_generic-audit">
+        <bpmndi:BPMNPlane id="BPMNPlane_generic-audit" bpmnElement="generic-audit">
+            <bpmndi:BPMNShape id="Shape_startEvent" bpmnElement="startEvent">
+                <omgdc:Bounds x="100" y="160" width="30" height="30"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Shape_applicantTask" bpmnElement="applicantTask">
+                <omgdc:Bounds x="200" y="155" width="100" height="40"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Shape_deptManagerTask" bpmnElement="deptManagerTask">
+                <omgdc:Bounds x="360" y="155" width="100" height="40"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Shape_amountGateway" bpmnElement="amountGateway">
+                <omgdc:Bounds x="520" y="160" width="40" height="40"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Shape_generalManagerTask" bpmnElement="generalManagerTask">
+                <omgdc:Bounds x="600" y="255" width="100" height="40"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Shape_endEvent" bpmnElement="endEvent">
+                <omgdc:Bounds x="760" y="160" width="30" height="30"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNEdge id="Edge_flow1" bpmnElement="flow1">
+                <omgdi:waypoint x="130" y="175"/>
+                <omgdi:waypoint x="200" y="175"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Edge_flow2" bpmnElement="flow2">
+                <omgdi:waypoint x="300" y="175"/>
+                <omgdi:waypoint x="360" y="175"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Edge_flow3" bpmnElement="flow3">
+                <omgdi:waypoint x="460" y="175"/>
+                <omgdi:waypoint x="520" y="180"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Edge_flow4" bpmnElement="flow4">
+                <omgdi:waypoint x="540" y="200"/>
+                <omgdi:waypoint x="650" y="255"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Edge_flow5" bpmnElement="flow5">
+                <omgdi:waypoint x="560" y="180"/>
+                <omgdi:waypoint x="760" y="175"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Edge_flow6" bpmnElement="flow6">
+                <omgdi:waypoint x="700" y="255"/>
+                <omgdi:waypoint x="775" y="190"/>
+            </bpmndi:BPMNEdge>
+        </bpmndi:BPMNPlane>
+    </bpmndi:BPMNDiagram>
+
+</definitions>

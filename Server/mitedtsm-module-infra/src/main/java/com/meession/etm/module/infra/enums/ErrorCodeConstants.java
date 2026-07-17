@@ -69,4 +69,7 @@ public interface ErrorCodeConstants {
     ErrorCode DEMO03_GRADE_NOT_EXISTS = new ErrorCode(1_001_201_009, "学生班级不存在");
     ErrorCode DEMO03_GRADE_EXISTS = new ErrorCode(1_001_201_010, "学生班级已存在");
 
+    // ========== 消息通知 1-001-202-000 ==========
+    ErrorCode NOTIFICATION_NOT_EXISTS = new ErrorCode(1_001_202_000, "消息通知不存在");
+
 }

@@ -7,6 +7,7 @@ import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.framework.common.util.object.BeanUtils;
 import com.meession.etm.framework.excel.core.util.ExcelUtils;
 import com.meession.etm.framework.quartz.core.util.CronUtils;
+import com.meession.etm.module.infra.controller.admin.job.vo.JobStatisticsRespVO;
 import com.meession.etm.module.infra.controller.admin.job.vo.job.JobPageReqVO;
 import com.meession.etm.module.infra.controller.admin.job.vo.job.JobRespVO;
 import com.meession.etm.module.infra.controller.admin.job.vo.job.JobSaveReqVO;
@@ -123,6 +124,13 @@ public class JobController {
     public CommonResult<PageResult<JobRespVO>> getJobPage(@Valid JobPageReqVO pageVO) {
         PageResult<JobDO> pageResult = jobService.getJobPage(pageVO);
         return success(BeanUtils.toBean(pageResult, JobRespVO.class));
+    }
+
+    @GetMapping("/statistics")
+    @Operation(summary = "获得定时任务统计")
+    @PreAuthorize("@ss.hasPermission('infra:job:query')")
+    public CommonResult<JobStatisticsRespVO> getJobStatistics() {
+        return success(jobService.getJobStatistics());
     }
 
     @GetMapping("/export-excel")

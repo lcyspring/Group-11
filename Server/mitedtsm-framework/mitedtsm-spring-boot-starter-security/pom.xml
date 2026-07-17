@@ -47,6 +47,12 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
+        <!-- Redis 相关 -->
+        <dependency>
+            <groupId>com.meession.etm</groupId>
+            <artifactId>mitedtsm-spring-boot-starter-redis</artifactId>
+        </dependency>
+
         <!-- 工具类相关 -->
         <dependency>
             <groupId>com.google.guava</groupId>

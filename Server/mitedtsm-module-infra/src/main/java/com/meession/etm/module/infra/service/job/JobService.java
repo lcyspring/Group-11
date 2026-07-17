@@ -1,6 +1,7 @@
 package com.meession.etm.module.infra.service.job;
 
 import com.meession.etm.framework.common.pojo.PageResult;
+import com.meession.etm.module.infra.controller.admin.job.vo.JobStatisticsRespVO;
 import com.meession.etm.module.infra.controller.admin.job.vo.job.JobPageReqVO;
 import com.meession.etm.module.infra.controller.admin.job.vo.job.JobSaveReqVO;
 import com.meession.etm.module.infra.dal.dataobject.job.JobDO;
@@ -82,5 +83,12 @@ public interface JobService {
      * @return 定时任务分页
      */
     PageResult<JobDO> getJobPage(JobPageReqVO pageReqVO);
+
+    /**
+     * 获得定时任务统计
+     *
+     * @return 定时任务统计
+     */
+    JobStatisticsRespVO getJobStatistics();
 
 }
