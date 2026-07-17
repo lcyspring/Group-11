@@ -64,6 +64,11 @@ public class InitService {
         }
 
         try {
+            if (connection == null) {
+                System.err.println("[错误] 无法建立数据库连接。");
+                System.exit(1);
+            }
+            // 前面已经检查过 connection 不为 null，这里直接创建 Statement
             Statement statement = connection.createStatement();
 
             // 创建数据库

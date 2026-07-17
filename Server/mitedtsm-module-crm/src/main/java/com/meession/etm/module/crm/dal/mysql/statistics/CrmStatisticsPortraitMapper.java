@@ -21,4 +21,6 @@ public interface CrmStatisticsPortraitMapper {
 
     List<CrmStatisticCustomerLevelRespVO> selectCustomerLevelListGroupByLevel(CrmStatisticsPortraitReqVO reqVO);
 
+    List<CrmStatisticCustomerStatusRespVO> selectCustomerStatusListGroupByStatus(CrmStatisticsPortraitReqVO reqVO);
+
 }

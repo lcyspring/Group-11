@@ -105,6 +105,11 @@ public class CrmCustomerRespVO {
     @DictFormat(com.meession.etm.module.crm.enums.DictTypeConstants.CRM_CUSTOMER_SOURCE)
     private Integer source;
 
+    @Schema(description = "客户状态", example = "1")
+    @ExcelProperty(value = "客户状态", converter = DictConvert.class)
+    @DictFormat(com.meession.etm.module.crm.enums.DictTypeConstants.CRM_CUSTOMER_STATUS)
+    private Integer status;
+
     @Schema(description = "负责人的用户编号", example = "25682")
     @ExcelProperty("备注")
     private String remark;

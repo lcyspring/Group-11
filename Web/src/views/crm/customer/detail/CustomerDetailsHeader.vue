@@ -20,6 +20,9 @@
       <el-descriptions-item :label="t('level')">
         <dict-tag :type="DICT_TYPE.CRM_CUSTOMER_LEVEL" :value="customer.level" />
       </el-descriptions-item>
+      <el-descriptions-item :label="t('status')">
+        <dict-tag :type="DICT_TYPE.CRM_CUSTOMER_STATUS" :value="customer.status" />
+      </el-descriptions-item>
       <el-descriptions-item :label="t('dealStatus')">
         {{ customer.dealStatus ? t('dealStatusYes') : t('dealStatusNo') }}
       </el-descriptions-item>

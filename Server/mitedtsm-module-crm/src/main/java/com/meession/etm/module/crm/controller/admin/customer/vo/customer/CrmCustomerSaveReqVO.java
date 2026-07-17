@@ -92,6 +92,10 @@ public class CrmCustomerSaveReqVO {
     @DiffLogField(name = "客户来源", function = CrmCustomerSourceParseFunction.NAME)
     private Integer source;
 
+    @Schema(description = "客户状态", example = "1")
+    @DiffLogField(name = "客户状态")
+    private Integer status;
+
     @Schema(description = "备注", example = "随便")
     @DiffLogField(name = "备注")
     private String remark;

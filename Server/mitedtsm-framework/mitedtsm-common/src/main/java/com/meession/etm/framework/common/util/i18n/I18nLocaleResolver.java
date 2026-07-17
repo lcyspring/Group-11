@@ -42,17 +42,23 @@ public class I18nLocaleResolver implements LocaleResolver {
         // 1. 优先从请求参数获取
         String langParam = request.getParameter(LANG_PARAM);
         if (StrUtil.isNotBlank(langParam)) {
-            return parseLocale(langParam);
+            Locale locale = parseLocale(langParam);
+            if (locale != null) {
+                return locale;
+            }
         }
 
         // 2. 从请求头获取
         String headerLang = request.getHeader(LANG_HEADER);
         if (StrUtil.isNotBlank(headerLang)) {
-            return parseLocale(headerLang);
+            Locale locale = parseLocale(headerLang);
+            if (locale != null) {
+                return locale;
+            }
         }
 
         // 3. 返回默认语言
-        return DEFAULT_LOCALE;
+        return LocaleContextHolder.getLocale();
     }
 
     @Override

@@ -207,6 +207,7 @@ export enum DICT_TYPE {
   CRM_CUSTOMER_INDUSTRY = 'crm_customer_industry', // CRM 客户所属行业
   CRM_CUSTOMER_LEVEL = 'crm_customer_level', // CRM 客户级别
   CRM_CUSTOMER_SOURCE = 'crm_customer_source', // CRM 客户来源
+  CRM_CUSTOMER_STATUS = 'crm_customer_status', // CRM 客户状态
   CRM_PRODUCT_STATUS = 'crm_product_status', // CRM 商品状态
   CRM_PERMISSION_LEVEL = 'crm_permission_level', // CRM 数据权限的级别
   CRM_PRODUCT_UNIT = 'crm_product_unit', // CRM 产品单位

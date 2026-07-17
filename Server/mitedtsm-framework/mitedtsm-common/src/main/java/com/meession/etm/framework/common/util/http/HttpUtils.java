@@ -82,7 +82,7 @@ public class HttpUtils {
      */
     public static String append(String base, Map<String, ?> query, Map<String, String> keys, boolean fragment) {
         UriComponentsBuilder template = UriComponentsBuilder.newInstance();
-        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(base);
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(base != null ? base : "");
         URI redirectUri;
         try {
             // assume it's encoded to start with (if it came in over the wire)
@@ -93,7 +93,8 @@ public class HttpUtils {
             builder = UriComponentsBuilder.fromUri(redirectUri);
         }
         template.scheme(redirectUri.getScheme()).port(redirectUri.getPort()).host(redirectUri.getHost())
-                .userInfo(redirectUri.getUserInfo()).path(redirectUri.getPath());
+                .userInfo(redirectUri.getUserInfo()).path(redirectUri.getPath() != null ? redirectUri.getPath() : "");
+
 
         if (fragment) {
             StringBuilder values = new StringBuilder();

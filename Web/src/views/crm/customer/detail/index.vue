@@ -45,6 +45,9 @@
       <el-tab-pane :label="t('basicInfoTab')">
         <CustomerDetailsInfo :customer="customer" />
       </el-tab-pane>
+      <el-tab-pane :label="t('statisticsTab')" lazy>
+        <CustomerStatistics :customer-id="customerId" />
+      </el-tab-pane>
       <el-tab-pane :label="t('contactTab')" lazy>
         <ContactList
           :biz-id="customer.id!"
@@ -100,6 +103,7 @@ import ReceivablePlanList from '@/views/crm/receivable/plan/components/Receivabl
 import PermissionList from '@/views/crm/permission/components/PermissionList.vue' // 团队成员列表（权限）
 import CrmTransferForm from '@/views/crm/permission/components/TransferForm.vue'
 import FollowUpList from '@/views/crm/followup/index.vue'
+import CustomerStatistics from './CustomerStatistics.vue'
 import { BizTypeEnum } from '@/api/crm/permission'
 import type { OperateLogVO } from '@/api/system/operatelog'
 import { getOperateLogPage } from '@/api/crm/operateLog'

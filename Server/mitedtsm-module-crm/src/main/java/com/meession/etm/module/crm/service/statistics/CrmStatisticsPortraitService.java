@@ -43,4 +43,12 @@ public interface CrmStatisticsPortraitService {
      */
     List<CrmStatisticCustomerSourceRespVO> getCustomerSummaryBySource(CrmStatisticsPortraitReqVO reqVO);
 
+    /**
+     * 获取客户状态统计数据
+     *
+     * @param reqVO 请求参数
+     * @return 统计数据
+     */
+    List<CrmStatisticCustomerStatusRespVO> getCustomerSummaryByStatus(CrmStatisticsPortraitReqVO reqVO);
+
 }

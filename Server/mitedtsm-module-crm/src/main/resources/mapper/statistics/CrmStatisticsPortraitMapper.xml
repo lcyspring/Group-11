@@ -58,4 +58,18 @@
         GROUP BY level
     </select>
 
+    <select id="selectCustomerStatusListGroupByStatus"
+            resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticCustomerStatusRespVO">
+        SELECT status, COUNT(*) AS customerCount, SUM(deal_status) AS dealCount
+        FROM crm_customer
+        WHERE deleted = 0 AND status IS NOT NULL
+        AND owner_user_id IN
+        <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+            #{userId}
+        </foreach>
+        AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime}
+        AND #{times[1],javaType=java.time.LocalDateTime}
+        GROUP BY status
+    </select>
+
 </mapper>

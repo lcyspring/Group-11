@@ -12,6 +12,7 @@ export default {
     levelC: 'Level C',
     levelD: 'Level D',
     source: 'Customer Source',
+    status: 'Customer Status',
     mobile: 'Mobile',
     telephone: 'Telephone',
     website: 'Website',
@@ -84,6 +85,11 @@ export default {
     // Tab labels
     followUpTab: 'Follow Up Records',
     basicInfoTab: 'Basic Info',
+    statisticsTab: 'Statistics',
+    statistics: 'Status Distribution',
+    levelDistribution: 'Level Distribution',
+    sourceDistribution: 'Source Distribution',
+    industryDistribution: 'Industry Distribution',
     contactTab: 'Contacts',
     teamMemberTab: 'Team Members',
     businessTab: 'Business',
@@ -764,6 +770,7 @@ export default {
       industry: 'Industry Distribution',
       level: 'Level Distribution',
       source: 'Source Distribution',
+      status: 'Status Distribution',
       // Table fields
       index: 'No.',
       areaName: 'Area',
@@ -773,6 +780,7 @@ export default {
       industryName: 'Industry',
       levelName: 'Level',
       sourceName: 'Source',
+      statusName: 'Status',
       // Map
       allCustomer: 'All Customers',
       dealCustomer: 'Deal Customers',
@@ -781,6 +789,7 @@ export default {
       industryPortion: 'Industry Portion(%)',
       levelPortion: 'Level Portion(%)',
       sourcePortion: 'Source Portion(%)',
+      statusPortion: 'Status Portion(%)',
       dealPortion: 'Deal Portion(%)'
     },
     // Rank

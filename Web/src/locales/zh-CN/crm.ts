@@ -12,6 +12,7 @@ export default {
     levelC: 'C级客户',
     levelD: 'D级客户',
     source: '客户来源',
+    status: '客户状态',
     mobile: '手机号码',
     telephone: '电话',
     website: '网址',
@@ -84,6 +85,11 @@ export default {
     // Tab标签
     followUpTab: '跟进记录',
     basicInfoTab: '基本信息',
+    statisticsTab: '统计分析',
+    statistics: '状态分布',
+    levelDistribution: '等级分布',
+    sourceDistribution: '来源分布',
+    industryDistribution: '行业分布',
     contactTab: '联系人',
     teamMemberTab: '团队成员',
     businessTab: '商机',
@@ -764,6 +770,7 @@ export default {
       industry: '客户行业分析',
       level: '客户级别分析',
       source: '客户来源分析',
+      status: '客户状态分析',
       // 表格字段
       index: '序号',
       areaName: '地区',
@@ -773,6 +780,7 @@ export default {
       industryName: '客户行业',
       levelName: '客户级别',
       sourceName: '客户来源',
+      statusName: '客户状态',
       // 地图
       allCustomer: '全部客户',
       dealCustomer: '成交客户',
@@ -781,6 +789,7 @@ export default {
       industryPortion: '行业占比(%)',
       levelPortion: '级别占比(%)',
       sourcePortion: '来源占比(%)',
+      statusPortion: '状态占比(%)',
       dealPortion: '成交占比(%)'
     },
     // 排行榜

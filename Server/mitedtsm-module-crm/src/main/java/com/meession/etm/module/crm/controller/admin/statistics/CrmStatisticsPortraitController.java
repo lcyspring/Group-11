@@ -6,6 +6,7 @@ import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmSt
 import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticCustomerIndustryRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticCustomerLevelRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticCustomerSourceRespVO;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticCustomerStatusRespVO;
 import com.meession.etm.module.crm.service.statistics.CrmStatisticsPortraitService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -56,6 +57,13 @@ public class CrmStatisticsPortraitController {
     @PreAuthorize("@ss.hasPermission('crm:statistics-portrait:query')")
     public CommonResult<List<CrmStatisticCustomerSourceRespVO>> getCustomerSourceSummary(@Valid CrmStatisticsPortraitReqVO reqVO) {
         return success(statisticsPortraitService.getCustomerSummaryBySource(reqVO));
+    }
+
+    @GetMapping("/get-customer-status-summary")
+    @Operation(summary = "获取客户状态统计数据", description = "用于【客户状态分析】页面")
+    @PreAuthorize("@ss.hasPermission('crm:statistics-portrait:query')")
+    public CommonResult<List<CrmStatisticCustomerStatusRespVO>> getCustomerStatusSummary(@Valid CrmStatisticsPortraitReqVO reqVO) {
+        return success(statisticsPortraitService.getCustomerSummaryByStatus(reqVO));
     }
 
 }

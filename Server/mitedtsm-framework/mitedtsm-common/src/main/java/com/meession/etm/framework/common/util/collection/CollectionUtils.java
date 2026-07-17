@@ -263,6 +263,9 @@ public class CollectionUtils {
     }
 
     public static boolean containsAny(Collection<?> source, Collection<?> candidates) {
+        if (source == null || candidates == null) {
+            return false;
+        }
         return org.springframework.util.CollectionUtils.containsAny(source, candidates);
     }
 

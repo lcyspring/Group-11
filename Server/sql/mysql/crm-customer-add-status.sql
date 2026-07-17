@@ -1,0 +1,1 @@
+ALTER TABLE `crm_customer` ADD COLUMN `status` INT(11) NULL COMMENT '客户状态' AFTER `source`;

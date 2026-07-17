@@ -72,6 +72,10 @@
       <el-tab-pane :label="t('portrait.source')" name="customerSource" lazy>
         <PortraitCustomerSource ref="customerSourceRef" :query-params="queryParams" />
       </el-tab-pane>
+      <!-- 客户状态分析 -->
+      <el-tab-pane :label="t('portrait.status')" name="customerStatus" lazy>
+        <PortraitCustomerStatus ref="customerStatusRef" :query-params="queryParams" />
+      </el-tab-pane>
     </el-tabs>
   </el-col>
 </template>
@@ -81,6 +85,7 @@ import PortraitCustomerArea from './components/PortraitCustomerArea.vue'
 import PortraitCustomerIndustry from './components/PortraitCustomerIndustry.vue'
 import PortraitCustomerLevel from './components/PortraitCustomerLevel.vue'
 import PortraitCustomerSource from './components/PortraitCustomerSource.vue'
+import PortraitCustomerStatus from './components/PortraitCustomerStatus.vue'
 import { defaultProps, handleTree } from '@/utils/tree'
 import * as DeptApi from '@/api/system/dept'
 import { beginOfDay, defaultShortcuts, endOfDay, formatDate } from '@/utils/formatTime'
@@ -108,6 +113,7 @@ const customerAreaRef = ref() // 城市分布分析
 const customerIndustryRef = ref() // 客户行业分析
 const customerLevelRef = ref() // 客户级别分析
 const customerSourceRef = ref() // 客户来源分析
+const customerStatusRef = ref() // 客户状态分析
 
 /** 搜索按钮操作 */
 const handleQuery = () => {
@@ -123,6 +129,9 @@ const handleQuery = () => {
       break
     case 'customerSource': // 客户来源分析
       customerSourceRef.value?.loadData?.()
+      break
+    case 'customerStatus': // 客户状态分析
+      customerStatusRef.value?.loadData?.()
       break
   }
 }
