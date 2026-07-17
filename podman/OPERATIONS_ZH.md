@@ -46,7 +46,7 @@ bash ./podman/up.sh ./podman/config/runtime-local.yaml
 
 全新数据库卷会同时清空 Flowable 已部署定义。`runtime-local.yaml` 应显式设置
 `bpm.provision_after_start: true` 和 `bpm.provision_manifest: bpm-provision-all-local.yaml`；`up.sh full`
-在 Server 健康后、暴露前端前自动恢复回款、报销、合同、退款、出差、借款和客户拜访流程。若任一模型失败，部署
+在 Server 健康后、暴露前端前自动恢复请假、回款、报销、合同、退款、出差、借款和客户拜访流程。若任一模型失败，部署
 立即失败，不会继续显示一个看似可用但提交审批必然报错的前端。
 
 ## 停服、清产物与数据重置

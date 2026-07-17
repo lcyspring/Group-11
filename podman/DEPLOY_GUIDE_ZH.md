@@ -153,7 +153,9 @@ bash ./down.sh ./config/runtime-reset-local.yaml
 `cleanup-reset.example.yaml` 显式设置 `remove_volumes_on_down: true`，会永久删除四个数据卷；
 `runtime-reset-local.yaml` 被 Git 忽略，用于记录操作者核对后的本机卷名。该操作没有命令行快捷开关。
 重建后使用 `up.sh full`，并确保 `bpm.provision_after_start: true`，否则空数据库中不存在 Flowable
-流程定义，回款、报销、合同、退款、出差、借款和客户拜访提交审批都会失败。
+流程定义，请假、回款、报销、合同、退款、出差、借款和客户拜访提交审批都会失败。标准聚合清单必须包含
+`bpm-provision-leave-local.yaml`；已有环境若仅缺少请假模型，执行
+`bash ./provision-bpm-model.sh ./config/bpm-provision-leave-local.yaml` 幂等补配，不需要重建数据库卷。
 
 清理构建产物与销毁数据是两类操作：Server 的 Maven `target`、`Web/dist-prod` 和 Mall
 `unpackage/dist` 由各 Ubuntu 26.04 构建 YAML 的 clean 开关控制；不要通过删数据卷来解决旧前端或

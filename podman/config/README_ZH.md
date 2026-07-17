@@ -29,12 +29,13 @@ cp ./config/bpm-provision-contract.example.yaml ./config/bpm-provision-contract-
 cp ./config/bpm-provision-refund.example.yaml ./config/bpm-provision-refund-local.yaml
 cp ./config/bpm-provision-trip.example.yaml ./config/bpm-provision-trip-local.yaml
 cp ./config/bpm-provision-loan.example.yaml ./config/bpm-provision-loan-local.yaml
+cp ./config/bpm-provision-leave.example.yaml ./config/bpm-provision-leave-local.yaml
 cp ./config/bpm-provision-customer-visit.example.yaml ./config/bpm-provision-customer-visit-local.yaml
 ```
 
 | 示例 | 受管流程 |
 |---|---|
-| `bpm-provision-all.example.yaml` | 聚合清单；一次恢复回款、报销、合同、退款、出差、借款和客户拜访 |
+| `bpm-provision-all.example.yaml` | 聚合清单；一次恢复请假、回款、报销、合同、退款、出差、借款和客户拜访 |
 | `bpm-provision-receivable.example.yaml` | CRM 回款审批 `crm-receivable-audit` |
 | `bpm-provision.example.yaml` | CRM 报销审批 `crm-reimbursement-audit` |
 | `bpm-provision-contract.example.yaml` | CRM 合同审批 `crm-contract-audit` |
@@ -42,11 +43,20 @@ cp ./config/bpm-provision-customer-visit.example.yaml ./config/bpm-provision-cus
 | `bpm-provision-refund.example.yaml` | CRM 退款/冲销审批 `crm-receivable-refund-audit` |
 | `bpm-provision-trip.example.yaml` | OA 出差审批 `oa_trip` |
 | `bpm-provision-loan.example.yaml` | OA 借款审批 `oa_loan` |
+| `bpm-provision-leave.example.yaml` | OA 请假审批 `oa_leave` |
 | `bpm-provision-customer-visit.example.yaml` | CRM 客户拜访审批 `crm_customer_visit_audit` |
 
 聚合清单中的相对路径以清单所在目录解析。正式部署应让 ignored 的
 `bpm-provision-all-local.yaml` 引用各 ignored 单模型配置；全新数据卷启动时，运行配置设置
 `bpm.provision_after_start: true`，`up.sh full` 会在 Server 健康后恢复全部流程定义。
+
+若现有环境只缺少请假模型，可在填写 ignored 本机配置后单独幂等补配：
+
+```bash
+bash ./provision-bpm-model.sh ./config/bpm-provision-leave-local.yaml
+```
+
+命令成功必须输出已部署模型 `oa_leave`；重复执行只更新/复用同名角色、分类和模型，不创建第二套业务流程。
 
 ## 清理示例
 
