@@ -243,8 +243,8 @@ export default {
   },
   oa: {
     title: 'OA审批',
-    event: { title: '日程管理', titleLabel: '日程标题', startTime: '开始时间', endTime: '结束时间', location: '地点', day: '日视图', week: '周视图', month: '月视图', previous: '上一周期', next: '下一周期', today: '今天' },
-    task: { title: '任务工作台', titleLabel: '任务标题', create: '新建任务', assignee: '负责人 ID', dueTime: '截止时间', priority: '优先级', status: '状态', description: '任务说明', todo: '待开始', processing: '进行中', done: '已完成', start: '开始', complete: '完成' },
+    event: { title: '日程管理', titleLabel: '日程标题', startTime: '开始时间', endTime: '结束时间', location: '地点', day: '日视图', week: '周视图', month: '月视图', previous: '上一周期', next: '下一周期', today: '今天', empty: '当前周期暂无日程', createFirst: '创建第一条日程' },
+    task: { title: '任务工作台', titleLabel: '任务标题', create: '新建任务', assignee: '负责人 ID', dueTime: '截止时间', priority: '优先级', status: '状态', description: '任务说明', todo: '待开始', processing: '进行中', done: '已完成', start: '开始', complete: '完成', empty: '暂无符合条件的任务', createFirst: '创建第一条任务' },
     workRequest: { title: '请示审批', titleLabel: '请示标题', content: '请示内容', urgency: '紧急程度', status: '审批状态', create: '发起请示' },
     document: { title: '协作文档', name: '文档名称', description: '说明', version: '当前版本', create: '新建文档' },
     leave: {

@@ -11,4 +11,5 @@ test('OA task workspace exposes independent lifecycle operations', () => {
   assert.match(api, /\/bpm\/oa\/task\/complete/)
   assert.match(page, /row\.status === 0/)
   assert.match(page, /row\.status === 1/)
+  assert.match(page, /oa\.task\.empty/)
 })
