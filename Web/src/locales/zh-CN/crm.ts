@@ -717,6 +717,8 @@ export default {
     // 产品分类
     category: {
       title: '产品分类',
+      createTitle: '新增产品分类',
+      updateTitle: '编辑产品分类',
       parentId: '父级分类',
       topCategory: '顶级分类',
       namePlaceholder: '请输入名称',

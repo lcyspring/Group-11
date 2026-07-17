@@ -9,9 +9,9 @@
     >
       <el-row :gutter="20">
         <el-col :span="12">
-          <el-form-item :label="t('product.category.parentId')" prop="parentId">
-            <el-select v-model="formData.parentId" :placeholder="t('product.category.parentIdPlaceholder')" class="w-1/1">
-              <el-option :key="0" :label="t('product.category.topCategory')" :value="0" />
+          <el-form-item :label="t('category.parentId')" prop="parentId">
+            <el-select v-model="formData.parentId" :placeholder="t('category.parentIdPlaceholder')" class="w-1/1">
+              <el-option :key="0" :label="t('category.topCategory')" :value="0" />
               <el-option
                 v-for="item in productCategoryList"
                 :key="item.id"
@@ -23,7 +23,7 @@
         </el-col>
         <el-col :span="12">
           <el-form-item :label="t('common.name')" prop="name">
-            <el-input v-model="formData.name" :placeholder="t('product.category.namePlaceholder')" />
+            <el-input v-model="formData.name" :placeholder="t('category.namePlaceholder')" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -52,8 +52,8 @@ const formData = ref({
   parentId: undefined
 })
 const formRules = reactive({
-  name: [{ required: true, message: t('product.category.nameRequired'), trigger: 'blur' }],
-  parentId: [{ required: true, message: t('product.category.parentIdRequired'), trigger: 'blur' }]
+  name: [{ required: true, message: t('category.nameRequired'), trigger: 'blur' }],
+  parentId: [{ required: true, message: t('category.parentIdRequired'), trigger: 'blur' }]
 })
 const formRef = ref() // 表单 Ref
 const productCategoryList = ref<any[]>([]) // 产品分类树
@@ -61,7 +61,7 @@ const productCategoryList = ref<any[]>([]) // 产品分类树
 /** 打开弹窗 */
 const open = async (type: string, id?: number) => {
   dialogVisible.value = true
-  dialogTitle.value = t('action.' + type, { scope: 'common' })
+  dialogTitle.value = t(type === 'create' ? 'category.createTitle' : 'category.updateTitle')
   formType.value = type
   resetForm()
   // 修改时，设置数据

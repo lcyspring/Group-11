@@ -741,6 +741,8 @@ export default {
     // Product category
     category: {
       title: 'Product Category',
+      createTitle: 'Create Product Category',
+      updateTitle: 'Edit Product Category',
       parentId: 'Parent Category',
       topCategory: 'Top Category',
       namePlaceholder: 'Please enter name',

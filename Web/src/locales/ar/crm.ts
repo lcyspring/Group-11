@@ -738,6 +738,8 @@ export default {
     // Product category
     category: {
       title: 'فئة المنتج',
+      createTitle: 'إنشاء فئة منتج',
+      updateTitle: 'تعديل فئة المنتج',
       parentId: 'الفئة الأصل',
       topCategory: 'الفئة العليا',
       namePlaceholder: 'الرجاء إدخال الاسم',
