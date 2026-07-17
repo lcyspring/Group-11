@@ -975,6 +975,7 @@ export default {
     customerName: 'اسم العميل',
     contractId: 'العقد',
     contractNo: 'رقم العقد',
+    contractNoPlaceholder: 'أدخل رقم العقد',
     contractName: 'اسم العقد',
     price: 'سعر المستحق',
     returnType: 'نوع الإرجاع',
@@ -1235,6 +1236,9 @@ export default {
     actualEndRequired: 'الرجاء اختيار الانتهاء الفعلي', resultRequired: 'الرجاء إدخال نتيجة الزيارة',
     resultLength: 'يجب أن تتراوح النتيجة بين 5 و2000 حرف', nextContactRequired: 'الرجاء اختيار موعد الاتصال التالي',
     resultSuccess: 'تم تسجيل النتيجة وإنشاء متابعة العميل', processModelNotFound: 'عملية الموافقة على زيارة العميل غير مكوّنة'
+  },
+  workReport: {
+    mine: 'تقاريري', received: 'التقارير المستلمة', type: 'نوع التقرير', status: 'الحالة', date: 'تاريخ التقرير', title: 'العنوان', author: 'الكاتب', receivers: 'المستلمون', draft: 'مسودة', submitted: 'مقدم', daily: 'يومي', weekly: 'أسبوعي', monthly: 'شهري', create: 'إنشاء تقرير عمل', edit: 'تعديل تقرير العمل', detail: 'تفاصيل تقرير العمل', submit: 'إرسال', submitConfirm: 'لا يمكن تعديل التقرير أو حذفه بعد الإرسال. هل تريد المتابعة؟', submitSuccess: 'تم إرسال تقرير العمل', completed: 'العمل المنجز', pending: 'العمل المعلق', nextPlan: 'الخطة التالية', issues: 'المشكلات والدعم', attachments: 'المرفقات', period: 'فترة التقرير', typeRequired: 'اختر نوع التقرير', dateRequired: 'اختر تاريخ التقرير', titleRequired: 'أدخل عنوان التقرير', completedRequired: 'اكتب العمل المنجز', planRequired: 'اكتب الخطة التالية', receiverRequired: 'اختر مستلماً واحداً على الأقل'
   },
   statistics: {
     title: 'الإحصائيات',

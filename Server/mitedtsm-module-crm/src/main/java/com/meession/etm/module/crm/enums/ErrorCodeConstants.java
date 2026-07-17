@@ -444,4 +444,11 @@ public interface ErrorCodeConstants {
     ErrorCode CUSTOMER_VISIT_RESULT_TIME_INVALID = new ErrorCode(1_020_022_003, "实际结束时间不能早于实际开始时间或晚于当前时间");
     ErrorCode CUSTOMER_VISIT_RESULT_ALREADY_RECORDED = new ErrorCode(1_020_022_004, "拜访结果已登记，不能重复生成客户跟进记录");
 
+    // ========== OA 工作报告 1_020_023_000 ==========
+    ErrorCode WORK_REPORT_NOT_EXISTS = new ErrorCode(1_020_023_000, "工作报告不存在或无权访问");
+    ErrorCode WORK_REPORT_TYPE_INVALID = new ErrorCode(1_020_023_001, "工作报告类型无效");
+    ErrorCode WORK_REPORT_PERIOD_DUPLICATE = new ErrorCode(1_020_023_002, "当前报告类型和周期已存在报告");
+    ErrorCode WORK_REPORT_SUBMITTED_IMMUTABLE = new ErrorCode(1_020_023_003, "已提交的工作报告不能修改或删除");
+    ErrorCode WORK_REPORT_RECEIVER_REQUIRED = new ErrorCode(1_020_023_004, "工作报告至少需要一名接收人");
+
 }

@@ -968,6 +968,7 @@ export default {
     customerName: '客户名称',
     contractId: '合同',
     contractNo: '合同编号',
+    contractNoPlaceholder: '请输入合同编号',
     contractName: '合同名称',
     price: '回款金额',
     returnType: '回款方式',
@@ -1227,6 +1228,9 @@ export default {
     actualStartRequired: '请选择实际开始时间', actualEndRequired: '请选择实际结束时间', resultRequired: '请输入拜访结果',
     resultLength: '拜访结果需填写 5 至 2000 个字符', nextContactRequired: '请选择下次联系时间',
     resultSuccess: '拜访结果已登记并生成客户跟进记录', processModelNotFound: '客户拜访审批流程未配置，请检查'
+  },
+  workReport: {
+    mine: '我的报告', received: '收到的报告', type: '报告类型', status: '状态', date: '报告日期', title: '报告标题', author: '提交人', receivers: '接收人', draft: '草稿', submitted: '已提交', daily: '日报', weekly: '周报', monthly: '月报', create: '新建工作报告', edit: '编辑工作报告', detail: '工作报告详情', submit: '提交', submitConfirm: '提交后将不能修改或删除，是否继续？', submitSuccess: '工作报告提交成功', completed: '已完成工作', pending: '未完成工作', nextPlan: '下一步计划', issues: '问题与协助', attachments: '附件', period: '报告周期', typeRequired: '请选择报告类型', dateRequired: '请选择报告日期', titleRequired: '请输入报告标题', completedRequired: '请填写已完成工作', planRequired: '请填写下一步计划', receiverRequired: '请至少选择一名接收人'
   },
   statistics: {
     title: '统计分析',

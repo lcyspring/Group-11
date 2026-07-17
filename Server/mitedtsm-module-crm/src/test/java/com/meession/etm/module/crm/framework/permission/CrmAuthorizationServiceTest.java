@@ -105,7 +105,7 @@ class CrmAuthorizationServiceTest {
                                                    List<AdminUserRespDTO> subordinates) {
         CrmAuthorizationService service = new CrmAuthorizationService();
         CrmAuthorizationProperties properties = new CrmAuthorizationProperties();
-        properties.setAdminRoleCodes(List.of("crm_admin"));
+        properties.setAdminRoleCodes(List.of("super_admin", "crm_admin"));
         ReflectionTestUtils.setField(service, "properties", properties);
         ReflectionTestUtils.setField(service, "permissionCommonApi", proxy(PermissionCommonApi.class,
                 (proxy, method, args) -> switch (method.getName()) {

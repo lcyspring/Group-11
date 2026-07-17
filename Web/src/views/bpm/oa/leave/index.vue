@@ -158,7 +158,7 @@
               type="primary"
               @click="handleReCreate(scope.row)"
             >
-              {{ t('instance.restart') }}
+              {{ t('process.instance.restart') }}
             </el-button>
           </TableActions>
         </template>

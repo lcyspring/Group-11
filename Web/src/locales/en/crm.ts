@@ -981,6 +981,7 @@ export default {
     customerName: 'Customer Name',
     contractId: 'Contract',
     contractNo: 'Contract No',
+    contractNoPlaceholder: 'Enter contract number',
     contractName: 'Contract Name',
     price: 'Receivable Price',
     returnType: 'Return Type',
@@ -1241,6 +1242,9 @@ export default {
     actualStartRequired: 'Please select the actual start', actualEndRequired: 'Please select the actual end', resultRequired: 'Please enter the visit result',
     resultLength: 'Visit result must contain 5 to 2000 characters', nextContactRequired: 'Please select the next contact time',
     resultSuccess: 'Visit result recorded and customer follow-up created', processModelNotFound: 'The customer visit approval process is not configured'
+  },
+  workReport: {
+    mine: 'My Reports', received: 'Received Reports', type: 'Report Type', status: 'Status', date: 'Report Date', title: 'Title', author: 'Author', receivers: 'Recipients', draft: 'Draft', submitted: 'Submitted', daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', create: 'Create Work Report', edit: 'Edit Work Report', detail: 'Work Report Details', submit: 'Submit', submitConfirm: 'The report cannot be edited or deleted after submission. Continue?', submitSuccess: 'Work report submitted', completed: 'Completed Work', pending: 'Pending Work', nextPlan: 'Next Plan', issues: 'Issues and Support', attachments: 'Attachments', period: 'Report Period', typeRequired: 'Select a report type', dateRequired: 'Select a report date', titleRequired: 'Enter a report title', completedRequired: 'Describe completed work', planRequired: 'Describe the next plan', receiverRequired: 'Select at least one recipient'
   },
   statistics: {
     title: 'Statistics',

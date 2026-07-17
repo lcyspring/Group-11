@@ -99,6 +99,7 @@
 | `receivable-form-localization/` | 回款及回款计划负责人标签和客户/合同下拉三语一致性 |
 | `shared-shortcut-date-range/` | 快捷日期状态初始化和 Promise 异常收敛 |
 | `mp-account-empty-state/` | 公众号账号空状态导航、无通知行为和初始化异常收敛 |
+| `oa-work-report/` | OA 日/周/月工作报告周期、接收人可见性、提交锁定和真实 API 验收 |
 
 运行入口统一为：
 
