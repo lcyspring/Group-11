@@ -13,4 +13,5 @@ public class BpmOAEventDO extends BaseDO {
     @TableId private Long id; private Long userId; private String title; private String description;
     private LocalDateTime startTime; private LocalDateTime endTime; private Boolean allDay;
     private String location; private String participantUserIds; private Integer reminderMinutes; private Integer status;
+    private Integer reminderStatus; private LocalDateTime reminderSentTime; private String reminderLastError;
 }

@@ -11,4 +11,5 @@ public interface BpmOAEventService {
     void delete(Long userId, Long id);
     BpmOAEventDO get(Long userId, Long id);
     List<BpmOAEventDO> list(Long userId, LocalDateTime from, LocalDateTime to);
+    int remindDue(int limit);
 }
