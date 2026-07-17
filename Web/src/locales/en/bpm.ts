@@ -314,7 +314,8 @@ export default {
       repaymentAmount: 'Repayment Amount', repaymentAmountRequired: 'Please enter the repayment amount',
       repaidAt: 'Repaid At', referenceNo: 'Transaction Reference', remark: 'Repayment Note',
       outstandingHint: 'Current outstanding amount: {amount}', repaymentSuccess: 'Repayment recorded',
-      repaymentRecords: 'Repayment Records'
+      repaymentRecords: 'Repayment Records',
+      invalidId: 'Invalid loan number. Open the loan again from the list.'
     },
     bpm: {
       title: 'Approval Center',

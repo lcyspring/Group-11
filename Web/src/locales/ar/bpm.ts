@@ -314,7 +314,8 @@ export default {
       repaymentAmount: 'مبلغ السداد', repaymentAmountRequired: 'الرجاء إدخال مبلغ السداد',
       repaidAt: 'وقت السداد', referenceNo: 'مرجع المعاملة', remark: 'ملاحظة السداد',
       outstandingHint: 'المبلغ المتبقي الحالي: {amount}', repaymentSuccess: 'تم تسجيل السداد',
-      repaymentRecords: 'سجلات السداد'
+      repaymentRecords: 'سجلات السداد',
+      invalidId: 'رقم القرض غير صالح، يرجى فتحه من قائمة القروض'
     },
     bpm: {
       title: 'مركز الموافقة',

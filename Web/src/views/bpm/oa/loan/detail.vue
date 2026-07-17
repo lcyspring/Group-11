@@ -10,9 +10,19 @@ import { DICT_TYPE } from '@/utils/dict'
 import * as LoanApi from '@/api/bpm/loan'
 defineOptions({ name: 'BpmOALoanDetail' })
 const { t } = useI18n('bpm')
+const message = useMessage()
 const route = useRoute()
 const loading = ref(false)
 const loan = ref<LoanApi.LoanVO>({} as LoanApi.LoanVO)
 const repayments = ref<LoanApi.LoanRepaymentVO[]>([])
-onMounted(async () => { loading.value = true; try { const id = Number(route.query.id); [loan.value, repayments.value] = await Promise.all([LoanApi.getLoan(id), LoanApi.getRepayments(id)]) } finally { loading.value = false } })
+onMounted(async () => {
+  const rawId = route.query.loanId ?? route.query.id
+  const id = Number(rawId)
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    message.error(t('oa.loan.invalidId'))
+    return
+  }
+  loading.value = true
+  try { [loan.value, repayments.value] = await Promise.all([LoanApi.getLoan(id), LoanApi.getRepayments(id)]) } finally { loading.value = false }
+})
 </script>

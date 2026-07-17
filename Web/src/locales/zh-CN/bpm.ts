@@ -331,7 +331,8 @@ export default {
       remark: '还款备注',
       outstandingHint: '当前未还金额：{amount}',
       repaymentSuccess: '还款登记成功',
-      repaymentRecords: '还款记录'
+      repaymentRecords: '还款记录',
+      invalidId: '借款编号无效，请从借款列表重新打开'
     },
     bpm: {
       title: '审批中心',

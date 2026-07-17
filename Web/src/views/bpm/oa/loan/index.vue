@@ -49,7 +49,7 @@ const load = async () => { loading.value = true; try { const data = await LoanAp
 const search = () => { query.pageNo = 1; load() }
 const reset = () => { queryRef.value?.resetFields(); search() }
 const create = () => router.push({ name: 'OALoanCreate' })
-const detail = (row: LoanApi.LoanVO) => router.push({ name: 'OALoanDetail', query: { id: row.id } })
+const detail = (row: LoanApi.LoanVO) => router.push({ name: 'OALoanDetail', query: { loanId: String(row.id) } })
 const progress = (row: LoanApi.LoanVO) => router.push({ name: 'BpmProcessInstanceDetail', query: { id: row.processInstanceId } })
 const repaymentVisible = ref(false)
 const repaymentLoading = ref(false)
