@@ -182,10 +182,11 @@ public class CrmWorkOrderServiceImpl implements CrmWorkOrderService {
         if (!assignAll && !managesCurrentGroup && !ownsUngroupedOrder) {
             throw exception(WORK_ORDER_ASSIGN_DENIED);
         }
-        if (ObjectUtil.equal(old.getHandlerUserId(), reqVO.getHandlerUserId())) {
+        Long targetGroupId = reqVO.getGroupId() == null ? old.getGroupId() : reqVO.getGroupId();
+        if (ObjectUtil.equal(old.getGroupId(), targetGroupId)
+                && ObjectUtil.equal(old.getHandlerUserId(), reqVO.getHandlerUserId())) {
             throw exception(WORK_ORDER_HANDLER_UNCHANGED);
         }
-        Long targetGroupId = reqVO.getGroupId() == null ? old.getGroupId() : reqVO.getGroupId();
         validateManualAssignment(old.getType(), targetGroupId, reqVO.getHandlerUserId(), userId, assignAll);
         int updated = workOrderMapper.assignIfPending(old.getId(), CrmWorkOrderStatusEnum.PENDING.getStatus(),
                 old.getHandlerUserId(), old.getGroupId(), targetGroupId, reqVO.getHandlerUserId(),

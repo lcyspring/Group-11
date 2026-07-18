@@ -51,6 +51,16 @@
         ><el-button @click="query">{{ t('common.search') }}</el-button
         ><el-button @click="reset">{{ t('common.reset') }}</el-button
         ><el-button
+          v-hasPermi="['crm:work-order:export']"
+          :loading="exportLoading"
+          type="success"
+          @click="handleExport"
+          ><Icon class="mr-5px" icon="ep:download" />{{
+            selectedIds.length
+              ? t('workOrder.exportSelected', { count: selectedIds.length })
+              : t('workOrder.exportFiltered')
+          }}</el-button
+        ><el-button
           v-hasPermi="['crm:work-order:create']"
           type="primary"
           @click="openForm('create')"
@@ -60,7 +70,15 @@
     </el-form>
   </ContentWrap>
   <ContentWrap>
-    <el-table v-loading="loading" :data="list" stripe>
+    <el-table
+      ref="tableRef"
+      v-loading="loading"
+      :data="list"
+      row-key="id"
+      stripe
+      @selection-change="handleSelectionChange"
+    >
+      <el-table-column type="selection" width="48" reserve-selection />
       <el-table-column :label="t('workOrder.no')" prop="no" min-width="170"
         ><template #default="{ row }"
           ><el-link type="primary" :underline="false" @click="detailRef.open(row.id)">{{
@@ -185,14 +203,18 @@ import { useUserStore } from '@/store/modules/user'
 import * as UserApi from '@/api/system/user'
 import { checkPermi } from '@/utils/permission'
 import { canClaimWorkOrder } from './dispatch'
+import download from '@/utils/download'
 
 defineOptions({ name: 'CrmWorkOrder' })
 const { t } = useI18n('crm')
 const message = useMessage()
 const userId = useUserStore().getUser.id
 const loading = ref(false)
+const exportLoading = ref(false)
 const list = ref<WorkOrderApi.WorkOrderVO[]>([])
 const total = ref(0)
+const tableRef = ref()
+const selectedIds = ref<number[]>([])
 const formRef = ref()
 const assignRef = ref()
 const detailRef = ref()
@@ -252,6 +274,7 @@ const getList = async () => {
   }
 }
 const query = () => {
+  tableRef.value?.clearSelection()
   queryParams.pageNo = 1
   getList()
 }
@@ -268,6 +291,22 @@ const reset = () => {
   query()
 }
 const openForm = (type: 'create' | 'update', id?: number) => formRef.value.open(type, id)
+const handleSelectionChange = (rows: WorkOrderApi.WorkOrderVO[]) => {
+  selectedIds.value = rows.map((row) => row.id!).filter((id) => id != null)
+}
+const handleExport = async () => {
+  try {
+    await message.exportConfirm()
+    exportLoading.value = true
+    const data = await WorkOrderApi.exportWorkOrders({
+      ...queryParams,
+      ids: selectedIds.value.length ? selectedIds.value : undefined
+    })
+    download.excel(data, `${t('workOrder.exportFileName')}.xls`)
+  } finally {
+    exportLoading.value = false
+  }
+}
 const canClaim = (row: WorkOrderApi.WorkOrderVO) => {
   const group = groups.value.find((item) => item.id === row.groupId)
   return canClaimWorkOrder(row.status, row.handlerUserId, row.groupId, userId, group?.memberUserIds)

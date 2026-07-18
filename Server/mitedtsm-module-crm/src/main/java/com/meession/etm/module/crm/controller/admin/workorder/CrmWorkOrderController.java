@@ -1,8 +1,10 @@
 package com.meession.etm.module.crm.controller.admin.workorder;
 
+import com.meession.etm.framework.apilog.core.annotation.ApiAccessLog;
 import com.meession.etm.framework.common.pojo.CommonResult;
 import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.framework.common.util.object.BeanUtils;
+import com.meession.etm.framework.excel.core.util.ExcelUtils;
 import com.meession.etm.framework.security.core.service.SecurityFrameworkService;
 import com.meession.etm.module.crm.controller.admin.workorder.vo.*;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
@@ -18,16 +20,20 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.meession.etm.framework.common.pojo.CommonResult.success;
+import static com.meession.etm.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
+import static com.meession.etm.framework.common.pojo.PageParam.PAGE_SIZE_NONE;
 import static com.meession.etm.framework.security.core.util.SecurityFrameworkUtils.getLoginUserId;
 
 @Tag(name = "管理后台 - CRM 客服工单")
@@ -89,6 +95,19 @@ public class CrmWorkOrderController {
         boolean queryAll = securityFrameworkService.hasPermission("crm:work-order:query-all");
         PageResult<CrmWorkOrderDO> result = workOrderService.getWorkOrderPage(reqVO, userId, queryAll);
         return success(new PageResult<>(build(result.getList()), result.getTotal()));
+    }
+
+    @GetMapping("/export-excel")
+    @Operation(summary = "导出客服工单 Excel")
+    @PreAuthorize("@ss.hasPermission('crm:work-order:export')")
+    @ApiAccessLog(operateType = EXPORT)
+    public void exportExcel(@Valid CrmWorkOrderPageReqVO reqVO, HttpServletResponse response) throws IOException {
+        reqVO.setPageSize(PAGE_SIZE_NONE);
+        Long userId = getLoginUserId();
+        boolean queryAll = securityFrameworkService.hasPermission("crm:work-order:query-all");
+        List<CrmWorkOrderRespVO> rows = build(workOrderService.getWorkOrderPage(reqVO, userId, queryAll).getList());
+        ExcelUtils.write(response, "客服工单.xls", "工单",
+                CrmWorkOrderExportRespVO.class, rows.stream().map(CrmWorkOrderExportRespVO::from).toList());
     }
 
     @PutMapping("/start")

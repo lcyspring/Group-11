@@ -774,6 +774,9 @@ export default {
   },
   workOrder: {
     title: '客服工单',
+    exportFiltered: '导出筛选结果',
+    exportSelected: '导出已选（{count}）',
+    exportFileName: '客服工单',
     no: '工单编号',
     type: '类型',
     priority: '优先级',

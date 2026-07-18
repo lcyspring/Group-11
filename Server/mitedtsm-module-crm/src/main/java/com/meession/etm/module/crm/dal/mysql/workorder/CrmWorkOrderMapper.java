@@ -29,6 +29,7 @@ public interface CrmWorkOrderMapper extends BaseMapperX<CrmWorkOrderDO> {
                 .eqIfPresent(CrmWorkOrderDO::getStatus, reqVO.getStatus())
                 .eqIfPresent(CrmWorkOrderDO::getCustomerId, reqVO.getCustomerId())
                 .eqIfPresent(CrmWorkOrderDO::getHandlerUserId, reqVO.getHandlerUserId())
+                .inIfPresent(CrmWorkOrderDO::getId, reqVO.getIds())
                 .orderByDesc(CrmWorkOrderDO::getPriority)
                 .orderByDesc(CrmWorkOrderDO::getCreateTime)
                 .orderByDesc(CrmWorkOrderDO::getId);

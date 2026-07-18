@@ -61,6 +61,17 @@ class CrmWorkOrderMapperTest {
     }
 
     @Test
+    void selectedExportIdsRemainInsideAuthorizedQuery() {
+        LambdaQueryWrapper<CrmWorkOrderDO> query = captureQuery(
+                new CrmWorkOrderPageReqVO().setIds(Set.of(81L, 82L)), 9L, false,
+                Set.of(7L), Set.of(), Set.of());
+        String queryDetails = query.getSqlSegment() + " params=" + query.getParamNameValuePairs();
+        assertTrue(query.getParamNameValuePairs().containsValue(81L), queryDetails);
+        assertTrue(query.getParamNameValuePairs().containsValue(82L), queryDetails);
+        assertTrue(query.getParamNameValuePairs().containsValue(7L), queryDetails);
+    }
+
+    @Test
     void personalScopeIncludesManagedAndUnassignedMemberGroups() {
         LambdaQueryWrapper<CrmWorkOrderDO> query = captureQuery(new CrmWorkOrderPageReqVO(), 9L, false,
                 Set.of(7L), Set.of(8L), Set.of(81L));

@@ -13,7 +13,7 @@
             :key="item.id"
             :label="candidateLabel(item.nickname, item.openCount)"
             :value="item.id"
-            :disabled="item.id === currentHandlerUserId"
+            :disabled="isUnchangedAssignment(currentGroupId, currentHandlerUserId, formData.groupId, item.id)"
           />
         </el-select>
       </el-form-item>
@@ -30,7 +30,7 @@
 
 <script setup lang="ts">
 import * as WorkOrderApi from '@/api/crm/workorder'
-import { candidateLabel } from './dispatch'
+import { candidateLabel, isUnchangedAssignment } from './dispatch'
 
 const { t } = useI18n('crm')
 const message = useMessage()
@@ -48,6 +48,7 @@ const context = ref<WorkOrderApi.WorkOrderDispatchContextVO>({
   candidates: []
 })
 const currentHandlerUserId = ref<number>()
+const currentGroupId = ref<number>()
 const formData = reactive({ id: 0, groupId: undefined as number | undefined, handlerUserId: undefined as number | undefined, remark: '' })
 const rules = reactive({
   handlerUserId: [{ required: true, message: t('workOrder.handlerRequired'), trigger: 'change' }]
@@ -61,6 +62,7 @@ const open = async (row: WorkOrderApi.WorkOrderVO) => {
   formData.handlerUserId = undefined
   formData.remark = ''
   workOrderType.value = row.type
+  currentGroupId.value = row.groupId
   currentHandlerUserId.value = row.handlerUserId
   await loadCandidates()
 }

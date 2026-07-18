@@ -22,6 +22,7 @@ SET `name` = CASE `permission`
   WHEN 'crm:work-order:delete' THEN '工单删除'
   WHEN 'crm:work-order:process' THEN '工单处理'
   WHEN 'crm:work-order:assign' THEN '工单分派'
+  WHEN 'crm:work-order:export' THEN '工单导出'
   WHEN 'crm:invoice:query' THEN '发票查询'
   WHEN 'crm:invoice:create' THEN '发票创建'
   WHEN 'crm:invoice:update' THEN '发票修改'
@@ -42,6 +43,7 @@ END
 WHERE `permission` IN (
   'crm:work-order:query','crm:work-order:query-all','crm:work-order:create',
   'crm:work-order:update','crm:work-order:delete','crm:work-order:process','crm:work-order:assign',
+  'crm:work-order:export',
   'crm:invoice:query','crm:invoice:create','crm:invoice:update','crm:invoice:delete',
   'crm:invoice:issue','crm:invoice:red-flush','crm:invoice:void','crm:invoice:export',
   'crm:contract:attachment','crm:contract:sign','crm:contract:sign-void',

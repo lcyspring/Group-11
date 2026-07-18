@@ -111,6 +111,8 @@ export interface WorkOrderDispatchContextVO {
 }
 
 export const getWorkOrderPage = async (params: any) => await request.get({ url: '/crm/work-order/page', params })
+export const exportWorkOrders = async (params: any) =>
+  await request.download({ url: '/crm/work-order/export-excel', params })
 export const getWorkOrder = async (id: number) => await request.get({ url: '/crm/work-order/get?id=' + id })
 export const createWorkOrder = async (data: WorkOrderVO) => await request.post({ url: '/crm/work-order/create', data })
 export const updateWorkOrder = async (data: WorkOrderVO) => await request.put({ url: '/crm/work-order/update', data })

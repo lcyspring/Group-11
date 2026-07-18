@@ -169,6 +169,21 @@ class CrmWorkOrderServiceImplTest {
     }
 
     @Test
+    void sameHandlerCanMoveFromDisabledGroupToAnotherEnabledGroup() {
+        CrmWorkOrderDO order = order(22L, "7", 2L, 10).setGroupId(6L);
+        when(workOrderMapper.selectById(22L)).thenReturn(order);
+        when(workOrderMapper.assignIfPending(eq(22L), eq(10), eq(2L), eq(6L), eq(5L), eq(2L), eq(4), any()))
+                .thenReturn(1);
+
+        service.assignWorkOrder(new CrmWorkOrderAssignReqVO().setId(22L)
+                .setGroupId(5L).setHandlerUserId(2L).setRemark("从停用组转入客服一组"), 1L, true);
+
+        verify(groupService).validateEnabledGroup(5L, 1);
+        verify(groupService).getOrderedMemberUserIds(5L);
+        verify(workOrderMapper).assignIfPending(eq(22L), eq(10), eq(2L), eq(6L), eq(5L), eq(2L), eq(4), any());
+    }
+
+    @Test
     void sourceCustomerMismatchIsRejectedBeforeInsert() {
         when(businessService.validateBusiness(9L)).thenReturn(new CrmBusinessDO().setId(9L).setCustomerId(8L));
         CrmWorkOrderSaveReqVO request = request(2L).setCustomerId(7L).setSourceType(1).setSourceId(9L);
@@ -314,7 +329,7 @@ class CrmWorkOrderServiceImplTest {
 
     private CrmWorkOrderDO order(Long id, String creator, Long handler, Integer status) {
         CrmWorkOrderDO order = new CrmWorkOrderDO().setId(id).setHandlerUserId(handler)
-                .setCustomerId(7L).setSourceType(0).setGroupId(5L).setStatus(status).setTitle("服务问题");
+                .setCustomerId(7L).setSourceType(0).setType(1).setGroupId(5L).setStatus(status).setTitle("服务问题");
         order.setCreator(creator);
         return order;
     }

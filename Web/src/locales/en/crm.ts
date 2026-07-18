@@ -799,6 +799,9 @@ export default {
   },
   workOrder: {
     title: 'Service Work Orders',
+    exportFiltered: 'Export Filtered',
+    exportSelected: 'Export Selected ({count})',
+    exportFileName: 'service-work-orders',
     no: 'Work Order No.',
     type: 'Type',
     priority: 'Priority',

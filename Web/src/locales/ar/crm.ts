@@ -796,6 +796,9 @@ export default {
   },
   workOrder: {
     title: 'أوامر خدمة العملاء',
+    exportFiltered: 'تصدير النتائج المصفاة',
+    exportSelected: 'تصدير المحدد ({count})',
+    exportFileName: 'أوامر-خدمة-العملاء',
     no: 'رقم أمر العمل',
     type: 'النوع',
     priority: 'الأولوية',

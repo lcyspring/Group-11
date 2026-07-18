@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { canClaimWorkOrder, candidateLabel, normalizeCcUserIds } from './dispatch.ts'
+import {
+  canClaimWorkOrder,
+  candidateLabel,
+  isUnchangedAssignment,
+  normalizeCcUserIds
+} from './dispatch.ts'
 
 test('only group members can claim pending unassigned orders', () => {
   assert.equal(canClaimWorkOrder(10, undefined, 3, 7, [7, 8]), true)
@@ -15,4 +20,10 @@ test('cc ids are positive, unique and bounded', () => {
 
 test('candidate label exposes current open load', () => {
   assert.equal(candidateLabel('Alice', 4), 'Alice · 4')
+})
+
+test('same handler remains selectable when moving to another enabled group', () => {
+  assert.equal(isUnchangedAssignment(2, 9, 1, 9), false)
+  assert.equal(isUnchangedAssignment(1, 9, 1, 9), true)
+  assert.equal(isUnchangedAssignment(1, 9, 1, 10), false)
 })
