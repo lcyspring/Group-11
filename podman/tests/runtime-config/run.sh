@@ -144,6 +144,7 @@ required_examples=(
     compile-all-ubuntu-26.04.example.yaml
     verify-crm-marketing-link-click.example.yaml
     verify-crm-work-order-performance.example.yaml
+    verify-crm-work-order-security.example.yaml
     bpm-provision.example.yaml
     bpm-provision-receivable.example.yaml
     bpm-provision-contract.example.yaml

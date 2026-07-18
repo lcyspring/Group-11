@@ -9,6 +9,8 @@
 工单专项入口为 `acceptance/verify-crm-work-order-performance.sh`，共享示例
 `config/verify-crm-work-order-performance.example.yaml` 固定要求至少 50 个工单和 50 并发；正式结果写入
 CRM evidence 目录，所有临时业务行必须清理为 0。
+安全负向入口为 `acceptance/verify-crm-work-order-security.sh`；它创建临时受限角色和用户，覆盖对象
+越权、跨租户、非法状态、SQL/XSS 与参数边界，并在退出时删除账号、Token、角色和业务行。
 
 这些脚本不用于普通编译、镜像封装或服务启动。命令行仍只接受一个 YAML 路径。
 
