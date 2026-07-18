@@ -1,5 +1,6 @@
 package com.meession.etm.module.crm.service.customer;
 
+import cn.hutool.extra.spring.SpringUtil;
 import com.meession.etm.module.crm.controller.admin.customer.vo.customer.CrmCustomerDuplicateCheckReqVO;
 import com.meession.etm.module.crm.controller.admin.customer.vo.customer.CrmCustomerLifecycleUpdateReqVO;
 import com.meession.etm.module.crm.controller.admin.customer.vo.customer.CrmCustomerSaveReqVO;
@@ -25,6 +26,7 @@ import com.meession.etm.module.crm.service.permission.bo.CrmPermissionCreateReqB
 import com.meession.etm.module.system.api.user.AdminUserApi;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -49,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mockStatic;
 
 class CrmCustomerServiceImplTest {
 
@@ -371,6 +374,68 @@ class CrmCustomerServiceImplTest {
 
         assertServiceException(() -> service.receiveCustomer(List.of(20L), 7L, true),
                 CUSTOMER_POOL_REPEAT_CLAIM_COOLDOWN, 30, "客户 20");
+    }
+
+    @Test
+    void managerAssignmentCannotBypassRecentSelfClaimCooldown() {
+        CrmCustomerServiceImpl service = receiveValidationService(publicCustomer(20L), poolConfig());
+        ReflectionTestUtils.setField(service, "customerOwnerRecordMapper", proxy(CrmCustomerOwnerRecordMapper.class,
+                (proxy, method, args) -> method.getName().equals("existsRecentSelfClaim")));
+
+        assertServiceException(() -> service.receiveCustomer(List.of(20L), 7L, false),
+                CUSTOMER_POOL_REPEAT_CLAIM_COOLDOWN, 30, "客户 20");
+    }
+
+    @Test
+    void managerAssignmentToOwnerOutsideCooldownSucceedsWithoutUsingDailyQuota() {
+        AtomicBoolean customerClaimed = new AtomicBoolean();
+        AtomicReference<CrmCustomerOwnerRecordDO> ownerRecord = new AtomicReference<>();
+        CrmCustomerServiceImpl service = new CrmCustomerServiceImpl();
+        ReflectionTestUtils.setField(service, "customerMapper", proxy(CrmCustomerMapper.class,
+                (proxy, method, args) -> switch (method.getName()) {
+                    case "selectByIdsForUpdate" -> List.of(publicCustomer(20L));
+                    case "updateClaimedFromPublicPool" -> {
+                        customerClaimed.set(true);
+                        yield 1;
+                    }
+                    default -> throw new AssertionError("未预期的客户 Mapper 调用 " + method.getName());
+                }));
+        ReflectionTestUtils.setField(service, "adminUserApi", proxy(AdminUserApi.class,
+                (proxy, method, args) -> null));
+        ReflectionTestUtils.setField(service, "customerPoolConfigService", proxy(CrmCustomerPoolConfigService.class,
+                (proxy, method, args) -> poolConfig()));
+        ReflectionTestUtils.setField(service, "poolTimeProvider", poolTimeProvider(
+                LocalDateTime.of(2026, 7, 15, 12, 0)));
+        ReflectionTestUtils.setField(service, "customerOwnerRecordMapper", proxy(CrmCustomerOwnerRecordMapper.class,
+                (proxy, method, args) -> switch (method.getName()) {
+                    case "existsRecentSelfClaim" -> ((Long) args[1]) == 7L;
+                    case "insertBatch" -> {
+                        @SuppressWarnings("unchecked")
+                        List<CrmCustomerOwnerRecordDO> records = (List<CrmCustomerOwnerRecordDO>) args[0];
+                        ownerRecord.set(records.get(0));
+                        yield true;
+                    }
+                    default -> throw new AssertionError("未预期的归属记录调用 " + method.getName());
+                }));
+        ReflectionTestUtils.setField(service, "customerPoolClaimCounterMapper",
+                proxy(CrmCustomerPoolClaimCounterMapper.class, (proxy, method, args) -> {
+                    throw new AssertionError("主管分配不应占用每日自助领取额度");
+                }));
+        ReflectionTestUtils.setField(service, "customerLimitConfigService", proxy(CrmCustomerLimitConfigService.class,
+                (proxy, method, args) -> Collections.emptyList()));
+        ReflectionTestUtils.setField(service, "permissionService", proxy(CrmPermissionService.class,
+                (proxy, method, args) -> null));
+        ReflectionTestUtils.setField(service, "contactService", proxy(CrmContactService.class,
+                (proxy, method, args) -> null));
+
+        try (MockedStatic<SpringUtil> springUtil = mockStatic(SpringUtil.class)) {
+            springUtil.when(() -> SpringUtil.getBean(CrmCustomerServiceImpl.class)).thenReturn(service);
+            service.receiveCustomer(List.of(20L), 8L, false);
+        }
+
+        assertTrue(customerClaimed.get());
+        assertEquals(8L, ownerRecord.get().getNewOwnerUserId());
+        assertEquals(CrmCustomerOwnerRecordSourceEnum.MANAGER_ASSIGN.getSource(), ownerRecord.get().getSource());
     }
 
     @Test

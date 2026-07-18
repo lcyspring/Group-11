@@ -552,8 +552,10 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
         CrmCustomerPoolConfigDO poolConfig = customerPoolConfigService.getCustomerPoolConfig();
         LocalDateTime now = poolTimeProvider.now();
         boolean selfClaim = Boolean.TRUE.equals(isReceive);
+        // 冷却期约束的是“同一客户重新回到同一负责人”，不能通过主管分配绕过。
+        // 主管分配只豁免每日自助领取额度；如需强制分配，应另设显式权限和接口。
+        validateRepeatClaimCooldown(customers, ownerUserId, poolConfig, now);
         if (selfClaim) {
-            validateRepeatClaimCooldown(customers, ownerUserId, poolConfig, now);
             reserveDailyClaimQuota(ownerUserId, customers.size(), poolConfig, now.toLocalDate());
         }
         // 1.4 校验负责人是否到达上限
