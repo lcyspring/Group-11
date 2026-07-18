@@ -74,3 +74,11 @@ DELETE r FROM crm_customer_owner_record r JOIN crm_customer c ON c.id=r.customer
 DELETE c FROM crm_contact c JOIN crm_customer u ON u.id=c.customer_id
  WHERE u.tenant_id=@demo_tenant AND u.name LIKE CONCAT(@demo_batch,'-CUS-%');
 DELETE FROM crm_customer WHERE tenant_id=@demo_tenant AND name LIKE CONCAT(@demo_batch,'-CUS-%');
+DELETE ur FROM system_user_role ur JOIN system_users u ON u.id=ur.user_id
+ WHERE u.tenant_id=@demo_tenant AND u.remark LIKE CONCAT('generated-batch:',@demo_batch,'%');
+DELETE rm FROM system_role_menu rm JOIN system_role r ON r.id=rm.role_id
+ WHERE r.tenant_id=@demo_tenant AND r.remark LIKE CONCAT('generated-batch:',@demo_batch,'%');
+DELETE FROM system_users
+ WHERE tenant_id=@demo_tenant AND remark LIKE CONCAT('generated-batch:',@demo_batch,'%');
+DELETE FROM system_role
+ WHERE tenant_id=@demo_tenant AND remark LIKE CONCAT('generated-batch:',@demo_batch,'%');

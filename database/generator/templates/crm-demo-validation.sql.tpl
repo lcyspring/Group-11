@@ -10,6 +10,44 @@ CREATE PROCEDURE validate_crm_demo_v2()
 BEGIN
   DECLARE status_type_id BIGINT;
 
+  IF (SELECT COUNT(*) FROM system_users WHERE tenant_id=@demo_tenant AND deleted=b'0'
+      AND remark LIKE CONCAT('generated-batch:',@demo_batch,'%') AND status=0
+      AND username REGEXP '^[A-Za-z0-9]+$'
+      AND password=(SELECT password FROM system_users WHERE id=__OWNER__ AND tenant_id=@demo_tenant)) <> __DEMO_USERS__ THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Demo validation failed: login user count or status';
+  END IF;
+  IF (SELECT COUNT(*) FROM system_role WHERE tenant_id=@demo_tenant AND deleted=b'0'
+      AND remark LIKE CONCAT('generated-batch:',@demo_batch,'%')) <> 5 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Demo validation failed: role profile count';
+  END IF;
+  IF (SELECT COUNT(DISTINCT u.id) FROM system_users u JOIN system_user_role ur ON ur.user_id=u.id AND ur.deleted=b'0'
+      WHERE u.tenant_id=@demo_tenant AND u.deleted=b'0'
+        AND u.remark LIKE CONCAT('generated-batch:',@demo_batch,'%')) <> __DEMO_USERS__ THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Demo validation failed: user role assignment';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM system_role r JOIN system_role_menu rm ON rm.role_id=r.id AND rm.deleted=b'0'
+      JOIN system_menu m ON m.id=rm.menu_id AND m.deleted=b'0'
+      WHERE r.tenant_id=@demo_tenant AND r.remark=CONCAT('generated-batch:',@demo_batch,'; role-profile-2')
+        AND m.permission='crm:statistics-rank:query') OR
+     EXISTS (SELECT 1 FROM system_role r JOIN system_role_menu rm ON rm.role_id=r.id AND rm.deleted=b'0'
+      JOIN system_menu m ON m.id=rm.menu_id AND m.deleted=b'0'
+      WHERE r.tenant_id=@demo_tenant AND r.remark=CONCAT('generated-batch:',@demo_batch,'; role-profile-2')
+        AND m.permission='crm:invoice:issue') OR
+     NOT EXISTS (SELECT 1 FROM system_role r JOIN system_role_menu rm ON rm.role_id=r.id AND rm.deleted=b'0'
+      JOIN system_menu m ON m.id=rm.menu_id AND m.deleted=b'0'
+      WHERE r.tenant_id=@demo_tenant AND r.remark=CONCAT('generated-batch:',@demo_batch,'; role-profile-3')
+        AND m.permission='crm:invoice:issue') OR
+     NOT EXISTS (SELECT 1 FROM system_role r JOIN system_role_menu rm ON rm.role_id=r.id AND rm.deleted=b'0'
+      JOIN system_menu m ON m.id=rm.menu_id AND m.deleted=b'0'
+      WHERE r.tenant_id=@demo_tenant AND r.remark=CONCAT('generated-batch:',@demo_batch,'; role-profile-4')
+        AND m.permission='crm:work-order:process') OR
+     NOT EXISTS (SELECT 1 FROM system_role r JOIN system_role_menu rm ON rm.role_id=r.id AND rm.deleted=b'0'
+      JOIN system_menu m ON m.id=rm.menu_id AND m.deleted=b'0'
+      WHERE r.tenant_id=@demo_tenant AND r.remark=CONCAT('generated-batch:',@demo_batch,'; role-profile-5')
+        AND m.permission='crm:marketing-campaign:query') THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Demo validation failed: role permission separation';
+  END IF;
+
   IF (SELECT COUNT(*) FROM crm_customer WHERE tenant_id=@demo_tenant
       AND name LIKE CONCAT(@demo_batch,'-CUS-%')) <> __CUSTOMERS__ THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Demo validation failed: customer count';
@@ -29,6 +67,20 @@ BEGIN
   IF (SELECT COUNT(*) FROM crm_work_order WHERE tenant_id=@demo_tenant
       AND title LIKE CONCAT(@demo_batch,'-WO-%')) <> __WORK_ORDERS__ THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Demo validation failed: work order count';
+  END IF;
+  IF (SELECT COUNT(DISTINCT owner_user_id) FROM crm_customer WHERE tenant_id=@demo_tenant
+      AND name LIKE CONCAT(@demo_batch,'-CUS-%')) < 4 OR
+     (SELECT COUNT(DISTINCT owner_user_id) FROM crm_contract WHERE tenant_id=@demo_tenant
+      AND name LIKE CONCAT(@demo_batch,'-CONTRACT-%')) < 4 OR
+     (SELECT COUNT(DISTINCT owner_user_id) FROM crm_receivable WHERE tenant_id=@demo_tenant
+      AND no LIKE CONCAT(@demo_batch,'-REC-%')) < 4 OR
+     (SELECT COUNT(DISTINCT creator) FROM crm_follow_up_record WHERE tenant_id=@demo_tenant
+      AND content LIKE CONCAT('%generated-batch:',@demo_batch,'%')) < 4 OR
+     (SELECT COUNT(DISTINCT owner_user_id) FROM crm_reimbursement WHERE tenant_id=@demo_tenant
+      AND no LIKE CONCAT(@demo_batch,'-RMB-%')) < 2 OR
+     (SELECT COUNT(DISTINCT handler_user_id) FROM crm_work_order WHERE tenant_id=@demo_tenant
+      AND title LIKE CONCAT(@demo_batch,'-WO-%')) < 2 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Demo validation failed: multi-user ownership distribution';
   END IF;
 
   SELECT id INTO status_type_id FROM crm_business_status_type
@@ -123,6 +175,8 @@ DROP PROCEDURE validate_crm_demo_v2$$
 DELIMITER ;
 
 SELECT
+  (SELECT COUNT(*) FROM system_users WHERE tenant_id=@demo_tenant AND deleted=b'0'
+    AND remark LIKE CONCAT('generated-batch:',@demo_batch,'%')) AS demo_users,
   (SELECT COUNT(*) FROM crm_customer WHERE tenant_id=@demo_tenant AND name LIKE CONCAT(@demo_batch,'-CUS-%')) AS customers,
   (SELECT COUNT(*) FROM crm_business WHERE tenant_id=@demo_tenant AND name LIKE CONCAT(@demo_batch,'-BUS-%')) AS businesses,
   (SELECT COUNT(*) FROM crm_contract WHERE tenant_id=@demo_tenant AND name LIKE CONCAT(@demo_batch,'-CONTRACT-%')) AS contracts,

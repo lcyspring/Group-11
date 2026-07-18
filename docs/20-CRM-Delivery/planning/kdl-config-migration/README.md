@@ -23,6 +23,8 @@ mysql database="mitedtsm" dataset="crm-demo-v2" dataset-mode="preserve" {
 }
 
 dataset-generation name="crm-demo-v2" seed=20260718 tenant-id=1 owner-user-id=1 {
+    demo-user-count 8
+    demo-user-password-source "owner"
     time start="2025-07-01" end="2026-07-18"
     count customers=120 businesses=180 stages=5 contracts=72 plans=144 receivables=90
 }

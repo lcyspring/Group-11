@@ -42,8 +42,8 @@
 import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import { beginOfDay, endOfDay, formatDate } from '@/utils/formatTime'
 import { WorkOrderStatisticsApi, WorkOrderStatisticsHandler, WorkOrderStatisticsStatus, WorkOrderStatisticsSummary, WorkOrderStatisticsTrend, WorkOrderStatisticsType } from '@/api/crm/statistics/workorder'
-import type { EChartsOption } from 'echarts'
 import StatisticsLineagePanel from '../components/StatisticsLineagePanel.vue'
+import { buildWorkOrderTrendOptions } from './workOrderTrendOptions'
 
 defineOptions({ name: 'CrmStatisticsWorkOrder' })
 const { t } = useI18n('crm.statistics')
@@ -65,11 +65,8 @@ const summaryCards = computed(() => [
   { label: t('workOrder.completionRate'), value: Number.parseFloat(summary.value.completionRate) || 0, suffix: '%' }
 ])
 
-const trendOptions = shallowRef<EChartsOption>({
-  tooltip: { trigger: 'axis' }, legend: {}, grid: { left: 30, right: 30, bottom: 20, containLabel: true },
-  xAxis: { type: 'category', data: [] }, yAxis: { type: 'value', minInterval: 1 },
-  series: [{ name: t('workOrder.created'), type: 'line', data: [], smooth: true }, { name: t('workOrder.completed'), type: 'line', data: [], smooth: true }]
-})
+const trendLabels = () => ({ created: t('workOrder.created'), completed: t('workOrder.completed') })
+const trendOptions = shallowRef(buildWorkOrderTrendOptions([], trendLabels()))
 
 const loadData = async () => {
   loading.value = true
@@ -83,9 +80,7 @@ const loadData = async () => {
     typeRows.value = types
     handlerRows.value = handlers
     const rows = trend as WorkOrderStatisticsTrend[]
-    ;(trendOptions.value.xAxis as any).data = rows.map(row => row.time)
-    ;(trendOptions.value.series as any[])[0].data = rows.map(row => row.createdCount)
-    ;(trendOptions.value.series as any[])[1].data = rows.map(row => row.completedCount)
+    trendOptions.value = buildWorkOrderTrendOptions(rows, trendLabels())
     statisticsLineageRef.value?.markRefreshed()
   } finally { loading.value = false }
 }
