@@ -21,5 +21,5 @@
 ```bash
 bash ./podman/compile.sh ./podman/config/verify-crm-outreach-ubuntu-26.04.yaml
 bash ./podman/compile.sh ./podman/config/verify-crm-outreach-web-ubuntu-26.04.yaml
-bash ./podman/verify-crm-outreach.sh ./podman/config/verify-crm-outreach-local.yaml
+bash ./podman/tests/acceptance/verify-crm-outreach.sh ./podman/config/verify-crm-outreach-local.yaml
 ```

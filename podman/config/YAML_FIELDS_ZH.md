@@ -7,20 +7,24 @@
 
 ## 编译配置
 
-`compile.sh` 是唯一公开编译入口。它只根据 YAML 的 `build.engine` 分派工具链，不根据文件名、
-Host 已安装程序或环境变量猜测。
+`compile.sh` 是唯一公开编译入口，Server、InitService、Web 和 Mall H5 不再各自暴露脚本。目标
+选择使用显式白名单减黑名单；黑名单优先，不根据配置文件名、Host 已安装程序或环境变量猜测。
 
 | 字段 | 作用 |
 |---|---|
-| `build.engine` | `standard` 使用公开 Server/Web Ubuntu 26.04 镜像；`hbuilderx` 使用公开无图形 HBuilderX 镜像 |
-| `image.name` | 对应工具链镜像，日常配置固定为 `ghcr.io/elel-code` 下公开镜像 |
+| `build.include_targets` | `all`、`none`，或 `server,init-service,web,mall-h5` 子集；构成编译白名单 |
+| `build.exclude_targets` | 同一取值协议；从白名单中排除目标，冲突时本字段优先 |
+| `image.standard` | Server、InitService、Web 和测试使用的公开 Ubuntu 26.04 工具链镜像 |
+| `image.hbuilderx` | Mall H5 使用的公开无图形 HBuilderX Ubuntu 26.04 镜像 |
+| `image.dependency` | Mall 项目依赖在容器运行时下载所用的 Node/pnpm 工具链镜像 |
 | `image.rebuild` | 日常固定 `false`；仅工具链维护者发布新镜像时显式开启 |
 | `cache.*` | Maven、pnpm store 和 node_modules 的 Podman 命名卷；依赖不落到 Host |
 | `network.use_host_proxy` | 是否将显式 Host 代理传给依赖下载容器；默认不继承 Host 代理 |
 
-标准工具链的 `build.server/init_service/web/*_tests/*_coverage` 精确控制产物和门禁；HBuilderX
-工具链的 `build.platform` 当前固定为 `h5`。两种引擎都在容器运行时准备项目依赖，工具链镜像
-构建阶段不内置项目 `node_modules`。
+例如 `include_targets: all` 加 `exclude_targets: mall-h5` 构建三个标准产物；
+`include_targets: web` 加 `exclude_targets: none` 只构建管理端；两者为 `all/none` 时可一次执行四个
+目标。`*_tests/*_coverage` 只控制测试门禁，不属于产物白名单。项目依赖在容器运行时准备，工具链
+镜像构建阶段不内置项目 `node_modules`。
 
 ## 运行配置
 
@@ -92,7 +96,7 @@ Host 已安装程序或环境变量猜测。
 
 ### 已有数据库的数据集替换配置
 
-`database-dataset.sh` 只接收一个 YAML 路径，不由 `deploy.sh` 自动调用。
+`operations/database/database-dataset.sh` 只接收一个 YAML 路径，不由 `deploy.sh` 自动调用。
 
 | 字段 | 作用 |
 |---|---|
@@ -193,8 +197,8 @@ Host 已安装程序或环境变量猜测。
 | `model.approval_node_name` | 审批任务节点显示名 |
 | `models.*` | 聚合清单内各受管模型配置路径，相对聚合 YAML 所在目录解析 |
 
-单模型恢复使用 `provision-bpm-model.sh`，全模型恢复使用
-`provision-bpm-models.sh`；两者命令行都只能传一个 YAML 路径。聚合恢复任一模型失败时整体返回
+单模型恢复使用 `operations/bpm/provision-bpm-model.sh`，全模型恢复使用
+`operations/bpm/provision-bpm-models.sh`；两者命令行都只能传一个 YAML 路径。聚合恢复任一模型失败时整体返回
 失败，防止部署表面成功但提交审批仍报“流程定义不存在”。
 
 ## 清理配置
@@ -213,9 +217,9 @@ Host 已安装程序或环境变量猜测。
 
 | 字段 | 作用 |
 |---|---|
-| `image.base/name/rebuild` | Ubuntu 基础镜像、专用构建镜像名、是否重建工具链镜像 |
+| `image.base/standard/rebuild` | Ubuntu 基础镜像、标准工具链镜像名、是否重建工具链镜像 |
 | `toolchain.pnpm_version` | 容器内 pnpm 版本 |
-| `build.server/init_service/web` | 是否构建对应产物 |
+| `build.include_targets/exclude_targets` | 四目标白名单与黑名单；标准容器只消费最终选中的前三个目标 |
 | `build.clean` | Maven/Web 是否清理旧产物 |
 | `build.crm_tests/crm_coverage` | 是否执行 CRM 测试和 JaCoCo |
 | `build.framework_tests/framework_coverage` | 是否执行显式选择的 Framework 模块测试和 JaCoCo |
@@ -237,33 +241,33 @@ Host 已安装程序或环境变量猜测。
 
 `compile.sh` 同样只接受一个 YAML 路径。项目依赖不在 Host
 执行安装，也不写入工具链 image：先由 `image.dependency` 指定的 Ubuntu 26.04
-工具容器在运行时执行 pnpm，写入 `cache.node_modules_volume` 与
-`cache.pnpm_store_volume`；之后 HBuilderX 容器挂载同一 `node_modules` 卷并以
-`network.mode: none` 编译。Host 的 `MallFrontend/node_modules` 不参与构建。
+工具容器在运行时执行 pnpm，写入 `cache.mall_node_modules_volume` 与
+`cache.mall_pnpm_store_volume`；之后 HBuilderX 容器挂载同一 `node_modules` 卷并以
+`network.mall_mode: none` 编译。Host 的 `MallFrontend/node_modules` 不参与构建。
 
 | 字段 | 作用 |
 |---|---|
-| `image.name` | 无图形 HBuilderX 编译工具链 image；默认优先使用已公开的 `ghcr.io/elel-code/group-11-hbuilderx-ubuntu:26.04-5.05`。 |
+| `image.hbuilderx` | 无图形 HBuilderX 编译工具链 image；固定使用公开的 `ghcr.io/elel-code/group-11-hbuilderx-ubuntu:26.04-5.05`。 |
 | `image.dependency` | 运行时安装 Mall 项目依赖的 Ubuntu 26.04 Node/pnpm 工具 image；默认优先使用 `ghcr.io/elel-code/group-11-build-ubuntu:26.04`。 |
 | `image.rebuild` | 是否由工具链维护者从 `hbuilderx.source_dir` 重建 HBuilderX image；普通成员保持 `false`。 |
-| `dependency.frozen_lockfile` | 为 `true` 时要求 `package.json` 与 `pnpm-lock.yaml` 完全一致。 |
-| `cache.pnpm_store_volume` | Mall 专用 pnpm 包缓存卷，不与 Host pnpm store 混用。 |
-| `cache.pnpm_store_path` | pnpm store 在依赖容器内的绝对路径。 |
-| `cache.node_modules_volume` | Mall 专用 `node_modules` 卷，同时挂载给依赖容器和断网编译容器。 |
-| `network.dependency_mode` | 容器运行时下载依赖使用的 rootless Podman 网络模式。 |
-| `network.mode` | 正式 H5 编译网络；必须为 `none`。 |
+| `dependency.mall_frozen_lockfile` | 为 `true` 时要求 `package.json` 与 `pnpm-lock.yaml` 完全一致。 |
+| `cache.mall_pnpm_store_volume` | Mall 专用 pnpm 包缓存卷，不与 Host pnpm store 混用。 |
+| `cache.mall_pnpm_store_path` | pnpm store 在依赖容器内的绝对路径。 |
+| `cache.mall_node_modules_volume` | Mall 专用 `node_modules` 卷，同时挂载给依赖容器和断网编译容器。 |
+| `network.mall_dependency_mode` | 容器运行时下载依赖使用的 rootless Podman 网络模式。 |
+| `network.mall_mode` | 正式 H5 编译网络；必须为 `none`。 |
 | `network.use_host_proxy` | 是否把显式 Host 代理环境传入依赖容器；默认 `false`。 |
 
 | 字段 | 作用 |
 |---|---|
-| `image.base/name/rebuild` | Ubuntu 基础镜像、无图形 HBuilderX 镜像名和重建开关 |
+| `image.base/hbuilderx/rebuild` | Ubuntu 基础镜像、无图形 HBuilderX 镜像名和重建开关 |
 | `hbuilderx.source_dir` | 仅重建镜像时读取的宿主 HBuilderX 目录 |
 | `build.platform` | 当前固定 `h5` |
 | `build.clean_output` | 构建前是否清空 H5 输出 |
 | `media.legacy_origins` | H5 退休远程媒体源 |
 | `media.legacy_fallback` | 无法代理媒体的本地回退资源 |
-| `network.mode` | H5 构建容器网络；可复现构建使用 `none` |
-| `runtime.memory/cpus` | H5 构建容器资源上限 |
+| `network.mall_mode` | H5 构建容器网络；可复现构建固定 `none` |
+| `runtime.mall_memory/mall_cpus` | H5 构建容器资源上限 |
 
 ## CRM MySQL 备份恢复配置
 
@@ -281,7 +285,7 @@ Host 已安装程序或环境变量猜测。
 
 ## CRM 客户画像临时数据验收配置
 
-`verify-crm-customer-portrait-runtime.sh` 会写入并自动清理唯一前缀临时客户。账号和密码必须放在
+`tests/acceptance/verify-crm-customer-portrait-runtime.sh` 会写入并自动清理唯一前缀临时客户。账号和密码必须放在
 ignored 的 `verify-*-local.yaml`，仓库只提供 `.example.yaml` 字段模板。
 
 | 字段 | 作用 |

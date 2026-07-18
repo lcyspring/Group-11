@@ -12,7 +12,7 @@
 
 ## 真实运行验收
 
-使用 `podman/verify-crm-clue-activity.sh`，唯一参数为显式 YAML 文件路径。脚本通过真实管理端 API：
+使用 `podman/tests/acceptance/verify-crm-clue-activity.sh`，唯一参数为显式 YAML 文件路径。脚本通过真实管理端 API：
 
 1. 登录并创建临时线索；
 2. 创建两个任务、一条通话和一条短信；

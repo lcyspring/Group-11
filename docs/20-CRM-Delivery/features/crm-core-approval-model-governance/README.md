@@ -20,5 +20,5 @@
 
 ```bash
 cd podman
-bash ./provision-bpm-model.sh ./config/bpm-provision-refund-local.yaml
+bash ./operations/bpm/provision-bpm-model.sh ./config/bpm-provision-refund-local.yaml
 ```

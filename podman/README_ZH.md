@@ -35,6 +35,9 @@ bash ./podman/compile.sh ./podman/config/build-ubuntu-26.04.yaml
 # Mall H5 无图形构建
 bash ./podman/compile.sh ./podman/config/build-mall-h5-ubuntu-26.04.yaml
 
+# 一次选择四个产物；白名单/黑名单均在 YAML 中显式配置
+bash ./podman/compile.sh ./podman/config/compile-all-ubuntu-26.04.example.yaml
+
 # 阶段二：检查并封装已有产物为运行镜像
 bash ./podman/build-images.sh ./podman/config/runtime-images-check.yaml
 bash ./podman/build-images.sh ./podman/config/runtime-images.example.yaml
@@ -45,6 +48,10 @@ bash ./podman/tests/runtime-config/run.sh ./podman/config/runtime-local-check.ya
 # 部署；具体模式只在 YAML 中修改
 bash ./podman/deploy.sh ./podman/config/runtime-local.yaml
 ```
+
+完整部署会先优雅停止旧服务，再使用 `podman pod create --replace` 接管同名 Pod；基础设施、Server、
+Web、Mall 及单组件更新均使用 `podman run --replace`。只有 `stop.sh` 的显式停服/销毁操作保留
+`pod rm`，避免部署脚本手工维护重复删除分支。
 
 ## 产物与镜像
 
@@ -76,3 +83,10 @@ bash ./podman/deploy.sh ./podman/config/runtime-local.yaml
 - 恢复覆盖真源库必须二次授权且 Server 已停止；
 - 真实密码只写被 Git 忽略的本机 YAML；
 - 编译镜像 tar、备份文件和 checksum 均被 Git 忽略，不提交仓库。
+
+## 脚本目录
+
+- 根目录只保留 `compile.sh`、`build-images.sh`、`deploy.sh`、`stop.sh` 四个日常入口；
+- `tests/acceptance/` 保存真实 API/MySQL 验收脚本，`tests/*` 不参与普通启动；
+- `operations/database|images|bpm|diagnostics/` 保存低频运维入口；
+- `internal/` 保存容器内入口和标准编译助手，成员不应直接调用。

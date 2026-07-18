@@ -4,7 +4,7 @@
 
 后续交付固定拆为三个互不隐式调用的阶段，所有命令行只接收一个 YAML 路径：
 
-1. 编译产物：统一入口 `compile.sh`，由 YAML `build.engine` 选择工具链；
+1. 编译产物：统一入口 `compile.sh`，由 YAML 白名单减黑名单选择四个目标；
 2. 封装运行镜像：`build-images.sh`；
 3. 启动或替换容器：`deploy.sh`。
 
@@ -16,11 +16,19 @@ named volume，Host 不安装项目依赖。阶段二只读取已经生成的 JA
 标准入口：
 
 ```bash
+# 推荐：一份 YAML 连续编译全部四个目标
+bash podman/compile.sh podman/config/compile-all-ubuntu-26.04.example.yaml
+
+# 也可用 YAML 白名单/黑名单只选择标准目标或 H5
 bash podman/compile.sh podman/config/build-ubuntu-26.04.yaml
 bash podman/compile.sh podman/config/build-mall-h5-ubuntu-26.04.yaml
 bash podman/build-images.sh podman/config/runtime-images.example.yaml
 bash podman/deploy.sh podman/config/runtime-local.yaml
 ```
+
+完整部署先按 YAML 超时优雅停止 Server 和旧 Pod，再由 `podman pod create --replace` 接管同名 Pod；
+各基础设施、Server、Web、Mall 容器统一使用 `podman run --replace`。显式停服/销毁仍由 `stop.sh`
+执行，因此保留删除 Pod 的语义，不与部署替换混用。
 
 单组件更新也必须先封装镜像，再使用 `replace-server`、`replace-web` 或 `replace-mall`。模式名描述的
 只是容器替换行为，不再同时承担编译或镜像构建职责。

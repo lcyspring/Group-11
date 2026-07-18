@@ -6,7 +6,6 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PODMAN_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
 PROJECT_ROOT="$(cd -- "${PODMAN_DIR}/.." && pwd)"
 BUILD_SCRIPT="${PODMAN_DIR}/compile.sh"
-HBUILDERX_ENGINE="${PODMAN_DIR}/internal/compile-hbuilderx.sh"
 
 if [[ $# -ne 1 ]]; then
     printf 'Usage: bash ./run.sh <config.yaml>\n' >&2
@@ -16,9 +15,9 @@ fi
 # shellcheck source=../../lib/yaml-config.sh
 source "${PODMAN_DIR}/lib/yaml-config.sh"
 yaml_config_init "$1"
-BUILD_IMAGE="$(yaml_require image.name)"
+BUILD_IMAGE="$(yaml_require image.hbuilderx)"
 DEPENDENCY_IMAGE="$(yaml_require image.dependency)"
-NODE_MODULES_VOLUME="$(yaml_require cache.node_modules_volume)"
+NODE_MODULES_VOLUME="$(yaml_require cache.mall_node_modules_volume)"
 OUTPUT_DIR="${PROJECT_ROOT}/MallFrontend/unpackage/dist/build/web"
 
 pass_count=0
@@ -41,7 +40,9 @@ expect_status() {
     }
 }
 
-bash -n "$BUILD_SCRIPT" "$HBUILDERX_ENGINE" "${PODMAN_DIR}/hbuilderx-build-entrypoint.sh"
+bash -n "$BUILD_SCRIPT" \
+    "${PODMAN_DIR}/internal/hbuilderx-build-entrypoint.sh" \
+    "${PODMAN_DIR}/internal/mall-dependencies-entrypoint.sh"
 pass 'build scripts pass bash syntax validation'
 
 expect_status 2 "$BUILD_SCRIPT"
@@ -49,11 +50,11 @@ expect_status 2 "$BUILD_SCRIPT" "$1" unexpected-extra-argument
 pass 'build command accepts exactly one YAML path'
 
 rg -q --fixed-strings -- \
-    '--volume "$NODE_MODULES_VOLUME:/workspace/MallFrontend/node_modules:rw"' \
-    "$HBUILDERX_ENGINE"
+    '--volume "$node_modules_volume:/workspace/MallFrontend/node_modules:rw"' \
+    "$BUILD_SCRIPT"
 rg -q --fixed-strings -- \
-    '--entrypoint /workspace/podman/mall-dependencies-entrypoint.sh' \
-    "$HBUILDERX_ENGINE"
+    '--entrypoint /workspace/podman/internal/mall-dependencies-entrypoint.sh' \
+    "$BUILD_SCRIPT"
 pass 'dependency install and H5 compile both use the Podman node_modules volume'
 
 build_log="$(mktemp)"

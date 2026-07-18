@@ -15,7 +15,7 @@
 运行入口：
 
 ```bash
-bash podman/verify-crm-statistics-runtime.sh \
+bash podman/tests/acceptance/verify-crm-statistics-runtime.sh \
   podman/config/verify-crm-statistics-runtime-local.yaml
 ```
 

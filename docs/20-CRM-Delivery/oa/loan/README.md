@@ -32,7 +32,7 @@ mitedtsm:
 ```bash
 cp podman/config/bpm-provision-loan.example.yaml podman/config/bpm-provision-loan-local.yaml
 cd podman
-bash ./provision-bpm-model.sh ./config/bpm-provision-loan-local.yaml
+bash ./operations/bpm/provision-bpm-model.sh ./config/bpm-provision-loan-local.yaml
 ```
 
 模型 key 固定为 `oa_loan`。全新数据卷由 `deploy.sh full` 通过

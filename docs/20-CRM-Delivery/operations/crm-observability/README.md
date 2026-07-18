@@ -6,7 +6,7 @@
 
 ```bash
 cp ./podman/config/crm-diagnostics.example.yaml ./podman/config/crm-diagnostics-local.yaml
-bash ./podman/collect-crm-diagnostics.sh ./podman/config/crm-diagnostics-local.yaml
+bash ./podman/operations/diagnostics/collect-crm-diagnostics.sh ./podman/config/crm-diagnostics-local.yaml
 ```
 
 命令行不能传账号、阈值或输出路径；所有差异只修改 ignored YAML。正常执行不改变 Pod、容器、卷、

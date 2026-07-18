@@ -6,6 +6,7 @@
 |---|---|---|
 | Server/Web 构建 | `build-ubuntu-26.04.yaml` | Ubuntu 26.04 全量构建 |
 | Mall H5 构建 | `build-mall-h5-ubuntu-26.04.yaml` | 无图形 HBuilderX 构建 |
+| 四目标编译示例 | `compile-all-ubuntu-26.04.example.yaml` | `include_targets: all`、`exclude_targets: none`，一次选择全部产物 |
 | 运行镜像封装 | `runtime-images.example.yaml` | 将已有产物封装为五个运行镜像，不启动容器 |
 | Server 单项封装 | `runtime-images-server.example.yaml` | 只重新封装已编译 Server JAR |
 | Web 单项封装 | `runtime-images-web.example.yaml` | 只重新封装已编译管理端产物 |
@@ -63,7 +64,7 @@ cp ./config/bpm-provision-customer-visit.example.yaml ./config/bpm-provision-cus
 若现有环境只缺少请假模型，可在填写 ignored 本机配置后单独幂等补配：
 
 ```bash
-bash ./provision-bpm-model.sh ./config/bpm-provision-leave-local.yaml
+bash ./operations/bpm/provision-bpm-model.sh ./config/bpm-provision-leave-local.yaml
 ```
 
 命令成功必须输出已部署模型 `oa_leave`；重复执行只更新/复用同名角色、分类和模型，不创建第二套业务流程。
@@ -82,7 +83,7 @@ bash ./stop.sh ./config/runtime-reset-local.yaml
 ```
 
 第二条命令不可恢复地清除 MySQL、Redis、RabbitMQ、TDengine 数据。执行前应先使用
-`database-backup.sh` 完成备份，并确认下一次 `deploy.sh replace` 开启 BPM 自动恢复。构建产物不由
+`operations/database/database-backup.sh` 完成备份，并确认下一次 `deploy.sh replace` 开启 BPM 自动恢复。构建产物不由
 `stop.sh` 删除；Maven `target`、`Web/dist-prod`、Mall `unpackage/dist` 应通过对应构建配置的
 clean 字段重建，避免把“清产物”和“销毁业务数据”混为一个操作。
 

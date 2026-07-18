@@ -53,47 +53,68 @@ pod_snapshot() {
 
 bash -n "${PODMAN_DIR}/compile.sh"
 bash -n "${PODMAN_DIR}/internal/compile-standard.sh"
-bash -n "${PODMAN_DIR}/internal/compile-hbuilderx.sh"
+bash -n "${PODMAN_DIR}/internal/hbuilderx-build-entrypoint.sh"
+bash -n "${PODMAN_DIR}/internal/mall-dependencies-entrypoint.sh"
+bash -n "${PODMAN_DIR}/internal/ubuntu-build-entrypoint.sh"
+for container_entrypoint in \
+    "${PODMAN_DIR}/internal/hbuilderx-build-entrypoint.sh" \
+    "${PODMAN_DIR}/internal/mall-dependencies-entrypoint.sh" \
+    "${PODMAN_DIR}/internal/ubuntu-build-entrypoint.sh"; do
+    [[ -x "$container_entrypoint" ]] || \
+        fail "container entrypoint must be executable: ${container_entrypoint#${PODMAN_DIR}/}"
+done
 bash -n "${PODMAN_DIR}/deploy.sh"
 bash -n "${PODMAN_DIR}/build-images.sh"
 bash -n "${PODMAN_DIR}/stop.sh"
-bash -n "${PODMAN_DIR}/image-archives.sh"
+bash -n "${PODMAN_DIR}/operations/images/image-archives.sh"
 bash -n "${PODMAN_DIR}/lib/yaml-config.sh"
 bash -n "${PODMAN_DIR}/init/init-mysql.sh"
-bash -n "${PODMAN_DIR}/database-backup.sh"
-bash -n "${PODMAN_DIR}/database-restore.sh"
-bash -n "${PODMAN_DIR}/database-dataset.sh"
-bash -n "${PODMAN_DIR}/build-image-archives.sh"
-bash -n "${PODMAN_DIR}/provision-bpm-model.sh"
-bash -n "${PODMAN_DIR}/provision-bpm-models.sh"
+bash -n "${PODMAN_DIR}/operations/database/database-backup.sh"
+bash -n "${PODMAN_DIR}/operations/database/database-restore.sh"
+bash -n "${PODMAN_DIR}/operations/database/database-dataset.sh"
+bash -n "${PODMAN_DIR}/operations/images/build-image-archives.sh"
+bash -n "${PODMAN_DIR}/operations/bpm/provision-bpm-model.sh"
+bash -n "${PODMAN_DIR}/operations/bpm/provision-bpm-models.sh"
 for bpm_key in leave receivable reimbursement contract refund trip loan customer_visit; do
-    grep -Eq "for key in .*${bpm_key}" "${PODMAN_DIR}/provision-bpm-models.sh" ||
+    grep -Eq "for key in .*${bpm_key}" "${PODMAN_DIR}/operations/bpm/provision-bpm-models.sh" ||
         fail "BPM aggregate provisioner does not include configured model: ${bpm_key}"
 done
-bash -n "${PODMAN_DIR}/verify-crm-receivable-reference-integrity.sh"
-bash -n "${PODMAN_DIR}/verify-crm-performance-target-runtime.sh"
-bash -n "${PODMAN_DIR}/verify-crm-runtime-security.sh"
-bash -n "${PODMAN_DIR}/verify-crm-user-guide.sh"
-bash -n "${PODMAN_DIR}/verify-crm-customer-portrait-runtime.sh"
-bash -n "${PODMAN_DIR}/verify-crm-marketing-link-click.sh"
+for acceptance_script in "${PODMAN_DIR}"/tests/acceptance/verify-*.sh; do
+    bash -n "$acceptance_script"
+done
+
+mapfile -t root_scripts < <(find "$PODMAN_DIR" -maxdepth 1 -type f -name '*.sh' -printf '%f\n' | sort)
+[[ "${root_scripts[*]}" == "build-images.sh compile.sh deploy.sh stop.sh" ]] || \
+    fail "Podman root must contain only the four daily scripts: ${root_scripts[*]}"
+rg -q 'podman_cmd pod create --replace' "${PODMAN_DIR}/deploy.sh" || \
+    fail 'full deployment must use podman pod create --replace'
+if rg -q 'podman_cmd pod rm' "${PODMAN_DIR}/deploy.sh"; then
+    fail 'deploy.sh must not manually remove a Pod before replacement'
+fi
 
 while IFS= read -r build_config; do
     yaml_config_init "$build_config"
-    case "$(yaml_require build.engine)" in
-        standard|hbuilderx) ;;
-        *) fail "build.engine is missing or invalid: ${build_config}" ;;
-    esac
-done < <(rg -l '^  name: ghcr.io/elel-code/group-11-(build|hbuilderx)-ubuntu:' \
+    include_targets="$(yaml_require build.include_targets)"
+    exclude_targets="$(yaml_require build.exclude_targets)"
+    [[ "$include_targets" =~ ^(all|none|(server|init-service|web|mall-h5)(,(server|init-service|web|mall-h5))*)$ ]] || \
+        fail "invalid build.include_targets: ${build_config}"
+    [[ "$exclude_targets" =~ ^(all|none|(server|init-service|web|mall-h5)(,(server|init-service|web|mall-h5))*)$ ]] || \
+        fail "invalid build.exclude_targets: ${build_config}"
+done < <(rg -l '^  (standard|hbuilderx): ghcr.io/elel-code/group-11-(build|hbuilderx)-ubuntu:' \
     "${PODMAN_DIR}/config" --glob '*.yaml')
+if rg -q '^  (engine|server|init_service|web): (standard|hbuilderx|true|false)$' \
+    "${PODMAN_DIR}/config" --glob '*.yaml'; then
+    fail 'legacy engine or per-artifact build whitelist remains in a compile configuration'
+fi
 
-bash "${PODMAN_DIR}/database-backup.sh" "${PODMAN_DIR}/config/database-backup-check.yaml"
-bash "${PODMAN_DIR}/database-restore.sh" "${PODMAN_DIR}/config/database-backup-check.yaml"
-bash "${PODMAN_DIR}/database-dataset.sh" "${PODMAN_DIR}/config/database-dataset-check.yaml"
-expect_exit_2 bash "${PODMAN_DIR}/database-dataset.sh" \
+bash "${PODMAN_DIR}/operations/database/database-backup.sh" "${PODMAN_DIR}/config/database-backup-check.yaml"
+bash "${PODMAN_DIR}/operations/database/database-restore.sh" "${PODMAN_DIR}/config/database-backup-check.yaml"
+bash "${PODMAN_DIR}/operations/database/database-dataset.sh" "${PODMAN_DIR}/config/database-dataset-check.yaml"
+expect_exit_2 bash "${PODMAN_DIR}/operations/database/database-dataset.sh" \
     "${SCRIPT_DIR}/fixtures/dataset-replace-unconfirmed.yaml"
-expect_exit_2 bash "${PODMAN_DIR}/database-dataset.sh" \
+expect_exit_2 bash "${PODMAN_DIR}/operations/database/database-dataset.sh" \
     "${SCRIPT_DIR}/fixtures/dataset-cleanup-not-authorized.yaml"
-bash "${PODMAN_DIR}/build-image-archives.sh" "${PODMAN_DIR}/config/build-image-archives-check.yaml"
+bash "${PODMAN_DIR}/operations/images/build-image-archives.sh" "${PODMAN_DIR}/config/build-image-archives-check.yaml"
 bash "${PODMAN_DIR}/build-images.sh" "${PODMAN_DIR}/config/runtime-images-check.yaml"
 if rg -q 'podman(_cmd)?[[:space:]]+build|Containerfile|target/mitedtsm|dist-prod|unpackage/dist' \
     "${PODMAN_DIR}/deploy.sh"; then
@@ -106,6 +127,7 @@ required_examples=(
     runtime-images.example.yaml
     runtime-images-server.example.yaml
     runtime-images-web.example.yaml
+    compile-all-ubuntu-26.04.example.yaml
     verify-crm-marketing-link-click.example.yaml
     bpm-provision.example.yaml
     bpm-provision-receivable.example.yaml
@@ -214,14 +236,18 @@ expect_exit_2 bash "${PODMAN_DIR}/deploy.sh" "$CONFIG_PATH" extra
 expect_exit_2 bash "${PODMAN_DIR}/compile.sh"
 expect_exit_2 bash "${PODMAN_DIR}/compile.sh" \
     "${PODMAN_DIR}/config/build-ubuntu-26.04.yaml" extra
+expect_exit_2 bash "${PODMAN_DIR}/compile.sh" \
+    "${SCRIPT_DIR}/fixtures/compile-invalid-selector.yaml"
+expect_exit_2 bash "${PODMAN_DIR}/compile.sh" \
+    "${SCRIPT_DIR}/fixtures/compile-empty-selection.yaml"
 expect_exit_2 bash "${PODMAN_DIR}/build-images.sh"
 expect_exit_2 bash "${PODMAN_DIR}/build-images.sh" \
     "${PODMAN_DIR}/config/runtime-images-check.yaml" extra
 expect_exit_2 bash "${PODMAN_DIR}/stop.sh"
 expect_exit_2 bash "${PODMAN_DIR}/stop.sh" "$CONFIG_PATH" extra
-expect_exit_2 bash "${PODMAN_DIR}/image-archives.sh"
-expect_exit_2 bash "${PODMAN_DIR}/image-archives.sh" "$CONFIG_PATH" extra
-expect_exit_1 bash "${PODMAN_DIR}/image-archives.sh" \
+expect_exit_2 bash "${PODMAN_DIR}/operations/images/image-archives.sh"
+expect_exit_2 bash "${PODMAN_DIR}/operations/images/image-archives.sh" "$CONFIG_PATH" extra
+expect_exit_1 bash "${PODMAN_DIR}/operations/images/image-archives.sh" \
     "${SCRIPT_DIR}/fixtures/archive-check-missing.yaml"
 
 yaml_config_init "$CONFIG_PATH"

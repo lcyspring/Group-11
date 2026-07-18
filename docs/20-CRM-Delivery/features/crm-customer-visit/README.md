@@ -25,7 +25,7 @@
 ```bash
 cp podman/config/bpm-provision-customer-visit.example.yaml \
   podman/config/bpm-provision-customer-visit-local.yaml
-bash podman/provision-bpm-model.sh podman/config/bpm-provision-customer-visit-local.yaml
+bash podman/operations/bpm/provision-bpm-model.sh podman/config/bpm-provision-customer-visit-local.yaml
 ```
 
 真实账号只写入 ignored local YAML。全模型清单同时包含客户拜访，空数据卷重建后由 `deploy.sh full`

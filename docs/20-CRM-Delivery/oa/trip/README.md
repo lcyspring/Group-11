@@ -17,7 +17,7 @@
 cp podman/config/bpm-provision-trip.example.yaml podman/config/bpm-provision-trip-local.yaml
 # 仅在被 Git 忽略的 local YAML 中填写本机账号
 cd podman
-bash ./provision-bpm-model.sh ./config/bpm-provision-trip-local.yaml
+bash ./operations/bpm/provision-bpm-model.sh ./config/bpm-provision-trip-local.yaml
 ```
 
 编译和测试使用 `ghcr.io/elel-code/group-11-build-ubuntu:26.04`，配置文件为

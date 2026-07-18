@@ -17,6 +17,6 @@
 ## 验证入口
 
 - 构建：`podman/config/verify-crm-statistics-data-quality-ubuntu-26.04.yaml`；
-- 运行验收：`podman/verify-crm-deal-cycle-data-quality.sh`；
+- 运行验收：`podman/tests/acceptance/verify-crm-deal-cycle-data-quality.sh`；
 - 无凭据示例：`podman/config/verify-crm-deal-cycle-data-quality.example.yaml`；
 - 测试与覆盖率：`docs/20-CRM-Delivery/testing/deal-cycle-data-quality/`。

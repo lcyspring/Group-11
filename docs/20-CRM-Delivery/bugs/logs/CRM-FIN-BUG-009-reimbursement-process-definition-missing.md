@@ -23,7 +23,7 @@
 
 ## 修复
 
-- 新增 `podman/provision-bpm-model.sh`，命令行只接受一个 YAML 配置路径；
+- 新增 `podman/operations/bpm/provision-bpm-model.sh`，命令行只接受一个 YAML 配置路径；
 - YAML 显式配置管理 API、租户、治理账号、审批角色代码、审批账号、流程分类、模型键和业务表单路径；
 - 脚本通过正式角色、权限、BPM 分类和模型管理 API 创建并发布模型，不启用资源目录自动部署；
 - 审批节点按 `crm_finance_approver` 角色动态选人，模型只保存运行时解析出的角色编号，不硬编码用户编号；

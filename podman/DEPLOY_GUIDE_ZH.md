@@ -19,7 +19,7 @@ bash ./compile.sh ./config/build-ubuntu-26.04.yaml
 bash ./build-images.sh ./config/runtime-images-check.yaml
 bash ./deploy.sh ./config/runtime-local-check.yaml
 bash ./stop.sh ./config/runtime-local-check.yaml
-bash ./image-archives.sh ./config/runtime-local-check.yaml
+bash ./operations/images/image-archives.sh ./config/runtime-local-check.yaml
 ```
 
 零参数、多参数、旧的 `--check`/`--fast`/`--volumes` 等调用都会以退出码
@@ -163,7 +163,7 @@ bash ./stop.sh ./config/cleanup-stop.example.yaml
 
 ```bash
 cp ./config/cleanup-reset.example.yaml ./config/runtime-reset-local.yaml
-bash ./database-backup.sh ./config/database-backup-local.yaml
+bash ./operations/database/database-backup.sh ./config/database-backup-local.yaml
 bash ./stop.sh ./config/runtime-reset-local.yaml
 ```
 
@@ -172,7 +172,7 @@ bash ./stop.sh ./config/runtime-reset-local.yaml
 重建后先用阶段二封装全量运行镜像，再使用 `deploy.sh replace`，并确保 `bpm.provision_after_start: true`，否则空数据库中不存在 Flowable
 流程定义，请假、回款、报销、合同、退款、出差、借款、客户拜访和请示提交审批都会失败。标准聚合清单必须包含
 `bpm-provision-leave-local.yaml`；已有环境若仅缺少请假模型，执行
-`bash ./provision-bpm-model.sh ./config/bpm-provision-leave-local.yaml` 幂等补配，不需要重建数据库卷。
+`bash ./operations/bpm/provision-bpm-model.sh ./config/bpm-provision-leave-local.yaml` 幂等补配，不需要重建数据库卷。
 
 清理构建产物与销毁数据是两类操作：Server 的 Maven `target`、`Web/dist-prod` 和 Mall
 `unpackage/dist` 由各 Ubuntu 26.04 构建 YAML 的 clean 开关控制；不要通过删数据卷来解决旧前端或
@@ -181,7 +181,7 @@ bash ./stop.sh ./config/runtime-reset-local.yaml
 ## 9. 离线镜像与代理
 
 联网机器在 YAML 中设置 `operation.archive_mode: pull-save` 后调用
-`image-archives.sh`；已有本地镜像时可使用 `save`，无状态检查使用 `check`。
+`operations/images/image-archives.sh`；已有本地镜像时可使用 `save`，无状态检查使用 `check`。
 再为部署配置：
 
 ```yaml

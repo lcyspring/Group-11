@@ -36,7 +36,7 @@ compatibility manifest。预检不保存原始 Excel 二进制，只保存规范
 ```bash
 bash podman/compile.sh podman/config/verify-crm-customer-import-ubuntu-26.04.yaml
 bash podman/compile.sh podman/config/test-crm-ubuntu-26.04.yaml
-bash podman/verify-crm-customer-import.sh podman/config/verify-crm-customer-import.example.yaml
+bash podman/tests/acceptance/verify-crm-customer-import.sh podman/config/verify-crm-customer-import.example.yaml
 ```
 
 命令行只指定 YAML 路径，依赖安装、测试和构建均在 Ubuntu 26.04 容器内完成。

@@ -16,6 +16,6 @@
 
 ## 验证入口
 
-- 运行验收：`podman/verify-crm-receivable-reference-integrity.sh`；
+- 运行验收：`podman/tests/acceptance/verify-crm-receivable-reference-integrity.sh`；
 - 无凭据示例：`podman/config/verify-crm-receivable-reference-integrity.example.yaml`；
 - 测试与覆盖率：`docs/20-CRM-Delivery/testing/receivable-reference-integrity/`。

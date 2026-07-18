@@ -40,12 +40,18 @@ bash podman/compile.sh podman/config/build-ubuntu-26.04.yaml
 # 也可用 HBuilderX 工具链编译 Mall H5
 bash podman/compile.sh podman/config/build-mall-h5-ubuntu-26.04.yaml
 
+# 一次选择四个目标
+bash podman/compile.sh podman/config/compile-all-ubuntu-26.04.example.yaml
+
 # 2. 将已有产物封装为运行镜像
 bash podman/build-images.sh podman/config/runtime-images.example.yaml
 
 # 3. 只消费镜像并启动或替换容器
 bash podman/deploy.sh podman/config/runtime-local.yaml
 ```
+
+`build.include_targets` 是白名单，`build.exclude_targets` 是优先级更高的黑名单；可用 `all`、
+`none` 或 `server,init-service,web,mall-h5` 子集组合，不再使用每个产物一个布尔开关。
 
 停止服务：
 

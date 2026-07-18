@@ -825,16 +825,12 @@ if podman_cmd pod inspect "$POD_NAME" >/dev/null 2>&1; then
         printf 'Stopping application server before infrastructure.\n'
         podman_cmd stop --time "$STOP_TIMEOUT" "$SERVER_CONTAINER"
     fi
-    if ! podman_cmd pod stop --time "$STOP_TIMEOUT" "$POD_NAME"; then
-        printf 'Graceful stop failed; forcibly removing Pod %s.\n' "$POD_NAME" >&2
-        podman_cmd pod rm --force "$POD_NAME"
-    else
-        podman_cmd pod rm "$POD_NAME"
-    fi
+    podman_cmd pod stop --time "$STOP_TIMEOUT" "$POD_NAME" || \
+        printf 'Graceful Pod stop timed out; pod create --replace will remove the old Pod.\n' >&2
 fi
 
 printf 'Creating rootless Podman Pod %s.\n' "$POD_NAME"
-podman_cmd pod create \
+podman_cmd pod create --replace \
     --name "$POD_NAME" \
     --publish "${HOST_ADDRESS}:${SERVER_PORT}:${SERVER_CONTAINER_PORT}" \
     --publish "${HOST_ADDRESS}:${WEB_PORT}:${WEB_CONTAINER_PORT}" \
@@ -903,7 +899,7 @@ start_server
 wait_for 'Spring Boot server' "$SERVER_ATTEMPTS" host_curl --fail --silent --show-error "http://${HEALTH_HTTP_HOST}:${SERVER_PORT}${SERVER_HEALTH_PATH}"
 if [[ "${BPM_PROVISION_AFTER_START,,}" == "true" ]]; then
     printf 'Provisioning governed BPM models from explicit manifest.\n'
-    bash "${SCRIPT_DIR}/provision-bpm-models.sh" "$BPM_PROVISION_MANIFEST"
+    bash "${SCRIPT_DIR}/operations/bpm/provision-bpm-models.sh" "$BPM_PROVISION_MANIFEST"
 fi
 start_frontends
 wait_for_frontends

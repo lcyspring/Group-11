@@ -85,12 +85,12 @@ normalize_bool() {
 }
 
 BASE_IMAGE="$(config_value image.base docker.io/library/ubuntu:26.04)"
-BUILD_IMAGE="$(config_value image.name ghcr.io/elel-code/group-11-build-ubuntu:26.04)"
+BUILD_IMAGE="$(config_value image.standard ghcr.io/elel-code/group-11-build-ubuntu:26.04)"
 REBUILD_IMAGE="$(normalize_bool "$(config_value image.rebuild false)")"
 PNPM_VERSION="$(config_value toolchain.pnpm_version 11.3.0)"
-BUILD_SERVER="$(normalize_bool "$(config_value build.server true)")"
-BUILD_INIT_SERVICE="$(normalize_bool "$(config_value build.init_service true)")"
-BUILD_WEB="$(normalize_bool "$(config_value build.web true)")"
+BUILD_SERVER="$(normalize_bool "${COMPILE_BUILD_SERVER:?compile.sh must select the Server target}")"
+BUILD_INIT_SERVICE="$(normalize_bool "${COMPILE_BUILD_INIT_SERVICE:?compile.sh must select the InitService target}")"
+BUILD_WEB="$(normalize_bool "${COMPILE_BUILD_WEB:?compile.sh must select the Web target}")"
 BUILD_CLEAN="$(normalize_bool "$(config_value build.clean true)")"
 BUILD_CRM_TESTS="$(normalize_bool "$(config_value build.crm_tests true)")"
 BUILD_CRM_COVERAGE="$(normalize_bool "$(config_value build.crm_coverage true)")"
@@ -143,7 +143,7 @@ if [[ -n "$WEB_LEGACY_MEDIA_ORIGINS" &&
     exit 2
 fi
 if [[ "$BUILD_WEB" == "true" && -z "$WEB_LEGACY_MEDIA_ORIGINS" ]]; then
-    printf 'web.legacy_media_origins is required when build.web is true; explicitly list retired media origins.\n' >&2
+    printf 'web.legacy_media_origins is required when the Web target is selected.\n' >&2
     exit 2
 fi
 if [[ -n "$WEB_TEST_SCRIPT" && ! "$WEB_TEST_SCRIPT" =~ ^[A-Za-z0-9:_-]+$ ]]; then
@@ -274,4 +274,4 @@ podman run "${podman_proxy_args[@]}" --rm --pull=never \
     "${proxy_args[@]}" \
     --entrypoint /bin/bash \
     "$BUILD_IMAGE" \
-    /workspace/podman/ubuntu-build-entrypoint.sh
+    /workspace/podman/internal/ubuntu-build-entrypoint.sh

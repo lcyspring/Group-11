@@ -37,7 +37,7 @@ manifest。运行配置位于 `crm_export_task` YAML 节点，字段说明见
 bash podman/compile.sh podman/config/test-crm-ubuntu-26.04.yaml
 bash podman/compile.sh podman/config/verify-crm-customer-export-ubuntu-26.04.yaml
 bash podman/compile.sh podman/config/check-web-types-ubuntu-26.04.yaml
-bash podman/verify-crm-customer-export.sh podman/config/verify-crm-customer-export.example.yaml
+bash podman/tests/acceptance/verify-crm-customer-export.sh podman/config/verify-crm-customer-export.example.yaml
 ```
 
 命令行只指定 YAML 路径，依赖由 Ubuntu 26.04 容器运行时安装或复用 named volume，Host 不安装

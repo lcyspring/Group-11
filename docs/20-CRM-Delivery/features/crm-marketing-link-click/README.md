@@ -45,7 +45,7 @@ crm_marketing:
 ```bash
 bash podman/compile.sh podman/config/verify-crm-marketing-delivery-ubuntu-26.04.yaml
 bash podman/compile.sh podman/config/check-web-types-ubuntu-26.04.yaml
-bash podman/verify-crm-marketing-link-click.sh podman/config/verify-crm-marketing-link-click.example.yaml
+bash podman/tests/acceptance/verify-crm-marketing-link-click.sh podman/config/verify-crm-marketing-link-click.example.yaml
 ```
 
 命令行只传 YAML，项目依赖在 Ubuntu 26.04 容器运行时下载或复用 Podman named volume。

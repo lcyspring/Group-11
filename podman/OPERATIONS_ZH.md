@@ -24,12 +24,12 @@ Mall H5：                         ghcr.io/elel-code/group-11-hbuilderx-ubuntu:2
 | 运行镜像封装 | `build-images.sh <yaml>` | 只把已有产物封装为 MySQL/Init/Server/Web/Mall 镜像 |
 | 启动/替换容器 | `deploy.sh <yaml>` | 只消费运行镜像，启动或替换 rootless Pod/容器 |
 | 停止 | `stop.sh <yaml>` | 停止 Pod；是否删卷只看 YAML |
-| 离线镜像 | `image-archives.sh <yaml>` | 保存/拉取并保存基础镜像 tar |
-| 编译镜像归档/上传 | `build-image-archives.sh <yaml>` | 两个工具链镜像 check/save/load/push |
-| CRM 数据备份 | `database-backup.sh <yaml>` | MySQL 一致性压缩备份和 SHA-256 |
-| CRM 恢复演练 | `database-restore.sh <yaml>` | 隔离库恢复、核心表检查和可选清理 |
-| CRM 性能基线 | `verify-crm-performance-baseline.sh <yaml>` | 五类只读负载、分位数、错误率和吞吐证据 |
-| CRM 诊断包 | `collect-crm-diagnostics.sh <yaml>` | 健康、容器、日志、数据库与宿主 SLI 诊断 |
+| 离线镜像 | `operations/images/image-archives.sh <yaml>` | 保存/拉取并保存基础镜像 tar |
+| 编译镜像归档/上传 | `operations/images/build-image-archives.sh <yaml>` | 两个工具链镜像 check/save/load/push |
+| CRM 数据备份 | `operations/database/database-backup.sh <yaml>` | MySQL 一致性压缩备份和 SHA-256 |
+| CRM 恢复演练 | `operations/database/database-restore.sh <yaml>` | 隔离库恢复、核心表检查和可选清理 |
+| CRM 性能基线 | `tests/acceptance/verify-crm-performance-baseline.sh <yaml>` | 五类只读负载、分位数、错误率和吞吐证据 |
+| CRM 诊断包 | `operations/diagnostics/collect-crm-diagnostics.sh <yaml>` | 健康、容器、日志、数据库与宿主 SLI 诊断 |
 | 配置门禁 | `tests/runtime-config/run.sh <yaml>` | 无状态检查 YAML、manifest、脚本和 Pod 不变性 |
 
 宿主 JDK/Node/pnpm 构建入口已删除，所有成员统一通过 `compile.sh` 使用上述 `elel-code`
@@ -41,6 +41,8 @@ Mall H5：                         ghcr.io/elel-code/group-11-hbuilderx-ubuntu:2
 cd /path/to/Group-11
 bash ./podman/compile.sh ./podman/config/build-ubuntu-26.04.yaml
 bash ./podman/compile.sh ./podman/config/build-mall-h5-ubuntu-26.04.yaml
+# 或使用 include_targets/exclude_targets 一次选择四个编译目标
+bash ./podman/compile.sh ./podman/config/compile-all-ubuntu-26.04.example.yaml
 bash ./podman/build-images.sh ./podman/config/runtime-images.example.yaml
 bash ./podman/tests/runtime-config/run.sh ./podman/config/runtime-local-check.yaml
 bash ./podman/deploy.sh ./podman/config/runtime-local.yaml
@@ -91,9 +93,9 @@ bash ./podman/deploy.sh ./podman/config/runtime-local.yaml
 还应执行对应专项；安全基线执行：
 
 ```bash
-bash ./podman/verify-crm-runtime-security.sh ./podman/config/runtime-local.yaml
-bash ./podman/verify-crm-user-guide.sh ./podman/config/runtime-local.yaml
-bash ./podman/verify-crm-performance-baseline.sh ./podman/config/verify-crm-performance-baseline-local.yaml
+bash ./podman/tests/acceptance/verify-crm-runtime-security.sh ./podman/config/runtime-local.yaml
+bash ./podman/tests/acceptance/verify-crm-user-guide.sh ./podman/config/runtime-local.yaml
+bash ./podman/tests/acceptance/verify-crm-performance-baseline.sh ./podman/config/verify-crm-performance-baseline-local.yaml
 ```
 
 完整字段说明见 `config/YAML_FIELDS_ZH.md`。
@@ -110,9 +112,9 @@ bash ./podman/verify-crm-performance-baseline.sh ./podman/config/verify-crm-perf
 
 ## 日常入口与验收资产
 
-- 日常入口：`compile.sh`、`build-images.sh`、`deploy.sh`、`stop.sh`、
-  `image-archives.sh`、`database-backup.sh`、`database-restore.sh`；
-- `verify-*.sh` 与 `config/verify-*`、`test-*`、`check-*` 是结构化测试资产，不用于普通启动；
+- 日常入口：根目录只保留 `compile.sh`、`build-images.sh`、`deploy.sh`、`stop.sh`；
+- `tests/acceptance/verify-*.sh` 与 `config/verify-*`、`test-*`、`check-*` 是结构化测试资产，不用于普通启动；
+- 数据库、镜像、BPM 和诊断入口分别位于 `operations/` 对应子目录；
 - 编译工具链镜像推荐 save，并可在登录 GHCR 后使用 `operation.mode: push` 上传；项目运行镜像仍由
   当前源码产物重建。基础运行镜像只有离线交付才执行 `archive_mode: save/pull-save`。
 

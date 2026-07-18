@@ -2,17 +2,15 @@ schema_version: 1
 
 image:
   base: docker.io/library/ubuntu:26.04
-  name: ghcr.io/elel-code/group-11-build-ubuntu:26.04
+  standard: ghcr.io/elel-code/group-11-build-ubuntu:26.04
   rebuild: false
 
 toolchain:
   pnpm_version: 11.3.0
 
 build:
-  engine: standard
-  server: false
-  init_service: false
-  web: true
+  include_targets: web
+  exclude_targets: mall-h5
   clean: false
   infra_tests: false
   infra_coverage: false

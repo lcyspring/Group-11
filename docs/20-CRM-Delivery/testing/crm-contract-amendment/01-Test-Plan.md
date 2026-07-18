@@ -16,7 +16,7 @@
 
 ## 真实运行验收
 
-使用 `podman/verify-crm-contract-amendment.sh`，命令行只传 YAML 路径。验收应覆盖：
+使用 `podman/tests/acceptance/verify-crm-contract-amendment.sh`，命令行只传 YAML 路径。验收应覆盖：
 
 - 从已审批且实际签署合同创建补充协议；
 - 上传受保护依据附件并提交 `crm-contract-amendment-audit`；

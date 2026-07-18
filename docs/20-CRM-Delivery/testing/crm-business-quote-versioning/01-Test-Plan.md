@@ -14,7 +14,7 @@
 
 ## 真实 API 验收
 
-`podman/verify-crm-quote.sh` 唯一参数为显式 YAML 路径。脚本通过真实 8080 API：
+`podman/tests/acceptance/verify-crm-quote.sh` 唯一参数为显式 YAML 路径。脚本通过真实 8080 API：
 
 1. 登录并读取服务端 YAML 报价策略；
 2. 创建 USD、小数数量和 13% 税率的 V1；

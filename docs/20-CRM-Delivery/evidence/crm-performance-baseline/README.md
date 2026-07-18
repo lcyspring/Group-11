@@ -5,7 +5,7 @@
 执行入口：
 
 ```bash
-bash ./podman/verify-crm-performance-baseline.sh \
+bash ./podman/tests/acceptance/verify-crm-performance-baseline.sh \
   ./podman/config/verify-crm-performance-baseline-local.yaml
 ```
 

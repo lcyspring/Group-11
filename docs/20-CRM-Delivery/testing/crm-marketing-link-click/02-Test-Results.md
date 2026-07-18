@@ -21,7 +21,7 @@
 ```bash
 bash podman/compile.sh podman/config/verify-crm-marketing-delivery-ubuntu-26.04.yaml
 bash podman/compile.sh podman/config/check-web-types-ubuntu-26.04.yaml
-bash podman/verify-crm-marketing-link-click.sh podman/config/verify-crm-marketing-link-click.example.yaml
+bash podman/tests/acceptance/verify-crm-marketing-link-click.sh podman/config/verify-crm-marketing-link-click.example.yaml
 ```
 
 CRM 和 Web 构建均使用 `ghcr.io/elel-code/group-11-build-ubuntu:26.04`；Host 未安装或下载项目

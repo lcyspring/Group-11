@@ -23,5 +23,5 @@
 - 中、英、阿三语文案；
 - Ubuntu 26.04 容器专项测试、全量 CRM 测试、覆盖率和生产构建证据。
 
-真实运行验收使用 `podman/verify-crm-campaign.sh`，命令行只接收 YAML 路径；账号、租户和服务地址
+真实运行验收使用 `podman/tests/acceptance/verify-crm-campaign.sh`，命令行只接收 YAML 路径；账号、租户和服务地址
 均来自显式配置。验收会创建、读取、编辑并删除一条临时草稿，不保留测试业务数据。

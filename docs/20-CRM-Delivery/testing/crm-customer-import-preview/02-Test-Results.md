@@ -20,7 +20,7 @@
 
 ```bash
 bash podman/compile.sh podman/config/verify-crm-customer-import-ubuntu-26.04.yaml
-bash podman/verify-crm-customer-import.sh podman/config/verify-crm-customer-import.example.yaml
+bash podman/tests/acceptance/verify-crm-customer-import.sh podman/config/verify-crm-customer-import.example.yaml
 ```
 
 构建镜像为公开的 `ghcr.io/elel-code/group-11-build-ubuntu:26.04`，`rebuild: false`；容器运行时安装或

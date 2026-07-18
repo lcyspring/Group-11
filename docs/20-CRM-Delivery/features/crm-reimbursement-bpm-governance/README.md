@@ -20,7 +20,7 @@
 
 ```bash
 cd podman
-bash ./provision-bpm-model.sh ./config/bpm-provision-local.yaml
+bash ./operations/bpm/provision-bpm-model.sh ./config/bpm-provision-local.yaml
 ```
 
 审批模型归 BPM 治理，报销主单、明细、金额和动作轨迹仍归 CRM 财务域。审批通过只确认 CRM 业务状态，不代表银行付款、报销打款或会计入账。

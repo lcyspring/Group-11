@@ -21,5 +21,5 @@ API 做负向检查。
 自动验收命令：
 
 ```bash
-bash ./podman/verify-crm-runtime-security.sh ./podman/config/runtime-local.yaml
+bash ./podman/tests/acceptance/verify-crm-runtime-security.sh ./podman/config/runtime-local.yaml
 ```

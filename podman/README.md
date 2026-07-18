@@ -17,7 +17,7 @@ variable overrides.
 cd podman
 bash ./deploy.sh ./config/runtime-local-check.yaml
 bash ./stop.sh ./config/runtime-local-check.yaml
-bash ./image-archives.sh ./config/runtime-local-check.yaml
+bash ./operations/images/image-archives.sh ./config/runtime-local-check.yaml
 ```
 
 The committed configuration uses `operation.startup_mode: check` and
@@ -93,6 +93,9 @@ bash ./build-images.sh ./config/runtime-images.example.yaml
 
 `deploy.sh` never reads build artifacts or runs `podman build`. Running containers
 do not bind-mount project files; persistent service data lives in named volumes.
+Full replacement uses `podman pod create --replace`, while managed service and
+single-component replacement uses `podman run --replace`. Explicit Pod removal
+is isolated in `stop.sh`.
 
 ## Startup modes
 
@@ -126,7 +129,7 @@ cacheable.
 - `pull`: fetch configured images from their registries.
 
 Create offline archives by selecting `operation.archive_mode: save` (local
-images only) or `pull-save` (pull first), then call `image-archives.sh` with the
+images only) or `pull-save` (pull first), then call `operations/images/image-archives.sh` with the
 same YAML. Set `image.source` and `image.archive_dir` for deployment. Host
 addresses and all published ports are likewise YAML values.
 
@@ -146,10 +149,12 @@ proxy hostnames are translated to the configured `network.host_proxy_name`.
 - `deploy.sh` / `stop.sh`: YAML-only container lifecycle entry points.
 - `Containerfile.build-ubuntu`: Ubuntu 26.04 build toolchain image.
 - `Containerfile.hbuilderx-ubuntu`: headless Mall H5 compiler image.
-- `compile.sh`: unified YAML-only compiler; `build.engine` selects standard or HBuilderX.
-- `internal/compile-*.sh`: internal engines, not member-facing commands.
+- `compile.sh`: unified YAML-only compiler; include/exclude target sets select all four artifacts.
+- `internal/`: standard compiler helper and container-only entry points; not member-facing commands.
+- `tests/acceptance/`: real API/MySQL acceptance scripts; never used for normal startup.
+- `operations/`: database, image, BPM, and diagnostic maintenance commands.
 - `Containerfile`: multi-target runtime packaging.
-- `image-archives.sh` / `images/`: portable Podman base-image archives.
+- `operations/images/image-archives.sh` / `images/`: portable Podman base-image archives.
 
 Run the structured runtime configuration test with:
 

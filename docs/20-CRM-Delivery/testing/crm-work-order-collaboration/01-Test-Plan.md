@@ -27,5 +27,5 @@
 ```bash
 cd podman
 bash ./compile.sh ./config/test-crm-work-order-collaboration-ubuntu-26.04.yaml
-bash ./verify-crm-work-order-collaboration.sh ./config/verify-crm-work-order-collaboration-local.yaml
+bash ./tests/acceptance/verify-crm-work-order-collaboration.sh ./config/verify-crm-work-order-collaboration-local.yaml
 ```

@@ -18,7 +18,7 @@
 bash podman/compile.sh podman/config/test-crm-ubuntu-26.04.yaml
 bash podman/compile.sh podman/config/verify-crm-customer-export-ubuntu-26.04.yaml
 bash podman/compile.sh podman/config/check-web-types-ubuntu-26.04.yaml
-bash podman/verify-crm-customer-export.sh podman/config/verify-crm-customer-export.example.yaml
+bash podman/tests/acceptance/verify-crm-customer-export.sh podman/config/verify-crm-customer-export.example.yaml
 ```
 
 构建镜像为公开的 `ghcr.io/elel-code/group-11-build-ubuntu:26.04`，项目依赖在容器运行时下载或复用

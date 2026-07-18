@@ -10,11 +10,11 @@
 
 ## 修复
 
-- `compile.sh` 成为唯一公开编译入口，`build.engine: standard/hbuilderx` 显式分派内部实现；
+- `compile.sh` 成为唯一公开编译入口；后续进一步用 include/exclude 目标集合取代引擎分派；
 - 阶段二、三分别命名为 `build-images.sh`、`deploy.sh`，停服入口为 `stop.sh`；
 - 删除旧编译、封装、up/down 入口，不保留软链接兼容层；
 - 删除两个 Host 编译依赖安装脚本，宿主只需发行版提供的 rootless Podman 组件；
-- 59 份编译/测试 YAML 补齐 `build.engine`，示例、中文指南和历史执行命令同步更新；
+- 59 份编译/测试 YAML 统一目标选择协议，示例、中文指南和历史执行命令同步更新；
 - `.idea`、成员版 README 和旧编辑说明另行清理，根目录只保留一份当前中文 README。
 
 ## 防回归门禁
