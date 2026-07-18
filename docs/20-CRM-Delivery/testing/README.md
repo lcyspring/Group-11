@@ -6,8 +6,8 @@
 
 更新日期：2026-07-18
 
-- Ubuntu 26.04 容器 CRM 自动化：533/533，失败 0、错误 0、跳过 0。
-- CRM JaCoCo：指令 50.00%、分支 42.94%、行 48.69%、方法 37.97%。
+- Ubuntu 26.04 容器 CRM 自动化：535/535，失败 0、错误 0、跳过 0。
+- CRM JaCoCo：指令 50.23%、分支 43.17%、行 48.95%、方法 38.25%。
 - Web 全仓 `vue-tsc --noEmit`：脚本与模板诊断 0；标准 Ubuntu YAML 入口通过。
 - 运行安全框架专项：Security 3/3、CORS 2/2；真实 HTTP 安全矩阵全部通过。
 - ERP 履约专项：4/4；ERP 模块 JaCoCo 行覆盖率 6.92%。
@@ -77,6 +77,7 @@
 | `crm-resource-security/` | 八类导出对象权限、合同受保护附件、公共文件隔离和历史通知乱码 |
 | `customer-360-refund/` | 退款/冲销审批金额、净回款、待回款和客户明细入口 |
 | `customer-public-pool-policy/` | 客户公海状态、保护、回收、领取额度/冷却、迁移和运行验收 |
+| `customer-pool-assignment-cooldown/` | 主管分配不得绕过同人同客户领取冷却，每日额度仍只约束自助领取 |
 | `customer-garbage-lifecycle/` | 客户垃圾池管理员隔离、迁移、恢复、永久删除和引用保护 |
 | `customer-garbage-feedback-refresh/` | 转入垃圾池专属反馈、拒绝零写入和缓存页激活刷新 |
 | `clue-public-pool-lifecycle/` | 公共线索状态、迁移、领取/分配、额度、冷却、权限和容量并发保护 |
@@ -114,6 +115,7 @@
 | `frontend-build-warning-governance/` | Web CJS 与 Mall Sass 告警基线、来源归属和容器构建回归 |
 | `runtime-base-image-pinning/` | Temurin/Nginx/MySQL/Redis/RabbitMQ/TDengine 精确版本与 digest 门禁 |
 | `deterministic-demo-data/` | 固定 seed 演示数据生成、引用/状态校验、cleanup 和部署隔离 |
+| `dataset-mode-contract/` | preserve/insert/replace 集中模式、manifest 顺序门禁和部署回归 |
 
 运行入口统一为：
 

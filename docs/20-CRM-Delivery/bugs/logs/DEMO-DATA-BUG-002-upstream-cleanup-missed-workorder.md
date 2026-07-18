@@ -4,7 +4,7 @@
 
 ## 现象
 
-运行 YAML 已明确选择 `existing_dataset_policy: replace`、允许 cleanup 并确认持久数据变更，
+运行 YAML 已明确选择 `mysql.dataset_mode: replace`，
 `deploy.sh` 也按顺序执行旧数据 cleanup 和新数据 insert；但首次对账仍残留 1 条旧工单。
 
 ## 根因
@@ -16,7 +16,7 @@
 
 - 在现有旧演示数据 cleanup 中补齐五张工单交易表；
 - 保留工单分组、成员、节假日和 SLA 策略等可编辑基础配置；
-- 继续使用原 `deploy.sh + replace 双确认`，不增加替换脚本或生成器职责。
+- 继续使用 `deploy.sh + dataset_mode: replace`，不增加替换脚本或生成器职责。
 
 ## 验证
 

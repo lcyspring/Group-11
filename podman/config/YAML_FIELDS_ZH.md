@@ -90,9 +90,7 @@
 | `mysql.database` | 主业务库名 |
 | `mysql.dataset` | 仅空数据卷初始化时选择的数据集；切换它不会修改已有持久卷 |
 | `mysql.dataset_manifest` | 已生成数据集的显式 manifest 路径，可位于 `database/datasets` 或 ignored `database/generated` |
-| `mysql.existing_dataset_policy` | `preserve` 保留已有数据；`replace` 在部署期显式执行数据集 manifest |
-| `mysql.cleanup_existing_before_dataset` | `replace` 对已有库执行 cleanup 的第一道授权 |
-| `mysql.confirm_persistent_data_change` | `replace` 修改持久业务数据的第二道确认；必须与 cleanup 授权同时为 true |
+| `mysql.dataset_mode` | 集中声明已有库的数据集行为：`preserve` 不改数据、`insert` 只插入、`replace` 先完整清理旧数据集再插入新数据集 |
 | `mysql.bootstrap_policy` | `initialize-empty` 只初始化确认空库；`require-existing` 拒绝空库 |
 | `mysql.bootstrap_manifest` | 空库建表、必要基础数据和显式种子的执行清单；SQL 在部署期通过 stdin 发送 |
 | `mysql.root_password` | 本地 MySQL root 密码；真实值只能在忽略的本机 YAML |
@@ -107,12 +105,11 @@
 
 | 字段 | 作用 |
 |---|---|
-| `operation.dataset_mode` | `check` 只校验；`replace` 才执行持久数据替换 |
+| `operation.action` | `check` 只校验；`apply` 执行所选数据集模式 |
 | `container.mysql` | 目标 MySQL 容器名 |
 | `mysql.database/username/password` | 目标库与执行账号；真实密码只写 ignored YAML |
 | `mysql.dataset` | 要应用的显式数据集 manifest 名称 |
-| `mysql.cleanup_existing_before_dataset` | 是否允许 manifest 执行 cleanup SQL；必须与 manifest 内容一致 |
-| `mysql.confirm_persistent_data_change` | `replace` 模式修改持久数据的第二道显式确认 |
+| `mysql.dataset_mode` | `insert` 禁止 cleanup；`replace` 要求 manifest 第一项为 cleanup，随后才允许插入 |
 | `rabbitmq.username/password` | RabbitMQ 运行账号 |
 | `tdengine.host/port/fqdn` | 应用访问 TDengine 及容器 FQDN 配置 |
 | `tdengine.username/password` | TDengine 数据源账号 |
@@ -297,10 +294,16 @@
 | `dataset_generation.random_seed` | 固定正整数 seed；相同配置生成相同业务键与分布 |
 | `dataset_generation.tenant_id/owner_user_id` | 生成数据的租户与负责人引用 |
 | `dataset_generation.time_start/time_end` | 演示事实的日期范围 |
-| `dataset_generation.customer_count/business_count/work_order_count` | 三类规模；脚本设置显式安全上限 |
+| `dataset_generation.customer_count/clue_count/follow_up_count` | 客户、联系人（与客户同数）、线索和客户跟进记录规模 |
+| `dataset_generation.business_count/product_count/work_order_count` | 商机、产品和工单规模；商机/合同均生成产品明细 |
+| `dataset_generation.contract_count/receivable_plan_count/receivable_count` | 合同、计划和回款规模；计划数必须是合同数的整数倍 |
+| `dataset_generation.invoice_count/reimbursement_count/refund_count` | 发票、报销和退款规模，均受上游合同或回款数量约束 |
+| `dataset_generation.marketing_campaign_count/customer_care_record_count` | 营销活动和客户关怀触达规模 |
+| `dataset_generation.oa_event_count/oa_task_count` | 非流程型 OA 日程与任务规模；生成器不伪造 Flowable 实例 |
 | `dataset_generation.output_dir` | 只能位于 `database/generated/`，生成结果被 Git 忽略 |
-| `dataset_generation.cleanup_existing_generated_data` | 生成配置中的替换意图；必须与持久数据确认保持一致 |
-| `dataset_generation.confirm_persistent_data_change` | 持久数据变更确认；生成阶段本身仍不执行数据库修改 |
+
+生成器没有清理、插入或替换模式，也没有持久数据确认字段；它只产出文件。数据是否应用完全由
+`deploy.sh` 运行 YAML 的 `mysql.dataset_mode` 决定。
 
 ## CRM MySQL 备份恢复配置
 
