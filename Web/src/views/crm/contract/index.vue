@@ -277,7 +277,7 @@
       </el-table-column>
       <el-table-column fixed="right" :label="t('common.action')" width="220">
         <template #default="scope">
-          <TableActions>
+          <TableActions :show-more="hasContractMoreActions(scope.row)">
             <el-button
               v-hasPermi="['crm:contract:query']"
               link
@@ -343,6 +343,7 @@ import { DICT_TYPE } from '@/utils/dict'
 import { erpPriceInputFormatter, erpPriceTableColumnFormatter } from '@/utils'
 import * as CustomerApi from '@/api/crm/customer'
 import { TabsPaneContext } from 'element-plus'
+import { checkPermi } from '@/utils/permission'
 
 defineOptions({ name: 'CrmContract' })
 
@@ -364,6 +365,18 @@ const queryFormRef = ref() // 搜索的表单
 const exportLoading = ref(false) // 导出的加载中
 const activeName = ref('1') // 列表 tab
 const customerList = ref<CustomerApi.CustomerVO[]>([]) // 客户列表
+
+/** 只在当前合同至少存在一个有权限的扩展操作时展示“更多”，避免空菜单无响应。 */
+const hasContractMoreActions = (row: ContractApi.ContractVO) => {
+  const canUpdate = checkPermi(['crm:contract:update'])
+  const canDelete = checkPermi(['crm:contract:delete'])
+  return (
+    (canUpdate && [0, 30, 40].includes(row.auditStatus)) ||
+    (canUpdate && row.auditStatus === 0) ||
+    (canUpdate && Boolean(row.processInstanceId)) ||
+    (canDelete && row.auditStatus === 0 && !row.processInstanceId)
+  )
+}
 
 /** tab 切换 */
 const handleTabClick = (tab: TabsPaneContext) => {
