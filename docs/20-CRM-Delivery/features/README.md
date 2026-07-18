@@ -67,7 +67,7 @@
 | CRM-FEATURE-061 | 营销群发逐收件人安全跳转、独立/累计点击及逐链接统计 | GAP-MKT-003、ADR-016 | 已实现 | `docs/20-CRM-Delivery/testing/crm-marketing-link-click/` |
 | CRM-FEATURE-062 | 官方 MySQL 直接运行、部署期空库初始化、已有库兼容迁移和未知库保护 | 部署与数据治理 | 已实现 | `docs/20-CRM-Delivery/testing/database-deploy-provision/` |
 | CRM-FEATURE-063 | 短信渠道、邮件账号及模板的显式 YAML 幂等 provision | GAP-MKT-003、ADR-016 | 已实现；真实供应商 UAT 待账号 | `docs/20-CRM-Delivery/testing/crm-marketing-provider-provision/` |
-| CRM-FEATURE-064 | 固定 seed、规模可配、生成与部署分离的 CRM 核心/工单演示数据 | 数据与部署治理 | 第一版已实现；财务/BPM 待扩展 | `docs/20-CRM-Delivery/testing/deterministic-demo-data/` |
+| CRM-FEATURE-064 | 固定 seed、规模可配、生成与部署分离的 CRM 核心/工单演示数据 | 数据与部署治理 | 第一版已实现并完成本机显式替换；财务/BPM 待扩展 | `docs/20-CRM-Delivery/testing/deterministic-demo-data/` |
 | CRM-FEATURE-065 | 商机阶段漏斗与赢单/输单/无效结果分布双视图、终态钻取及缺失初始阶段提示 | GAP-RPT-001/002 | 已实现 | `docs/20-CRM-Delivery/features/business-funnel-outcome-distribution/` |
 | CRM-FEATURE-066 | 工单 16 条可重复 UAT、知识转移、故障处置、清理回滚和四方签署模板 | 工作计划 WO 专项 | 交付物已完成；人员签署待组织 | `docs/20-CRM-Delivery/testing/crm-work-order-uat-handover/` |
 | CRM-FEATURE-067 | 支付与 CRM/OA/营销的边界、映射、回调、安全、补偿、权限及 YAML 集成规范 | 工作计划 COM-06 | 规范已完成；自动集成未实现 | `docs/20-CRM-Delivery/testing/payment-cross-domain-integration-contract/` |
