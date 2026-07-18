@@ -19,5 +19,5 @@
 
 ## 容器入口
 
-- CRM 全量：`podman/config/test-crm-work-order-collaboration-ubuntu-26.04.yaml`
-- 前端专项：`podman/config/verify-crm-work-order-bugs-ubuntu-26.04.yaml`
+- CRM 全量：`podman/config/test-crm-work-order-collaboration-ubuntu-26.04.kdl`
+- 前端专项：`podman/config/verify-crm-work-order-bugs-ubuntu-26.04.kdl`

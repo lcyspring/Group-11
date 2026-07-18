@@ -17,5 +17,5 @@
 ## 环境
 
 - 构建镜像：`ghcr.io/elel-code/group-11-build-ubuntu:26.04`
-- 配置：`podman/config/test-crm-ubuntu-26.04.yaml`
-- 命令：`bash podman/compile.sh podman/config/test-crm-ubuntu-26.04.yaml`
+- 配置：`podman/config/test-crm-ubuntu-26.04.kdl`
+- 命令：`bash podman/compile.sh podman/config/test-crm-ubuntu-26.04.kdl`

@@ -20,11 +20,11 @@
 
 ## 配置
 
-运行 YAML 的 `crm_marketing` 提供：
+运行 KDL 的 `crm_marketing` 提供：
 
 - `provider_mode`：`record-only` 或 `system`；
 - `tracking_enabled`：是否追加邮件像素；
 - `public_base_url`：像素公开基地址；生产邮件必须为外部 HTTPS；
 - `delivery_sync_batch_size`：每轮最大状态回收数。
 
-命令行仍只接收 YAML 路径，运行脚本将字段转换为 Spring 环境配置。
+命令行仍只接收 KDL 路径，运行脚本将字段转换为 Spring 环境配置。

@@ -16,5 +16,5 @@
 统一待办只聚合当前登录人的 Flowable 审批任务。它不创建示例审批、不复制已办数据，也不把
 CRM 工单伪装成流程任务。当前租户没有任务时返回空列表是合法结果。
 
-构建、测试和覆盖率由 `podman/config/verify-bpm-governance-ubuntu-26.04.yaml` 显式控制，
+构建、测试和覆盖率由 `podman/config/verify-bpm-governance-ubuntu-26.04.kdl` 显式控制，
 命令行只传配置文件路径。

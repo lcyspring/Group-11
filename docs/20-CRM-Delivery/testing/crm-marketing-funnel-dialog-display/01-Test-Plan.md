@@ -18,5 +18,5 @@
 
 ## 容器入口
 
-- 前端：`podman/config/verify-crm-display-dialogs-ubuntu-26.04.yaml`
-- 后端：`podman/config/test-crm-ubuntu-26.04.yaml`
+- 前端：`podman/config/verify-crm-display-dialogs-ubuntu-26.04.kdl`
+- 后端：`podman/config/test-crm-ubuntu-26.04.kdl`

@@ -2,7 +2,7 @@
 
 ## 自动化结果
 
-运行环境：Ubuntu 26.04 Podman，配置 `podman/config/test-crm-ubuntu-26.04.yaml`。
+运行环境：Ubuntu 26.04 Podman，配置 `podman/config/test-crm-ubuntu-26.04.kdl`。
 
 | 范围 | 结果 |
 |---|---|
@@ -30,7 +30,7 @@
 
 - `new-crm-contract-product-snapshot.sql` 首次执行新增三列并回填历史行；
 - 重复执行不报错，三列仍各一列，当前有效历史行空名称快照数为 0；
-- `rebuild-server` 在替换 Server 前执行兼容迁移；
+- `replace-server` 在替换 Server 前执行兼容迁移；
 - 真实验收产品 7 从“快照验收产品-原名 / SNAP-0714-A / 单位 1 / 88.00”改为
   “快照验收产品-新名 / SNAP-0714-B / 单位 3 / 188.00”并下架；
 - 合同 21 修改前后均返回原名称、原编码、单位 1 和目录价 88.00；

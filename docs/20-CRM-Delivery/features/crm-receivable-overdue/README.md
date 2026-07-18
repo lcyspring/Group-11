@@ -18,7 +18,8 @@
 | `batch-size` / `max-batch-size` / `max-batches` | 单次扫描的批量与安全上限 |
 | `max-retries` | 单条提醒最大失败重试次数 |
 
-默认值在 `Server/mitedtsm-server/src/main/resources/application.yaml`，允许通过环境变量显式覆盖。
+默认值在 `Server/mitedtsm-server/src/main/resources/application.yaml`；运行差异由部署 KDL 显式注入
+Spring 环境，不要求操作者在命令行或 Host 手工导出变量。
 
 ## 数据与边界
 

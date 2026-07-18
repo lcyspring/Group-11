@@ -16,7 +16,7 @@
 
 ## 真实运行验收
 
-使用 `podman/tests/acceptance/verify-crm-contract-amendment.sh`，命令行只传 YAML 路径。验收应覆盖：
+使用 `podman/tests/acceptance/verify-crm-contract-amendment.sh`，命令行只传 KDL 路径。验收应覆盖：
 
 - 从已审批且实际签署合同创建补充协议；
 - 上传受保护依据附件并提交 `crm-contract-amendment-audit`；
@@ -31,4 +31,4 @@
 - 补充协议前端专项 ESLint；
 - Ubuntu 26.04 Server package；
 - Ubuntu 26.04 Web production build；
-- `git diff --check` 和 YAML/Shell 语法检查。
+- `git diff --check` 和 KDL/Shell 语法检查。

@@ -36,8 +36,8 @@ DRAFT --lock--> LOCKED --reopen--> SUPERSEDED + next DRAFT
 - 允许税率和默认税率；
 - 金额精度、舍入方式和单商机最大版本数。
 
-管理端通过只读策略 API 获取同一份币种和税率选项，不在前端复制业务阈值。构建时遗留媒体源也由
-Ubuntu 26.04 YAML 显式注入，命令行只接受配置文件路径。
+管理端通过只读策略 API 获取同一份币种和税率选项，不在前端复制业务阈值。构建时遗留媒体源由
+Ubuntu 26.04 KDL 显式注入，命令行只接受配置文件路径。
 
 ## 管理端能力
 
@@ -50,6 +50,6 @@ Ubuntu 26.04 YAML 显式注入，命令行只接受配置文件路径。
 ## 交付入口
 
 - 测试：`docs/20-CRM-Delivery/testing/crm-business-quote-versioning/`
-- 运行证据：`docs/20-CRM-Delivery/runtime/yaml-podman-deployment/2026-07-16-crm-business-quote-versioning.md`
+- 运行证据：`docs/20-CRM-Delivery/testing/crm-business-quote-versioning/02-Test-Results.md`
 - 迁移：`database/migrations/new-crm-business-quote-version.sql`
-- 真实验收：`podman/tests/acceptance/verify-crm-quote.sh` 与显式 YAML
+- 真实验收：`podman/tests/acceptance/verify-crm-quote.sh` 与显式 KDL

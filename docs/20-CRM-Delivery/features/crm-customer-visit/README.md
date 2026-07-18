@@ -23,18 +23,18 @@
 仓库保留无凭据示例：
 
 ```bash
-cp podman/config/bpm-provision-customer-visit.example.yaml \
-  podman/config/bpm-provision-customer-visit-local.yaml
-bash podman/operations/bpm/provision-bpm-model.sh podman/config/bpm-provision-customer-visit-local.yaml
+cp podman/config/bpm-provision-customer-visit.example.kdl \
+  podman/config/bpm-provision-customer-visit-local.kdl
+bash podman/operations/bpm/provision-bpm-model.sh podman/config/bpm-provision-customer-visit-local.kdl
 ```
 
-真实账号只写入 ignored local YAML。全模型清单同时包含客户拜访，空数据卷重建后由 `deploy.sh full`
-恢复流程定义。
+真实账号只写入 ignored local KDL。全模型清单同时包含客户拜访，空数据卷重建后由 `deploy.sh`
+在运行 KDL 的 `startup_mode: replace` 下恢复流程定义。
 
 ## 测试
 
 ```bash
-bash podman/compile.sh podman/config/verify-crm-customer-visit-ubuntu-26.04.yaml
+bash podman/compile.sh podman/config/verify-crm-customer-visit-ubuntu-26.04.kdl
 ```
 
 - CRM 全量测试：490/490，失败 0、错误 0、跳过 0。

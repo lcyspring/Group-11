@@ -15,7 +15,7 @@ node --test Web/src/views/bpm/oa/event/eventCalendarView.test.mjs
 2026-07-17 使用以下命令通过生产构建：
 
 ```bash
-bash ./podman/compile.sh ./podman/config/build-web-ubuntu-26.04.yaml
+bash ./podman/compile.sh ./podman/config/build-web-ubuntu-26.04.kdl
 ```
 
 工具链专项覆盖率：行 96.45%、分支 90.63%、函数 100%；Vite 生产构建成功。

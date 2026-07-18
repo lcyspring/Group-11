@@ -5,11 +5,11 @@
 复制共享模板为本机配置，填写真实 MySQL 只读/运维账号后执行：
 
 ```bash
-cp ./podman/config/crm-diagnostics.example.yaml ./podman/config/crm-diagnostics-local.yaml
-bash ./podman/operations/diagnostics/collect-crm-diagnostics.sh ./podman/config/crm-diagnostics-local.yaml
+cp ./podman/config/crm-diagnostics.example.kdl ./podman/config/crm-diagnostics-local.kdl
+bash ./podman/operations/diagnostics/collect-crm-diagnostics.sh ./podman/config/crm-diagnostics-local.kdl
 ```
 
-命令行不能传账号、阈值或输出路径；所有差异只修改 ignored YAML。正常执行不改变 Pod、容器、卷、
+命令行不能传账号、阈值或输出路径；所有差异只修改 ignored KDL。正常执行不改变 Pod、容器、卷、
 数据库和业务数据。
 
 ## SLI 与默认阈值
@@ -25,7 +25,7 @@ bash ./podman/operations/diagnostics/collect-crm-diagnostics.sh ./podman/config/
 | 主机内存使用 | ≤ 90% | 防止持续内存压力和 OOM |
 | MySQL 连接使用 | ≤ 80% | `Threads_connected / max_connections` |
 
-开发机阈值是最低运行门，不是生产 SLA。共享/生产环境应按资源、流量和告警系统重新签署 YAML。
+开发机阈值是最低运行门，不是生产 SLA。共享/生产环境应按资源、流量和告警系统重新签署 KDL。
 
 ## 处置顺序
 
@@ -35,7 +35,7 @@ bash ./podman/operations/diagnostics/collect-crm-diagnostics.sh ./podman/config/
 4. MySQL 连接过高时检查 `mysql-metrics.tsv`，区分连接泄漏、慢请求和容量不足；
 5. 磁盘不足时先定位镜像、归档、构建缓存和日志，不删除数据库卷；
 6. 内存过高时核对 Server/MySQL 资源采样和进程趋势，再决定限流、扩容或受控重启；
-7. 修复后使用同一 YAML 复跑，PASS 后保留两次摘要用于对比。
+7. 修复后使用同一 KDL 复跑，PASS 后保留两次摘要用于对比。
 
 ## 常见故障
 
@@ -51,9 +51,9 @@ bash ./podman/operations/diagnostics/collect-crm-diagnostics.sh ./podman/config/
 ## 诊断包安全
 
 `podman/diagnostics/` 中可能包含用户名、业务 ID、请求路径和异常上下文，只用于本机故障定位。发送给
-其他人前必须复核并脱敏；不要把压缩包、真实 YAML 或原始日志加入 Git。提交仓库的证据只保留汇总指标。
+其他人前必须复核并脱敏；不要把压缩包、真实 KDL 或原始日志加入 Git。提交仓库的证据只保留汇总指标。
 
 ## 不停服务阈值演练
 
-演练只调高 YAML 阈值，不制造真实服务故障。例如把 `min_disk_free_percent` 临时设为 100，脚本应
+演练只调高 KDL 阈值，不制造真实服务故障。例如把 `min_disk_free_percent` 临时设为 100，脚本应
 返回 FAIL 并指出磁盘阈值，但 7 个服务容器应保持 running。演练结束后恢复签署阈值并复跑 PASS。

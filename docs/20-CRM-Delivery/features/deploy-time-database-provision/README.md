@@ -2,7 +2,7 @@
 
 ## 目标
 
-数据库 SQL 与运行镜像解耦。MySQL 直接使用运行 YAML 指定的官方镜像，建表、数据集和兼容迁移在
+数据库 SQL 与运行镜像解耦。MySQL 直接使用运行 KDL 指定的官方镜像，建表、数据集和兼容迁移在
 部署阶段从仓库通过 stdin 发送，不复制进镜像，也不挂载到长期运行容器。
 
 ## 配置契约
@@ -23,7 +23,7 @@ mysql:
 - 已存在 `system_users`：保留业务数据，跳过 bootstrap 和数据集，仅重放幂等兼容清单；
 - 非空但缺少 `system_users`：视为未知或不完整库，拒绝破坏性覆盖。
 
-已有库的数据集由运行 YAML 的单一 `mysql.dataset_mode` 控制：`preserve`、`insert` 或 `replace`；
+已有库的数据集由运行 KDL 的单一 `mysql.dataset_mode` 控制：`preserve`、`insert` 或 `replace`；
 `replace` 强制先清理旧数据集再插入。整套持久卷重建仍必须在停止
 配置中同时开启 `remove_volumes_on_down` 与 `confirm_persistent_data_reset`。
 
@@ -38,7 +38,7 @@ mysql:
 
 - manifest 只能引用 `database/` 内文件，禁止绝对路径和目录逃逸；
 - bootstrap/compatibility 禁止 cleanup，全部自动清单禁止 teardown；
-- MySQL 就绪以带 YAML 凭据的 `SELECT 1` 判断，不能使用鉴权失败仍返回存活的探针；
+- MySQL 就绪以带 KDL 凭据的 `SELECT 1` 判断，不能使用鉴权失败仍返回存活的探针；
 - SQL 文件不会被写入镜像层或长期运行容器文件系统；
 - 普通 `replace` 保留 named volume，不以部署为理由自动替换演示数据。
 

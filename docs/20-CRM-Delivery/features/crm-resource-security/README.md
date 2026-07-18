@@ -22,7 +22,7 @@ mitedtsm:
       protected-file-directory: crm-protected/contract
 ```
 
-命令行只传 `podman/config/verify-crm-resource-security-ubuntu-26.04.yaml`。Ubuntu 构建容器始终执行
+命令行只传 `podman/config/verify-crm-resource-security-ubuntu-26.04.kdl`。Ubuntu 构建容器始终执行
 仓库当前版本的入口脚本，缓存镜像只提供 JDK、Maven、Node 和 pnpm 工具链。
 
 ## 安全不变量

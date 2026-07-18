@@ -5,7 +5,7 @@
 命令：
 
 ```bash
-bash podman/tests/marketing-provider-provision/run.sh podman/config/runtime-local.yaml
+bash podman/tests/marketing-provider-provision/run.sh podman/config/runtime-local.kdl
 ```
 
 | 用例 | 结果 |

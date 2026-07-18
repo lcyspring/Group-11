@@ -21,4 +21,4 @@
 
 ## 配置
 
-`Server/mitedtsm-server/src/main/resources/application.yaml` 的 `mitedtsm.crm.marketing` 是唯一业务阈值来源。命令行仅指定构建/运行 YAML 路径。
+`Server/mitedtsm-server/src/main/resources/application.yaml` 的 `mitedtsm.crm.marketing` 是唯一业务阈值来源。命令行仅指定构建/运行 KDL 路径。

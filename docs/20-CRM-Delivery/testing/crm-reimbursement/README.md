@@ -18,7 +18,7 @@
 
 ## Ubuntu 26.04 配置
 
-编译检查使用 `podman/config/build-ubuntu-26.04-crm-reimbursement.yaml`，CRM 全量测试与覆盖率使用 `podman/config/test-ubuntu-26.04-crm-reimbursement.yaml`，命令行只指定配置文件路径。
+编译检查使用 `podman/config/build-ubuntu-26.04-crm-reimbursement.kdl`，CRM 全量测试与覆盖率使用 `podman/config/test-ubuntu-26.04-crm-reimbursement.kdl`，命令行只指定配置文件路径。
 
 ## 2026-07-15 结果
 

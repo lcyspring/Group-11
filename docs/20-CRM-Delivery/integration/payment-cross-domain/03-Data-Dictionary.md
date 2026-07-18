@@ -7,7 +7,7 @@
 | `tenant_id` | 由 Pay 应用/业务对象服务端推导 | 不接受客户端自由指定 |
 | `business_type` | `CRM_RECEIVABLE`、`CRM_RECEIVABLE_REFUND`、未来显式枚举 | 禁止自由文本域名 |
 | `business_id` | 业务聚合主键 | 与类型、租户联合唯一 |
-| `pay_app_id` | Pay 应用 | 必须属于同一租户并匹配 YAML 逻辑引用 |
+| `pay_app_id` | Pay 应用 | 必须属于同一租户并匹配 KDL 逻辑引用 |
 | `merchant_order_id` | 业务域稳定生成 | 在 Pay App 内唯一；重试不变 |
 | `pay_order_id` | Pay 创建结果 | 只可绑定一次，冲突失败关闭 |
 | `merchant_refund_id` | CRM 客户退款稳定生成 | 在 Pay App 内唯一；业务冲销不得生成 |

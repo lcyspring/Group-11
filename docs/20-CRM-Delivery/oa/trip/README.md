@@ -11,14 +11,14 @@
 
 ## 运行配置
 
-流程模型使用显式 YAML 创建：
+流程模型使用显式 KDL 创建：
 
 ```bash
-cp podman/config/bpm-provision-trip.example.yaml podman/config/bpm-provision-trip-local.yaml
-# 仅在被 Git 忽略的 local YAML 中填写本机账号
+cp podman/config/bpm-provision-trip.example.kdl podman/config/bpm-provision-trip-local.kdl
+# 仅在被 Git 忽略的 local KDL 中填写本机账号
 cd podman
-bash ./operations/bpm/provision-bpm-model.sh ./config/bpm-provision-trip-local.yaml
+bash ./operations/bpm/provision-bpm-model.sh ./config/bpm-provision-trip-local.kdl
 ```
 
 编译和测试使用 `ghcr.io/elel-code/group-11-build-ubuntu:26.04`，配置文件为
-`podman/config/verify-oa-trip-ubuntu-26.04.yaml`。
+`podman/config/verify-oa-trip-ubuntu-26.04.kdl`。

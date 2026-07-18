@@ -8,7 +8,7 @@
 - 员工、地区和产品表增加数据质量警告列，三语文本同步；
 - 成交周期图允许绘制负值，历史异常不再被 Y 轴下限隐藏；
 - YAML 血缘目录显式登记指标时间、公式和负值处理口径；
-- 真实验收脚本只接受 YAML 配置路径，对四类 API、指标目录和 MySQL 做对账。
+- 真实验收脚本只接受 KDL 配置路径，对四类 API、指标目录和 MySQL 做对账。
 
 ## 边界
 
@@ -16,7 +16,7 @@
 
 ## 验证入口
 
-- 构建：`podman/config/verify-crm-statistics-data-quality-ubuntu-26.04.yaml`；
+- 构建：`podman/config/verify-crm-statistics-data-quality-ubuntu-26.04.kdl`；
 - 运行验收：`podman/tests/acceptance/verify-crm-deal-cycle-data-quality.sh`；
-- 无凭据示例：`podman/config/verify-crm-deal-cycle-data-quality.example.yaml`；
+- 无凭据示例：`podman/config/verify-crm-deal-cycle-data-quality.example.kdl`；
 - 测试与覆盖率：`docs/20-CRM-Delivery/testing/deal-cycle-data-quality/`。

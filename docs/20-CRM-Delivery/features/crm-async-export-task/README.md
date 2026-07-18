@@ -29,16 +29,16 @@ GET  /crm/export-task/download
 
 任务表由 `database/migrations/new-crm-export-task.sql` 创建，迁移已进入 bootstrap 和 compatibility
 manifest。运行配置位于 `crm_export_task` YAML 节点，字段说明见
-`podman/config/YAML_FIELDS_ZH.md`。
+`podman/config/KDL_FIELDS_ZH.md`。
 
 ## 验证入口
 
 ```bash
-bash podman/compile.sh podman/config/test-crm-ubuntu-26.04.yaml
-bash podman/compile.sh podman/config/verify-crm-customer-export-ubuntu-26.04.yaml
-bash podman/compile.sh podman/config/check-web-types-ubuntu-26.04.yaml
-bash podman/tests/acceptance/verify-crm-customer-export.sh podman/config/verify-crm-customer-export.example.yaml
+bash podman/compile.sh podman/config/test-crm-ubuntu-26.04.kdl
+bash podman/compile.sh podman/config/verify-crm-customer-export-ubuntu-26.04.kdl
+bash podman/compile.sh podman/config/check-web-types-ubuntu-26.04.kdl
+bash podman/tests/acceptance/verify-crm-customer-export.sh podman/config/verify-crm-customer-export.example.kdl
 ```
 
-命令行只指定 YAML 路径，依赖由 Ubuntu 26.04 容器运行时安装或复用 named volume，Host 不安装
+命令行只指定 KDL 路径，依赖由 Ubuntu 26.04 容器运行时安装或复用 named volume，Host 不安装
 项目依赖。

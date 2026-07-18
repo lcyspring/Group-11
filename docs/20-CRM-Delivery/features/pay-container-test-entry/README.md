@@ -2,14 +2,14 @@
 
 状态：已实现。分支：`develop`。日期：2026-07-18。
 
-Pay 模块测试已进入统一的 `compile.sh + YAML` 构建协议。使用者只传配置文件路径，由 YAML 显式选择
+Pay 模块测试已进入统一的 `compile.sh + KDL` 构建协议。使用者只传配置文件路径，由 KDL 显式选择
 Pay 测试、JaCoCo 和受限的 Surefire 类模式；Host 不需要 JDK、Maven，也不在 Host 安装依赖。
 
 标准入口：
 
 ```bash
 cd podman
-bash ./compile.sh ./config/test-pay-ubuntu-26.04.yaml
+bash ./compile.sh ./config/test-pay-ubuntu-26.04.kdl
 ```
 
 该入口优先使用公共工具链镜像

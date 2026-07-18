@@ -6,7 +6,7 @@
 
 ```bash
 cd podman
-bash ./compile.sh ./config/test-crm-ubuntu-26.04.yaml
+bash ./compile.sh ./config/test-crm-ubuntu-26.04.kdl
 ```
 
 - `CrmStatisticsCustomerServiceImplTest`：7/7；
@@ -19,7 +19,7 @@ bash ./compile.sh ./config/test-crm-ubuntu-26.04.yaml
 
 ```bash
 cd podman
-bash ./compile.sh ./config/build-web-ubuntu-26.04.yaml
+bash ./compile.sh ./config/build-web-ubuntu-26.04.kdl
 ```
 
 - Ubuntu 26.04；

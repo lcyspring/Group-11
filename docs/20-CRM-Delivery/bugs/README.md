@@ -1,0 +1,14 @@
+# Bug 文档导航
+
+本目录保存当前开发发现的缺陷总表和独立修复日志。日志记录现象、根因、修复、回归和遗留边界；
+历史日志保留当时使用的配置格式与脚本名称，不因后续 KDL/脚本迁移而改写事实。
+
+- [CRM 核心 Bug 总表](CRM-Core-Bug-Report.md)
+- [CRM 统计 Bug 总表](CRM-Statistics-Bug-Report.md)
+- `logs/`：每个关键 Bug 的独立日志；
+- `crm-async-export-task/`、`crm-customer-import-preview/`、`crm-marketing-link-click/`：对应专项缺陷。
+
+本轮文档与技术栈清理记录：
+[DOC-TECH-BUG-001](logs/DOC-TECH-BUG-001-stale-configuration-and-toolchain-guidance.md)。
+
+新增缺陷必须分配稳定编号，修复后记录自动化和人工回归结果；不能只在总表写“已关闭”而没有证据。

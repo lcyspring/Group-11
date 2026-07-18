@@ -14,5 +14,5 @@
 | 显式安全与数据源容器环境 | 8/8 |
 | 公共/local profile 内联凭据门禁 | 通过 |
 
-运行过程中同时验证：未配置 AI Provider 不会触发默认模型 Bean；TDengine 账号密码由运行 YAML
+运行过程中同时验证：未配置 AI Provider 不会触发默认模型 Bean；TDengine 账号密码由运行 KDL
 注入，Server、Web、Mall 分别在 8080、8081、8082 保持可用。

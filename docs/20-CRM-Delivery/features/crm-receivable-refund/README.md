@@ -8,7 +8,7 @@
 - 提供草稿创建、修改、删除、分页、详情、提交审批、修订和可退金额摘要接口；
 - 审批回调按当前流程实例和目标状态幂等，旧流程或重复事件不重复记账；
 - 管理端提供列表、表单、详情、审批详情、修订、提交和动作轨迹入口，并同步中、英、阿三语文本；
-- 流程定义键和业务编号前缀由 YAML 显式配置，命令行仍只接收配置文件路径。
+- 流程定义键和业务编号前缀由 Spring Boot 属性显式配置；运维命令仍只接收一个 KDL 路径。
 
 ## 金额与并发不变量
 
@@ -31,7 +31,7 @@
 - 配置：`mitedtsm.crm.receivable-refund.process-definition-key`；
 - 配置：`mitedtsm.crm.receivable-refund.number-prefix`；
 - 迁移：`database/migrations/new-crm-receivable-refund.sql`；
-- 兼容迁移可重复执行，并由 Podman YAML 指定的 manifest 统一加载。
+- 兼容迁移可重复执行，并由 Podman KDL 指定的 manifest 统一加载。
 
 ## 当前边界
 

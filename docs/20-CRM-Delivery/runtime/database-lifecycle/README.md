@@ -2,7 +2,7 @@
 
 确认空库后，由 `deploy.sh` 的部署期 provision 从仓库读取
 `database/manifests/mysql-bootstrap.manifest`，通过 stdin 发送给官方 MySQL 容器。已有完整数据库在
-每次部署前读取运行 YAML 的 `mysql.compatibility_migration_manifest`，当前指向
+每次部署前读取运行 KDL 的 `mysql.compatibility_migration_manifest`，当前指向
 `database/manifests/mysql-compatibility.manifest`。
 
 两条链路只共享幂等增量迁移，不共享执行时机：bootstrap 可加载上游完整快照，compatibility 绝不

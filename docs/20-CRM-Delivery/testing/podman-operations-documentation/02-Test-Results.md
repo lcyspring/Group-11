@@ -1,9 +1,9 @@
 # Podman 操作与字段文档测试结果
 
-日期：2026-07-17。分支：`develop`。
+日期：2026-07-18。分支：`develop`。状态：通过。
 
-- 三类 YAML 字段章节 3/3；
-- 编译、镜像打包、部署、停止、离线归档职责 5/5；
-- `full/check/rebuild-server/rebuild-web/rebuild-mall` 模式均有适用场景；
-- H5 输出和本机运行 YAML 的 Git ignore 实际命中；
-- runtime-config 门禁通过，运行中 Pod ID 与状态未改变。
+- KDL 配置分类、全字段参考、镜像来源和中文操作手册齐全；
+- 编译、镜像封装、部署、停止和离线归档职责 5/5；
+- 当前启动/替换模式 7/7 有明确边界，旧 `full/rebuild-*` 不再作为现行入口；
+- H5 输出、本机 KDL、OCI tar、诊断包和备份的 Git ignore 命中；
+- runtime-config 门禁通过，检查前后 Pod ID 与状态不变。

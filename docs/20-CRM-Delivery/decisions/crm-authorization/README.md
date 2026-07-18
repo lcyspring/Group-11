@@ -19,6 +19,6 @@
 | ADR-012 | 角色是权限字符与组织数据范围的配置模板，不进入业务硬编码 | Accepted |
 | ADR-013 | 对象授权和组织范围合并；组织范围只授予 READ | Accepted |
 
-管理员绕过角色代码由 `mitedtsm.crm.authorization.admin-role-codes` 显式 YAML 配置。修改、删除、转移、
+管理员绕过角色代码由 `mitedtsm.crm.authorization.admin-role-codes` 显式配置。修改、删除、转移、
 签署、开票、退款处理和导出仍要求相应功能权限以及当前用户直接持有的对象 WRITE/OWNER，部门范围、
 下属身份和流程候选人身份都不能自动提升这些权限。

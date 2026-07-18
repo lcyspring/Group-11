@@ -8,7 +8,7 @@
 
 - Ubuntu 26.04 容器 CRM 自动化：535/535，失败 0、错误 0、跳过 0。
 - CRM JaCoCo：指令 50.23%、分支 43.17%、行 48.95%、方法 38.25%。
-- Web 全仓 `vue-tsc --noEmit`：脚本与模板诊断 0；标准 Ubuntu YAML 入口通过。
+- Web 全仓 `vue-tsc --noEmit`：脚本与模板诊断 0；标准 Ubuntu KDL 入口通过。
 - 运行安全框架专项：Security 3/3、CORS 2/2；真实 HTTP 安全矩阵全部通过。
 - ERP 履约专项：4/4；ERP 模块 JaCoCo 行覆盖率 6.92%。
 - Ubuntu 26.04 Infra 文件专项：28/28；模块行覆盖率 8.16%。
@@ -21,9 +21,10 @@
 
 | 范围 | 类型 |
 |---|---|
+| `documentation-governance/` | Markdown 链接、旧 Podman YAML/旧目录引用和文档单 KDL 门禁 |
 | `database-lifecycle-governance/` | MySQL 基线、迁移、种子、修复、清理、销毁分层及 manifest 门禁 |
 | `crm-user-guide-routes/` | 用户指南路由、运行菜单和前端组件一致性 |
-| `podman-operations-documentation/` | 编译、构建、部署操作与三类 YAML 字段参考 |
+| `podman-operations-documentation/` | 编译、镜像封装、部署操作与 KDL 字段参考 |
 | `crm-database-backup-recovery/` | CRM MySQL 一致性备份、校验、隔离恢复和真源保护 |
 | `build-toolchain-image-portability/` | Ubuntu 26.04 与 HBuilderX 编译镜像 OCI save/load/push 边界 |
 | `customer-duplicate-check/` | 客户名称查重功能与缺陷 |
@@ -110,8 +111,8 @@
 | `crm-marketing-provider-provision/` | 短信/邮件渠道、账号与模板的三模式幂等 provision |
 | `crm-work-order-performance-security/` | 工单 50 并发业务链、资源基线、数据清理与安全负向矩阵 |
 | `crm-work-order-uat-handover/` | 工单 16 条 UAT、执行记录、知识转移、覆盖映射和四方签署模板 |
-| `payment-cross-domain-integration-contract/` | 支付与 CRM/OA/营销边界、API、安全、补偿和显式 YAML 契约 |
-| `pay-container-test-entry/` | Pay 167 条测试、JaCoCo 覆盖率和 Ubuntu 26.04 单 YAML 入口 |
+| `payment-cross-domain-integration-contract/` | 支付与 CRM/OA/营销边界、API、安全、补偿和显式配置契约 |
+| `pay-container-test-entry/` | Pay 167 条测试、JaCoCo 覆盖率和 Ubuntu 26.04 单 KDL 入口 |
 | `frontend-build-warning-governance/` | Web CJS 与 Mall Sass 告警基线、来源归属和容器构建回归 |
 | `runtime-base-image-pinning/` | Temurin/Nginx/MySQL/Redis/RabbitMQ/TDengine 精确版本与 digest 门禁 |
 | `deterministic-demo-data/` | 固定 seed 演示数据生成、引用/状态校验、cleanup 和部署隔离 |
@@ -121,5 +122,5 @@
 
 ```bash
 cd podman
-bash ./compile.sh ./config/test-crm-ubuntu-26.04.yaml
+bash ./compile.sh ./config/test-crm-ubuntu-26.04.kdl
 ```

@@ -21,4 +21,4 @@
 | YAML 指标目录 | `customer.deal-cycle` 已运行返回 |
 | 验收数据残留 | 无；本验收未创建业务数据 |
 
-构建命令只传入 `podman/config/verify-crm-statistics-data-quality-ubuntu-26.04.yaml`，运行验收命令只传入本机已忽略的 YAML 配置路径。
+构建命令只传入 `podman/config/verify-crm-statistics-data-quality-ubuntu-26.04.kdl`，运行验收命令只传入本机已忽略的 KDL 配置路径。

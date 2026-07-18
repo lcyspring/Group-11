@@ -2,7 +2,7 @@
 
 本目录以当前 `develop` 分支和运行库菜单为准，服务入口为管理端 `http://127.0.0.1:8081/`，后端
 健康检查为 `http://127.0.0.1:8080/actuator/health`。使用已有授权账号登录；账号和密码只写在本地
-运行 YAML，不进入本指南。
+运行 KDL，不进入本指南。
 
 ## 建议验收顺序
 
@@ -26,10 +26,12 @@
 
 | 目录 | 主链 |
 |---|---|
-| `01-lead-customer/` | 线索、公共池、转换、客户、公海、垃圾池、联系人、360 |
-| `02-opportunity-contract-order/` | 产品、商机、报价、合同、补充协议、ERP 履约 |
-| `03-finance-approval/` | 回款计划、回款、发票、退款/冲销、报销和审批 |
-| `04-work-order/` | 处理组、派单、签到、SLA、轨迹、完结和统计 |
-| `05-statistics-targets/` | 六类统计、目标、同比环比、钻取和权限 |
-| `06-marketing/` | 活动、竞品、客群群发、审核、同意/退订、关怀 |
-| `07-permission-security/` | 对象权限、租户、导出/附件、CORS 和运行端点 |
+| [线索与客户](01-lead-customer/README.md) | 线索、公共池、转换、客户、公海、垃圾池、联系人、360 |
+| [商机、合同与订单](02-opportunity-contract-order/README.md) | 产品、商机、报价、合同、补充协议、ERP 履约 |
+| [财务与审批](03-finance-approval/README.md) | 回款计划、回款、发票、退款/冲销、报销和审批 |
+| [工单](04-work-order/README.md) | 处理组、派单、签到、SLA、轨迹、完结和统计 |
+| [统计与目标](05-statistics-targets/README.md) | 六类统计、目标、同比环比、钻取和权限 |
+| [营销](06-marketing/README.md) | 活动、竞品、客群群发、审核、同意/退订、关怀 |
+| [权限与安全](07-permission-security/README.md) | 对象权限、租户、导出/附件、CORS 和运行端点 |
+| [OA 协作](08-oa-collaboration/README.md) | 请假、出差、借款、请示、日程、任务和工作报告 |
+| [财务专项补充](09-finance/README.md) | 回款逾期、核销等专项操作说明 |

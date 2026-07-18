@@ -6,7 +6,7 @@
 
 ```bash
 cd podman
-bash ./compile.sh ./config/test-crm-ubuntu-26.04.yaml
+bash ./compile.sh ./config/test-crm-ubuntu-26.04.kdl
 ```
 
 - CRM：102/102；
@@ -29,4 +29,4 @@ bash ./compile.sh ./config/test-crm-ubuntu-26.04.yaml
 
 本批测试没有发现新的真实缺陷，不新增 Bug 编号。前端测试启动问题属于已关闭的
 `TEST-BUG-007`，日志位于
-`docs/10-Testing/bugs/logs/TEST-BUG-007-ubuntu-node-typescript-strip-disabled.md`。
+该问题已作为历史构建兼容缺陷关闭，当前 Node 22 容器入口不再使用该实验参数。

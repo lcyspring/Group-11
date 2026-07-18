@@ -7,7 +7,7 @@
 | `verify:bpm-start-navigation` | 8/8 通过，0 失败；行/分支/函数覆盖率 100% |
 | BPM 全量单元测试 | 74 个执行，68 通过、6 个既有条件跳过，0 失败、0 错误 |
 | `BpmMessageServiceImplTest` | 5/5 通过 |
-| 运行 YAML 配置测试 | 通过；Pod 状态未改变 |
+| 运行 KDL 配置测试 | 通过；Pod 状态未改变 |
 | Server 完整构建 | Ubuntu 26.04 通过 |
 | Web 生产构建与语言包完整性 | Ubuntu 26.04 通过 |
 

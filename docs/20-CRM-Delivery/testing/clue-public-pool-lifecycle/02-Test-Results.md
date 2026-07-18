@@ -15,7 +15,7 @@
 | 前端专项 ESLint | 0 warning、0 error |
 | Web production build | Ubuntu 26.04，成功 |
 | Server production build | Ubuntu 26.04，37 个 reactor 模块成功 |
-| MySQL 迁移幂等 | 完整启动一次、`rebuild-server` 重复执行三次，均成功 |
+| MySQL 迁移幂等 | 完整启动一次、`replace-server` 重复执行三次，均成功 |
 | 创建未分配线索 | `code=0`，公共分页和详情返回 `poolStatus=1` |
 | 领取和手工退回 | OWNER/PUBLIC 状态、前负责人和累计入池次数正确 |
 | 手工退回原因快照 | 公共分页和详情原样回显 26 字实际原因 |

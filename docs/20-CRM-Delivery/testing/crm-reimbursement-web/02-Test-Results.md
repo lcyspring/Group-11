@@ -1,7 +1,7 @@
 # CRM 报销管理端测试结果
 
 - 日期：2026-07-15
-- 配置：`podman/config/verify-crm-reimbursement-web-ubuntu-26.04.yaml`
+- 配置：`podman/config/verify-crm-reimbursement-web-ubuntu-26.04.kdl`
 - 状态：自动化、生产构建与只读运行验收通过
 
 | 检查项 | 结果 |

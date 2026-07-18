@@ -43,4 +43,4 @@
 规则和历史负责人快照仍待业务签署。
 
 本批发现并关闭测试基础设施缺陷 `TEST-BUG-007`，独立日志位于
-`docs/10-Testing/bugs/logs/TEST-BUG-007-ubuntu-node-typescript-strip-disabled.md`。
+该问题已作为历史构建兼容缺陷关闭，当前 Node 22 容器入口不再使用该实验参数。

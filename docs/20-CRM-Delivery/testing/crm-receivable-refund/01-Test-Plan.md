@@ -17,7 +17,7 @@
 - 退款 API、列表、表单和详情目录执行独立零警告 ESLint；
 - 表单远程检索负责人/参与人两个来源并去重，只保留审批通过回款，当前选中项不受分页截断；
 - Server 和 Web production build 均使用 Ubuntu 26.04 容器；
-- 构建命令只传 `podman/config/verify-crm-refund-ubuntu-26.04.yaml`。
+- 构建命令只传 `podman/config/verify-crm-refund-ubuntu-26.04.kdl`。
 
 ## 运行验收
 

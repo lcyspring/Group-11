@@ -12,7 +12,7 @@
 - “下属负责”改为下属集合与组织范围交集，消除纯上下级关系越权；
 - 新增 `sceneType=4` 的“组织范围”列表，并覆盖九类 CRM 对象；
 - 发票列表补齐此前缺失的归属切换；
-- 管理员角色代码迁入显式 YAML `mitedtsm.crm.authorization.admin-role-codes`；
+- 管理员角色代码迁入显式配置 `mitedtsm.crm.authorization.admin-role-codes`；
 - 导出逐对象只认当前用户直接 WRITE/OWNER，不接受部门 READ 或下属 OWNER；
 - 中、英、阿三语前端标签同步。
 

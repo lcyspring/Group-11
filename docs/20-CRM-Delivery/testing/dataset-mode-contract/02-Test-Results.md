@@ -6,7 +6,7 @@
 
 | 检查项 | 结果 |
 |---|---|
-| runtime YAML 全量配置回归 | 通过，Pod 状态未改变 |
+| runtime KDL 全量配置回归 | 通过，Pod 状态未改变 |
 | insert 携带 cleanup | 预检拒绝 |
 | replace 缺少首项 cleanup | 预检拒绝 |
 | 空库 bootstrap + dataset | 通过 |

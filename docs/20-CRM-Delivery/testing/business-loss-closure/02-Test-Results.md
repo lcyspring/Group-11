@@ -6,7 +6,7 @@
 
 ```bash
 cd podman
-bash ./compile.sh ./config/test-crm-ubuntu-26.04.yaml
+bash ./compile.sh ./config/test-crm-ubuntu-26.04.kdl
 ```
 
 - `CrmBusinessUpdateStatusReqVOTest`：6/6；
@@ -22,7 +22,7 @@ bash ./compile.sh ./config/test-crm-ubuntu-26.04.yaml
 
 ```bash
 cd podman
-bash ./compile.sh ./config/build-web-ubuntu-26.04.yaml
+bash ./compile.sh ./config/build-web-ubuntu-26.04.kdl
 ```
 
 Vite production build 成功，`Web/dist-prod/index.html` 为 3694 bytes。

@@ -3,7 +3,7 @@
 ## 环境
 
 - rootless Podman；
-- 运行 YAML 的 `image.mysql_base` 官方 MySQL 镜像；
+- 运行 KDL 的 `image.mysql_base` 官方 MySQL 镜像；
 - 每次运行创建独立临时容器、named volume 和测试数据库，结束后自动清理；
 - 真实 bootstrap、compatibility 与 `none` dataset manifest。
 

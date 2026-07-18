@@ -35,12 +35,12 @@
 | CRM-FEATURE-029 | 客户潜在、意向、成交、流失四态命令、历史、筛选和画像统计 | GAP-CUS-003、GAP-RPT-001/002、ADR-018 | 已实现 | `docs/20-CRM-Delivery/testing/customer-four-state-lifecycle/` |
 | CRM-FEATURE-030 | 客户 360 统一摘要、合同映射销售单据、财务净额、附件和发票关系视图 | US-CUS-003、GAP-CUS-003、ADR-002 | 已实现 | `docs/20-CRM-Delivery/testing/customer-360-read-model/` |
 | CRM-FEATURE-031 | BPM 租户安全查询、模型治理及 CRM 流程审批统一待办 | GAP-APR-001/003、GAP-IAM-003 | 已实现 | `docs/20-CRM-Delivery/testing/bpm-tenant-unified-backlog/` |
-| CRM-FEATURE-032 | 六类 CRM 统计指标 YAML 血缘目录、域权限隔离和显式实时刷新 | US-RPT-010、GAP-RPT-001～003 | 已实现 | `docs/20-CRM-Delivery/testing/statistics-lineage-refresh/` |
+| CRM-FEATURE-032 | 六类 CRM 统计指标血缘目录、域权限隔离和显式实时刷新 | US-RPT-010、GAP-RPT-001～003 | 已实现 | `docs/20-CRM-Delivery/testing/statistics-lineage-refresh/` |
 | CRM-FEATURE-033 | CRM 回款退款/业务冲销草稿、审批、金额守恒、不可变轨迹和对象权限闭环 | GAP-FIN-001/002、ADR-007/008 | 子闭环完成 | `docs/20-CRM-Delivery/testing/crm-receivable-refund/` |
 | CRM-FEATURE-034 | 八类导出对象权限、合同受保护附件上传/下载及公共文件路由隔离 | GAP-IAM-003、GAP-SEC-003 | 已实现 | `docs/20-CRM-Delivery/testing/crm-resource-security/` |
 | CRM-FEATURE-035 | 客户 360 退款/冲销记录、审批金额、净回款、待回款和权限化明细入口 | GAP-CUS-003、GAP-FIN-001/002、GAP-RPT-002 | 已实现 | `docs/20-CRM-Delivery/testing/customer-360-refund/` |
 | CRM-FEATURE-036 | CRM 报销、费用明细、分类、受保护附件及审批修订闭环 | GAP-FIN-001/002、GAP-APR-002 | 子闭环完成 | `docs/20-CRM-Delivery/testing/crm-reimbursement/` |
-| CRM-FEATURE-037 | 合同、回款、退款和报销四类审批模型的显式 YAML 治理、角色权限和幂等发布 | GAP-APR-001/002、GAP-IAM-003 | 已实现 | `docs/20-CRM-Delivery/testing/crm-core-approval-model-governance/` |
+| CRM-FEATURE-037 | 合同、回款、退款和报销四类审批模型的显式 KDL 治理、角色权限和幂等发布 | GAP-APR-001/002、GAP-IAM-003 | 已实现 | `docs/20-CRM-Delivery/testing/crm-core-approval-model-governance/` |
 | CRM-FEATURE-038 | CRM 日期入参仅接受毫秒时间戳或其数字字符串，拒绝非法文本静默落入 1970 年 | GAP-FIN-002、GAP-RPT-002 | 已实现 | `docs/20-CRM-Delivery/testing/crm-datetime-input-contract/` |
 | CRM-FEATURE-039 | 客户入池/领取时联系人负责人与 OWNER 权限原子同步，保留团队权限 | GAP-CUS-001/002、GAP-IAM-003 | 子闭环完成 | `docs/20-CRM-Delivery/testing/customer-pool-contact-ownership/` |
 | CRM-FEATURE-040 | 客户公海显式状态、保护期、自动回收、领取额度/冷却、通知、配置和列表元数据完整闭环 | GAP-CUS-001、ADR-014 | 已实现 | `docs/20-CRM-Delivery/testing/customer-public-pool-policy/` |
@@ -53,7 +53,7 @@
 | CRM-FEATURE-047 | 工单移动签到、地理围栏、SLA 工作日历、暂停和自动升级闭环 | GAP-WO-002、ADR-011 | 已实现 | `docs/20-CRM-Delivery/testing/crm-work-order-service-governance/` |
 | CRM-FEATURE-048 | 营销活动、竞争对手、客户关怀及短信/邮件合规群发闭环 | GAP-MKT-001～003、ADR-016 | 已实现 | `docs/20-CRM-Delivery/testing/crm-marketing/` |
 | CRM-FEATURE-049 | 已签署合同补充协议前后快照、独立审批、生效投影、金额下限和不可变依据附件闭环 | GAP-CTR-001/002、GAP-ORD-003、GAP-APR-002、ADR-015 | 已实现 | `docs/20-CRM-Delivery/testing/crm-contract-amendment/` |
-| CRM-FEATURE-050 | 成交周期历史补录负样本保留、四类计数、显式数据质量警告和 YAML 口径 | GAP-RPT-001/002/003 | 已实现 | `docs/20-CRM-Delivery/testing/deal-cycle-data-quality/` |
+| CRM-FEATURE-050 | 成交周期历史补录负样本保留、四类计数、显式数据质量警告和指标口径 | GAP-RPT-001/002/003 | 已实现 | `docs/20-CRM-Delivery/testing/deal-cycle-data-quality/` |
 | CRM-FEATURE-051 | 回款历史引用四级状态、原始 ID 保留、查询保护及客户统计/财务台账双口径治理 | GAP-FIN-001/002、GAP-RPT-002 | 已实现 | `docs/20-CRM-Delivery/testing/receivable-reference-integrity/` |
 | CRM-FEATURE-052 | 营销活动真实负责人、完整字段维护、五态操作及草稿受控删除闭环 | GAP-MKT-001、ADR-016 | 已实现 | `docs/20-CRM-Delivery/testing/crm-marketing-campaign-management/` |
 | CRM-FEATURE-053 | 合规群发名单、草稿维护、独立审核、计划群发、失败重试和收件人结果闭环 | GAP-MKT-002/003、ADR-016 | 已实现 | `docs/20-CRM-Delivery/testing/crm-marketing-outreach/` |
@@ -66,12 +66,12 @@
 | CRM-FEATURE-060 | CRM 五态异步导出、权限快照、受保护结果文件和短期单次下载令牌 | 工作计划 CUS-10、GAP-IAM-003、GAP-SEC-003 | 已实现 | `docs/20-CRM-Delivery/testing/crm-async-export-task/` |
 | CRM-FEATURE-061 | 营销群发逐收件人安全跳转、独立/累计点击及逐链接统计 | GAP-MKT-003、ADR-016 | 已实现 | `docs/20-CRM-Delivery/testing/crm-marketing-link-click/` |
 | CRM-FEATURE-062 | 官方 MySQL 直接运行、部署期空库初始化、已有库兼容迁移和未知库保护 | 部署与数据治理 | 已实现 | `docs/20-CRM-Delivery/testing/database-deploy-provision/` |
-| CRM-FEATURE-063 | 短信渠道、邮件账号及模板的显式 YAML 幂等 provision | GAP-MKT-003、ADR-016 | 已实现；真实供应商 UAT 待账号 | `docs/20-CRM-Delivery/testing/crm-marketing-provider-provision/` |
+| CRM-FEATURE-063 | 短信渠道、邮件账号及模板的显式 KDL 幂等 provision | GAP-MKT-003、ADR-016 | 已实现；真实供应商 UAT 待账号 | `docs/20-CRM-Delivery/testing/crm-marketing-provider-provision/` |
 | CRM-FEATURE-064 | 固定 seed、规模可配、生成与部署分离的 CRM 核心/工单演示数据 | 数据与部署治理 | 第一版已实现并完成本机显式替换；财务/BPM 待扩展 | `docs/20-CRM-Delivery/testing/deterministic-demo-data/` |
 | CRM-FEATURE-065 | 商机阶段漏斗与赢单/输单/无效结果分布双视图、终态钻取及缺失初始阶段提示 | GAP-RPT-001/002 | 已实现 | `docs/20-CRM-Delivery/features/business-funnel-outcome-distribution/` |
 | CRM-FEATURE-066 | 工单 16 条可重复 UAT、知识转移、故障处置、清理回滚和四方签署模板 | 工作计划 WO 专项 | 交付物已完成；人员签署待组织 | `docs/20-CRM-Delivery/testing/crm-work-order-uat-handover/` |
-| CRM-FEATURE-067 | 支付与 CRM/OA/营销的边界、映射、回调、安全、补偿、权限及 YAML 集成规范 | 工作计划 COM-06 | 规范已完成；自动集成未实现 | `docs/20-CRM-Delivery/testing/payment-cross-domain-integration-contract/` |
-| CRM-FEATURE-068 | Pay 模块 Ubuntu 26.04 容器测试、JaCoCo 和单 YAML 标准入口 | 构建与测试治理 | 已实现 | `docs/20-CRM-Delivery/testing/pay-container-test-entry/` |
+| CRM-FEATURE-067 | 支付与 CRM/OA/营销的边界、映射、回调、安全、补偿、权限及 KDL 集成规范 | 工作计划 COM-06 | 规范已完成；自动集成未实现 | `docs/20-CRM-Delivery/testing/payment-cross-domain-integration-contract/` |
+| CRM-FEATURE-068 | Pay 模块 Ubuntu 26.04 容器测试、JaCoCo 和单 KDL 标准入口 | 构建与测试治理 | 已实现 | `docs/20-CRM-Delivery/testing/pay-container-test-entry/` |
 | CRM-FEATURE-069 | Web 原生 ESM 构建和 Mall 自有 Sass 现代函数告警治理 | 技术栈清理 P1 | 第一阶段已实现 | `docs/20-CRM-Delivery/testing/frontend-build-warning-governance/` |
 | CRM-FEATURE-070 | 六类运行基础镜像精确版本与 sha256 digest 双固定 | 技术栈清理 P1/P2 | 已实现 | `docs/20-CRM-Delivery/testing/runtime-base-image-pinning/` |
 

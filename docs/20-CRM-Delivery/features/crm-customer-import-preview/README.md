@@ -24,9 +24,9 @@
 
 ## 显式配置与数据
 
-运行 YAML 通过 `crm_customer_import.max_rows` 限制单次行数，通过
+运行 KDL 通过 `crm_customer_import.max_rows` 限制单次行数，通过
 `crm_customer_import.preview_ttl_minutes` 控制确认有效期。字段说明见
-`podman/config/YAML_FIELDS_ZH.md`。
+`podman/config/KDL_FIELDS_ZH.md`。
 
 持久化迁移为 `database/migrations/new-crm-customer-import-preview.sql`，并已进入 MySQL bootstrap 与
 compatibility manifest。预检不保存原始 Excel 二进制，只保存规范化业务字段和逐行结论。
@@ -34,9 +34,9 @@ compatibility manifest。预检不保存原始 Excel 二进制，只保存规范
 ## 验证入口
 
 ```bash
-bash podman/compile.sh podman/config/verify-crm-customer-import-ubuntu-26.04.yaml
-bash podman/compile.sh podman/config/test-crm-ubuntu-26.04.yaml
-bash podman/tests/acceptance/verify-crm-customer-import.sh podman/config/verify-crm-customer-import.example.yaml
+bash podman/compile.sh podman/config/verify-crm-customer-import-ubuntu-26.04.kdl
+bash podman/compile.sh podman/config/test-crm-ubuntu-26.04.kdl
+bash podman/tests/acceptance/verify-crm-customer-import.sh podman/config/verify-crm-customer-import.example.kdl
 ```
 
-命令行只指定 YAML 路径，依赖安装、测试和构建均在 Ubuntu 26.04 容器内完成。
+命令行只指定 KDL 路径，依赖安装、测试和构建均在 Ubuntu 26.04 容器内完成。

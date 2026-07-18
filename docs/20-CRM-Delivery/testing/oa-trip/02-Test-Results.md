@@ -12,5 +12,5 @@
 | `bpm_oa_trip` 表及菜单迁移 | 通过 |
 | `oa_trip` BPM 模型创建和部署 | 通过 |
 
-流程模型编号：`9d74a21e-8196-11f1-92b6-425f6c3db8e7`。运行模型由本机 ignored YAML
+流程模型编号：`9d74a21e-8196-11f1-92b6-425f6c3db8e7`。运行模型由本机 ignored KDL
 提供账号，仓库中的 example 不含真实密码。

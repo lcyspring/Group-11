@@ -4,7 +4,7 @@
 
 环境：rootless Podman，Ubuntu 26.04，Node 22.22.1，pnpm 11.3.0
 
-配置：`podman/config/verify-web-notification-ubuntu-26.04.yaml`
+配置：`podman/config/verify-web-notification-ubuntu-26.04.kdl`
 
 ## 自动化结果
 

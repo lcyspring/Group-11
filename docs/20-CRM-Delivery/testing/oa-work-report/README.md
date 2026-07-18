@@ -3,7 +3,7 @@
 ## 自动化门禁
 
 ```bash
-bash podman/compile.sh podman/config/verify-oa-work-report-ubuntu-26.04.yaml
+bash podman/compile.sh podman/config/verify-oa-work-report-ubuntu-26.04.kdl
 ```
 
 结果：

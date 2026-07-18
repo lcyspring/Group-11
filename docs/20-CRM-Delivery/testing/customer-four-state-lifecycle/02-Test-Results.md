@@ -16,4 +16,4 @@
 - 流失客户空原因：返回业务码 `1020006020`；
 - 真实四态画像：修复残留二态排序列后返回 `code=0`、状态 10、数量 1。
 
-执行配置：`podman/config/verify-crm-ubuntu-26.04.yaml`。构建命令只接收该 YAML 路径。
+执行配置：`podman/config/verify-crm-ubuntu-26.04.kdl`。构建命令只接收该 KDL 路径。

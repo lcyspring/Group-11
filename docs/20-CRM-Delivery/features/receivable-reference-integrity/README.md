@@ -7,7 +7,7 @@
 - 对异常引用禁用编辑和错误详情跳转，避免用户把历史异常误认为可维护业务对象；
 - 客户统计只纳入有效客户—合同关系，员工业绩继续保留全部审批通过财务台账；
 - 真实验收对 API、MySQL 和历史行前后快照做 1:1 对账，不删除、不恢复、不重绑历史记录；
-- 运行脚本只接受显式 YAML 配置文件路径。
+- 运行脚本只接受显式 KDL 配置文件路径。
 
 ## 边界
 
@@ -17,5 +17,5 @@
 ## 验证入口
 
 - 运行验收：`podman/tests/acceptance/verify-crm-receivable-reference-integrity.sh`；
-- 无凭据示例：`podman/config/verify-crm-receivable-reference-integrity.example.yaml`；
+- 无凭据示例：`podman/config/verify-crm-receivable-reference-integrity.example.kdl`；
 - 测试与覆盖率：`docs/20-CRM-Delivery/testing/receivable-reference-integrity/`。

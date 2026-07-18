@@ -3,7 +3,7 @@
 ## 自动化门禁
 
 ```bash
-bash ./podman/compile.sh ./podman/config/test-crm-ubuntu-26.04.yaml
+bash ./podman/compile.sh ./podman/config/test-crm-ubuntu-26.04.kdl
 ```
 
 Ubuntu 26.04 CRM 门禁结果：497 个测试通过，0 失败；新增服务、策略和调度器专项测试覆盖发送成功、

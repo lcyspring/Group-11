@@ -1,74 +1,50 @@
 # 技术栈清理 Plan
 
-制定日期：2026-07-18。实施分支：`develop`。
+制定日期：2026-07-18。实施分支：`develop`。状态：基础设施收敛完成，依赖/API 清理持续推进。
 
-## 目标
+## 已完成
 
-降低构建、运行和升级链的重复维护成本。所有升级先在 Ubuntu 26.04 工具链镜像中建立编译、自动化、
-运行和业务回归证据；不因版本较旧直接批量升级，也不恢复 Host JDK/Node/pnpm 构建路径。
-
-## 已关闭
-
-| 项目 | 结论 |
+| 项目 | 结果 |
 |---|---|
-| 定制 MySQL 运行镜像 | 已删除；直接运行官方 `mysql:8.0` |
-| 数据库 SQL 烘焙进镜像 | 已删除；改为部署期从仓库通过 stdin provision |
-| 旧 MySQL 初始化入口 | 已删除；bootstrap、compatibility、dataset 均由 manifest 显式排序 |
-| 项目原 Docker/Compose 链 | 不进入当前编译、构建、部署流程 |
-| Host 工具链与软链接兼容脚本 | 日常入口已统一为 Ubuntu 26.04 容器，旧兼容路径不再维护 |
-| Pay 测试的 Host/手工 Maven 入口 | 已纳入 `compile.sh` 单 YAML 入口，公共 Ubuntu 26.04 工具链内完成 167 条测试和 JaCoCo |
+| 运行编排 | 退出 Docker/Compose，统一 rootless Podman |
+| 配置入口 | 退出 Podman YAML 与自写解析，统一 KDL + dasel 3.11.2 |
+| Host 工具链 | 退出 Host JDK/Node/pnpm/HBuilderX 和无软链接兼容路径 |
+| 构建工具链 | 两个公开 Ubuntu 26.04 镜像统一 Server/Web/测试与 Mall H5 |
+| 交付阶段 | `compile.sh`、`build-images.sh`、`deploy.sh` 完全分离 |
+| 数据库镜像 | 直接运行官方 MySQL；SQL 由部署期 manifest + stdin provision |
+| 运行镜像 | Temurin、Nginx、MySQL、Redis、RabbitMQ、TDengine 精确版本与 digest 固定 |
+| 前端告警第一阶段 | Web Vite 原生 ESM；Mall 自有 Sass 旧全局函数告警清零 |
 
-## 当前基线
+当前完整版本和真源见 [技术栈基线](../../TECH_STACK_ZH.md)，操作入口见
+[Podman 操作手册](../../../../podman/OPERATIONS_ZH.md)。
 
-| 项目 | 证据 |
-|---|---|
-| Pay 容器测试入口 | `podman/config/test-pay-ubuntu-26.04.yaml` |
-| Pay 测试结果 | 167 个，132 通过、35 个外部集成跳过、失败 0、错误 0 |
-| Pay 覆盖率 | 指令 23.81%、分支 18.74%、行 24.57%、方法 22.96% |
-| 公共工具链 | `ghcr.io/elel-code/group-11-build-ubuntu:26.04`，依赖在容器运行时解析 |
-| 运行基础镜像 | Temurin、Nginx、MySQL、Redis、RabbitMQ、TDengine 均已使用精确版本 + digest |
+## 后续工作
 
-## P1：前端构建告警治理
+### P1：仓库自有前端 API
 
-1. 盘点 Sass legacy JS API、`@import`、Vite CJS API 和 Browserslist 数据告警的来源包与调用路径；
-2. 区分项目源码、直接依赖和 HBuilderX 内置编译器，不能对第三方产物做不可复现热改；
-3. 在标准 Web 和 Mall H5 两个容器构建入口分别建立告警基线；
-4. 每类迁移独立提交，要求 Web 类型检查、H5 构建、关键 CRM/OA 页面和静态资源回归通过。
+- 迁移 Mall 源码和可维护 `uni_modules` 中的 Sass `@import`；
+- 保持 Web `vue-tsc`、ESLint、生产构建和 Mall H5 构建通过；
+- HBuilderX 内置 legacy JS API/Browserslist 告警等待可复现工具链升级，不热改公共镜像。
 
-当前进度（2026-07-18）：
+### P1：直接依赖审计
 
-- Web Vite 配置已切换原生 ESM，CJS Node API 告警 2 → 0；
-- Mall 自有 Sass 已迁移 `map`、`list`、`meta`、`color` 全局旧函数，相关告警 895+ → 0；
-- Mall H5 完整日志由 28732 行降为 4624 行，构建与媒体专项 7/7 通过；
-- 仍保留 HBuilderX 5.05 内置 legacy JS API 178 次、内置 Browserslist 数据 1 次，以及项目/`uni_modules`
-  的 `@import` 366 次。后续先迁移仓库自有 `@import`，再通过新 HBuilderX 工具链镜像处理内置编译器，
-  不修改已发布镜像内部文件。
+- 以源码导入、插件配置、运行加载和测试引用四类证据确认未使用依赖；
+- Java BOM 中的兼容数据库、支付、IoT 等可选依赖不能因当前 CRM 未调用就直接删除；
+- 每批删除后运行对应 reactor、Web 类型检查和生产构建。
 
-## P1/P2：运行依赖版本治理
+### P2：基础组件升级
 
-| 候选 | 当前风险 | 前置门禁 |
+| 候选 | 主要风险 | 前置门禁 |
 |---|---|---|
-| Redis 6 → 受支持版本 | 数据格式、客户端命令和 Lua 行为变化 | 备份恢复、缓存失效、锁与任务调度回归 |
-| Nginx/RabbitMQ 浮动标签 → 精确标签或 digest | 相同 YAML 在不同时间可能拉到不同内容 | 镜像来源清单、代理/健康探针、消息积压与恢复回归 |
-| JDK 17 → 下一 LTS | Spring/Flowable/MyBatis、插件与反射兼容 | 全 reactor 编译、CRM 532+、BPM/System/Infra、启动与内存基线 |
-| MySQL 8.0 后续线 | 排序规则、认证插件、保留字和升级路径 | 备份/隔离恢复、343+ 表 bootstrap、388 表兼容迁移、财务与统计对账 |
-
-当前版本固定已完成：Temurin 17.0.19、Nginx 1.30.0、MySQL 8.0.46、Redis 6.2.22、RabbitMQ
-3.13.7、TDengine 3.3.6.0 均带 sha256 digest。此项只消除浮动来源，不等同于完成 Redis/JDK/MySQL
-大版本升级；后者仍需表中专项门禁。
-
-## 执行顺序
-
-1. 固定当前镜像标签、版本与告警快照；
-2. 一次只升级一个基础组件或一类前端 API；
-3. 运行容器编译、专项测试、完整部署和数据持久化回归；
-4. 更新 YAML 示例、镜像来源说明、Bug 日志和覆盖率记录；
-5. 验证失败立即回退该单项变更，不连带清理用户数据。
+| Redis 6.2 后续受支持版本 | 数据格式、命令和 Lua 行为 | 备份恢复、缓存、锁与调度回归 |
+| JDK 17 后续 LTS | Flowable、MyBatis、插件与反射 | 全 reactor、CRM/BPM/Infra、启动与内存基线 |
+| MySQL 8.0 后续线 | 排序规则、认证、保留字、升级路径 | 隔离恢复、全 manifest、财务与统计对账 |
+| HBuilderX 后续版本 | uni-app 编译器、Sass、插件兼容 | H5 完整编译、静态资源和核心商城流程 |
 
 ## 完成定义
 
-- 无隐式 Host 工具链或环境变量覆盖；
-- 示例 YAML 能复现镜像来源、精确版本和迁移选择；
-- 每项升级有对应测试目录、Bug/兼容性日志和可比较基线；
-- 数据库升级必须有备份、隔离恢复和已有卷滚动验证；
-- 生产版本升级仍需部署环境负责人批准，本 Plan 不替代生产变更流程。
+- 无旧 Podman YAML、旧日常脚本、Host 项目依赖或隐式环境变量覆盖；
+- 每项依赖删除/升级都有独立测试结果和 Bug/兼容性记录；
+- KDL 示例、技术栈基线、镜像来源和覆盖率数据与源码一致；
+- 数据库升级通过备份、隔离恢复、已有卷兼容和持久化验证；
+- 不用“消除告警”替代业务正确性与可维护性验收。

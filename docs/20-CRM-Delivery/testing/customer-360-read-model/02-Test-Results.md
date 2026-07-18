@@ -14,5 +14,5 @@
 | 发票客户过滤 API | `total=3`，响应 `customerId` 唯一值为 17 |
 | 更新后运行服务 | Server `UP`，Web/Mall 均 `200` |
 
-最新 Server/Web 已热替换；本机运行 YAML 使用 `startup_mode: replace-server`，数据库
+最新 Server/Web 已热替换；本机运行 KDL 使用 `startup_mode: replace-server`，数据库
 `dataset_mode: preserve`，现有数据保持不变。

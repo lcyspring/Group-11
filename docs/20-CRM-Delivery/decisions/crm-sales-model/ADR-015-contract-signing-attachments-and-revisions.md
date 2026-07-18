@@ -47,7 +47,7 @@ mitedtsm:
       provider: local-record
 ```
 
-命令行仍只指定 YAML 路径。Provider 必须显式返回支持的签署方式，服务端强制校验，前端只展示
+命令行仍只指定 KDL 路径。Provider 必须显式返回支持的签署方式，服务端强制校验，前端只展示
 能力集合。`local-record` 仅支持线下签署事实登记，不接受“电子签”命令，也不生成虚假电子签章 ID。
 未来适配电子签平台时必须复用稳定幂等键和回调验签，Controller 不得直接访问供应商 SDK。
 

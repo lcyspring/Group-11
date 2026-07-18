@@ -19,8 +19,8 @@
 
 ```bash
 cd podman
-bash ./compile.sh ./config/test-crm-work-order-collaboration-ubuntu-26.04.yaml
-bash ./tests/acceptance/verify-crm-work-order-collaboration.sh ./config/verify-crm-work-order-collaboration-local.yaml
+bash ./compile.sh ./config/test-crm-work-order-collaboration-ubuntu-26.04.kdl
+bash ./tests/acceptance/verify-crm-work-order-collaboration.sh ./config/verify-crm-work-order-collaboration-local.kdl
 ```
 
 真实服务保持运行：Web `8081`、Mall `8082`、Server `8080`。验收脚本使用 YAML 中的账号、租户、

@@ -14,4 +14,4 @@
 | 租户 1 已办 API | `code=0`，当前样本总数 0 |
 | 更新后服务 | Server `UP`，Web 200 |
 
-Server 与 Web 已使用 rootless Podman 热替换；本机运行 YAML 已恢复 `startup_mode: full`。
+Server 与 Web 已使用 rootless Podman 热替换；本机运行 KDL 已恢复 `startup_mode: replace`。

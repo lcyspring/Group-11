@@ -5,7 +5,7 @@
 执行入口：
 
 ```bash
-bash ./podman/operations/diagnostics/collect-crm-diagnostics.sh ./podman/config/crm-diagnostics-local.yaml
+bash ./podman/operations/diagnostics/collect-crm-diagnostics.sh ./podman/config/crm-diagnostics-local.kdl
 ```
 
 正常运行结论为 PASS：Server `UP`、Web/Mall `200/200`、7/7 容器运行、重启 0、近 30 分钟

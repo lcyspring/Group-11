@@ -29,28 +29,28 @@
 
 ```bash
 cd podman
-bash ./compile.sh ./config/test-crm-ubuntu-26.04.yaml
+bash ./compile.sh ./config/test-crm-ubuntu-26.04.kdl
 ```
 
 前端专项：
 
 ```bash
 cd podman
-bash ./compile.sh ./config/test-crm-invoice-web-ubuntu-26.04.yaml
+bash ./compile.sh ./config/test-crm-invoice-web-ubuntu-26.04.kdl
 ```
 
 发票目录专项静态检查：
 
 ```bash
 cd podman
-bash ./compile.sh ./config/check-crm-invoice-web-ubuntu-26.04.yaml
+bash ./compile.sh ./config/check-crm-invoice-web-ubuntu-26.04.kdl
 ```
 
 生产前端构建：
 
 ```bash
 cd podman
-bash ./compile.sh ./config/build-web-ubuntu-26.04.yaml
+bash ./compile.sh ./config/build-web-ubuntu-26.04.kdl
 ```
 
 ## 执行结果
@@ -78,7 +78,7 @@ bash ./compile.sh ./config/build-web-ubuntu-26.04.yaml
 Unix 纪元的问题在该轮验收中发现并修复，见 `CRM-INV-BUG-003`。
 
 运行时入口状态：Server `UP`，Web、Mall 均为 `200 OK`。Web 修复产物已通过
-`startup_mode: rebuild-web` 热替换，服务保持在 8080/8081/8082。
+`startup_mode: replace-web` 热替换，服务保持在 8080/8081/8082。
 
 ## JaCoCo
 

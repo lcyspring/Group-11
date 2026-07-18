@@ -1,6 +1,7 @@
 # Podman 测试资产
 
 - `runtime-config/`：KDL 协议、脚本语法、manifest、目录和无状态门禁；
+- `documentation/`：Markdown 链接、旧配置/旧目录引用和文档单 KDL 入口门禁；
 - `mall-h5-build/`：统一 `compile.sh` 的 H5 容器运行时依赖与断网构建测试；
 - `database-deploy-provision/`：使用官方 MySQL 临时容器和卷验证空库初始化、已有库保留与未知库拒绝；
 - `marketing-provider-provision/`：隔离库验证短信/邮件 Provider 的 create-only、managed、disabled 和关联完整性；

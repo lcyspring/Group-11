@@ -10,8 +10,8 @@ CRM 表单中的 `LocalDateTime` JSON 字段统一接受毫秒时间戳数字，
 该保护在公共 Jackson 反序列化边界实现，因此同时覆盖回款、回款计划、合同、
 商机等使用同一日期契约的写入入口，避免业务层重复校验和遗漏。
 
-构建与专项测试只通过显式 YAML 调用：
+构建与专项测试只通过显式 KDL 调用：
 
 ```bash
-bash podman/compile.sh podman/config/verify-framework-datetime-ubuntu-26.04.yaml
+bash podman/compile.sh podman/config/verify-framework-datetime-ubuntu-26.04.kdl
 ```

@@ -7,8 +7,8 @@
 生成关系可靠、适合 CRM 统计、财务、营销、OA 和工单联合验收的演示数据。生成器只输出 SQL、manifest
 和 checksum，不连接数据库，也不调用部署脚本；数据替换仅由 `deploy.sh` 消费已生成 manifest。
 
-当前生成入口仍读取显式 YAML；KDL 已列为下一阶段唯一配置目标，迁移计划见
-`../kdl-config-migration/README.md`。迁移期间不改变生成与部署分离原则。
+生成与部署入口均已统一读取显式 KDL。生成器只生成数据集；部署是否保持、插入或替换数据，仍只由
+运行 KDL 的 `mysql.dataset_mode` 决定。
 
 ## 当前规模
 
@@ -57,17 +57,18 @@
 
 ```bash
 bash podman/operations/database/generate-demo-dataset.sh \
-  podman/config/generate-demo-dataset.example.yaml
+  podman/config/generate-demo-dataset.example.kdl
 ```
 
 将 `operation.mode` 设为 `check` 时只校验配置；设为 `generate` 时写入被 Git 忽略的
 `database/generated/crm-demo-v2/`。运行库替换时，本机配置临时使用：
 
-```yaml
-mysql:
-  dataset: crm-demo-v2
-  dataset_manifest: ../../database/generated/crm-demo-v2/crm-demo-v2.manifest
-  dataset_mode: replace
+```kdl
+mysql {
+  dataset "crm-demo-v2"
+  dataset_manifest "../../database/generated/crm-demo-v2/crm-demo-v2.manifest"
+  dataset_mode "replace"
+}
 ```
 
 执行 `bash podman/deploy.sh <runtime-config>` 后必须把 `dataset_mode` 恢复为 `preserve`。

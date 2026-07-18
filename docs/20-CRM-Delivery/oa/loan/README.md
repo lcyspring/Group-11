@@ -30,20 +30,20 @@ mitedtsm:
 流程模型使用无凭据示例复制为 ignored 本机配置：
 
 ```bash
-cp podman/config/bpm-provision-loan.example.yaml podman/config/bpm-provision-loan-local.yaml
+cp podman/config/bpm-provision-loan.example.kdl podman/config/bpm-provision-loan-local.kdl
 cd podman
-bash ./operations/bpm/provision-bpm-model.sh ./config/bpm-provision-loan-local.yaml
+bash ./operations/bpm/provision-bpm-model.sh ./config/bpm-provision-loan-local.kdl
 ```
 
-模型 key 固定为 `oa_loan`。全新数据卷由 `deploy.sh full` 通过
-`bpm-provision-all-local.yaml` 自动恢复，不允许依靠数据库中偶然残留的 Flowable 定义。
+模型 key 固定为 `oa_loan`。全新数据卷由 `deploy.sh` 在运行 KDL 的 `startup_mode: replace` 下通过
+`bpm-provision-all-local.kdl` 自动恢复，不允许依靠数据库中偶然残留的 Flowable 定义。
 
 ## 测试与覆盖率
 
 统一使用公共 Ubuntu 26.04 工具链：
 
 ```bash
-bash podman/compile.sh podman/config/verify-oa-loan-ubuntu-26.04.yaml
+bash podman/compile.sh podman/config/verify-oa-loan-ubuntu-26.04.kdl
 ```
 
 当前证据：

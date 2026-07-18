@@ -16,7 +16,7 @@
 
 ```bash
 bash podman/tests/acceptance/verify-crm-statistics-runtime.sh \
-  podman/config/verify-crm-statistics-runtime-local.yaml
+  podman/config/verify-crm-statistics-runtime-local.kdl
 ```
 
-命令行只接受 YAML 路径；含凭据的 `*-local.yaml` 已由 Git 忽略。
+命令行只接受 KDL 路径；含凭据的 `*-local.kdl` 已由 Git 忽略。

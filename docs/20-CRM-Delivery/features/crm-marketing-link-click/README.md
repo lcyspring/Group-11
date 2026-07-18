@@ -28,7 +28,7 @@ GET /admin-api/crm/marketing/outreach/delivery-summary?id={broadcastId}
 幂等迁移为 `database/migrations/new-crm-marketing-link-click.sql`，已登记 bootstrap 与 compatibility
 manifest。
 
-运行 YAML 显式配置：
+运行 KDL 显式配置：
 
 ```yaml
 crm_marketing:
@@ -43,9 +43,9 @@ crm_marketing:
 ## 验证入口
 
 ```bash
-bash podman/compile.sh podman/config/verify-crm-marketing-delivery-ubuntu-26.04.yaml
-bash podman/compile.sh podman/config/check-web-types-ubuntu-26.04.yaml
-bash podman/tests/acceptance/verify-crm-marketing-link-click.sh podman/config/verify-crm-marketing-link-click.example.yaml
+bash podman/compile.sh podman/config/verify-crm-marketing-delivery-ubuntu-26.04.kdl
+bash podman/compile.sh podman/config/check-web-types-ubuntu-26.04.kdl
+bash podman/tests/acceptance/verify-crm-marketing-link-click.sh podman/config/verify-crm-marketing-link-click.example.kdl
 ```
 
-命令行只传 YAML，项目依赖在 Ubuntu 26.04 容器运行时下载或复用 Podman named volume。
+命令行只传 KDL，项目依赖在 Ubuntu 26.04 容器运行时下载或复用 Podman named volume。

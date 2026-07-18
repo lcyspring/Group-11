@@ -25,10 +25,10 @@
 
 ```bash
 cd podman
-bash ./compile.sh ./config/test-crm-ubuntu-26.04.yaml
-bash ./compile.sh ./config/check-crm-contract-lifecycle-web-ubuntu-26.04.yaml
-bash ./compile.sh ./config/build-server-ubuntu-26.04.yaml
-bash ./compile.sh ./config/build-web-ubuntu-26.04.yaml
+bash ./compile.sh ./config/test-crm-ubuntu-26.04.kdl
+bash ./compile.sh ./config/check-crm-contract-lifecycle-web-ubuntu-26.04.kdl
+bash ./compile.sh ./config/build-server-ubuntu-26.04.kdl
+bash ./compile.sh ./config/build-web-ubuntu-26.04.kdl
 ```
 
 - CRM 全量：201/201，失败 0、错误 0、跳过 0；
@@ -53,4 +53,4 @@ bash ./compile.sh ./config/build-web-ubuntu-26.04.yaml
 `1020000020`、签署作废。作废后摘要显示状态 20，动作类型为 7/8，序号为 1/2；响应扫描未出现
 两个快照字段，签署副本下载返回 HTTP 200。
 
-真实令牌、密码和本机含凭据 YAML 均未写入本文档。
+真实令牌、密码和本机含凭据 KDL 均未写入本文档。

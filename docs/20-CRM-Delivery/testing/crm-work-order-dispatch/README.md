@@ -2,7 +2,7 @@
 
 ## 自动化结果
 
-运行环境：Ubuntu 26.04 Podman，配置 `podman/config/test-crm-ubuntu-26.04.yaml`。
+运行环境：Ubuntu 26.04 Podman，配置 `podman/config/test-crm-ubuntu-26.04.kdl`。
 
 | 范围 | 结果 |
 |---|---|

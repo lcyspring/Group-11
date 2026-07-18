@@ -27,4 +27,4 @@ SQL，业务查询仍由受控 Mapper 执行，前端不能提交表名、字段
 
 ## 构建入口
 
-使用 `podman/config/verify-crm-statistics-lineage-ubuntu-26.04.yaml`，命令行只传 YAML 路径。
+使用 `podman/config/verify-crm-statistics-lineage-ubuntu-26.04.kdl`，命令行只传 KDL 路径。

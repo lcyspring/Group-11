@@ -2,7 +2,7 @@
 
 - 分支：`develop`
 - 运行：Ubuntu 26.04 构建产物 + rootless Podman
-- 配置：显式 YAML，命令行仅传配置路径
+- 配置：显式 KDL，命令行仅传配置路径
 
 ## 结果
 

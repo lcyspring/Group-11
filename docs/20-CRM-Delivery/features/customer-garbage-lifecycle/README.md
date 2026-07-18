@@ -43,7 +43,7 @@
 ## 显式配置
 
 `expire-days`、`minimum-pool-cycles`、`batch-size`、`max-batch-size` 和 `max-batches` 全部来自
-YAML，并校验批量不得超过部署安全上限。命令行仍只负责选择 YAML 文件路径。
+YAML，并校验批量不得超过部署安全上限。命令行仍只负责选择 KDL 文件路径。
 
 永久删除当前定义为 CRM 业务主体不可恢复，不等同于法律意义的数据主体抹除；审计轨迹
 的保留期限应由后续统一数据留存策略治理。

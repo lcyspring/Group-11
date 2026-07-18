@@ -7,7 +7,7 @@
 
 ## 业务规则
 
-- 编号前缀和 BPM 流程定义键由 YAML 显式配置；
+- 编号前缀和 BPM 流程定义键由 Spring Boot 属性显式配置；
 - 报销金额由服务端按明细计算；
 - 关联合同后校验合同与客户一致；
 - 草稿、驳回、取消可修订，修订后回到草稿；
@@ -15,7 +15,9 @@
 - 页面查询继续复用 CRM 对象级数据权限。
 - 附件只能经报销专用入口上传，并绑定 `crm-protected/reimbursement/{报销ID}` 受保护目录；外链和跨对象 URL 被拒绝。
 
-运行时只使用显式 YAML：`podman/config/runtime-local-rebuild-server.yaml` 会打包当前 Ubuntu 构建产物、执行幂等迁移并只替换 Server，保留 Web、Mall 和基础设施容器。
+运行时只使用显式 KDL：先由 `build-images.sh` 封装当前 Server 产物，再由
+`runtime-local-replace-server.kdl` 驱动 `deploy.sh` 执行幂等迁移并只替换 Server，保留 Web、Mall
+和基础设施容器。
 
 ## 数据模型
 
@@ -52,4 +54,4 @@
 
 2026-07-15 已用 Ubuntu 26.04 构建产物热替换 8081 Web。报销表单、详情和分类管理异步资源均返回 200；真实只读接口返回样本 `BX202607-0001`、2 条明细、1 个受保护附件、2 条不可变轨迹，服务端总额和两次金额快照均为 `124.000000`。
 
-审批模型由 `podman/operations/bpm/provision-bpm-model.sh` 使用显式 YAML 治理，审批人按 `crm_finance_approver` 角色动态解析。当前运行样本：`BX202607-0001` 审批通过，`BX202607-0002` 驳回修订重提后通过，`BX202607-0003` 由发起人取消；当前无遗留报销运行实例。
+审批模型由 `podman/operations/bpm/provision-bpm-model.sh` 使用显式 KDL 治理，审批人按 `crm_finance_approver` 角色动态解析。当前运行样本：`BX202607-0001` 审批通过，`BX202607-0002` 驳回修订重提后通过，`BX202607-0003` 由发起人取消；当前无遗留报销运行实例。

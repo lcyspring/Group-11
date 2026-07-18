@@ -13,6 +13,6 @@
 运行入口：
 
 ```bash
-bash ./podman/compile.sh ./podman/config/verify-crm-customer-care-ubuntu-26.04.yaml
-bash ./podman/tests/acceptance/verify-crm-customer-care.sh ./podman/config/verify-crm-customer-care-local.yaml
+bash ./podman/compile.sh ./podman/config/verify-crm-customer-care-ubuntu-26.04.kdl
+bash ./podman/tests/acceptance/verify-crm-customer-care.sh ./podman/config/verify-crm-customer-care-local.kdl
 ```

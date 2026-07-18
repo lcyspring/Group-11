@@ -14,7 +14,7 @@
 
 ```bash
 cd podman
-bash ./compile.sh ./config/test-crm-ubuntu-26.04.yaml
+bash ./compile.sh ./config/test-crm-ubuntu-26.04.kdl
 ```
 
-命令行只指定 YAML 配置路径；JDK、Maven、线程、缓存和测试/覆盖率开关均来自配置文件。
+命令行只指定 KDL 配置路径；JDK、Maven、线程、缓存和测试/覆盖率开关均来自配置文件。

@@ -4,7 +4,7 @@
 
 ```bash
 cd podman
-bash ./compile.sh ./config/test-pay-ubuntu-26.04.yaml
+bash ./compile.sh ./config/test-pay-ubuntu-26.04.kdl
 ```
 
 | 项目 | 结果 |

@@ -5,4 +5,4 @@
 - 前端验证八态操作矩阵、渠道模板规则、JSON 参数和目标名单；
 - 验证真实客户/联系人选择、详情回显、审核、发送、重试和收件人分页契约；
 - Ubuntu 26.04 容器执行 CRM 全量 JaCoCo、Web 专项、ESLint、Server/Web 构建；
-- 使用显式 YAML 对真实 API 和 MySQL 状态进行验收。
+- 使用显式 KDL 对真实 API 和 MySQL 状态进行验收。

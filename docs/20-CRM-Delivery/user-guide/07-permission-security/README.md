@@ -15,11 +15,11 @@ API 做负向检查。
 - 八类导出复用对象权限和租户条件；
 - `http://127.0.0.1:8080/actuator/env`、OpenAPI、Swagger、Druid 不暴露真实内容；
 - 历史 `Bearer test1` Mock Token 必须被拒绝；
-- 只允许运行 YAML 配置的 `8081` Origin，非可信 Origin 不返回 allow-origin；
-- BCrypt 强度 10～16，Mock、文档、Druid 和管理端点均由 YAML 显式控制。
+- 只允许运行 KDL 配置的 `8081` Origin，非可信 Origin 不返回 allow-origin；
+- BCrypt 强度 10～16，Mock、文档、Druid 和管理端点均由 KDL 显式控制。
 
 自动验收命令：
 
 ```bash
-bash ./podman/tests/acceptance/verify-crm-runtime-security.sh ./podman/config/runtime-local.yaml
+bash ./podman/tests/acceptance/verify-crm-runtime-security.sh ./podman/config/runtime-local.kdl
 ```
