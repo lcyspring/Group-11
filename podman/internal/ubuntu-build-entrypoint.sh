@@ -388,6 +388,7 @@ if [[ "$BUILD_WEB" == "true" || -n "${WEB_TEST_SCRIPT:-}" ]]; then
         fi
         if [[ "$BUILD_WEB" == "true" ]]; then
             run_without_proxy env -u VITE_BASE_URL CI=true pnpm --dir /workspace/Web run build:prod
+            pnpm --dir /workspace/Web run verify:locale-bundles
         fi
     else
         run_without_proxy pnpm "${install_args[@]}"
@@ -396,6 +397,7 @@ if [[ "$BUILD_WEB" == "true" || -n "${WEB_TEST_SCRIPT:-}" ]]; then
         fi
         if [[ "$BUILD_WEB" == "true" ]]; then
             run_without_proxy env -u VITE_BASE_URL pnpm --dir /workspace/Web run build:prod
+            pnpm --dir /workspace/Web run verify:locale-bundles
         fi
     fi
     if [[ "$BUILD_WEB" == "true" ]]; then

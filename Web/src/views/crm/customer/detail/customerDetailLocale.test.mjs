@@ -7,6 +7,7 @@ const customerDetail = read('./index.vue')
 const permissionList = read('../../permission/components/PermissionList.vue')
 const permissionForm = read('../../permission/components/PermissionForm.vue')
 const transferForm = read('../../permission/components/TransferForm.vue')
+const htmlEntry = read('../../../../../index.html')
 const zhCn = read('../../../../locales/zh-CN/crm.ts')
 const en = read('../../../../locales/en/crm.ts')
 const ar = read('../../../../locales/ar/crm.ts')
@@ -29,4 +30,9 @@ test('customer team components use explicit CRM permission translation keys', ()
   for (const locale of [zhCn, en, ar]) {
     assert.match(locale, /permission: \{/)
   }
+})
+
+test('the production entry declares the same Chinese locale used by a fresh session', () => {
+  assert.match(htmlEntry, /<html lang="zh-CN">/)
+  assert.doesNotMatch(htmlEntry, /<html lang="en">/)
 })

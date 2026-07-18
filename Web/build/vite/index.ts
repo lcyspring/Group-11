@@ -73,7 +73,9 @@ export function createVitePlugins() {
     VueI18nPlugin({
       runtimeOnly: true,
       compositionOnly: true,
-      include: [pathResolve('src/locales/**')]
+      // Locale entry modules are TypeScript aggregators. Treating them as message
+      // resources strips their imports and leaves almost-empty locale bundles.
+      include: [pathResolve('src/locales/**/*.{json,json5,yaml,yml}')]
     }),
     createSvgIconsPlugin({
       iconDirs: [pathResolve('src/assets/svgs')],
