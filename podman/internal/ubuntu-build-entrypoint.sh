@@ -72,6 +72,9 @@ BUILD_INFRA_TESTS="$(bool_value "${BUILD_INFRA_TESTS:-false}")"
 BUILD_INFRA_COVERAGE="$(bool_value "${BUILD_INFRA_COVERAGE:-false}")"
 BUILD_BPM_TESTS="$(bool_value "${BUILD_BPM_TESTS:-false}")"
 BUILD_BPM_COVERAGE="$(bool_value "${BUILD_BPM_COVERAGE:-false}")"
+BUILD_PAY_TESTS="$(bool_value "${BUILD_PAY_TESTS:-false}")"
+BUILD_PAY_COVERAGE="$(bool_value "${BUILD_PAY_COVERAGE:-false}")"
+BUILD_PAY_TEST_PATTERN="${BUILD_PAY_TEST_PATTERN:-}"
 BUILD_COMMON_TESTS="$(bool_value "${BUILD_COMMON_TESTS:-false}")"
 BUILD_COMMON_COVERAGE="$(bool_value "${BUILD_COMMON_COVERAGE:-false}")"
 BUILD_COMMON_TEST_PATTERN="${BUILD_COMMON_TEST_PATTERN:-}"
@@ -100,6 +103,14 @@ if [[ "$BUILD_INFRA_COVERAGE" == "true" && "$BUILD_INFRA_TESTS" != "true" ]]; th
 fi
 if [[ "$BUILD_BPM_COVERAGE" == "true" && "$BUILD_BPM_TESTS" != "true" ]]; then
     printf 'BPM coverage requires BPM tests to be enabled.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_PAY_COVERAGE" == "true" && "$BUILD_PAY_TESTS" != "true" ]]; then
+    printf 'Pay coverage requires Pay tests to be enabled.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_PAY_TESTS" == "true" && ! "$BUILD_PAY_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?,]+$ ]]; then
+    printf 'BUILD_PAY_TEST_PATTERN is required for Pay tests and contains unsupported characters.\n' >&2
     exit 2
 fi
 if [[ "$BUILD_COMMON_COVERAGE" == "true" && "$BUILD_COMMON_TESTS" != "true" ]]; then
@@ -280,6 +291,34 @@ if [[ "$BUILD_BPM_TESTS" == "true" ]]; then
     maven_goal /workspace/Server/pom.xml "${bpm_test_args[@]}"
     if [[ "$BUILD_BPM_COVERAGE" == "true" ]]; then
         require_file /workspace/Server/mitedtsm-module-bpm/target/site/jacoco/jacoco.csv
+    fi
+fi
+
+if [[ "$BUILD_PAY_TESTS" == "true" ]]; then
+    printf 'Running Pay tests%s inside Ubuntu 26.04.\n' \
+        "$([[ "$BUILD_PAY_COVERAGE" == "true" ]] && printf ' with JaCoCo' || true)"
+    rm -f /workspace/Server/mitedtsm-module-pay/target/jacoco.exec
+    rm -rf /workspace/Server/mitedtsm-module-pay/target/site/jacoco
+    pay_test_args=(
+        -pl mitedtsm-module-pay
+        -am
+        "-Dtest=${BUILD_PAY_TEST_PATTERN}"
+        -Dsurefire.failIfNoSpecifiedTests=false
+    )
+    if [[ "$BUILD_PAY_COVERAGE" == "true" ]]; then
+        pay_test_args+=(
+            -Djacoco.propertyName=unusedJacocoArgLine
+            '-DargLine=-javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.13/org.jacoco.agent-0.8.13-runtime.jar=destfile=/workspace/Server/mitedtsm-module-pay/target/jacoco.exec,excludes=net/sf/jsqlparser/**'
+            org.jacoco:jacoco-maven-plugin:0.8.13:prepare-agent
+            test
+            org.jacoco:jacoco-maven-plugin:0.8.13:report
+        )
+    else
+        pay_test_args+=(test)
+    fi
+    maven_goal /workspace/Server/pom.xml "${pay_test_args[@]}"
+    if [[ "$BUILD_PAY_COVERAGE" == "true" ]]; then
+        require_file /workspace/Server/mitedtsm-module-pay/target/site/jacoco/jacoco.csv
     fi
 fi
 

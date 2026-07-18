@@ -56,6 +56,11 @@ bash -n "${PODMAN_DIR}/internal/compile-standard.sh"
 bash -n "${PODMAN_DIR}/internal/hbuilderx-build-entrypoint.sh"
 bash -n "${PODMAN_DIR}/internal/mall-dependencies-entrypoint.sh"
 bash -n "${PODMAN_DIR}/internal/ubuntu-build-entrypoint.sh"
+rg -q 'BUILD_PAY_TESTS' "${PODMAN_DIR}/internal/compile-standard.sh" || \
+    fail 'compile-standard.sh must pass the explicit Pay test selector'
+rg -q 'mitedtsm-module-pay/target/site/jacoco/jacoco.csv' \
+    "${PODMAN_DIR}/internal/ubuntu-build-entrypoint.sh" || \
+    fail 'Ubuntu entrypoint must preserve Pay JaCoCo evidence'
 bash -n "${PODMAN_DIR}/internal/provision-database.sh"
 bash -n "${PODMAN_DIR}/internal/provision-marketing-provider.sh"
 for container_entrypoint in \
@@ -146,6 +151,7 @@ required_examples=(
     runtime-images-server.example.yaml
     runtime-images-web.example.yaml
     compile-all-ubuntu-26.04.example.yaml
+    test-pay-ubuntu-26.04.yaml
     verify-crm-marketing-link-click.example.yaml
     verify-crm-work-order-performance.example.yaml
     verify-crm-work-order-security.example.yaml
@@ -261,6 +267,8 @@ expect_exit_2 bash "${PODMAN_DIR}/compile.sh" \
     "${SCRIPT_DIR}/fixtures/compile-invalid-selector.yaml"
 expect_exit_2 bash "${PODMAN_DIR}/compile.sh" \
     "${SCRIPT_DIR}/fixtures/compile-empty-selection.yaml"
+expect_exit_2 bash "${PODMAN_DIR}/compile.sh" \
+    "${SCRIPT_DIR}/fixtures/compile-pay-coverage-without-tests.yaml"
 expect_exit_2 bash "${PODMAN_DIR}/internal/provision-marketing-provider.sh" \
     "${SCRIPT_DIR}/fixtures/provider-placeholder-secret.yaml"
 expect_exit_2 bash "${PODMAN_DIR}/build-images.sh"

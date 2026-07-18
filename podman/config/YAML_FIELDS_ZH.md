@@ -237,6 +237,8 @@
 | `build.include_targets/exclude_targets` | 四目标白名单与黑名单；标准容器只消费最终选中的前三个目标 |
 | `build.clean` | Maven/Web 是否清理旧产物 |
 | `build.crm_tests/crm_coverage` | 是否执行 CRM 测试和 JaCoCo |
+| `build.pay_tests/pay_coverage` | 是否执行 Pay 模块测试和 JaCoCo；覆盖率要求测试同时开启 |
+| `build.pay_test_pattern` | Pay Surefire 测试类白名单模式；只允许类名字符、`*`、`.`、`?` 和逗号，不接受 Maven 参数 |
 | `build.framework_tests/framework_coverage` | 是否执行显式选择的 Framework 模块测试和 JaCoCo |
 | `build.framework_modules` | Framework Maven 模块路径，多个模块用逗号分隔；未配置时为 Security/Web 组合 |
 | `build.framework_test_pattern` | Framework Surefire 测试类模式，不接受任意命令 |

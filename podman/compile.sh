@@ -84,8 +84,11 @@ STANDARD_REQUIRED=false
 if [[ "$BUILD_SERVER" == true || "$BUILD_INIT_SERVICE" == true || "$BUILD_WEB" == true ]]; then
     STANDARD_REQUIRED=true
 fi
-for test_key in crm_tests erp_tests infra_tests bpm_tests common_tests framework_tests system_tests; do
-    [[ "$(optional_bool "build.${test_key}" false)" == true ]] && STANDARD_REQUIRED=true
+for task_key in \
+    crm_tests crm_coverage erp_tests erp_coverage infra_tests infra_coverage \
+    bpm_tests bpm_coverage pay_tests pay_coverage common_tests common_coverage \
+    framework_tests framework_coverage system_tests system_coverage; do
+    [[ "$(optional_bool "build.${task_key}" false)" == true ]] && STANDARD_REQUIRED=true
 done
 [[ -n "$(yaml_get web.test_script)" ]] && STANDARD_REQUIRED=true
 

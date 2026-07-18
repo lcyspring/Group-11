@@ -100,6 +100,9 @@ BUILD_INFRA_TESTS="$(normalize_bool "$(config_value build.infra_tests false)")"
 BUILD_INFRA_COVERAGE="$(normalize_bool "$(config_value build.infra_coverage false)")"
 BUILD_BPM_TESTS="$(normalize_bool "$(config_value build.bpm_tests false)")"
 BUILD_BPM_COVERAGE="$(normalize_bool "$(config_value build.bpm_coverage false)")"
+BUILD_PAY_TESTS="$(normalize_bool "$(config_value build.pay_tests false)")"
+BUILD_PAY_COVERAGE="$(normalize_bool "$(config_value build.pay_coverage false)")"
+BUILD_PAY_TEST_PATTERN="$(config_value build.pay_test_pattern '')"
 BUILD_COMMON_TESTS="$(normalize_bool "$(config_value build.common_tests false)")"
 BUILD_COMMON_COVERAGE="$(normalize_bool "$(config_value build.common_coverage false)")"
 BUILD_COMMON_TEST_PATTERN="$(config_value build.common_test_pattern '')"
@@ -150,12 +153,27 @@ if [[ -n "$WEB_TEST_SCRIPT" && ! "$WEB_TEST_SCRIPT" =~ ^[A-Za-z0-9:_-]+$ ]]; the
     printf 'web.test_script contains unsupported characters.\n' >&2
     exit 2
 fi
-if [[ "$BUILD_COMMON_TESTS" == "true" && ! "$BUILD_COMMON_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?,]+$ ]]; then
-    printf 'build.common_test_pattern is required for common tests and contains unsupported characters.\n' >&2
+for test_pair in \
+    'CRM:BUILD_CRM_TESTS:BUILD_CRM_COVERAGE' \
+    'ERP:BUILD_ERP_TESTS:BUILD_ERP_COVERAGE' \
+    'Infra:BUILD_INFRA_TESTS:BUILD_INFRA_COVERAGE' \
+    'BPM:BUILD_BPM_TESTS:BUILD_BPM_COVERAGE' \
+    'Pay:BUILD_PAY_TESTS:BUILD_PAY_COVERAGE' \
+    'Common:BUILD_COMMON_TESTS:BUILD_COMMON_COVERAGE' \
+    'Framework:BUILD_FRAMEWORK_TESTS:BUILD_FRAMEWORK_COVERAGE' \
+    'System:BUILD_SYSTEM_TESTS:BUILD_SYSTEM_COVERAGE'; do
+    IFS=: read -r module_name tests_var coverage_var <<< "$test_pair"
+    if [[ "${!coverage_var}" == "true" && "${!tests_var}" != "true" ]]; then
+        printf '%s coverage requires %s tests to be enabled.\n' "$module_name" "$module_name" >&2
+        exit 2
+    fi
+done
+if [[ "$BUILD_PAY_TESTS" == "true" && ! "$BUILD_PAY_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?,]+$ ]]; then
+    printf 'build.pay_test_pattern is required for Pay tests and contains unsupported characters.\n' >&2
     exit 2
 fi
-if [[ "$BUILD_FRAMEWORK_COVERAGE" == "true" && "$BUILD_FRAMEWORK_TESTS" != "true" ]]; then
-    printf 'Framework coverage requires framework tests to be enabled.\n' >&2
+if [[ "$BUILD_COMMON_TESTS" == "true" && ! "$BUILD_COMMON_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?,]+$ ]]; then
+    printf 'build.common_test_pattern is required for common tests and contains unsupported characters.\n' >&2
     exit 2
 fi
 if [[ "$BUILD_FRAMEWORK_TESTS" == "true" && ! "$BUILD_FRAMEWORK_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?,]+$ ]]; then
@@ -165,10 +183,6 @@ fi
 if [[ "$BUILD_FRAMEWORK_TESTS" == "true" &&
       ! "$BUILD_FRAMEWORK_MODULES" =~ ^[A-Za-z0-9_./-]+(,[A-Za-z0-9_./-]+)*$ ]]; then
     printf 'build.framework_modules must be a comma-separated Maven module path list.\n' >&2
-    exit 2
-fi
-if [[ "$BUILD_SYSTEM_COVERAGE" == "true" && "$BUILD_SYSTEM_TESTS" != "true" ]]; then
-    printf 'System coverage requires system tests to be enabled.\n' >&2
     exit 2
 fi
 if [[ "$BUILD_SYSTEM_TESTS" == "true" && ! "$BUILD_SYSTEM_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?,]+$ ]]; then
@@ -253,6 +267,9 @@ podman run "${podman_proxy_args[@]}" --rm --pull=never \
     --env "BUILD_INFRA_COVERAGE=$BUILD_INFRA_COVERAGE" \
     --env "BUILD_BPM_TESTS=$BUILD_BPM_TESTS" \
     --env "BUILD_BPM_COVERAGE=$BUILD_BPM_COVERAGE" \
+    --env "BUILD_PAY_TESTS=$BUILD_PAY_TESTS" \
+    --env "BUILD_PAY_COVERAGE=$BUILD_PAY_COVERAGE" \
+    --env "BUILD_PAY_TEST_PATTERN=$BUILD_PAY_TEST_PATTERN" \
     --env "BUILD_COMMON_TESTS=$BUILD_COMMON_TESTS" \
     --env "BUILD_COMMON_COVERAGE=$BUILD_COMMON_COVERAGE" \
     --env "BUILD_COMMON_TEST_PATTERN=$BUILD_COMMON_TEST_PATTERN" \

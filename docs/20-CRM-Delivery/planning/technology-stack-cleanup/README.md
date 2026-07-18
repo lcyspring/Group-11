@@ -16,6 +16,16 @@
 | 旧 MySQL 初始化入口 | 已删除；bootstrap、compatibility、dataset 均由 manifest 显式排序 |
 | 项目原 Docker/Compose 链 | 不进入当前编译、构建、部署流程 |
 | Host 工具链与软链接兼容脚本 | 日常入口已统一为 Ubuntu 26.04 容器，旧兼容路径不再维护 |
+| Pay 测试的 Host/手工 Maven 入口 | 已纳入 `compile.sh` 单 YAML 入口，公共 Ubuntu 26.04 工具链内完成 167 条测试和 JaCoCo |
+
+## 当前基线
+
+| 项目 | 证据 |
+|---|---|
+| Pay 容器测试入口 | `podman/config/test-pay-ubuntu-26.04.yaml` |
+| Pay 测试结果 | 167 个，132 通过、35 个外部集成跳过、失败 0、错误 0 |
+| Pay 覆盖率 | 指令 23.81%、分支 18.74%、行 24.57%、方法 22.96% |
+| 公共工具链 | `ghcr.io/elel-code/group-11-build-ubuntu:26.04`，依赖在容器运行时解析 |
 
 ## P1：前端构建告警治理
 

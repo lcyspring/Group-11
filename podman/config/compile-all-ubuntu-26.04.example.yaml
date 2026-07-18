@@ -21,6 +21,9 @@ build:
   clean_output: true
   crm_tests: true
   crm_coverage: true
+  pay_tests: true
+  pay_coverage: true
+  pay_test_pattern: "*Test"
   ci: true
   maven_threads: 4
   pnpm_frozen_lockfile: true

@@ -79,6 +79,7 @@
 | BPM-TASK-FE-BUG-002 | GAP-APR-002/003 | P0 | 合同、回款遗留审批中状态指向不存在的 Flowable 实例，详情并发请求产生未捕获异常；审计后转取消可重提并顺序加载、收敛 Promise | 孤立项 2→0、审计 2、专项 3/3、Ubuntu Web build | 已关闭 |
 | PAY-SEC-BUG-001 | 支付跨域安全审计 | P0/安全 | Provider 支付/退款/转账回调把完整参数和正文写入 INFO；改为只记录 channelId、参数数量和正文长度 | 专项 2/2、Pay 167 个失败 0 | 已关闭 |
 | PAY-TEST-BUG-001 | 支付测试基线 | P1/测试 | 支付宝夹具用相对资源路径充当绝对回调 URL，29 条用例被 DTO 校验提前拦截；改用固定 HTTPS 测试 origin 并清空非目标 returnUrl | 支付宝组合 43/43、Pay 167 个失败 0 | 已关闭 |
+| PODMAN-BUILD-BUG-009 | Pay 测试入口 | P1/工程 | Pay 测试和覆盖率只能通过手写 Maven 参数执行，无法由单 YAML 标准入口复现；新增受校验的测试模式、覆盖率开关和证据路径 | YAML 入口 BUILD SUCCESS；Pay 167 个失败 0；行覆盖率 24.57% | 已关闭 |
 
 ## 边界说明
 

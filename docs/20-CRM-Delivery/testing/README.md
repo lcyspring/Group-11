@@ -110,6 +110,7 @@
 | `crm-work-order-performance-security/` | 工单 50 并发业务链、资源基线、数据清理与安全负向矩阵 |
 | `crm-work-order-uat-handover/` | 工单 16 条 UAT、执行记录、知识转移、覆盖映射和四方签署模板 |
 | `payment-cross-domain-integration-contract/` | 支付与 CRM/OA/营销边界、API、安全、补偿和显式 YAML 契约 |
+| `pay-container-test-entry/` | Pay 167 条测试、JaCoCo 覆盖率和 Ubuntu 26.04 单 YAML 入口 |
 | `deterministic-demo-data/` | 固定 seed 演示数据生成、引用/状态校验、cleanup 和部署隔离 |
 
 运行入口统一为：
