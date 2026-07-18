@@ -12,6 +12,8 @@ CREATE PROCEDURE generate_crm_demo_v2()
 BEGIN
   DECLARE i INT DEFAULT 1;
   DECLARE customer_id BIGINT;
+  DECLARE contact_id BIGINT;
+  DECLARE business_id BIGINT;
   IF EXISTS (SELECT 1 FROM crm_customer WHERE tenant_id=@demo_tenant AND name LIKE CONCAT(@demo_batch, '-CUS-%')) THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Generated demo batch already exists; explicit cleanup is required';
   END IF;
@@ -38,6 +40,10 @@ BEGIN
       (customer_id,owner_user_id,previous_owner_user_id,new_owner_user_id,type,source,reason,creator,updater,deleted,tenant_id)
       VALUES(customer_id,@demo_owner,NULL,@demo_owner,1,'DEMO_GENERATOR',@demo_batch,
              CAST(@demo_owner AS CHAR),CAST(@demo_owner AS CHAR),b'0',@demo_tenant);
+    INSERT INTO crm_permission
+      (biz_type,biz_id,user_id,level,creator,create_time,updater,update_time,deleted,tenant_id)
+      VALUES(2,customer_id,@demo_owner,1,CAST(@demo_owner AS CHAR),NOW(),
+             CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant);
     INSERT INTO crm_contact
       (name,customer_id,owner_user_id,mobile,email,sex,birthday,master,primary_contact,remark,
        creator,create_time,updater,update_time,deleted,tenant_id)
@@ -45,6 +51,11 @@ BEGIN
        CONCAT('17',LPAD(MOD(__SEED__+i,1000000000),9,'0')),
        CONCAT('contact.',__SEED__,'.',i,'@example.invalid'),MOD(i,2),DATE_ADD('1980-01-01',INTERVAL MOD(i*97,12000) DAY),
        b'1',b'1',CONCAT('generated-batch:',@demo_batch),CAST(@demo_owner AS CHAR),NOW(),CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant);
+    SET contact_id=LAST_INSERT_ID();
+    INSERT INTO crm_permission
+      (biz_type,biz_id,user_id,level,creator,create_time,updater,update_time,deleted,tenant_id)
+      VALUES(3,contact_id,@demo_owner,1,CAST(@demo_owner AS CHAR),NOW(),
+             CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant);
     SET i=i+1;
   END WHILE;
 
@@ -60,6 +71,11 @@ BEGIN
        1000+MOD(i*137,500000),95,ROUND((1000+MOD(i*137,500000))*0.95,2),
        CONCAT('generated-batch:',@demo_batch),CAST(@demo_owner AS CHAR),CAST(@demo_owner AS CHAR),
        DATE_ADD(@demo_start,INTERVAL MOD(i*__SEED__,@demo_span_days) DAY),NOW(),b'0',@demo_tenant);
+    SET business_id=LAST_INSERT_ID();
+    INSERT INTO crm_permission
+      (biz_type,biz_id,user_id,level,creator,create_time,updater,update_time,deleted,tenant_id)
+      VALUES(4,business_id,@demo_owner,1,CAST(@demo_owner AS CHAR),NOW(),
+             CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant);
     SET i=i+1;
   END WHILE;
 

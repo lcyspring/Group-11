@@ -84,6 +84,7 @@
 | MALL-H5-BUILD-BUG-002 | H5 Sass 告警 | P2/维护 | Mall 自有 Sass 大量使用全局 map/list/color 函数，HBuilderX 构建日志被 895+ 条显式旧函数告警及重复项淹没 | 旧全局函数告警 0；日志 28732→4624 行；H5 构建成功、媒体专项 7/7 | 已关闭 |
 | PODMAN-RUNTIME-BUG-013 | 运行供应链 | P1/可复现 | 六类基础镜像使用大版本或 stable 浮动标签，相同 YAML 可得到不同二进制；改为精确版本和 sha256 digest 双固定 | 6/6 本地 digest 匹配；配置门禁通过；运行服务健康 | 已关闭 |
 | DEMO-DATA-BUG-002 | 演示数据替换 | P1/数据 | 通用旧演示清理脚本早于工单模块，replace 后遗留 1 条旧工单；补齐工单交易、抄送、签到、轨迹和 SLA 实例清理 | 客户/商机/工单旧数据 0/0/0；新数据 1000/1600/2000；Server UP | 已关闭 |
+| DEMO-DATA-BUG-003 | 演示数据权限 | P0/可用性 | 生成客户只有 owner_user_id，没有 crm_permission OWNER 关系，详情页隐藏转移、锁定和放入公海；同步生成客户/联系人/商机 OWNER 权限 | 权限 1000/1000/1600；抽查 pool=0、owner=1、level=1 | 已关闭 |
 
 ## 边界说明
 
