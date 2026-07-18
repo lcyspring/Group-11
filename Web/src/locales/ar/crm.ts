@@ -1043,6 +1043,8 @@ export default {
     contractPrice: 'سعر العقد',
     remainingReceivablePrice: 'المبلغ المتبقي للتحصيل',
     period: 'الفترة',
+    periodOption: 'الفترة {period}',
+    amountInCny: '{label} (يوان صيني)',
     customerPlaceholder: 'اختر العميل',
     contractPlaceholder: 'اختر العقد',
     noPlaceholder: 'الرجاء إدخال رقم المستحق',
@@ -1077,7 +1079,9 @@ export default {
   },
   receivablePlan: {
     title: 'خطة المستحقات',
+    createReceivablePlan: 'إنشاء خطة تحصيل',
     period: 'الفترة',
+    amountInCny: '{label} (يوان صيني)',
     contractId: 'العقد',
     price: 'المبلغ المخطط',
     returnType: 'نوع الإرجاع',

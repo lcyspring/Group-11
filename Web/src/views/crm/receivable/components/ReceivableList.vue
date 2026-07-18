@@ -38,7 +38,7 @@
       </el-table-column>
       <el-table-column
         align="center"
-        :label="t('receivable.price') + '（元）'"
+        :label="t('receivable.amountInCny', { label: t('receivable.price') })"
         prop="price"
         :formatter="erpPriceTableColumnFormatter"
       />

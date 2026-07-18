@@ -31,7 +31,7 @@
       <el-table-column align="center" :label="t('receivablePlan.period')" prop="period" />
       <el-table-column
         align="center"
-        :label="t('receivablePlan.price') + '（元）'"
+        :label="t('receivablePlan.amountInCny', { label: t('receivablePlan.price') })"
         prop="price"
         min-width="120"
         :formatter="erpPriceTableColumnFormatter"

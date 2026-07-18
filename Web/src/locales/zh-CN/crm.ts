@@ -1036,6 +1036,8 @@ export default {
     contractPrice: '合同金额',
     remainingReceivablePrice: '剩余可回款',
     period: '回款期数',
+    periodOption: '第 {period} 期',
+    amountInCny: '{label}（元）',
     customerPlaceholder: '请选择客户',
     contractPlaceholder: '请选择合同',
     noPlaceholder: '请输入回款编号',
@@ -1070,7 +1072,9 @@ export default {
   },
   receivablePlan: {
     title: '回款计划',
+    createReceivablePlan: '新建回款计划',
     period: '期数',
+    amountInCny: '{label}（元）',
     contractId: '合同',
     price: '计划回款金额',
     returnType: '回款方式',

@@ -117,7 +117,7 @@
       </el-table-column>
       <el-table-column
         align="center"
-        :label="t('receivablePlan.price') + '（元）'"
+        :label="t('receivablePlan.amountInCny', { label: t('receivablePlan.price') })"
         prop="price"
         min-width="160"
         :formatter="erpPriceTableColumnFormatter"
@@ -167,7 +167,7 @@
       />
       <el-table-column
         align="center"
-        :label="t('receivablePlan.receivablePrice') + '（元）'"
+        :label="t('receivablePlan.amountInCny', { label: t('receivablePlan.receivablePrice') })"
         prop="receivedPrice"
         min-width="160"
       >
@@ -191,7 +191,7 @@
       </el-table-column>
       <el-table-column
         align="center"
-        :label="t('receivablePlan.unreceivedPrice') + '（元）'"
+        :label="t('receivablePlan.amountInCny', { label: t('receivablePlan.unreceivedPrice') })"
         prop="unreceivedPrice"
         min-width="160"
       >

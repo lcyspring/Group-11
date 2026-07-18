@@ -1049,6 +1049,8 @@ export default {
     contractPrice: 'Contract Price',
     remainingReceivablePrice: 'Remaining Receivable',
     period: 'Period',
+    periodOption: 'Period {period}',
+    amountInCny: '{label} (CNY)',
     customerPlaceholder: 'Select customer',
     contractPlaceholder: 'Select contract',
     noPlaceholder: 'Please enter receivable no',
@@ -1083,7 +1085,9 @@ export default {
   },
   receivablePlan: {
     title: 'Receivable Plan',
+    createReceivablePlan: 'Create Receivable Plan',
     period: 'Period',
+    amountInCny: '{label} (CNY)',
     contractId: 'Contract',
     price: 'Planned Amount',
     returnType: 'Return Type',

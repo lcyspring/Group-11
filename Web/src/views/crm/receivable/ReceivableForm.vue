@@ -93,7 +93,7 @@
                 v-for="data in receivablePlanList"
                 :key="data.id"
                 :disabled="Boolean(data.receivableId)"
-                :label="'第 ' + data.period + ' 期'"
+                :label="t('receivable.periodOption', { period: data.period })"
                 :value="data.id!"
               />
             </el-select>

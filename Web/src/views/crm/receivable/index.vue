@@ -178,7 +178,7 @@
       />
       <el-table-column
         align="center"
-        :label="t('receivable.price') + '（元）'"
+        :label="t('receivable.amountInCny', { label: t('receivable.price') })"
         prop="price"
         min-width="140"
         :formatter="erpPriceTableColumnFormatter"
@@ -201,7 +201,7 @@
       />
       <el-table-column
         align="center"
-        :label="t('receivable.contractPrice') + '（元）'"
+        :label="t('receivable.amountInCny', { label: t('receivable.contractPrice') })"
         prop="contract.totalPrice"
         min-width="140"
         :formatter="erpPriceTableColumnFormatter"
