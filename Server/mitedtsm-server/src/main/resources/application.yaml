@@ -780,7 +780,7 @@ mitedtsm:
     base-package: com.meession.etm
   web:
     admin-ui:
-      url: http://dashboard.mitedtsm.iocoder.cn # Admin 管理后台 UI 的地址
+      url: ${MITEDTSM_WEB_ADMIN_UI_URL} # 由运行 YAML 注入用户可访问的管理端公开地址
     cors:
       allowed-origin-patterns: [] # 运行环境必须通过显式配置声明可信前端来源
       allowed-headers: [Authorization, Content-Type, tenant-id, Accept-Language]

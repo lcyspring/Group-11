@@ -46,6 +46,7 @@
 | 字段 | 作用 |
 |---|---|
 | `network.host_address` | Server/Web/Mall 发布端口绑定地址；团队验收示例为 `0.0.0.0`，并由 UFW/安全组限制来源 |
+| `network.admin_ui_public_url` | 管理端对用户公开的完整 HTTP(S) 地址；BPM 短信详情链接从此字段生成，不能写死容器地址或 loopback |
 | `network.*_host_port` | Server/Web/Mall 的宿主端口 |
 | `network.*_container_port` | Pod 内对应端口 |
 | `network.use_host_proxy` | 是否把显式代理注入 build/run；不会读取宿主隐式环境 |
@@ -186,6 +187,29 @@
 | `health.server_path/web_path/mall_path` | 三个应用的健康路径 |
 | `bpm.provision_after_start` | Server 就绪后是否根据显式清单创建/更新并部署全部受管 BPM 模型；全新数据库卷应设为 `true` |
 | `bpm.provision_manifest` | BPM 聚合清单路径；清单再引用各模型的 ignored local YAML，真实账号不写入运行脚本或仓库 |
+| `bpm.notification_sms_enabled` | 是否让 BPM 通过、拒绝、任务分配和超时事件调用 System 短信 Provider；无真实通道时必须为 `false` |
+| `bpm.notification_fail_fast` | 短信失败是否向审批接口传播；默认 `false`，保证可选通知故障不回滚核心审批 |
+| `bpm.notification_template_config` | BPM 四类短信模板配置文件路径；相对运行 YAML 解析，示例必须提交、真实供应商模板 ID 写 ignored local 文件 |
+
+### BPM 短信模板配置
+
+示例为 `bpm-notification-templates.example.yaml`。启用真实短信时，复制为 ignored
+`bpm-notification-templates-local.yaml`，填写供应商模板 ID，并让运行 YAML 的
+`bpm.notification_template_config` 指向该文件。部署只接收运行 YAML 路径，由部署阶段间接读取模板文件。
+
+| 字段 | 作用 |
+|---|---|
+| `provision.mode` | `disabled` 表示数据库模板外部管理；`create-only` 只补缺；`managed` 以 YAML 幂等更新四个稳定 code |
+| `provision.sms_channel_code` | 四类 BPM 模板共用的 System 短信通道 code；通道账号仍由 Provider 配置或外部系统管理 |
+| `process_approve.*` | 审批通过模板：稳定 code、显示名、内容、JSON 参数数组、供应商模板 ID |
+| `process_reject.*` | 审批拒绝模板；参数包含流程名、拒绝原因和详情链接 |
+| `task_assigned.*` | 新待办模板；参数包含发起人、流程名、任务名和详情链接 |
+| `task_timeout.*` | 任务超时模板；参数包含流程名、任务名和详情链接 |
+
+四个 `code` 与后端枚举形成稳定协议，不允许任意改名；名称、内容和供应商模板 ID 可显式配置。
+当 `notification_sms_enabled: true` 时，部署会校验通道唯一且四个启用模板全部存在；缺失时拒绝启动
+新 Server，避免把“短信模板不存在”延迟到审批操作。`notification_fail_fast: false` 仍是运行期的最后
+隔离层，Provider 临时故障只写告警，不改变已经完成的审批状态。
 
 ## BPM 模型恢复配置
 

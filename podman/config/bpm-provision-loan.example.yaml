@@ -20,5 +20,5 @@ model:
   name: 借款审批
   description: OA 借款审批；超出岗位额度时通过流程变量标记为升级审批。
   form_create_path: /bpm/oa/loan/create
-  form_view_path: /bpm/oa/loan/detail
+  form_view_path: /bpm/oa/loan/detail.vue
   approval_node_name: 借款审批

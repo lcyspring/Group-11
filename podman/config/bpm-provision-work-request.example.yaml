@@ -19,6 +19,6 @@ model:
   key: oa_work_request
   name: OA 请示审批
   description: OA 请示审批；审批结果回写请示业务状态。
-  form_create_path: /bpm/oa/work-request/index
-  form_view_path: /bpm/oa/work-request/index
+  form_create_path: /bpm/collaboration/work-request
+  form_view_path: /bpm/oa/work-request/detail.vue
   approval_node_name: 请示审批

@@ -21,10 +21,10 @@ public class CrmStatisticsBusinessStageSummaryRespVO {
     @Schema(description = "结束状态；阶段为空，结果为 1 赢单、2 输单、3 无效", example = "2")
     private Integer endStatus;
 
-    @Schema(description = "到达本阶段的商机数", requiredMode = Schema.RequiredMode.REQUIRED, example = "12")
+    @Schema(description = "当前处于本状态的商机数", requiredMode = Schema.RequiredMode.REQUIRED, example = "12")
     private Long businessCount;
 
-    @Schema(description = "到达本阶段的商机金额，单位：元", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "当前处于本状态的商机金额，单位：元", requiredMode = Schema.RequiredMode.REQUIRED)
     private BigDecimal totalPrice;
 
     @Schema(description = "阶段相对上一阶段的转化率，或终态在全部结单中的占比，百分比", requiredMode = Schema.RequiredMode.REQUIRED,

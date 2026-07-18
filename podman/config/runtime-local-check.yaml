@@ -14,9 +14,13 @@ deployment:
 bpm:
   provision_after_start: false
   provision_manifest: bpm-provision-all.example.yaml
+  notification_sms_enabled: false
+  notification_fail_fast: false
+  notification_template_config: bpm-notification-templates.example.yaml
 
 network:
   host_address: 0.0.0.0
+  admin_ui_public_url: https://crm.example.com
   server_host_port: 8080
   server_container_port: 8080
   web_host_port: 8081

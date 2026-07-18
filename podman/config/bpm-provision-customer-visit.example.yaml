@@ -25,5 +25,5 @@ model:
   name: 客户拜访审批
   description: CRM 客户拜访申请审批；审批通过后由申请人回填实际结果并自动生成客户跟进记录。
   form_create_path: /crm/customer-visit/create
-  form_view_path: /crm/customer-visit/detail
+  form_view_path: /crm/customerVisit/detail.vue
   approval_node_name: 客户拜访审批

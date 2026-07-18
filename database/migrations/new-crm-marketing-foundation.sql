@@ -70,7 +70,9 @@ CREATE TABLE IF NOT EXISTS `crm_marketing_broadcast` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='CRM 营销群发任务';
 
 CREATE TABLE IF NOT EXISTS `crm_marketing_broadcast_recipient` (
-  `id` bigint NOT NULL AUTO_INCREMENT, `broadcast_id` bigint NOT NULL, `customer_id` bigint NOT NULL, `contact_id` bigint NULL,
+  `id` bigint NOT NULL AUTO_INCREMENT, `broadcast_id` bigint NOT NULL, `customer_id` bigint NOT NULL,
+  `customer_name` varchar(200) NULL COMMENT '发送时客户名称快照', `contact_id` bigint NULL,
+  `contact_name` varchar(200) NULL COMMENT '发送时联系人名称快照',
   `channel` tinyint NOT NULL, `mobile` varchar(32) NULL, `email` varchar(255) NULL, `status` tinyint NOT NULL DEFAULT 10,
   `suppressed_reason` varchar(500) NULL, `provider_log_id` bigint NULL, `failure_reason` varchar(1000) NULL,
   `attempt_count` int NOT NULL DEFAULT 0, `sent_at` datetime NULL, `last_attempt_at` datetime NULL,

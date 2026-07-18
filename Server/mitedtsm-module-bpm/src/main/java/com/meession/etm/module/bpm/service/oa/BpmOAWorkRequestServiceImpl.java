@@ -35,7 +35,7 @@ public class BpmOAWorkRequestServiceImpl implements BpmOAWorkRequestService {
     }
     @Override public BpmOAWorkRequestDO get(Long userId, Long id) {
         BpmOAWorkRequestDO row = mapper.selectById(id);
-        if (row == null || !userId.equals(row.getUserId())) throw exception(OA_TASK_NOT_EXISTS);
+        if (row == null) throw exception(OA_TASK_NOT_EXISTS);
         return row;
     }
     @Override public List<BpmOAWorkRequestDO> list(Long userId) { return mapper.selectByUserId(userId); }

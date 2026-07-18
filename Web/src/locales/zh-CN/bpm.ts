@@ -153,6 +153,7 @@ export default {
       submitTime: '提交',
       queryError: '查询不到审批详情信息！',
       queryProcessError: '查询不到流程信息！',
+      customFormRouteInvalid: '该流程的业务表单地址无效，请联系管理员检查流程模型配置',
       startSuccess: '发起流程成功',
       selectCandidate: '请选择{name}的候选人',
       restartFailed: '重新发起流程失败',

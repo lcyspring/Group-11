@@ -41,7 +41,7 @@ public class CrmStatisticsFunnelController {
     }
 
     @GetMapping("/get-business-stage-summary")
-    @Operation(summary = "获取商机阶段漏斗", description = "按状态组统计到达各阶段的商机数量、金额和相邻转化率")
+    @Operation(summary = "获取商机阶段漏斗", description = "按状态组统计当前处于各状态的商机数量、金额和相邻比例")
     @PreAuthorize("@ss.hasPermission('crm:statistics-funnel:query')")
     public CommonResult<List<CrmStatisticsBusinessStageSummaryRespVO>> getBusinessStageSummary(
             @Valid CrmStatisticsBusinessStageReqVO reqVO) {
@@ -49,7 +49,7 @@ public class CrmStatisticsFunnelController {
     }
 
     @GetMapping("/get-business-stage-page")
-    @Operation(summary = "获得商机阶段漏斗明细", description = "查询到达所选阶段且仍活跃或已赢单的商机")
+    @Operation(summary = "获得商机阶段漏斗明细", description = "查询当前处于所选状态的商机")
     @PreAuthorize("@ss.hasPermission('crm:business:query')")
     public CommonResult<PageResult<CrmBusinessRespVO>> getBusinessStagePage(
             @Valid CrmStatisticsBusinessStagePageReqVO pageVO) {

@@ -31,10 +31,10 @@ class CrmCustomer360ServiceImplTest {
         assertEquals(0L, result.getBusinessCount());
         assertEquals(3L, result.getMappedOrderCount());
         assertEquals(0L, result.getRefundCount());
+        assertEquals(0L, result.getTaskCount());
         assertEquals(new BigDecimal("350.00"), result.getNetReceivableAmount());
         assertEquals(new BigDecimal("650.00"), result.getOutstandingReceivableAmount());
         assertEquals(new BigDecimal("750.00"), result.getUninvoicedAmount());
-        assertFalse(result.getTaskSupported());
     }
 
     @Test

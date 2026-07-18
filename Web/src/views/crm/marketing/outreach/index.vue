@@ -230,7 +230,13 @@
     </template>
   </Dialog>
 
-  <Dialog v-model="recipientVisible" :title="`${recipientTitle} · ${t('crm.marketing.recipients')}`" width="1000px">
+  <Dialog
+    v-model="recipientVisible"
+    :title="`${recipientTitle} · ${t('crm.marketing.recipients')}`"
+    width="1000px"
+    scroll
+    max-height="calc(100vh - 150px)"
+  >
     <el-form :inline="true" class="mb-10px">
       <el-form-item :label="t('crm.marketing.recipientStatus')">
         <el-select v-model="recipientQuery.status" clearable class="!w-160px" @change="handleRecipientQuery">
@@ -280,10 +286,10 @@
     </el-table>
     <el-table v-loading="recipientLoading" :data="recipients" max-height="520" stripe>
       <el-table-column min-width="160" :label="t('crm.marketing.customers')">
-        <template #default="{ row }">{{ customerName(row.customerId) }}</template>
+        <template #default="{ row }">{{ row.customerName || customerName(row.customerId) }}</template>
       </el-table-column>
       <el-table-column min-width="150" :label="t('crm.marketing.contacts')">
-        <template #default="{ row }">{{ contactName(row.contactId) }}</template>
+        <template #default="{ row }">{{ row.contactName || contactName(row.contactId) }}</template>
       </el-table-column>
       <el-table-column min-width="90" :label="t('crm.marketing.channel')">
         <template #default="{ row }">{{ channelLabel(row.channel) }}</template>
@@ -481,8 +487,10 @@ const statusType = (status?: number) => {
 const isDue = (scheduledAt?: Date | string) => !scheduledAt || new Date(scheduledAt).getTime() <= Date.now()
 const contactOptionLabel = (contact: MarketingApi.MarketingTargetOptionsVO['contacts'][number]) =>
   `${customerName(contact.customerId)} · ${contact.name}${contact.mobile ? ` · ${contact.mobile}` : ''}`
-const customerName = (id?: number) => customers.value.find((item) => item.id === id)?.name ?? `#${id ?? '-'}`
-const contactName = (id?: number) => !id ? '-' : contacts.value.find((item) => item.id === id)?.name ?? `#${id}`
+const customerName = (id?: number) => customers.value.find((item) => item.id === id)?.name
+  ?? t('crm.marketing.deletedCustomer', { id: id ?? '-' })
+const contactName = (id?: number) => !id ? '-' : contacts.value.find((item) => item.id === id)?.name
+  ?? t('crm.marketing.deletedContact', { id })
 
 const getList = async () => {
   loading.value = true

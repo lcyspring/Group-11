@@ -170,21 +170,30 @@ const queryParams = reactive({
 const total = ref(0) // 消息总条数
 const refreshContent = ref(false) // 内容刷新,主要解决会话消息页面高度不一致导致的滚动功能精度失效
 const kefuStore = useMallKefuStore() // 客服缓存
+let activeRequestVersion = 0 // 会话切换时使前一个异步请求失效，避免旧消息写入新会话
 
 /** 获悉消息内容 */
 const getMessageContent = computed(() => (item: any) => jsonParse(item.content))
 /** 获得消息列表 */
-const getMessageList = async () => {
-  const res = await KeFuMessageApi.getKeFuMessageList(queryParams)
+const getMessageList = async (requestVersion = activeRequestVersion) => {
+  const requestedConversationId = queryParams.conversationId
+  const requestedCreateTime = queryParams.createTime
+  const res = await KeFuMessageApi.getKeFuMessageList({ ...queryParams })
+  if (
+    requestVersion !== activeRequestVersion ||
+    conversation.value.id !== requestedConversationId
+  ) {
+    return false
+  }
   if (isEmpty(res)) {
     // 当返回的是空列表说明没有消息或者已经查询完了历史消息
     skipGetMessageList.value = true
-    return
+    return true
   }
   queryParams.createTime = formatDate(res.at(-1).createTime) as any
 
   // 情况一：加载最新消息
-  if (!queryParams.createTime) {
+  if (!requestedCreateTime) {
     messageList.value = res
   } else {
     // 情况二：加载历史消息
@@ -193,6 +202,7 @@ const getMessageList = async () => {
     }
   }
   refreshContent.value = true
+  return true
 }
 
 /** 添加消息 */
@@ -210,8 +220,8 @@ const getMessageList0 = computed(() => {
 })
 
 /** 刷新消息列表 */
-const refreshMessageList = async (message?: any) => {
-  if (!conversation.value) {
+const refreshMessageList = async (message?: any, requestVersion = activeRequestVersion) => {
+  if (!conversation.value?.id || requestVersion !== activeRequestVersion) {
     return
   }
 
@@ -223,7 +233,7 @@ const refreshMessageList = async (message?: any) => {
     pushMessage(message)
   } else {
     queryParams.createTime = undefined
-    await getMessageList()
+    if (!(await getMessageList(requestVersion))) return
   }
 
   if (loadHistory.value) {
@@ -231,12 +241,13 @@ const refreshMessageList = async (message?: any) => {
     showNewMessageTip.value = true
   } else {
     // 滚动到最新消息处
-    await handleToNewMessage()
+    await handleToNewMessage(requestVersion)
   }
 }
 
 /** 获得新会话的消息列表, 点击切换时，读取缓存；然后异步获取新消息，merge 下； */
 const getNewMessageList = async (val: KeFuConversationRespVO) => {
+  const requestVersion = ++activeRequestVersion
   // 1. 缓存当前会话消息列表
   kefuStore.saveMessageList(conversation.value.id, messageList.value)
   // 2.1 会话切换,重置相关参数
@@ -250,7 +261,7 @@ const getNewMessageList = async (val: KeFuConversationRespVO) => {
   queryParams.conversationId = val.id
   queryParams.createTime = undefined
   // 3. 获取消息
-  await refreshMessageList()
+  await refreshMessageList(undefined, requestVersion)
 }
 defineExpose({ getNewMessageList, refreshMessageList })
 
@@ -308,23 +319,28 @@ const sendMessage = async (msg: any) => {
 /** 滚动到底部 */
 const innerRef = ref<HTMLDivElement>()
 const scrollbarRef = ref<InstanceType<typeof ElScrollbarType>>()
-const scrollToBottom = async () => {
+const scrollToBottom = async (requestVersion = activeRequestVersion) => {
   // 1. 首次加载时滚动到最新消息，如果加载的是历史消息则不滚动
   if (loadHistory.value) {
     return
   }
   // 2.1 滚动到最新消息，关闭新消息提示
   await nextTick()
-  scrollbarRef.value!.setScrollTop(innerRef.value!.clientHeight)
+  if (requestVersion !== activeRequestVersion) return
+  const scrollbar = scrollbarRef.value
+  const inner = innerRef.value
+  if (scrollbar && inner) scrollbar.setScrollTop(inner.clientHeight)
   showNewMessageTip.value = false
   // 2.2 消息已读
-  await KeFuMessageApi.updateKeFuMessageReadStatus(conversation.value.id)
+  if (conversation.value.id) {
+    await KeFuMessageApi.updateKeFuMessageReadStatus(conversation.value.id)
+  }
 }
 
 /** 查看新消息 */
-const handleToNewMessage = async () => {
+const handleToNewMessage = async (requestVersion = activeRequestVersion) => {
   loadHistory.value = false
-  await scrollToBottom()
+  await scrollToBottom(requestVersion)
 }
 
 const loadHistory = ref(false) // 加载历史消息
@@ -338,24 +354,32 @@ const handleScroll = debounce(({ scrollTop }) => {
     handleOldMessage()
   }
   const wrap = scrollbarRef.value?.wrapRef
+  if (!wrap) return
   // 触底重置
-  if (Math.abs(wrap!.scrollHeight - wrap!.clientHeight - wrap!.scrollTop) < 1) {
+  if (Math.abs(wrap.scrollHeight - wrap.clientHeight - wrap.scrollTop) < 1) {
     loadHistory.value = false
     refreshMessageList()
   }
 }, 200)
 /** 加载历史消息 */
 const handleOldMessage = async () => {
+  const requestVersion = activeRequestVersion
   // 记录已有页面高度
   const oldPageHeight = innerRef.value?.clientHeight
   if (!oldPageHeight) {
     return
   }
   loadHistory.value = true
-  await getMessageList()
+  if (!(await getMessageList(requestVersion))) return
   // 等页面加载完后，获得上一页最后一条消息的位置，控制滚动到它所在位置
-  scrollbarRef.value!.setScrollTop(innerRef.value!.clientHeight - oldPageHeight)
+  await nextTick()
+  if (requestVersion !== activeRequestVersion) return
+  const scrollbar = scrollbarRef.value
+  const inner = innerRef.value
+  if (scrollbar && inner) scrollbar.setScrollTop(inner.clientHeight - oldPageHeight)
 }
+
+onBeforeUnmount(() => handleScroll.cancel())
 
 /**
  * 是否显示时间

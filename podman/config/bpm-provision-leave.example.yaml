@@ -25,5 +25,5 @@ model:
   name: 请假审批
   description: OA 请假申请审批；业务服务负责工作日计算、额度预占、审批回写和取消释放。
   form_create_path: /bpm/oa/leave/create
-  form_view_path: /bpm/oa/leave/detail
+  form_view_path: /bpm/oa/leave/detail.vue
   approval_node_name: 请假审批

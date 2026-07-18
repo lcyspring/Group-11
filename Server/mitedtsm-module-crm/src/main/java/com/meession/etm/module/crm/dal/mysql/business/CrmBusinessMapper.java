@@ -9,7 +9,6 @@ import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStat
 import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessStagePageReqVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessStageReqVO;
 import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessDO;
-import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessStatusDO;
 import com.meession.etm.module.crm.enums.business.CrmBusinessEndStatusEnum;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.util.CrmPermissionUtils;
@@ -132,20 +131,14 @@ public interface CrmBusinessMapper extends BaseMapperX<CrmBusinessDO> {
                 .orderByAsc(CrmBusinessDO::getId));
     }
 
-    default PageResult<CrmBusinessDO> selectStagePage(CrmStatisticsBusinessStagePageReqVO pageVO,
-                                                       Integer stageSort) {
-        MPJLambdaWrapperX<CrmBusinessDO> query = new MPJLambdaWrapperX<>();
-        query.selectAll(CrmBusinessDO.class)
-                .leftJoin(CrmBusinessStatusDO.class, on -> on
-                        .eq(CrmBusinessStatusDO::getId, CrmBusinessDO::getStatusId)
-                        .eq(CrmBusinessStatusDO::getTypeId, CrmBusinessDO::getStatusTypeId))
+    default PageResult<CrmBusinessDO> selectStagePage(CrmStatisticsBusinessStagePageReqVO pageVO) {
+        return selectPage(pageVO, new LambdaQueryWrapperX<CrmBusinessDO>()
                 .eq(CrmBusinessDO::getStatusTypeId, pageVO.getStatusTypeId())
+                .eq(CrmBusinessDO::getStatusId, pageVO.getStatusId())
                 .in(CrmBusinessDO::getOwnerUserId, pageVO.getUserIds())
                 .between(CrmBusinessDO::getCreateTime, pageVO.getTimes()[0], pageVO.getTimes()[1])
-                .ge(CrmBusinessStatusDO::getSort, stageSort)
                 .orderByAsc(CrmBusinessDO::getDealTime)
-                .orderByAsc(CrmBusinessDO::getId);
-        return selectJoinPage(pageVO, CrmBusinessDO.class, query);
+                .orderByAsc(CrmBusinessDO::getId));
     }
 
     default PageResult<CrmBusinessDO> selectWonPage(CrmStatisticsBusinessStageReqVO pageVO) {

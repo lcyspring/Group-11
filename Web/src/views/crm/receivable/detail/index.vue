@@ -47,7 +47,7 @@ import ReceivableForm from '@/views/crm/receivable/ReceivableForm.vue'
 import { ReceivableReferenceStatus } from '../referenceIntegrity'
 
 defineOptions({ name: 'CrmReceivablePlanDetail' })
-const props = defineProps<{ id?: number }>()
+const props = defineProps<{ id?: number | string }>()
 
 const { t } = useI18n('crm') // 国际化
 const route = useRoute()
@@ -97,7 +97,7 @@ const close = () => {
 /** 初始化 */
 const { params } = useRoute()
 onMounted(async () => {
-  const id = props.id || Number(route.params.id)
+  const id = Number(props.id || route.params.id)
   if (!Number.isSafeInteger(id) || id <= 0) {
     message.warning(t('receivable.paramError'))
     close()

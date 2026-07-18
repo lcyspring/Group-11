@@ -24,6 +24,9 @@
                 <if test="!queryAllWorkOrders">
                     AND (item.creator = CAST(#{userId} AS CHAR) OR item.handler_user_id = #{userId})
                 </if>) AS workOrderCount,
+               (SELECT COUNT(*) FROM crm_task item
+                WHERE item.biz_type = 2 AND item.biz_id = c.id
+                  AND item.deleted = 0) AS taskCount,
                (SELECT COUNT(*) FROM crm_contract_attachment attachment
                 INNER JOIN crm_contract contract ON contract.id = attachment.contract_id
                 WHERE contract.customer_id = c.id AND contract.deleted = 0

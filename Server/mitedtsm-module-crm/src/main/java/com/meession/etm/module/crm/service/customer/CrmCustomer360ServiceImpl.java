@@ -38,7 +38,6 @@ public class CrmCustomer360ServiceImpl implements CrmCustomer360Service {
                 summary.getContractAmount().subtract(summary.getNetReceivableAmount())));
         summary.setUninvoicedAmount(nonNegative(
                 summary.getContractAmount().subtract(summary.getEffectiveInvoiceAmount())));
-        summary.setTaskSupported(false);
         return summary;
     }
 
@@ -51,6 +50,7 @@ public class CrmCustomer360ServiceImpl implements CrmCustomer360Service {
                 .setRefundCount(orZero(summary.getRefundCount()))
                 .setInvoiceCount(orZero(summary.getInvoiceCount()))
                 .setWorkOrderCount(orZero(summary.getWorkOrderCount()))
+                .setTaskCount(orZero(summary.getTaskCount()))
                 .setContractAttachmentCount(orZero(summary.getContractAttachmentCount()))
                 .setContractAmount(orZero(summary.getContractAmount()))
                 .setApprovedReceivableAmount(orZero(summary.getApprovedReceivableAmount()))

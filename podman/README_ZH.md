@@ -81,6 +81,9 @@ Web、Mall 及单组件更新均使用 `podman run --replace`。只有 `stop.sh`
 ## 安全边界
 
 - `runtime-local-check.yaml` 不改变 Pod/卷；
+- `network.admin_ui_public_url` 必须改为用户实际可访问的管理端地址，审批短信链接不使用代码内固定 IP；
+- BPM 短信默认关闭；启用前必须同时配置短信 Provider 与
+  `bpm-notification-templates-local.yaml` 中四个供应商模板 ID；
 - 删除数据卷必须在 YAML 同时选择 stop、`remove_volumes_on_down: true` 和
   `confirm_persistent_data_reset: true`；
 - 恢复覆盖真源库必须二次授权且 Server 已停止；

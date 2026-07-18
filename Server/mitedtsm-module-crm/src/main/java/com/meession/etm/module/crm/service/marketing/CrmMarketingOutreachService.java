@@ -354,7 +354,9 @@ public class CrmMarketingOutreachService {
         List<Integer> channels = request.getChannel() == 3 ? List.of(1, 2) : List.of(request.getChannel());
         for (Integer channel : channels) {
             CrmMarketingBroadcastRecipientDO recipient = new CrmMarketingBroadcastRecipientDO()
-                    .setBroadcastId(broadcastId).setCustomerId(customer.getId()).setContactId(contact == null ? null : contact.getId())
+                    .setBroadcastId(broadcastId).setCustomerId(customer.getId()).setCustomerName(customer.getName())
+                    .setContactId(contact == null ? null : contact.getId())
+                    .setContactName(contact == null ? null : contact.getName())
                     .setChannel(channel).setMobile(mobile).setEmail(email).setStatus(CrmMarketingRecipientStatusEnum.PENDING.getStatus())
                     .setAttemptCount(0);
             String reason = channel == 1 && (mobile == null || mobile.isBlank()) ? "手机号为空"

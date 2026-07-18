@@ -7,6 +7,7 @@ import com.meession.etm.module.crm.controller.admin.marketing.vo.*;
 import com.meession.etm.module.crm.dal.dataobject.marketing.CrmMarketingBroadcastDO;
 import com.meession.etm.module.crm.dal.dataobject.marketing.CrmMarketingBroadcastRecipientDO;
 import com.meession.etm.module.crm.service.marketing.CrmMarketingOutreachService;
+import com.meession.etm.module.crm.service.marketing.CrmMarketingRecipientResponseAssembler;
 import com.meession.etm.framework.security.core.service.SecurityFrameworkService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,6 +29,7 @@ import java.util.List;
 @Validated
 public class CrmMarketingOutreachController {
     @Resource private CrmMarketingOutreachService service;
+    @Resource private CrmMarketingRecipientResponseAssembler recipientResponseAssembler;
     @Resource private SecurityFrameworkService securityFrameworkService;
 
     @PostMapping("/consent/save")
@@ -109,7 +111,7 @@ public class CrmMarketingOutreachController {
     public CommonResult<PageResult<CrmMarketingRecipientRespVO>> getRecipientPage(@Valid CrmMarketingRecipientPageReqVO request) {
         PageResult<CrmMarketingBroadcastRecipientDO> page = service.getRecipientPage(
                 request, getLoginUserId(), canReadAllBroadcasts());
-        return success(new PageResult<>(BeanUtils.toBean(page.getList(), CrmMarketingRecipientRespVO.class), page.getTotal()));
+        return success(recipientResponseAssembler.assemble(page));
     }
 
     @GetMapping("/broadcast/delivery-summary")

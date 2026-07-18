@@ -56,7 +56,13 @@
     </el-table>
   </el-card>
 
-  <Dialog v-model="detailsVisible" :title="detailsTitle" width="1100px">
+  <Dialog
+    v-model="detailsVisible"
+    :title="detailsTitle"
+    width="1100px"
+    scroll
+    max-height="calc(100vh - 150px)"
+  >
     <el-table v-loading="detailsLoading" :data="businessList" table-layout="auto">
       <el-table-column align="center" :label="t('funnel.businessName')" min-width="180">
         <template #default="scope">
@@ -94,8 +100,21 @@
         align="center"
         :label="t('funnel.statusName')"
         min-width="140"
-        prop="statusName"
-      />
+      >
+        <template #default="scope">
+          {{ selectedStage ? stageLabel(selectedStage) : scope.row.statusName }}
+        </template>
+      </el-table-column>
+      <el-table-column align="center" :label="t('funnel.outcome')" min-width="120">
+        <template #default="scope">
+          <dict-tag
+            v-if="scope.row.endStatus"
+            :type="DICT_TYPE.CRM_BUSINESS_END_STATUS_TYPE"
+            :value="scope.row.endStatus"
+          />
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
       <el-table-column
         align="center"
         :label="t('funnel.ownerUserName')"

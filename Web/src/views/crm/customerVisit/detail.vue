@@ -12,8 +12,14 @@ import { formatDate } from '@/utils/formatTime'
 import * as VisitApi from '@/api/crm/customerVisit'
 defineOptions({ name: 'CrmCustomerVisitDetail' })
 const { t } = useI18n('crm')
+const props = defineProps<{ id?: number | string }>()
 const route = useRoute()
 const loading = ref(false)
 const data = ref<VisitApi.CustomerVisitVO>({} as VisitApi.CustomerVisitVO)
-onMounted(async () => { loading.value = true; try { data.value = await VisitApi.getCustomerVisit(Number(route.query.id)) } finally { loading.value = false } })
+onMounted(async () => {
+  const id = Number(props.id ?? route.query.id)
+  if (!Number.isSafeInteger(id) || id <= 0) return
+  loading.value = true
+  try { data.value = await VisitApi.getCustomerVisit(id) } finally { loading.value = false }
+})
 </script>

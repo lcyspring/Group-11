@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class CrmStatisticsFunnelServiceImplTest {
 
     @Test
-    void getBusinessStagePageUsesValidatedStageSortAndScopedUsers() {
+    void getBusinessStagePageUsesExactValidatedStageAndScopedUsers() {
         CrmStatisticsFunnelServiceImpl funnelService = new CrmStatisticsFunnelServiceImpl();
         CrmBusinessDO business = new CrmBusinessDO().setId(100L).setName("重点商机");
         ReflectionTestUtils.setField(funnelService, "businessStatusService", proxy(CrmBusinessStatusService.class,
@@ -47,7 +47,8 @@ class CrmStatisticsFunnelServiceImplTest {
                     if (method.getName().equals("selectStagePage")) {
                         CrmStatisticsBusinessStagePageReqVO request = (CrmStatisticsBusinessStagePageReqVO) args[0];
                         assertEquals(List.of(10L), request.getUserIds());
-                        assertEquals(40, args[1]);
+                        assertEquals(1, args.length);
+                        assertEquals(30L, request.getStatusId());
                         return new PageResult<>(List.of(business), 1L);
                     }
                     throw new AssertionError("不应访问其他商机 Mapper 方法: " + method.getName());
@@ -90,7 +91,7 @@ class CrmStatisticsFunnelServiceImplTest {
     }
 
     @Test
-    void getBusinessStageSummaryBuildsMonotonicCumulativeFunnel() {
+    void getBusinessStageSummaryKeepsSiblingStatusesIndependent() {
         CrmStatisticsFunnelServiceImpl funnelService = new CrmStatisticsFunnelServiceImpl();
         List<CrmStatisticsBusinessStageSummaryRespVO> rawRows = List.of(
                 stage(11L, "初步接洽", 10, null, 10L, "100000.00"),
@@ -125,14 +126,14 @@ class CrmStatisticsFunnelServiceImplTest {
         List<CrmStatisticsBusinessStageSummaryRespVO> result = funnelService.getBusinessStageSummary(reqVO);
 
         assertAll(
-                () -> assertEquals(List.of(15L, 5L, 1L, 2L, 3L, 1L),
+                () -> assertEquals(List.of(10L, 4L, 1L, 2L, 3L, 1L),
                         result.stream().map(CrmStatisticsBusinessStageSummaryRespVO::getBusinessCount).toList()),
-                () -> assertEquals(List.of(new BigDecimal("170000.00"), new BigDecimal("70000.00"),
+                () -> assertEquals(List.of(new BigDecimal("100000.00"), new BigDecimal("50000.00"),
                                 new BigDecimal("20000.00"), new BigDecimal("40000.00"),
                                 new BigDecimal("30000.00"), new BigDecimal("10000.00")),
                         result.stream().map(CrmStatisticsBusinessStageSummaryRespVO::getTotalPrice).toList()),
-                () -> assertEquals(List.of(new BigDecimal("100.00"), new BigDecimal("33.33"),
-                                new BigDecimal("20.00"), new BigDecimal("33.33"),
+                () -> assertEquals(List.of(new BigDecimal("100.00"), new BigDecimal("40.00"),
+                                new BigDecimal("25.00"), new BigDecimal("33.33"),
                                 new BigDecimal("50.00"), new BigDecimal("16.67")),
                         result.stream().map(CrmStatisticsBusinessStageSummaryRespVO::getConversionRate).toList())
         );

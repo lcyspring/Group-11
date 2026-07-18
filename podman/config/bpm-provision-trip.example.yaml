@@ -25,5 +25,5 @@ model:
   name: 出差审批
   description: OA 出差申请审批；审批通过后，出差结束时可由报销单显式关联。
   form_create_path: /bpm/oa/trip/create
-  form_view_path: /bpm/oa/trip/detail
+  form_view_path: /bpm/oa/trip/detail.vue
   approval_node_name: 出差审批

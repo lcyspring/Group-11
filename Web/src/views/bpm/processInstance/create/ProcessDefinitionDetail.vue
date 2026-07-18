@@ -89,6 +89,10 @@ import * as ProcessInstanceApi from '@/api/bpm/processInstance'
 import * as DefinitionApi from '@/api/bpm/definition'
 import { ApprovalNodeInfo } from '@/api/bpm/processInstance'
 import formCreate from '@form-create/element-ui'
+import {
+  isResolvedBusinessRoute,
+  resolveCustomFormRoutePath
+} from '@/utils/bpmCustomFormRoute.mjs'
 
 defineOptions({ name: 'ProcessDefinitionDetail' })
 const props = defineProps<{
@@ -96,7 +100,8 @@ const props = defineProps<{
 }>()
 const emit = defineEmits(['cancel'])
 const processInstanceStartLoading = ref(false) // 流程实例发起中
-const { push, currentRoute } = useRouter() // 路由
+const router = useRouter() // 路由
+const { push, currentRoute } = router
 const message = useMessage() // 消息弹窗
 const { delView } = useTagsViewStore() // 视图操作
 const { t } = useI18n('bpm') // 国际化
@@ -155,8 +160,14 @@ const initProcessInfo = async (row: any, formVariables?: any) => {
     }
     // 情况二：业务表单
   } else if (row.formCustomCreatePath) {
+    const customFormPath = resolveCustomFormRoutePath(row.formCustomCreatePath)
+    if (!customFormPath || !isResolvedBusinessRoute(router.resolve(customFormPath))) {
+      message.error(t('process.instance.customFormRouteInvalid'))
+      emit('cancel')
+      return
+    }
     await push({
-      path: row.formCustomCreatePath
+      path: customFormPath
     })
     // 这里暂时无需加载流程图，因为跳出到另外个 Tab；
   }

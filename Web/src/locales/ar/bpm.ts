@@ -153,6 +153,7 @@ export default {
       submitTime: 'وقت التقديم',
       queryError: 'تفاصيل الموافقة غير موجودة!',
       queryProcessError: 'العملية غير موجودة!',
+      customFormRouteInvalid: 'مسار نموذج الأعمال غير صالح. يرجى من المسؤول التحقق من إعداد نموذج العملية.',
       startSuccess: 'بدأت العملية بنجاح',
       selectCandidate: 'الرجاء اختيار المرشح لـ {name}',
       restartFailed: 'فشل إعادة تشغيل العملية',
@@ -930,5 +931,17 @@ export default {
       trigger: 'مفعّل',
       end: 'نهاية'
     }
+  },
+  processExpression: {
+    title: 'تعبير العملية',
+    name: 'الاسم',
+    namePlaceholder: 'الرجاء إدخال الاسم',
+    status: 'الحالة',
+    statusPlaceholder: 'الرجاء اختيار الحالة',
+    expression: 'التعبير',
+    expressionPlaceholder: 'الرجاء إدخال التعبير',
+    nameRequired: 'لا يمكن أن يكون الاسم فارغًا',
+    statusRequired: 'لا يمكن أن تكون الحالة فارغة',
+    expressionRequired: 'لا يمكن أن يكون التعبير فارغًا'
   }
 }

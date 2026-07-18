@@ -38,6 +38,7 @@ WEB_PORT="$(yaml_port network.web_host_port)"
 WEB_CONTAINER_PORT="$(yaml_port network.web_container_port)"
 MALL_PORT="$(yaml_port network.mall_host_port)"
 MALL_CONTAINER_PORT="$(yaml_port network.mall_container_port)"
+ADMIN_UI_PUBLIC_URL="$(yaml_require network.admin_ui_public_url)"
 USE_HOST_PROXY="$(yaml_bool network.use_host_proxy)"
 HOST_PROXY_NAME="$(yaml_require network.host_proxy_name)"
 HTTP_PROXY_URL="$(yaml_require network.http_proxy)"
@@ -115,6 +116,8 @@ esac
 if [[ "${BPM_PROVISION_AFTER_START,,}" == "true" ]]; then
     BPM_PROVISION_MANIFEST="$(yaml_path bpm.provision_manifest)"
 fi
+BPM_NOTIFICATION_SMS_ENABLED="$(yaml_bool bpm.notification_sms_enabled)"
+BPM_NOTIFICATION_FAIL_FAST="$(yaml_bool bpm.notification_fail_fast)"
 SECURITY_API_ENCRYPTION_ENABLED="$(yaml_bool security.api_encryption_enabled)"
 SECURITY_CAPTCHA_ENABLED="$(yaml_bool security.captcha_enabled)"
 SECURITY_BOOT_ADMIN_CLIENT_ENABLED="$(yaml_bool security.boot_admin_client_enabled)"
@@ -359,6 +362,9 @@ start_server() {
         --env "MITEDTSM_API_ENCRYPT_ENABLE=${SECURITY_API_ENCRYPTION_ENABLED}" \
         --env "MITEDTSM_CAPTCHA_ENABLE=${SECURITY_CAPTCHA_ENABLED}" \
         --env "SPRING_BOOT_ADMIN_CLIENT_ENABLED=${SECURITY_BOOT_ADMIN_CLIENT_ENABLED}" \
+        --env "MITEDTSM_BPM_NOTIFICATION_SMS_ENABLED=${BPM_NOTIFICATION_SMS_ENABLED}" \
+        --env "MITEDTSM_BPM_NOTIFICATION_FAIL_FAST=${BPM_NOTIFICATION_FAIL_FAST}" \
+        --env "MITEDTSM_WEB_ADMIN_UI_URL=${ADMIN_UI_PUBLIC_URL}" \
         --env "TDENGINE_USER=${TDENGINE_USERNAME}" \
         --env "TDENGINE_PASSWORD=${TDENGINE_PASSWORD}" \
         --env "JUSTAUTH_ENABLED=${INTEGRATION_JUSTAUTH_ENABLED}" \
@@ -616,6 +622,10 @@ apply_runtime_file_storage() {
         printf 'file.public_base_url must be a plain HTTP(S) URL; got: %s\n' "$FILE_PUBLIC_BASE_URL" >&2
         return 2
     }
+    [[ "$ADMIN_UI_PUBLIC_URL" =~ ^https?://[A-Za-z0-9._:/-]+$ ]] || {
+        printf 'network.admin_ui_public_url must be a plain HTTP(S) URL; got: %s\n' "$ADMIN_UI_PUBLIC_URL" >&2
+        return 2
+    }
     printf 'Selecting explicit runtime file client %s (%s storage).\n' "$FILE_CLIENT_ID" "$FILE_STORAGE_MODE"
     podman_cmd exec "$MYSQL_CONTAINER" mysql "--default-character-set=${MYSQL_CHARACTER_SET}" \
         "-u${MYSQL_USER}" "-p${MYSQL_ROOT_PASSWORD}" \
@@ -682,6 +692,7 @@ replace_server_only() {
     }
     bash "${SCRIPT_DIR}/internal/provision-database.sh" "$YAML_CONFIG_PATH"
     bash "${SCRIPT_DIR}/internal/provision-marketing-provider.sh" "$YAML_CONFIG_PATH"
+    bash "${SCRIPT_DIR}/internal/provision-bpm-notifications.sh" "$YAML_CONFIG_PATH"
     apply_runtime_file_storage
     if container_is_running "$SERVER_CONTAINER"; then
         podman_cmd stop --time "$STOP_TIMEOUT" "$SERVER_CONTAINER"
@@ -724,6 +735,7 @@ validate_configuration
 if [[ "$START_MODE" == "check" ]]; then
     bash "${SCRIPT_DIR}/internal/provision-database.sh" "$YAML_CONFIG_PATH"
     bash "${SCRIPT_DIR}/internal/provision-marketing-provider.sh" "$YAML_CONFIG_PATH"
+    bash "${SCRIPT_DIR}/internal/provision-bpm-notifications.sh" "$YAML_CONFIG_PATH"
 fi
 verify_rootless_podman
 configure_proxy
@@ -862,6 +874,7 @@ wait_for 'MySQL schema initialization' "$MYSQL_SCHEMA_ATTEMPTS" podman_cmd exec 
     mysql "--default-character-set=${MYSQL_CHARACTER_SET}" \
     "-u${MYSQL_USER}" "-p${MYSQL_ROOT_PASSWORD}" "--database=${MYSQL_DATABASE}" -Nse "$MYSQL_SCHEMA_QUERY"
 bash "${SCRIPT_DIR}/internal/provision-marketing-provider.sh" "$YAML_CONFIG_PATH"
+bash "${SCRIPT_DIR}/internal/provision-bpm-notifications.sh" "$YAML_CONFIG_PATH"
 apply_runtime_file_storage
 wait "$redis_ready_pid"
 wait "$rabbitmq_ready_pid"

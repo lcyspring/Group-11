@@ -1,9 +1,9 @@
 import { resolve } from 'path'
+import { createRequire } from 'node:module'
 import Vue from '@vitejs/plugin-vue'
 import VueJsx from '@vitejs/plugin-vue-jsx'
 import progress from 'vite-plugin-progress'
 import EslintPlugin from 'vite-plugin-eslint'
-import PurgeIcons from 'vite-plugin-purge-icons'
 import { ViteEjsPlugin } from 'vite-plugin-ejs'
 // @ts-ignore
 import ElementPlus from 'unplugin-element-plus/vite'
@@ -15,6 +15,12 @@ import topLevelAwait from 'vite-plugin-top-level-await'
 import VueI18nPlugin from '@intlify/unplugin-vue-i18n/vite'
 import { createSvgIconsPlugin } from 'vite-plugin-svg-icons-ng'
 import UnoCSS from 'unocss/vite'
+
+// The ESM bundle of @purge-icons/core@0.10.0 cannot resolve its dynamic local
+// JSON requires. Loading the plugin's documented CommonJS export keeps local
+// collection loading deterministic without changing application imports.
+const nodeRequire = createRequire(import.meta.url)
+const PurgeIcons = nodeRequire('vite-plugin-purge-icons').default as typeof import('vite-plugin-purge-icons').default
 
 export function createVitePlugins() {
   const root = process.cwd()
@@ -29,7 +35,8 @@ export function createVitePlugins() {
     VueJsx(),
     UnoCSS(),
     progress(),
-    PurgeIcons(),
+    // 图标集合由锁定的 @iconify/json 依赖提供，生成结果直接写入前端产物。
+    PurgeIcons({ iconSource: 'local' }),
     ElementPlus({}),
     AutoImport({
       include: [

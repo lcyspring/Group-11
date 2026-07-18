@@ -1,0 +1,34 @@
+schema_version: 1
+
+provision:
+  # disabled：数据库模板外部管理；create-only：仅补缺；managed：以本文件更新稳定 code
+  mode: disabled
+  sms_channel_code: ALIYUN
+
+process_approve:
+  code: bpm_process_instance_approve
+  name: 工作流-流程审批通过
+  content: "您的流程已审批通过：{processInstanceName}，详情：{detailUrl}"
+  params: '["processInstanceName","detailUrl"]'
+  api_template_id: not-configured
+
+process_reject:
+  code: bpm_process_instance_reject
+  name: 工作流-流程审批拒绝
+  content: "您的流程未通过审批：{processInstanceName}，原因：{reason}，详情：{detailUrl}"
+  params: '["processInstanceName","reason","detailUrl"]'
+  api_template_id: not-configured
+
+task_assigned:
+  code: bpm_task_assigned
+  name: 工作流-待审批任务
+  content: "{startUserNickname} 发起的 {processInstanceName} 等待您处理：{taskName}，详情：{detailUrl}"
+  params: '["startUserNickname","processInstanceName","taskName","detailUrl"]'
+  api_template_id: not-configured
+
+task_timeout:
+  code: bpm_task_timeout
+  name: 工作流-审批任务超时
+  content: "审批任务已超时：{processInstanceName}/{taskName}，详情：{detailUrl}"
+  params: '["processInstanceName","taskName","detailUrl"]'
+  api_template_id: not-configured

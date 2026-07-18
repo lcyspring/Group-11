@@ -153,6 +153,7 @@ export default {
       submitTime: 'Submit Time',
       queryError: 'Approval detail not found!',
       queryProcessError: 'Process not found!',
+      customFormRouteInvalid: 'The business form route is invalid. Ask an administrator to check the process model.',
       startSuccess: 'Process started successfully',
       selectCandidate: 'Please select candidate for {name}',
       restartFailed: 'Restart process failed',

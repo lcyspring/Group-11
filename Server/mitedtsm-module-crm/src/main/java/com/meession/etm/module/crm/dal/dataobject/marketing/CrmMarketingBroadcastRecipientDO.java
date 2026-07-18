@@ -17,7 +17,9 @@ public class CrmMarketingBroadcastRecipientDO extends BaseDO {
     @TableId private Long id;
     private Long broadcastId;
     private Long customerId;
+    private String customerName;
     private Long contactId;
+    private String contactName;
     private Integer channel;
     private String mobile;
     private String email;

@@ -21,6 +21,8 @@ public class CrmCustomer360SummaryRespVO {
     private Long refundCount;
     private Long invoiceCount;
     private Long workOrderCount;
+    /** 与当前客户明确关联的 CRM 业务任务数量。 */
+    private Long taskCount;
     private Long contractAttachmentCount;
 
     /** 审批通过合同金额。 */
@@ -36,6 +38,4 @@ public class CrmCustomer360SummaryRespVO {
     private BigDecimal outstandingReceivableAmount;
     private BigDecimal uninvoicedAmount;
 
-    /** OA 任务域尚未落地，避免用工单伪装任务。 */
-    private Boolean taskSupported;
 }

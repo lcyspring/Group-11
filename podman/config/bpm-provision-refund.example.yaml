@@ -24,6 +24,6 @@ model:
   key: crm-receivable-refund-audit
   name: CRM 退款/冲销审批
   description: CRM 退款与业务冲销审批；审批通过不代表银行退款或会计总账冲销完成。
-  form_create_path: /crm/refund/index
-  form_view_path: /crm/refund/index
+  form_create_path: /crm/receivable-refund
+  form_view_path: /crm/refund/RefundApprovalDetail.vue
   approval_node_name: 退款/冲销审批

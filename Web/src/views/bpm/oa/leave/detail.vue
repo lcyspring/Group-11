@@ -19,7 +19,6 @@
 <script lang="ts" setup>
 import { DICT_TYPE } from '@/utils/dict'
 import { formatDate } from '@/utils/formatTime'
-import { propTypes } from '@/utils/propTypes'
 import * as LeaveApi from '@/api/bpm/leave'
 
 defineOptions({ name: 'BpmOALeaveDetail' })
@@ -27,9 +26,7 @@ defineOptions({ name: 'BpmOALeaveDetail' })
 const { t } = useI18n('bpm') // 国际化
 const { query } = useRoute() // 查询参数
 
-const props = defineProps({
-  id: propTypes.number.def(undefined)
-})
+const props = defineProps<{ id?: number | string }>()
 const detailLoading = ref(false) // 表单的加载中
 const detailData = ref<any>({}) // 详情数据
 const queryId = query.id as unknown as number // 从 URL 传递过来的 id 编号
@@ -38,7 +35,7 @@ const queryId = query.id as unknown as number // 从 URL 传递过来的 id 编�
 const getInfo = async () => {
   detailLoading.value = true
   try {
-    detailData.value = await LeaveApi.getLeave(props.id || queryId)
+    detailData.value = await LeaveApi.getLeave(Number(props.id || queryId))
   } finally {
     detailLoading.value = false
   }

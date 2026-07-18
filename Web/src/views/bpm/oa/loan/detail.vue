@@ -12,11 +12,12 @@ defineOptions({ name: 'BpmOALoanDetail' })
 const { t } = useI18n('bpm')
 const message = useMessage()
 const route = useRoute()
+const props = defineProps<{ id?: number | string }>()
 const loading = ref(false)
 const loan = ref<LoanApi.LoanVO>({} as LoanApi.LoanVO)
 const repayments = ref<LoanApi.LoanRepaymentVO[]>([])
 onMounted(async () => {
-  const rawId = route.query.loanId ?? route.query.id
+  const rawId = props.id ?? route.query.loanId ?? route.query.id
   const id = Number(rawId)
   loading.value = true
   try {

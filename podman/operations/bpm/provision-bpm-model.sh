@@ -52,6 +52,10 @@ APPROVAL_NODE_NAME="$(yaml_require model.approval_node_name)"
     printf 'Custom form paths must start with /.\n' >&2
     exit 2
 }
+[[ "$FORM_VIEW_PATH" =~ \.(vue|tsx)$ ]] || {
+    printf 'model.form_view_path must be an explicit .vue or .tsx component path.\n' >&2
+    exit 2
+}
 
 for command in curl jq; do
     command -v "$command" >/dev/null 2>&1 || {

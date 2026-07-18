@@ -85,17 +85,9 @@ public class CrmStatisticsFunnelServiceImpl implements CrmStatisticsFunnelServic
         List<CrmStatisticsBusinessStageSummaryRespVO> outcomeRows = rows.stream()
                 .filter(row -> row.getEndStatus() != null).toList();
 
-        // SQL 按商机保留的最后阶段返回存量（含活跃和三种终态），由后向前累加得到
-        // “至少到达本阶段”的单调漏斗。终态结果独立计算分布，不伪装成线性后续阶段。
-        long cumulativeCount = 0L;
-        BigDecimal cumulativePrice = BigDecimal.ZERO;
-        for (int index = stageRows.size() - 1; index >= 0; index--) {
-            CrmStatisticsBusinessStageSummaryRespVO row = stageRows.get(index);
-            cumulativeCount += row.getBusinessCount();
-            cumulativePrice = cumulativePrice.add(row.getTotalPrice());
-            row.setBusinessCount(cumulativeCount);
-            row.setTotalPrice(cumulativePrice.setScale(2, RoundingMode.HALF_UP));
-        }
+        // 每个状态都是互斥的当前状态，必须保留 SQL 按 status_id 得到的独立存量。
+        // 禁止按排序反向累加，否则商机进入某一状态时会错误地同时增加其它同级状态。
+        stageRows.forEach(row -> row.setTotalPrice(row.getTotalPrice().setScale(2, RoundingMode.HALF_UP)));
         long previousCount = 0L;
         for (int index = 0; index < stageRows.size(); index++) {
             CrmStatisticsBusinessStageSummaryRespVO row = stageRows.get(index);
@@ -121,9 +113,8 @@ public class CrmStatisticsFunnelServiceImpl implements CrmStatisticsFunnelServic
         if (CollUtil.isEmpty(pageVO.getUserIds())) {
             return PageResult.empty();
         }
-        CrmBusinessStatusDO status = businessStatusService.validateBusinessStatus(
-                pageVO.getStatusTypeId(), pageVO.getStatusId());
-        return businessMapper.selectStagePage(pageVO, status.getSort());
+        businessStatusService.validateBusinessStatus(pageVO.getStatusTypeId(), pageVO.getStatusId());
+        return businessMapper.selectStagePage(pageVO);
     }
 
     @Override

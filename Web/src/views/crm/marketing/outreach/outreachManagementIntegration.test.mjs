@@ -32,6 +32,12 @@ test('broadcast maintenance exposes detail, draft deletion and recipient results
   assert.match(page, /syncDeliveryResults/)
   assert.match(page, /smsDeliveryRate/)
   assert.match(page, /emailOpenRate/)
+  assert.match(page, /row\.customerName \|\| customerName/)
+  assert.match(page, /row\.contactName \|\| contactName/)
+  assert.match(page, /max-height="calc\(100vh - 150px\)"/)
+  assert.match(api, /customerName\?: string/)
+  assert.match(api, /contactName\?: string/)
+  assert.match(controller, /recipientResponseAssembler\.assemble\(page\)/)
 })
 
 test('delivery analytics distinguishes SMS delivery from email acceptance and opening', () => {

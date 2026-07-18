@@ -24,6 +24,6 @@ model:
   key: crm-receivable-audit
   name: CRM 回款审批
   description: CRM 回款审批；审批通过确认 CRM 回款记录，不代表银行对账或会计入账完成。
-  form_create_path: /crm/receivable/index
-  form_view_path: /crm/receivable/index
+  form_create_path: /crm/receivable
+  form_view_path: /crm/receivable/detail/index.vue
   approval_node_name: 回款审批

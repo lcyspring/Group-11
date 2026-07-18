@@ -16,6 +16,9 @@ test('funnel separates stage progression from all terminal outcomes', () => {
   assert.match(api, /get-business-outcome-page/)
   assert.match(funnel, /CRM_BUSINESS_END_STATUS_TYPE/)
   assert.match(funnel, /statusGroupMissingStages/)
+  assert.match(funnel, /selectedStage \? stageLabel\(selectedStage\)/)
+  assert.match(funnel, /funnel\.outcome/)
+  assert.match(funnel, /max-height="calc\(100vh - 150px\)"/)
 })
 
 test('forecast explicitly compares forecast and actual won amounts by period', () => {

@@ -46,6 +46,7 @@ import java.time.LocalDateTime;
 import org.mockito.ArgumentCaptor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -473,6 +474,8 @@ class CrmMarketingOutreachServiceTest {
         verify(recipientMapper).insert((CrmMarketingBroadcastRecipientDO) recipientCaptor.capture());
         assertEquals(CrmMarketingRecipientStatusEnum.SUPPRESSED.getStatus(), recipientCaptor.getValue().getStatus());
         assertEquals("手机号为空", recipientCaptor.getValue().getSuppressedReason());
+        assertEquals("测试客户", recipientCaptor.getValue().getCustomerName());
+        assertNull(recipientCaptor.getValue().getContactName());
         ArgumentCaptor<CrmMarketingBroadcastDO> broadcastCaptor =
                 ArgumentCaptor.forClass(CrmMarketingBroadcastDO.class);
         verify(broadcastMapper).updateById((CrmMarketingBroadcastDO) broadcastCaptor.capture());

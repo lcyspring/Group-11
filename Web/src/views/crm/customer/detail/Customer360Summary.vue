@@ -15,9 +15,6 @@
         <el-tag v-for="item in countItems" :key="item.key" effect="plain">
           {{ item.label }}：{{ item.value }}
         </el-tag>
-        <el-tooltip v-if="summary && !summary.taskSupported" :content="t('taskUnavailableTip')">
-          <el-tag type="info" effect="plain">{{ t('taskUnavailable') }}</el-tag>
-        </el-tooltip>
       </el-space>
     </el-skeleton>
   </ContentWrap>
@@ -50,6 +47,7 @@ const countItems = computed(() => [
   { key: 'refund', label: t('summaryRefunds'), value: summary.value?.refundCount || 0 },
   { key: 'invoice', label: t('summaryInvoices'), value: summary.value?.invoiceCount || 0 },
   { key: 'workOrder', label: t('summaryWorkOrders'), value: summary.value?.workOrderCount || 0 },
+  { key: 'task', label: t('summaryTasks'), value: summary.value?.taskCount || 0 },
   { key: 'attachment', label: t('summaryContractAttachments'), value: summary.value?.contractAttachmentCount || 0 }
 ])
 

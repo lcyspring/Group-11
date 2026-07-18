@@ -55,6 +55,8 @@ export interface MarketingRecipientVO {
   broadcastId: number
   customerId: number
   contactId?: number
+  customerName?: string
+  contactName?: string
   channel: number
   mobile?: string
   email?: string

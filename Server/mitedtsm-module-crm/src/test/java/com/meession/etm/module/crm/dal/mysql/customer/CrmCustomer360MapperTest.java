@@ -25,6 +25,9 @@ class CrmCustomer360MapperTest {
             assertTrue(xml.contains("attachment.deleted = 0"));
             assertTrue(xml.contains("!queryAllWorkOrders"));
             assertTrue(xml.contains("item.handler_user_id = #{userId}"));
+            assertTrue(xml.contains("FROM crm_task item"));
+            assertTrue(xml.contains("item.biz_type = 2"));
+            assertTrue(xml.contains("AS taskCount"));
         }
     }
 }

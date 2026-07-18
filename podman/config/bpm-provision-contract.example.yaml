@@ -24,6 +24,6 @@ model:
   key: crm-contract-audit
   name: CRM 合同审批
   description: CRM 合同审批；审批通过确认合同业务状态，不代表线下签署或 ERP 履约已完成。
-  form_create_path: /crm/contract/index
-  form_view_path: /crm/contract/index
+  form_create_path: /crm/contract
+  form_view_path: /crm/contract/detail/index.vue
   approval_node_name: 合同审批

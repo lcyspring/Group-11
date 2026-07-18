@@ -80,7 +80,7 @@ import ReceivablePlanList from '@/views/crm/receivable/plan/components/Receivabl
 defineOptions({ name: 'CrmContractDetail' })
 
 const { t } = useI18n() // 国际化
-const props = defineProps<{ id?: number }>()
+const props = defineProps<{ id?: number | string }>()
 
 const route = useRoute()
 const message = useMessage()

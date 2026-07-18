@@ -145,6 +145,7 @@ export interface Customer360SummaryVO {
   refundCount: number
   invoiceCount: number
   workOrderCount: number
+  taskCount: number
   contractAttachmentCount: number
   contractAmount: number
   approvedReceivableAmount: number
@@ -153,7 +154,6 @@ export interface Customer360SummaryVO {
   effectiveInvoiceAmount: number
   outstandingReceivableAmount: number
   uninvoicedAmount: number
-  taskSupported: boolean
 }
 
 export interface CustomerDuplicateVO {
