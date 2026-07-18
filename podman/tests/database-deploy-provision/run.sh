@@ -68,14 +68,17 @@ mysql_command() {
 }
 
 write_config() {
-    local output="$1" database="$2" policy="$3" dataset="$4"
+    local output="$1" database="$2" policy="$3" dataset="$4" dataset_manifest
+    dataset_manifest="$(realpath -m -- "${PODMAN_DIR}/../database/datasets/${dataset}.manifest")"
     awk -v container="$MYSQL_CONTAINER" -v database="$database" -v policy="$policy" \
-        -v dataset="$dataset" -v bootstrap="$BOOTSTRAP_MANIFEST" -v compatibility="$COMPATIBILITY_MANIFEST" '
+        -v dataset="$dataset" -v bootstrap="$BOOTSTRAP_MANIFEST" -v compatibility="$COMPATIBILITY_MANIFEST" \
+        -v dataset_manifest="$dataset_manifest" '
         /^[^ ]/ { section=$1; sub(/:$/, "", section) }
         section=="operation" && /^  startup_mode:/ { print "  startup_mode: replace-server"; next }
         section=="container" && /^  mysql:/ { print "  mysql: " container; next }
         section=="mysql" && /^  database:/ { print "  database: " database; next }
         section=="mysql" && /^  dataset:/ { print "  dataset: " dataset; next }
+        section=="mysql" && /^  dataset_manifest:/ { print "  dataset_manifest: " dataset_manifest; next }
         section=="mysql" && /^  bootstrap_policy:/ { print "  bootstrap_policy: " policy; next }
         section=="mysql" && /^  bootstrap_manifest:/ { print "  bootstrap_manifest: " bootstrap; next }
         section=="mysql" && /^  compatibility_migration_manifest:/ {

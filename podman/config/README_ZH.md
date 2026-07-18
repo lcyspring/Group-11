@@ -21,6 +21,7 @@
 | CRM 性能基线 | `verify-crm-performance-baseline.example.yaml` | 只读并发负载与阈值共享模板 |
 | 工单 50 并发专项 | `verify-crm-work-order-performance.example.yaml` | 创建、SLA、流转、统计、完结与退出清理 |
 | 工单安全负向专项 | `verify-crm-work-order-security.example.yaml` | 临时受限角色、越权、跨租户、状态、注入/XSS 和边界 |
+| 演示数据生成 | `generate-demo-dataset.example.yaml` | 独立生成 SQL/manifest/checksum；不连接数据库，不由部署调用 |
 | CRM 诊断包 | `crm-diagnostics.example.yaml` | SLI 阈值、日志窗口和本机诊断输出模板 |
 | 营销点击验收 | `verify-crm-marketing-link-click.example.yaml` | 白名单跳转、令牌、原子累计和独立点击统计 |
 

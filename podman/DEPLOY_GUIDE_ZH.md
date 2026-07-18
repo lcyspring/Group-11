@@ -151,8 +151,13 @@ bash ./deploy.sh ./config/runtime-local.yaml
 
 `replace` 和 `replace-server` 会调用部署期数据库 provision：SQL 始终留在仓库 `database/`，通过
 stdin 发送给官方 MySQL 容器，不复制进镜像，也不挂载到长期运行容器。`mysql.bootstrap_policy` 为
-`initialize-empty` 时只初始化已确认的空库；已有 `system_users` 标记的库保留数据并仅重放幂等兼容
-清单；非空但无法识别的库直接拒绝。`require-existing` 则拒绝初始化空库。
+`initialize-empty` 时只初始化已确认的空库；已有 `system_users` 标记的库默认保留数据并仅重放幂等
+兼容清单；非空但无法识别的库直接拒绝。`require-existing` 则拒绝初始化空库。
+
+数据生成不属于部署：独立生成器只产出 SQL/manifest/checksum，不连接数据库。部署若要消费已生成
+数据集，在运行 YAML 显式配置 `dataset_manifest`。`existing_dataset_policy: preserve` 是日常默认；
+`replace` 必须同时设置 `cleanup_existing_before_dataset: true` 和
+`confirm_persistent_data_change: true`，否则在替换 Pod 前即失败。
 
 ## 8. 停止与数据删除
 

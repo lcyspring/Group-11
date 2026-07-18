@@ -87,9 +87,10 @@ bash ./podman/deploy.sh ./podman/config/runtime-local.yaml
 
 `mysql.bootstrap_policy: initialize-empty` 只允许初始化确认无表的库；
 `mysql.bootstrap_policy: require-existing` 用于禁止部署脚本创建基线。已有完整库不会因切换
-`mysql.dataset` 被覆盖。整套持久卷销毁必须同时开启
+`mysql.dataset` 被覆盖。若确需在部署中替换，设置 `mysql.existing_dataset_policy: replace`、显式
+`dataset_manifest`，并同时开启 cleanup 与持久数据确认。整套持久卷销毁必须同时开启
 `operation.remove_volumes_on_down` 和 `operation.confirm_persistent_data_reset`；已有库数据集替换则使用
-独立 `operations/database/database-dataset.sh` 及其双确认字段。
+上述运行 YAML 双确认。`operations/database/database-dataset.sh` 仅保留为低频维护/验证工具。
 
 任何 stateful 操作前先用 `runtime-images-check.yaml` 和 `runtime-local-check.yaml`。`runtime-local.yaml`、各 replace 配置含本地凭据，
 被 Git 忽略；共享模板不得写真实账号。

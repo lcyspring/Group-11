@@ -73,6 +73,7 @@ bash -n "${PODMAN_DIR}/lib/yaml-config.sh"
 bash -n "${PODMAN_DIR}/operations/database/database-backup.sh"
 bash -n "${PODMAN_DIR}/operations/database/database-restore.sh"
 bash -n "${PODMAN_DIR}/operations/database/database-dataset.sh"
+bash -n "${PODMAN_DIR}/operations/database/generate-demo-dataset.sh"
 bash -n "${PODMAN_DIR}/operations/images/build-image-archives.sh"
 bash -n "${PODMAN_DIR}/operations/bpm/provision-bpm-model.sh"
 bash -n "${PODMAN_DIR}/operations/bpm/provision-bpm-models.sh"
@@ -134,6 +135,9 @@ if rg -q 'podman(_cmd)?[[:space:]]+build|Containerfile|target/mitedtsm|dist-prod
     "${PODMAN_DIR}/deploy.sh"; then
     fail 'deploy.sh must not build images or read host build artifacts'
 fi
+if rg -q 'generate-demo-dataset' "${PODMAN_DIR}/deploy.sh"; then
+    fail 'deployment must never generate demo datasets'
+fi
 
 required_examples=(
     cleanup-stop.example.yaml
@@ -145,6 +149,7 @@ required_examples=(
     verify-crm-marketing-link-click.example.yaml
     verify-crm-work-order-performance.example.yaml
     verify-crm-work-order-security.example.yaml
+    generate-demo-dataset.example.yaml
     bpm-provision.example.yaml
     bpm-provision-receivable.example.yaml
     bpm-provision-contract.example.yaml

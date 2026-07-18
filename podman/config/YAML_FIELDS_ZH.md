@@ -89,6 +89,10 @@
 | `volume.mysql/redis/rabbitmq/tdengine` | 四个持久数据卷名称 |
 | `mysql.database` | 主业务库名 |
 | `mysql.dataset` | 仅空数据卷初始化时选择的数据集；切换它不会修改已有持久卷 |
+| `mysql.dataset_manifest` | 已生成数据集的显式 manifest 路径，可位于 `database/datasets` 或 ignored `database/generated` |
+| `mysql.existing_dataset_policy` | `preserve` 保留已有数据；`replace` 在部署期显式执行数据集 manifest |
+| `mysql.cleanup_existing_before_dataset` | `replace` 对已有库执行 cleanup 的第一道授权 |
+| `mysql.confirm_persistent_data_change` | `replace` 修改持久业务数据的第二道确认；必须与 cleanup 授权同时为 true |
 | `mysql.bootstrap_policy` | `initialize-empty` 只初始化确认空库；`require-existing` 拒绝空库 |
 | `mysql.bootstrap_manifest` | 空库建表、必要基础数据和显式种子的执行清单；SQL 在部署期通过 stdin 发送 |
 | `mysql.root_password` | 本地 MySQL root 密码；真实值只能在忽略的本机 YAML |
@@ -279,6 +283,22 @@
 | `media.legacy_fallback` | 无法代理媒体的本地回退资源 |
 | `network.mall_mode` | H5 构建容器网络；可复现构建固定 `none` |
 | `runtime.mall_memory/mall_cpus` | H5 构建容器资源上限 |
+
+## 演示数据生成配置
+
+生成器与部署相互独立。`generate-demo-dataset.sh` 不连接数据库；`deploy.sh` 不调用生成器。
+
+| 字段 | 作用 |
+|---|---|
+| `operation.mode` | `check` 只校验和估算；`generate` 渲染 SQL/manifest/checksum |
+| `dataset_generation.dataset_name` | 数据集稳定名称，只允许小写字母、数字、点、下划线和连字符 |
+| `dataset_generation.random_seed` | 固定正整数 seed；相同配置生成相同业务键与分布 |
+| `dataset_generation.tenant_id/owner_user_id` | 生成数据的租户与负责人引用 |
+| `dataset_generation.time_start/time_end` | 演示事实的日期范围 |
+| `dataset_generation.customer_count/business_count/work_order_count` | 三类规模；脚本设置显式安全上限 |
+| `dataset_generation.output_dir` | 只能位于 `database/generated/`，生成结果被 Git 忽略 |
+| `dataset_generation.cleanup_existing_generated_data` | 生成配置中的替换意图；必须与持久数据确认保持一致 |
+| `dataset_generation.confirm_persistent_data_change` | 持久数据变更确认；生成阶段本身仍不执行数据库修改 |
 
 ## CRM MySQL 备份恢复配置
 

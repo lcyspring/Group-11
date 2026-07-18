@@ -71,6 +71,10 @@ volume:
 mysql:
   database: mitedtsm_database
   dataset: legacy-demo-v1
+  dataset_manifest: ../../database/datasets/legacy-demo-v1.manifest
+  existing_dataset_policy: preserve
+  cleanup_existing_before_dataset: false
+  confirm_persistent_data_change: false
   bootstrap_policy: initialize-empty
   bootstrap_manifest: ../../database/manifests/mysql-bootstrap.manifest
   root_password: 1234

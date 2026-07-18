@@ -26,13 +26,17 @@ START_MODE="$(yaml_require operation.startup_mode)"
 MYSQL_CONTAINER="$(yaml_require container.mysql)"
 MYSQL_DATABASE="$(yaml_require mysql.database)"
 MYSQL_DATASET="$(yaml_require mysql.dataset)"
+MYSQL_DATASET_MANIFEST="$(yaml_path mysql.dataset_manifest)"
+MYSQL_EXISTING_DATASET_POLICY="$(yaml_require mysql.existing_dataset_policy)"
+MYSQL_DATASET_CLEANUP="$(yaml_bool mysql.cleanup_existing_before_dataset)"
+MYSQL_CONFIRM_DATA_CHANGE="$(yaml_bool mysql.confirm_persistent_data_change)"
 MYSQL_BOOTSTRAP_POLICY="$(yaml_require mysql.bootstrap_policy)"
 MYSQL_BOOTSTRAP_MANIFEST="$(yaml_path mysql.bootstrap_manifest)"
 MYSQL_COMPATIBILITY_MANIFEST="$(yaml_path mysql.compatibility_migration_manifest)"
 MYSQL_ROOT_PASSWORD="$(yaml_require mysql.root_password)"
 MYSQL_CHARACTER_SET="$(yaml_require mysql.character_set)"
 MYSQL_USER="$(yaml_require health.mysql_user)"
-DATASET_MANIFEST="${DATABASE_ROOT}/datasets/${MYSQL_DATASET}.manifest"
+DATASET_MANIFEST="$MYSQL_DATASET_MANIFEST"
 
 case "$MYSQL_BOOTSTRAP_POLICY" in
     initialize-empty|require-existing) ;;
@@ -42,6 +46,19 @@ case "$MYSQL_BOOTSTRAP_POLICY" in
         exit 2
         ;;
 esac
+case "$MYSQL_EXISTING_DATASET_POLICY" in
+    preserve|replace) ;;
+    *) printf 'mysql.existing_dataset_policy must be preserve or replace.\n' >&2; exit 2 ;;
+esac
+if [[ "$MYSQL_EXISTING_DATASET_POLICY" == replace ]]; then
+    [[ "$MYSQL_DATASET_CLEANUP" == true && "$MYSQL_CONFIRM_DATA_CHANGE" == true ]] || {
+        printf 'Replacing an existing dataset requires cleanup_existing_before_dataset=true and confirm_persistent_data_change=true.\n' >&2
+        exit 2
+    }
+elif [[ "$MYSQL_DATASET_CLEANUP" == true || "$MYSQL_CONFIRM_DATA_CHANGE" == true ]]; then
+    printf 'Dataset replacement confirmations must be false when existing_dataset_policy=preserve.\n' >&2
+    exit 2
+fi
 [[ "$MYSQL_CONTAINER" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]] || {
     printf 'container.mysql contains unsupported characters.\n' >&2
     exit 2
@@ -173,7 +190,13 @@ elif ((marker_count == 0)); then
         "$table_count" >&2
     exit 1
 else
-    printf 'Existing MySQL schema detected (%s tables); bootstrap and dataset are preserved.\n' "$table_count"
+    if [[ "$MYSQL_EXISTING_DATASET_POLICY" == replace ]]; then
+        printf 'Existing MySQL schema detected (%s tables); bootstrap is preserved.\n' "$table_count"
+        printf 'Explicitly replacing existing data from dataset: %s\n' "$MYSQL_DATASET"
+        execute_manifest "$DATASET_MANIFEST" dataset
+    else
+        printf 'Existing MySQL schema detected (%s tables); bootstrap and dataset are preserved.\n' "$table_count"
+    fi
 fi
 
 printf 'Applying idempotent compatibility manifest.\n'

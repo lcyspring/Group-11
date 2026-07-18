@@ -27,8 +27,10 @@ dataset_generation:
   confirm_persistent_data_change: false
 ```
 
-命令行只接收 YAML 路径。`check` 只生成规模估算与引用计划；`generate` 输出版本化 SQL/manifest；
-`replace` 必须同时开启清理本生成器旧数据和持久数据二次确认。普通 `deploy.sh` 永不调用替换。
+命令行只接收 YAML 路径。`check` 只生成规模估算与引用计划；`generate` 只输出版本化
+SQL/manifest/checksum，且不连接数据库。生成与部署是独立链路；生成器绝不调用 `deploy.sh`。
+`deploy.sh` 仍按运行 YAML 消费已经生成好的 manifest：默认 `existing_dataset_policy: preserve`，只有
+显式改为 `replace` 并同时开启 cleanup 与持久数据确认才替换已有数据。部署脚本不会现场生成数据。
 
 ## 可靠性要求
 

@@ -20,13 +20,23 @@ SQL 烘焙进 MySQL 镜像。
 
 ## 数据集与持久化
 
-运行 YAML 的 `mysql.dataset` 仅供部署脚本在确认空库后选择初始数据集。已有卷不会因
-切换该字段而重新导入、清理或覆盖，因此正常重启和部署保持数据持久化。
+运行 YAML 的 `mysql.dataset` 与 `mysql.dataset_manifest` 指定数据集。默认
+`mysql.existing_dataset_policy: preserve`，已有卷不会因切换名称而重新导入、清理或覆盖，因此正常
+重启和部署保持数据持久化。
 
-已有数据库需要替换数据集时，只能使用 `podman/operations/database/database-dataset.sh <yaml>`。配置必须显式声明：
+已有数据库需要在部署时替换数据集，运行 YAML 必须显式声明：
 
 - `mysql.cleanup_existing_before_dataset`：是否允许执行数据集内的 cleanup SQL；
 - `mysql.confirm_persistent_data_change`：在 `replace` 模式下确认修改持久数据。
 
-清理开关与 manifest 内容不一致，或持久数据确认未开启时，脚本拒绝执行。生产操作前仍应先使用
-`database-backup.sh` 备份；数据集替换不是普通启动步骤。
+并设置 `mysql.existing_dataset_policy: replace`。任一确认未开启时 `deploy.sh` 拒绝执行。独立
+`operations/database/database-dataset.sh` 保留为低频维护和验证入口，不是标准部署主路径。生产替换前
+仍应先使用 `database-backup.sh` 备份。
+
+## 演示数据生成与部署隔离
+
+`podman/operations/database/generate-demo-dataset.sh <yaml>` 是独立的离线生成入口，只把固定 seed 和
+规模配置渲染为 `database/generated/` 下的 SQL、manifest 与 checksum，不连接 MySQL。生成产物被
+Git 忽略，可由相同 YAML 重建。`deploy.sh` 不得调用生成器；它只消费运行 YAML 已明确指定的现成
+manifest。默认保留已有数据，只有 `existing_dataset_policy: replace`、cleanup 授权和持久数据确认
+同时开启时才替换。生成过程与部署/替换过程始终独立。
