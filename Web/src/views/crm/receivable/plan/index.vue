@@ -313,7 +313,7 @@ const getStatusLabel = (status: number) => {
 
 /** tab 切换 */
 const handleTabClick = (tab: TabsPaneContext) => {
-  queryParams.sceneType = tab.paneName
+  queryParams.sceneType = String(tab.paneName)
   handleQuery()
 }
 

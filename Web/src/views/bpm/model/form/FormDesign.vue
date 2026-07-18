@@ -70,12 +70,7 @@ import * as FormApi from '@/api/bpm/form'
 import { setConfAndFields2 } from '@/utils/formCreate'
 import { BpmModelFormType } from '@/utils/constants'
 
-const props = defineProps({
-  formList: {
-    type: Array,
-    required: true
-  }
-})
+const props = defineProps<{ formList: FormApi.FormVO[] }>()
 
 const { t } = useI18n('bpm') // 国际化
 const formRef = ref()

@@ -12,7 +12,28 @@ declare global {
 
   type ComponentRef<T> = InstanceType<T>
 
-  type LocaleType = 'zh-CN' | 'en'
+  type LocaleType = 'zh-CN' | 'en' | 'ar'
+
+  interface Window {
+    _hmt: Array<[string, ...unknown[]]>
+    bpmnInstances?: Record<string, any>
+    selectAddress?: (location: any) => void
+  }
+
+  interface SerialPort {
+    readable: ReadableStream<Uint8Array> | null
+    open(options: { baudRate: number; dataBits?: number; stopBits?: number }): Promise<void>
+    close(): Promise<void>
+  }
+
+  interface Serial {
+    requestPort(): Promise<SerialPort>
+    getPorts(): Promise<SerialPort[]>
+  }
+
+  interface Navigator {
+    serial?: Serial
+  }
 
   declare type TimeoutHandle = ReturnType<typeof setTimeout>
   declare type IntervalHandle = ReturnType<typeof setInterval>

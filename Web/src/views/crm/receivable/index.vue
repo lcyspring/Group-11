@@ -376,7 +376,7 @@ const writeOffForm = reactive<any>({ receivableId: undefined, amount: undefined,
 
 /** tab 切换 */
 const handleTabClick = (tab: TabsPaneContext) => {
-  queryParams.sceneType = tab.paneName
+  queryParams.sceneType = String(tab.paneName)
   handleQuery()
 }
 

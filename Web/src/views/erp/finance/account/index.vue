@@ -211,7 +211,7 @@ const handleDelete = async (id: number) => {
 }
 
 /** 修改默认状态 */
-const handleDefaultStatusChange = async (row: WarehouseVO) => {
+const handleDefaultStatusChange = async (row: AccountVO) => {
   try {
     // 修改状态的二次确认
     const text = row.defaultStatus ? t('setDefault') : t('cancelDefault')

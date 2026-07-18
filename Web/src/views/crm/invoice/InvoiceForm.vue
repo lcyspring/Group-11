@@ -125,6 +125,7 @@
 </template>
 
 <script setup lang="ts">
+import type { FormRules } from 'element-plus'
 import * as InvoiceApi from '@/api/crm/invoice'
 import * as ContractApi from '@/api/crm/contract'
 import * as UserApi from '@/api/system/user'
@@ -150,7 +151,7 @@ const specialRequired = (_rule: unknown, value: string, callback: (error?: Error
     callback(new Error(t('invoice.specialInfoRequired')))
   else callback()
 }
-const rules = reactive({
+const rules = reactive<FormRules>({
   contractId: [required('invoice.contractRequired')],
   handlerUserId: [required('invoice.handlerRequired')],
   type: [required('invoice.typeRequired')],

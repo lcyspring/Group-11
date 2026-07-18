@@ -99,12 +99,7 @@ const open = async (id: number) => {
     formLoading.value = true
     try {
       const data = await ChatConversationApi.getChatConversationMy(id)
-      formData.value = Object.keys(formData.value).reduce((obj, key) => {
-        if (data.hasOwnProperty(key)) {
-          obj[key] = data[key]
-        }
-        return obj
-      }, {})
+      formData.value = Object.assign({}, formData.value, data)
     } finally {
       formLoading.value = false
     }

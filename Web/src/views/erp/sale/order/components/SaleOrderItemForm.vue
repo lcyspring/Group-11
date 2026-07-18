@@ -136,6 +136,7 @@
   </el-row>
 </template>
 <script setup lang="ts">
+import type { FormInstance, SummaryMethod } from 'element-plus'
 import { ProductApi, ProductVO } from '@/api/erp/product/product'
 import { StockApi } from '@/api/erp/stock/stock'
 import {
@@ -148,8 +149,8 @@ import {
 const { t } = useI18n('erp') // 国际化
 
 const props = defineProps<{
-  items: undefined
-  disabled: false
+  items?: any[]
+  disabled?: boolean
 }>()
 const formLoading = ref(false) // 表单的加载中
 const formData = ref([])
@@ -157,7 +158,7 @@ const formRules = reactive({
   productId: [{ required: true, message: t('sale.order.productRequired'), trigger: 'blur' }],
   count: [{ required: true, message: t('sale.order.countRequired'), trigger: 'blur' }]
 })
-const formRef = ref([]) // 表单 Ref
+const formRef = ref<FormInstance>() // 表单 Ref
 const productList = ref<ProductVO[]>([]) // 产品列表
 
 /** 初始化设置出库项 */
@@ -191,7 +192,7 @@ watch(
 )
 
 /** 合计 */
-const getSummaries = (param: SummaryMethodProps) => {
+const getSummaries = (param: Parameters<SummaryMethod<any>>[0]) => {
   const { columns, data } = param
   const sums: string[] = []
   columns.forEach((column, index: number) => {
@@ -258,7 +259,7 @@ const setStockCount = async (row: any) => {
 
 /** 表单校验 */
 const validate = () => {
-  return formRef.value.validate()
+  return formRef.value?.validate()
 }
 defineExpose({ validate })
 

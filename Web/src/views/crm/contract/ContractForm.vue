@@ -161,7 +161,7 @@
             <ContractProductForm
               ref="productFormRef"
               :products="formData.products"
-              :disabled="disabled"
+              :disabled="formType !== 'create'"
             />
           </el-tab-pane>
         </el-tabs>
@@ -242,6 +242,7 @@ const formData = ref({
   ownerUserId: undefined,
   discountPercent: 0,
   totalProductPrice: undefined,
+  totalPrice: undefined,
   remark: undefined,
   products: []
 })
@@ -371,6 +372,7 @@ const resetForm = () => {
     ownerUserId: undefined,
     discountPercent: 0,
     totalProductPrice: undefined,
+    totalPrice: undefined,
     remark: undefined,
     products: []
   }

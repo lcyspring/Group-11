@@ -266,7 +266,7 @@
             ><el-input
               v-model="formData.description"
               maxlength="2000"
-              rows="4"
+              :rows="4"
               show-word-limit
               type="textarea" /></el-form-item
         ></el-col>

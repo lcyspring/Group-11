@@ -171,10 +171,13 @@ const dialogTitle = ref<string | undefined>(undefined) // 弹窗标题
 const selectActivityType = ref<string | undefined>(undefined) // 选中 Task 的活动编号
 const selectTasks = ref<any[]>([]) // 选中的任务数组
 
+const getViewerService = <T = any>(name: string): T | undefined =>
+  bpmnViewer.value?.get(name) as T | undefined
+
 /** Zoom：恢复 */
 const processReZoom = () => {
   defaultZoom.value = 1
-  bpmnViewer.value?.get('canvas').zoom('fit-viewport', 'auto')
+  getViewerService<any>('canvas')?.zoom('fit-viewport', 'auto')
 }
 
 /** Zoom：放大 */
@@ -184,7 +187,7 @@ const processZoomIn = (zoomStep = 0.1) => {
     throw new Error('[Process Designer Warn ]: The zoom ratio cannot be greater than 4')
   }
   defaultZoom.value = newZoom
-  bpmnViewer.value?.get('canvas').zoom(defaultZoom.value)
+  getViewerService<any>('canvas')?.zoom(defaultZoom.value)
 }
 
 /** Zoom：缩小 */
@@ -194,7 +197,7 @@ const processZoomOut = (zoomStep = 0.1) => {
     throw new Error('[Process Designer Warn ]: The zoom ratio cannot be less than 0.2')
   }
   defaultZoom.value = newZoom
-  bpmnViewer.value?.get('canvas').zoom(defaultZoom.value)
+  getViewerService<any>('canvas')?.zoom(defaultZoom.value)
 }
 
 /** 流程图预览清空 */
@@ -214,7 +217,7 @@ const addCustomDefs = () => {
   if (!bpmnViewer.value) {
     return
   }
-  const canvas = bpmnViewer.value?.get('canvas')
+  const canvas = getViewerService<any>('canvas')
   const svg = canvas?._svg
   svg.appendChild(customDefs.value)
 }
@@ -263,8 +266,8 @@ const importXML = async (xml: string) => {
         container: processCanvas.value
       })
       // 增加点击事件
-      bpmnViewer.value.on('element.click', ({ element }) => {
-        onSelectElement(element)
+      bpmnViewer.value.on('element.click', (event: any) => {
+        onSelectElement(event.element)
       })
 
       // 初始化 BPMN 视图
@@ -299,8 +302,9 @@ const setProcessStatus = (view: any) => {
     finishedSequenceFlowActivityIds,
     rejectedTaskActivityIds
   } = view
-  const canvas = bpmnViewer.value.get('canvas')
-  const elementRegistry = bpmnViewer.value.get('elementRegistry')
+  const canvas = getViewerService<any>('canvas')
+  const elementRegistry = getViewerService<any>('elementRegistry')
+  if (!canvas || !elementRegistry) return
 
   // 已完成节点
   if (Array.isArray(finishedSequenceFlowActivityIds)) {

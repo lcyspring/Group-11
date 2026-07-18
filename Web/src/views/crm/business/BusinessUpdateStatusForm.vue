@@ -61,6 +61,7 @@
   </Dialog>
 </template>
 <script setup lang="ts">
+import type { FormRules } from 'element-plus'
 import * as BusinessApi from '@/api/crm/business'
 import * as BusinessStatusApi from '@/api/crm/business/status'
 
@@ -77,7 +78,7 @@ const formData = ref({
   statusRemark: undefined as string | undefined,
   endRemark: undefined as string | undefined
 })
-const formRules = reactive({
+const formRules = reactive<FormRules>({
   status: [{ required: true, message: t('crm.business.statusRequired'), trigger: 'blur' }],
   statusRemark: [
     { required: true, message: t('crm.business.statusRemarkRequired'), trigger: 'blur' },

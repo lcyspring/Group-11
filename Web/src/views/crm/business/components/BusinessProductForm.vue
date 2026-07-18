@@ -108,6 +108,7 @@
 import * as ProductApi from '@/api/crm/product'
 import { erpPriceInputFormatter, erpPriceMultiply } from '@/utils'
 import { DICT_TYPE } from '@/utils/dict'
+import type { FormInstance } from 'element-plus'
 
 const { t } = useI18n() // 国际化
 
@@ -125,7 +126,7 @@ const formRules = reactive({
   count: [{ required: true, message: t('crm.business.countRequired'), trigger: 'blur' }],
   taxRatePercent: [{ required: true, message: t('crm.business.taxRateRequired'), trigger: 'change' }]
 })
-const formRef = ref([]) // 表单 Ref
+const formRef = ref<FormInstance>() // 表单 Ref
 const productList = ref<ProductApi.ProductVO[]>([]) // 产品列表
 
 /** 初始化设置产品项 */
@@ -189,7 +190,7 @@ const onChangeProduct = (productId, row) => {
 
 /** 表单校验 */
 const validate = () => {
-  return formRef.value.validate()
+  return formRef.value?.validate()
 }
 defineExpose({ validate })
 

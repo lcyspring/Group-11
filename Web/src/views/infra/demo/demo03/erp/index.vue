@@ -273,7 +273,7 @@ const handleExport = async () => {
 }
 
 /** 选中行操作 */
-const currentRow = ref({}) // 选中行
+const currentRow = ref<{ id?: number }>({}) // 选中行
 const handleCurrentChange = (row) => {
   currentRow.value = row
 }

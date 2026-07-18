@@ -97,8 +97,8 @@ const close = () => {
 /** 初始化 */
 const { params } = useRoute()
 onMounted(async () => {
-  const id = props.id || route.params.id
-  if (!id) {
+  const id = props.id || Number(route.params.id)
+  if (!Number.isSafeInteger(id) || id <= 0) {
     message.warning(t('receivable.paramError'))
     close()
     return

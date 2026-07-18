@@ -59,7 +59,7 @@
       <el-button
         size="small"
         v-for="button in detail?.buttons"
-        :key="button"
+        :key="button.customId"
         class="min-w-40px ml-0 mr-10px mt-5px"
         @click="handleMidjourneyBtnClick(button)"
       >
@@ -104,7 +104,7 @@ const emits = defineEmits(['onBtnClick', 'onMjBtnClick']) // emits
 /** 监听详情 */
 const { detail } = toRefs(props)
 watch(detail, async (newVal, oldVal) => {
-  await handleLoading(newVal.status as string)
+  await handleLoading(newVal.status)
 })
 
 /** 处理加载状态 */
@@ -126,6 +126,6 @@ const handleLoading = async (status: number) => {
 
 /** 初始化 */
 onMounted(async () => {
-  await handleLoading(props.detail.status as string)
+  await handleLoading(props.detail.status)
 })
 </script>

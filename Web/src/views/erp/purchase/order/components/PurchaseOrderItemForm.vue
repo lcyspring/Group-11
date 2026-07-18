@@ -140,6 +140,7 @@
   </el-row>
 </template>
 <script setup lang="ts">
+import type { FormInstance, SummaryMethod } from 'element-plus'
 import { ProductApi, ProductVO } from '@/api/erp/product/product'
 import { StockApi } from '@/api/erp/stock/stock'
 import {
@@ -150,8 +151,8 @@ import {
 } from '@/utils'
 
 const props = defineProps<{
-  items: undefined
-  disabled: false
+  items?: any[]
+  disabled?: boolean
 }>()
 
 const { t } = useI18n('erp.purchase.order') // 国际化
@@ -163,7 +164,7 @@ const formRules = reactive({
   productPrice: [{ required: true, message: t('productPriceRequired'), trigger: 'blur' }],
   count: [{ required: true, message: t('countRequired'), trigger: 'blur' }]
 })
-const formRef = ref([]) // 表单 Ref
+const formRef = ref<FormInstance>() // 表单 Ref
 const productList = ref<ProductVO[]>([]) // 产品列表
 
 /** 初始化设置入库项 */
@@ -197,7 +198,7 @@ watch(
 )
 
 /** 合计 */
-const getSummaries = (param: SummaryMethodProps) => {
+const getSummaries = (param: Parameters<SummaryMethod<any>>[0]) => {
   const { columns, data } = param
   const sums: string[] = []
   columns.forEach((column, index: number) => {
@@ -264,7 +265,7 @@ const setStockCount = async (row: any) => {
 
 /** 表单校验 */
 const validate = () => {
-  return formRef.value.validate()
+  return formRef.value?.validate()
 }
 defineExpose({ validate })
 

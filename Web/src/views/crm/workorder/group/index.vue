@@ -91,6 +91,7 @@
 </template>
 
 <script setup lang="ts">
+import type { FormRules } from 'element-plus'
 import * as WorkOrderApi from '@/api/crm/workorder'
 import * as UserApi from '@/api/system/user'
 
@@ -120,7 +121,7 @@ const emptyForm = (): WorkOrderApi.WorkOrderGroupVO => ({
   remark: ''
 })
 const form = ref<WorkOrderApi.WorkOrderGroupVO>(emptyForm())
-const rules = reactive({
+const rules = reactive<FormRules>({
   code: [{ required: true, pattern: /^[a-z][a-z0-9_-]{1,31}$/, message: t('workOrder.groupCodeInvalid'), trigger: 'blur' }],
   name: [{ required: true, message: t('workOrder.groupNameRequired'), trigger: 'blur' }],
   managerUserId: [{ required: true, message: t('workOrder.groupManagerRequired'), trigger: 'change' }],

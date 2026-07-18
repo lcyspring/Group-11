@@ -29,7 +29,7 @@ const props = defineProps<{
   studentId: number // 学生编号（主表的关联字段）
 }>()
 const formLoading = ref(false) // 表单的加载中
-const formData = ref({})
+const formData = ref<Record<string, any>>({})
 const formRules = reactive({
   studentId: [{ required: true, message: t('codegenDemo.demo03.studentIdRequired'), trigger: 'blur' }],
   name: [{ required: true, message: t('codegenDemo.nameRequired'), trigger: 'blur' }],

@@ -1,4 +1,4 @@
-import type { App } from 'vue'
+import type { App, Component } from 'vue'
 // 👇使用 form-create 需额外全局引入 element plus 组件
 import {
   // ElAutocomplete,
@@ -126,7 +126,7 @@ const components = [
 // 参考 http://www.form-create.com/v3/element-ui/auto-import.html 文档
 export const setupFormCreate = (app: App<Element>) => {
   components.forEach((component) => {
-    app.component(component.name, component)
+    app.component(component.name, component as Component)
   })
   formCreate.use(install)
   app.use(formCreate)

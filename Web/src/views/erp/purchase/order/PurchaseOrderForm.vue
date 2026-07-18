@@ -160,7 +160,7 @@ const dialogVisible = ref(false) // 弹窗的是否展示
 const dialogTitle = ref('') // 弹窗的标题
 const formLoading = ref(false) // 表单的加载中：1）修改时的数据加载；2）提交的按钮禁用
 const formType = ref('') // 表单的类型：create - 新增；update - 修改；detail - 详情
-const formData = ref({
+const formData = ref<any>({
   id: undefined,
   supplierId: undefined,
   accountId: undefined,
@@ -207,7 +207,7 @@ watch(
 /** 打开弹窗 */
 const open = async (type: string, id?: number) => {
   dialogVisible.value = true
-  dialogTitle.value = useI18n()('action.' + type)
+  dialogTitle.value = t('action.' + type)
   formType.value = type
   resetForm()
   // 修改时，设置数据

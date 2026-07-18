@@ -97,7 +97,8 @@ const canCreateContract = computed(
 const queryParams = reactive({
   pageNo: 1,
   pageSize: 10,
-  customerId: undefined as unknown // 允许 undefined + number
+  customerId: undefined as number | undefined,
+  businessId: undefined as number | undefined
 })
 
 /** 查询列表 */

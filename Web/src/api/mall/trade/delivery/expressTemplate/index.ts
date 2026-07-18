@@ -5,8 +5,8 @@ export interface DeliveryExpressTemplateVO {
   name: string
   chargeMode: number
   sort: number
-  templateCharge: ExpressTemplateChargeVO[]
-  templateFree: ExpressTemplateFreeVO[]
+  charges: ExpressTemplateChargeVO[]
+  frees: ExpressTemplateFreeVO[]
 }
 
 export declare type ExpressTemplateChargeVO = {

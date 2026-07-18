@@ -140,16 +140,16 @@
         :formatter="dateFormatter"
       />
       <el-table-column :label="t('order.price')" align="center" prop="price" min-width="100">
-        <template #default="scope"> ￥{{ parseFloat(scope.row.price / 100).toFixed(2) }} </template>
+        <template #default="scope"> ￥{{ Number(scope.row.price / 100).toFixed(2) }} </template>
       </el-table-column>
       <el-table-column :label="t('order.refundPrice')" align="center" prop="refundPrice" min-width="100">
         <template #default="scope">
-          ￥{{ parseFloat(scope.row.refundPrice / 100).toFixed(2) }}
+          ￥{{ Number(scope.row.refundPrice / 100).toFixed(2) }}
         </template>
       </el-table-column>
       <el-table-column :label="t('order.feePrice')" align="center" prop="channelFeePrice" min-width="100">
         <template #default="scope">
-          ￥{{ parseFloat(scope.row.channelFeePrice / 100).toFixed(2) }}
+          ￥{{ Number(scope.row.channelFeePrice / 100).toFixed(2) }}
         </template>
       </el-table-column>
       <el-table-column :label="t('order.no')" align="left" min-width="300">

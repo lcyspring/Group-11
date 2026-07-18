@@ -72,7 +72,7 @@
                   v-if="!scope.row.endStatus"
                   link
                   type="primary"
-                  @click="addStatus(scope.$index)"
+                  @click="addStatus"
                 >
                   {{ t('common.add') }}
                 </el-button>

@@ -35,9 +35,9 @@
           />
         </el-select>
       </el-form-item>
-      <el-form-item :label="t('sale.return.returnTime')" prop="outTime">
+      <el-form-item :label="t('sale.return.returnTime')" prop="returnTime">
         <el-date-picker
-          v-model="queryParams.outTime"
+          v-model="queryParams.returnTime"
           value-format="YYYY-MM-DD HH:mm:ss"
           type="daterange"
           :start-placeholder="t('common.startTime')"

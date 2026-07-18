@@ -23,7 +23,7 @@
         </el-tag>
       </el-descriptions-item>
       <el-descriptions-item :label="t('refund.price')">
-        <el-tag size="mini" type="danger">
+        <el-tag size="small" type="danger">
           ￥{{ (refundDetail.refundPrice / 100.0).toFixed(2) }}
         </el-tag>
       </el-descriptions-item>
@@ -81,7 +81,7 @@ defineOptions({ name: 'PayRefundDetail' })
 
 const dialogVisible = ref(false) // 弹窗的是否展示
 const detailLoading = ref(false) // 表单的加载中
-const refundDetail = ref({})
+const refundDetail = ref<Record<string, any>>({})
 
 /** 打开弹窗 */
 const open = async (id: number) => {

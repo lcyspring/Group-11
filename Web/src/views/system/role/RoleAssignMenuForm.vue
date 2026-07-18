@@ -91,9 +91,9 @@ const open = async (row: RoleApi.RoleVO) => {
   formData.code = row.code
   formLoading.value = true
   try {
-    formData.value.menuIds = await PermissionApi.getRoleMenuList(row.id)
+    formData.menuIds = await PermissionApi.getRoleMenuList(row.id)
     // 设置选中
-    formData.value.menuIds.forEach((menuId: number) => {
+    formData.menuIds.forEach((menuId: number) => {
       treeRef.value.setChecked(menuId, true, false)
     })
   } finally {
@@ -135,12 +135,7 @@ const resetForm = () => {
   treeNodeAll.value = false
   menuExpand.value = false
   // 重置表单
-  formData.value = {
-    id: undefined,
-    name: '',
-    code: '',
-    menuIds: []
-  }
+  Object.assign(formData, { id: undefined, name: '', code: '', menuIds: [] })
   treeRef.value?.setCheckedNodes([])
   formRef.value?.resetFields()
 }

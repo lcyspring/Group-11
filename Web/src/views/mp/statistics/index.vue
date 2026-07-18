@@ -83,7 +83,7 @@ const message = useMessage() // 消息弹窗
 const { t } = useI18n('mp') // 国际化
 
 // 默认开始时间是当前日期-7，结束时间是当前日期-1
-const dateRange = ref([
+const dateRange = ref<[Date, Date]>([
   beginOfDay(new Date(new Date().getTime() - 3600 * 1000 * 24 * 7)),
   endOfDay(new Date(new Date().getTime() - 3600 * 1000 * 24))
 ])
@@ -91,7 +91,7 @@ const accountId = ref(-1) // 选中的公众号编号
 
 const xAxisDate = ref([] as any[]) // X 轴的日期范围
 // 用户增减数据图表配置项
-const userSummaryOption = reactive({
+const userSummaryOption = reactive<any>({
   color: ['#67C23A', '#E5323E'],
   legend: {
     data: [t('statistics.userSummary.newUser'), t('statistics.userSummary.cancelUser')]
@@ -124,7 +124,7 @@ const userSummaryOption = reactive({
   ]
 })
 // 累计用户数据图表配置项
-const userCumulateOption = reactive({
+const userCumulateOption = reactive<any>({
   legend: {
     data: [t('statistics.userCumulate.cumulateUser')]
   },
@@ -148,7 +148,7 @@ const userCumulateOption = reactive({
   ]
 })
 // 消息发送概况数据图表配置项
-const upstreamMessageOption = reactive({
+const upstreamMessageOption = reactive<any>({
   color: ['#67C23A', '#E5323E'],
   legend: {
     data: [t('statistics.upstreamMessage.messageUser'), t('statistics.upstreamMessage.messageCount')]
@@ -182,7 +182,7 @@ const upstreamMessageOption = reactive({
   ]
 })
 // 接口分析况数据图表配置项
-const interfaceSummaryOption = reactive({
+const interfaceSummaryOption = reactive<any>({
   color: ['#67C23A', '#E5323E', '#E6A23C', '#409EFF'],
   legend: {
     data: [t('statistics.interfaceSummary.callbackCount'), t('statistics.interfaceSummary.failCount'), t('statistics.interfaceSummary.maxTimeCost'), t('statistics.interfaceSummary.totalTimeCost')]

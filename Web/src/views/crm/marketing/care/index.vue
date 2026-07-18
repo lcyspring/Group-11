@@ -193,6 +193,7 @@
 import type { FormInstance, FormRules, TabsPaneContext } from 'element-plus'
 import * as MarketingApi from '@/api/crm/marketing'
 import { dateFormatter } from '@/utils/formatTime'
+import { checkPermi } from '@/utils/permission'
 import { CareRecipientStatus, CareRuleType, normalizeCarePlan, validateCarePlan } from './careManagement.mjs'
 
 defineOptions({ name: 'CrmCustomerCare' })

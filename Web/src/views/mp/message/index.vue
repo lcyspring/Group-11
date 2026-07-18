@@ -48,7 +48,7 @@
               range-separator="-"
               :start-placeholder="t('common.startTime')"
               :end-placeholder="t('common.endTime')"
-              :default-time="['00:00:00', '23:59:59']"
+              :default-time="[new Date('1 00:00:00'), new Date('1 23:59:59')]"
               class="!w-240px"
             />
           </el-form-item>

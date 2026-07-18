@@ -26,6 +26,7 @@
 </template>
 
 <script setup lang="ts">
+import type { FormRules } from 'element-plus'
 import * as TripApi from '@/api/bpm/trip'
 import * as UserApi from '@/api/system/user'
 import * as DefinitionApi from '@/api/bpm/definition'
@@ -49,7 +50,7 @@ const form = ref<TripApi.TripVO>({ startTime: '', endTime: '', destination: '', 
 const tripDays = computed(() => calculateTripDays(form.value.startTime, form.value.endTime))
 const validateStart = (_: unknown, value: string | number, done: (error?: Error) => void) => done(!value || isFutureTrip(value) ? undefined : new Error(t('oa.trip.startFuture')))
 const validateEnd = (_: unknown, value: string | number, done: (error?: Error) => void) => done(!value || Number(value) > Number(form.value.startTime) ? undefined : new Error(t('oa.trip.endAfterStart')))
-const rules = reactive({
+const rules = reactive<FormRules>({
   startTime: [{ required: true, message: t('oa.trip.startRequired'), trigger: 'change' }, { validator: validateStart, trigger: 'change' }],
   endTime: [{ required: true, message: t('oa.trip.endRequired'), trigger: 'change' }, { validator: validateEnd, trigger: 'change' }],
   destination: [{ required: true, message: t('oa.trip.destinationRequired'), trigger: 'blur' }],

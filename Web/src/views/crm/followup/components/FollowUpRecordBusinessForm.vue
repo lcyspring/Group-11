@@ -20,19 +20,20 @@
 
 <script lang="ts" setup>
 import { erpPriceTableColumnFormatter } from '@/utils'
+import type { BusinessVO } from '@/api/crm/business'
 
 const { t } = useI18n('crm') // 国际化
 
 const props = defineProps<{
-  businesses: undefined
+  businesses?: BusinessVO[]
 }>()
-const formData = ref([])
+const formData = ref<BusinessVO[]>([])
 
 /** 初始化商机列表 */
 watch(
   () => props.businesses,
   async (val) => {
-    formData.value = val
+    formData.value = val || []
   },
   { immediate: true }
 )

@@ -79,6 +79,7 @@
   </el-row>
 </template>
 <script lang="ts" setup>
+import type { FormRules } from 'element-plus'
 import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import * as LeaveApi from '@/api/bpm/leave'
 import { useTagsViewStore } from '@/store/modules/tagsView'
@@ -107,7 +108,7 @@ const formData = ref({
   endTime: undefined,
   attachmentUrls: [] as string[]
 })
-const formRules = reactive({
+const formRules = reactive<FormRules>({
   type: [{ required: true, message: t('oa.leave.type') + t('common.notEmpty'), trigger: 'blur' }],
   reason: [
     { required: true, message: t('oa.leave.reason') + t('common.notEmpty'), trigger: 'change' },

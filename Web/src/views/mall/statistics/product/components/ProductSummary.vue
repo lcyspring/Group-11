@@ -82,7 +82,7 @@
           icon-bg-color="text-green-500"
           prefix="￥"
           :decimals="2"
-          :value="fenToYuan(trendSummary?.value?.orderPayPrice || 0)"
+          :value="Number(fenToYuan(trendSummary?.value?.orderPayPrice || 0))"
           :percent="
             calculateRelativeRate(
               trendSummary?.value?.orderPayPrice,
@@ -118,7 +118,7 @@
           icon-bg-color="text-yellow-500"
           prefix="￥"
           :decimals="2"
-          :value="fenToYuan(trendSummary?.value?.afterSaleRefundPrice || 0)"
+          :value="Number(fenToYuan(trendSummary?.value?.afterSaleRefundPrice || 0))"
           :percent="
             calculateRelativeRate(
               trendSummary?.value?.afterSaleRefundPrice,
@@ -177,8 +177,8 @@ const lineChartOptions = reactive<EChartsOption>({
   series: [
     { name: t('browseCount'), type: 'line', smooth: true, itemStyle: { color: '#B37FEB' } },
     { name: t('browseUserCount'), type: 'line', smooth: true, itemStyle: { color: '#FFAB2B' } },
-    { name: t('orderPayPrice'), type: 'bar', smooth: true, yAxisIndex: 1, itemStyle: { color: '#1890FF' } },
-    { name: t('afterSaleRefundPrice'), type: 'bar', smooth: true, yAxisIndex: 1, itemStyle: { color: '#00C050' } }
+    { name: t('orderPayPrice'), type: 'bar', yAxisIndex: 1, itemStyle: { color: '#1890FF' } },
+    { name: t('afterSaleRefundPrice'), type: 'bar', yAxisIndex: 1, itemStyle: { color: '#00C050' } }
   ],
   toolbox: {
     feature: {
@@ -216,11 +216,7 @@ const lineChartOptions = reactive<EChartsOption>({
       axisTick: {
         show: false
       },
-      axisLabel: {
-        textStyle: {
-          color: '#7F8B9C'
-        }
-      },
+      axisLabel: { color: '#7F8B9C' },
       splitLine: {
         show: true,
         lineStyle: {
@@ -237,11 +233,7 @@ const lineChartOptions = reactive<EChartsOption>({
       axisTick: {
         show: false
       },
-      axisLabel: {
-        textStyle: {
-          color: '#7F8B9C'
-        }
-      },
+      axisLabel: { color: '#7F8B9C' },
       splitLine: {
         show: true,
         lineStyle: {
@@ -279,8 +271,8 @@ const getProductStatisticsList = async () => {
   const list: ProductStatisticsVO[] = await ProductStatisticsApi.getProductStatisticsList({ times })
   // 处理数据
   for (let item of list) {
-    item.orderPayPrice = fenToYuan(item.orderPayPrice)
-    item.afterSaleRefundPrice = fenToYuan(item.afterSaleRefundPrice)
+    item.orderPayPrice = Number(fenToYuan(item.orderPayPrice))
+    item.afterSaleRefundPrice = Number(fenToYuan(item.afterSaleRefundPrice))
   }
   // 更新 Echarts 数据
   if (lineChartOptions.dataset && lineChartOptions.dataset['source']) {

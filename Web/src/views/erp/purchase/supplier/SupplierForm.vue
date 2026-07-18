@@ -147,7 +147,7 @@ const formRef = ref() // 表单 Ref
 /** 打开弹窗 */
 const open = async (type: string, id?: number) => {
   dialogVisible.value = true
-  dialogTitle.value = useI18n()('action.' + type)
+  dialogTitle.value = t('action.' + type)
   formType.value = type
   resetForm()
   // 修改时，设置数据

@@ -68,6 +68,7 @@
   <SaleReturnRefundEnableList ref="saleReturnRefundEnableListRef" @success="handleAddSaleReturn" />
 </template>
 <script setup lang="ts">
+import type { FormInstance, SummaryMethod } from 'element-plus'
 import { ProductVO } from '@/api/erp/product/product'
 import { erpPriceInputFormatter, getSumValue } from '@/utils'
 import SaleOutReceiptEnableList from '@/views/erp/sale/out/components/SaleOutReceiptEnableList.vue'
@@ -79,9 +80,9 @@ import { SaleReturnVO } from '@/api/erp/sale/return'
 const { t } = useI18n('erp.finance.receipt')
 
 const props = defineProps<{
-  items: undefined
-  customerId: undefined
-  disabled: false
+  items?: any[]
+  customerId?: number
+  disabled?: boolean
 }>()
 const message = useMessage()
 
@@ -90,7 +91,7 @@ const formData = ref([])
 const formRules = reactive({
   receiptPrice: [{ required: true, message: t('receiptPriceRequired'), trigger: 'blur' }]
 })
-const formRef = ref([]) // 表单 Ref
+const formRef = ref<FormInstance>() // 表单 Ref
 const productList = ref<ProductVO[]>([]) // 产品列表
 
 /** 初始化设置出库项 */
@@ -103,7 +104,7 @@ watch(
 )
 
 /** 合计 */
-const getSummaries = (param: SummaryMethodProps) => {
+const getSummaries = (param: Parameters<SummaryMethod<any>>[0]) => {
   const { columns, data } = param
   const sums: string[] = []
   columns.forEach((column, index: number) => {
@@ -130,7 +131,7 @@ const handleOpenSaleOut = () => {
   }
   saleOutReceiptEnableListRef.value.open(props.customerId)
 }
-const handleAddSaleOut = (rows: SaleOutVO[]) => {
+const handleAddSaleOut = (rows: Array<SaleOutVO & { receiptPrice: number }>) => {
   rows.forEach((row) => {
     formData.value.push({
       bizId: row.id,
@@ -152,7 +153,7 @@ const handleOpenSaleReturn = () => {
   }
   saleReturnRefundEnableListRef.value.open(props.customerId)
 }
-const handleAddSaleReturn = (rows: SaleReturnVO[]) => {
+const handleAddSaleReturn = (rows: Array<SaleReturnVO & { refundPrice: number }>) => {
   rows.forEach((row) => {
     formData.value.push({
       bizId: row.id,
@@ -172,7 +173,7 @@ const handleDelete = (index: number) => {
 
 /** 表单校验 */
 const validate = () => {
-  return formRef.value.validate()
+  return formRef.value?.validate()
 }
 defineExpose({ validate })
 </script>

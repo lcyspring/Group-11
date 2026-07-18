@@ -97,6 +97,7 @@ const formLoading = ref(false) // 表单的加载中：1）修改时的数据加
 const formType = ref('') // 表单的类型：create - 新增；update - 修改；detail - 详情
 const formData = ref({
   id: undefined,
+  no: undefined,
   customerId: undefined,
   outTime: undefined,
   remark: undefined,
@@ -163,6 +164,7 @@ const submitForm = async () => {
 const resetForm = () => {
   formData.value = {
     id: undefined,
+    no: undefined,
     customerId: undefined,
     outTime: undefined,
     remark: undefined,

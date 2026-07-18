@@ -10,16 +10,16 @@
           :title="t('salesAmount')"
           prefix="￥"
           :decimals="2"
-          :value="fenToYuan(orderComparison?.value?.orderPayPrice || 0)"
-          :reference="fenToYuan(orderComparison?.reference?.orderPayPrice || 0)"
+          :value="Number(fenToYuan(orderComparison?.value?.orderPayPrice || 0))"
+          :reference="Number(fenToYuan(orderComparison?.reference?.orderPayPrice || 0))"
         />
       </el-col>
       <el-col :md="6" :sm="12" :xs="24" :loading="loading">
         <ComparisonCard
           :tag="t('today')"
           :title="t('userVisit')"
-          :value="userComparison?.value?.visitUserCount || 0"
-          :reference="userComparison?.reference?.visitUserCount || 0"
+          :value="Number(userComparison?.value?.visitUserCount || 0)"
+          :reference="Number(userComparison?.reference?.visitUserCount || 0)"
         />
       </el-col>
       <el-col :md="6" :sm="12" :xs="24" :loading="loading">

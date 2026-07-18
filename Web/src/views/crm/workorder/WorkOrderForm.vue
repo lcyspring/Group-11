@@ -32,6 +32,7 @@
 </template>
 
 <script setup lang="ts">
+import type { FormRules } from 'element-plus'
 import * as WorkOrderApi from '@/api/crm/workorder'
 import * as CustomerApi from '@/api/crm/customer'
 import * as UserApi from '@/api/system/user'
@@ -63,7 +64,7 @@ const sources = ref<any[]>([])
 const types = [{ value: 1, label: t('workOrder.typeIssue') }, { value: 2, label: t('workOrder.typeDemand') }, { value: 3, label: t('workOrder.typeComplaint') }, { value: 4, label: t('workOrder.typeConsultation') }]
 const priorities = [{ value: 1, label: t('workOrder.priorityLow') }, { value: 2, label: t('workOrder.priorityMedium') }, { value: 3, label: t('workOrder.priorityHigh') }]
 const sourceTypes = [{ value: 0, label: t('workOrder.sourceCustomer') }, { value: 1, label: t('workOrder.sourceBusiness') }, { value: 2, label: t('workOrder.sourceContract') }]
-const rules = reactive({
+const rules = reactive<FormRules>({
   title: [{ required: true, message: t('workOrder.titleRequired'), trigger: 'blur' }],
   type: [{ required: true, message: t('workOrder.typeRequired'), trigger: 'change' }],
   priority: [{ required: true, message: t('workOrder.priorityRequired'), trigger: 'change' }],

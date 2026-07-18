@@ -121,7 +121,7 @@ const onAccountUnavailable = () => {
 }
 
 // 关闭弹窗
-const onBeforeDialogClose = async (onDone: () => {}) => {
+const onBeforeDialogClose = async (onDone: () => void) => {
   try {
     await message.confirm(t('draft.confirmClose'))
     onDone()

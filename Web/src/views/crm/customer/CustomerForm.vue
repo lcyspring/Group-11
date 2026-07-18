@@ -199,6 +199,7 @@
   </Dialog>
 </template>
 <script lang="ts" setup>
+import type { FormRules } from 'element-plus'
 import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import * as CustomerApi from '@/api/crm/customer'
 import * as AreaApi from '@/api/system/area'
@@ -237,7 +238,7 @@ const formData = ref({
   source: undefined,
   remark: undefined
 })
-const formRules = reactive({
+const formRules = reactive<FormRules>({
   name: [
     { required: true, message: t('nameRequired'), trigger: 'blur' },
     { max: 100, message: t('nameTooLong'), trigger: 'blur' }

@@ -86,7 +86,7 @@ export default defineComponent({
                   color={dict?.cssClass && isHexColor(dict?.cssClass) ? dict?.cssClass : ''}
                   disableTransitions={true}
                 >
-                  {getI18nLabel(props.type, dict.value, dict?.label || '')}
+                  {getI18nLabel(props.type, String(dict.value), dict?.label || '')}
                 </ElTag>
               )
             }

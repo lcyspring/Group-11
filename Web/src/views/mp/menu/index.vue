@@ -2,7 +2,7 @@
   <doc-alert title="公众号菜单" url="https://doc.iocoder.cn/mp/menu/" />
   <!-- 搜索工作栏 -->
   <ContentWrap>
-    <el-form class="-mb-15px" :model="queryParams" label-width="auto">
+    <el-form class="-mb-15px" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('account.title')" prop="accountId">

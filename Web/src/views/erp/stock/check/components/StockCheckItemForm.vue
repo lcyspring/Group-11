@@ -93,7 +93,7 @@
       </el-table-column>
       <el-table-column :label="t('profitLossCount')" prop="count" fixed="right" min-width="110">
         <template #default="{ row, $index }">
-          <el-form-item :prop="`${$index}.count`" :rules="formRules.count" class="mb-0px!">
+          <el-form-item :prop="`${$index}.count`" class="mb-0px!">
             <el-input
               disabled
               v-model="row.count"
@@ -142,6 +142,7 @@
   </el-row>
 </template>
 <script setup lang="ts">
+import type { FormInstance, SummaryMethod } from 'element-plus'
 import { ProductApi, ProductVO } from '@/api/erp/product/product'
 import { WarehouseApi, WarehouseVO } from '@/api/erp/stock/warehouse'
 import { StockApi } from '@/api/erp/stock/stock'
@@ -155,18 +156,17 @@ import {
 const { t } = useI18n('erp.stock.check')
 
 const props = defineProps<{
-  items: undefined
-  disabled: false
+  items?: any[]
+  disabled?: boolean
 }>()
 const formLoading = ref(false) // 表单的加载中
 const formData = ref([])
 const formRules = reactive({
-  inId: [{ required: true, message: t('checkIdRequired'), trigger: 'blur' }],
   warehouseId: [{ required: true, message: t('warehouseRequired'), trigger: 'blur' }],
   productId: [{ required: true, message: t('productRequired'), trigger: 'blur' }],
-  count: [{ required: true, message: t('countRequired'), trigger: 'blur' }]
+  actualCount: [{ required: true, message: t('countRequired'), trigger: 'blur' }]
 })
-const formRef = ref([]) // 表单 Ref
+const formRef = ref<FormInstance>() // 表单 Ref
 const productList = ref<ProductVO[]>([]) // 产品列表
 const warehouseList = ref<WarehouseVO[]>([]) // 仓库列表
 const defaultWarehouse = ref<WarehouseVO>(undefined) // 默认仓库
@@ -201,7 +201,7 @@ watch(
 )
 
 /** 合计 */
-const getSummaries = (param: SummaryMethodProps) => {
+const getSummaries = (param: Parameters<SummaryMethod<any>>[0]) => {
   const { columns, data } = param
   const sums: string[] = []
   columns.forEach((column, index) => {
@@ -274,7 +274,7 @@ const setStockCount = async (row) => {
 
 /** 表单校验 */
 const validate = () => {
-  return formRef.value.validate()
+  return formRef.value?.validate()
 }
 defineExpose({ validate })
 

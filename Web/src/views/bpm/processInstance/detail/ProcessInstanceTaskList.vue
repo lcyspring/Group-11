@@ -59,7 +59,6 @@
 import { dateFormatter, formatPast2 } from '@/utils/formatTime'
 import { propTypes } from '@/utils/propTypes'
 import { DICT_TYPE } from '@/utils/dict'
-import type { ApiAttrs } from '@form-create/element-ui/types/config'
 import { setConfAndFields2 } from '@/utils/formCreate'
 import * as TaskApi from '@/api/bpm/task'
 
@@ -74,7 +73,7 @@ const props = defineProps({
 const tasks = ref([]) // 流程任务的数组
 
 /** 查看表单 */
-const fApi = ref<ApiAttrs>() // form-create 的 API 操作类
+const fApi = ref<{ fapi: any }>() // form-create 的 API 操作类
 const taskForm = ref({
   rule: [],
   option: {},
@@ -88,7 +87,7 @@ const handleFormDetail = async (row: any) => {
   taskFormVisible.value = true
   // 隐藏提交、重置按钮，设置禁用只读
   await nextTick()
-  fApi.value.fapi.btn.show(false)
+  fApi.value?.fapi?.btn.show(false)
   fApi.value?.fapi?.resetBtn.show(false)
   fApi.value?.fapi?.disabled(true)
 }

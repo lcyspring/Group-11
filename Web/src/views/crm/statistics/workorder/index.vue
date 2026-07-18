@@ -24,7 +24,7 @@
 
   <el-row :gutter="16" v-loading="loading">
     <el-col v-for="card in summaryCards" :key="card.label" :xs="12" :sm="8" :lg="4">
-      <el-card shadow="never" class="mb-16px"><el-statistic :title="card.label" :value="card.value" /></el-card>
+      <el-card shadow="never" class="mb-16px"><el-statistic :title="card.label" :value="card.value" :suffix="card.suffix" /></el-card>
     </el-col>
   </el-row>
 
@@ -62,10 +62,10 @@ const summaryCards = computed(() => [
   { label: t('workOrder.processing'), value: summary.value.processingCount },
   { label: t('workOrder.completed'), value: summary.value.completedCount },
   { label: t('workOrder.returned'), value: summary.value.returnedCount },
-  { label: t('workOrder.completionRate'), value: summary.value.completionRate }
+  { label: t('workOrder.completionRate'), value: Number.parseFloat(summary.value.completionRate) || 0, suffix: '%' }
 ])
 
-const trendOptions = reactive<EChartsOption>({
+const trendOptions = shallowRef<EChartsOption>({
   tooltip: { trigger: 'axis' }, legend: {}, grid: { left: 30, right: 30, bottom: 20, containLabel: true },
   xAxis: { type: 'category', data: [] }, yAxis: { type: 'value', minInterval: 1 },
   series: [{ name: t('workOrder.created'), type: 'line', data: [], smooth: true }, { name: t('workOrder.completed'), type: 'line', data: [], smooth: true }]
@@ -83,9 +83,9 @@ const loadData = async () => {
     typeRows.value = types
     handlerRows.value = handlers
     const rows = trend as WorkOrderStatisticsTrend[]
-    ;(trendOptions.xAxis as any).data = rows.map(row => row.time)
-    ;(trendOptions.series as any[])[0].data = rows.map(row => row.createdCount)
-    ;(trendOptions.series as any[])[1].data = rows.map(row => row.completedCount)
+    ;(trendOptions.value.xAxis as any).data = rows.map(row => row.time)
+    ;(trendOptions.value.series as any[])[0].data = rows.map(row => row.createdCount)
+    ;(trendOptions.value.series as any[])[1].data = rows.map(row => row.completedCount)
     statisticsLineageRef.value?.markRefreshed()
   } finally { loading.value = false }
 }

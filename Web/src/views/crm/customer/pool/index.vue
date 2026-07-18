@@ -94,7 +94,7 @@
               <Icon class="mr-5px" icon="ep:search" />
               {{ t('common.search') }}
             </el-button>
-            <el-button @click="resetQuery(undefined)">
+            <el-button @click="resetQuery">
               <Icon class="mr-5px" icon="ep:refresh" />
               {{ t('common.reset') }}
             </el-button>

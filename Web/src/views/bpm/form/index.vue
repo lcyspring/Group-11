@@ -28,7 +28,7 @@
               <Icon class="mr-5px" icon="ep:refresh" />
               {{ t('common.reset') }}
             </el-button>
-            <el-button v-hasPermi="['bpm:form:create']" plain type="primary" @click="openForm">
+            <el-button v-hasPermi="['bpm:form:create']" plain type="primary" @click="openForm('create')">
               <Icon class="mr-5px" icon="ep:plus" />
               {{ t('common.add') }}
             </el-button>

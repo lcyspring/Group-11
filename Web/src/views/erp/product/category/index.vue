@@ -119,13 +119,6 @@
         </template>
       </el-table-column>
     </el-table>
-    <!-- 分页 -->
-    <Pagination
-      :total="total"
-      v-model:page="queryParams.pageNo"
-      v-model:limit="queryParams.pageSize"
-      @pagination="getList"
-    />
   </ContentWrap>
 
   <!-- 表单弹窗：添加/修改 -->
@@ -159,7 +152,7 @@ const exportLoading = ref(false) // 导出的加载中
 const getList = async () => {
   loading.value = true
   try {
-    const data = await ProductCategoryApi.getProductCategoryList(queryParams)
+    const data = await ProductCategoryApi.getProductCategoryList()
     list.value = handleTree(data, 'id', 'parentId')
   } finally {
     loading.value = false
@@ -168,7 +161,6 @@ const getList = async () => {
 
 /** 搜索按钮操作 */
 const handleQuery = () => {
-  queryParams.pageNo = 1
   getList()
 }
 

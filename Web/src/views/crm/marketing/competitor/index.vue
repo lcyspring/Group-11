@@ -154,16 +154,16 @@
         </el-radio-group>
       </el-form-item>
       <el-form-item :label="t('crm.marketing.strengths')" prop="strengths">
-        <el-input v-model="formData.strengths" maxlength="2000" rows="3" show-word-limit type="textarea" />
+        <el-input v-model="formData.strengths" maxlength="2000" :rows="3" show-word-limit type="textarea" />
       </el-form-item>
       <el-form-item :label="t('crm.marketing.weaknesses')" prop="weaknesses">
-        <el-input v-model="formData.weaknesses" maxlength="2000" rows="3" show-word-limit type="textarea" />
+        <el-input v-model="formData.weaknesses" maxlength="2000" :rows="3" show-word-limit type="textarea" />
       </el-form-item>
       <el-form-item :label="t('crm.marketing.strategy')" prop="strategy">
-        <el-input v-model="formData.strategy" maxlength="2000" rows="3" show-word-limit type="textarea" />
+        <el-input v-model="formData.strategy" maxlength="2000" :rows="3" show-word-limit type="textarea" />
       </el-form-item>
       <el-form-item :label="t('crm.marketing.remark')" prop="remark">
-        <el-input v-model="formData.remark" maxlength="1000" rows="2" show-word-limit type="textarea" />
+        <el-input v-model="formData.remark" maxlength="1000" :rows="2" show-word-limit type="textarea" />
       </el-form-item>
     </el-form>
     <template #footer>

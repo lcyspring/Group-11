@@ -135,14 +135,18 @@ defineOptions({ name: 'PointTableSelect' })
 
 const { t } = useI18n('mall.promotion.point') // 国际�?
 defineProps({
-  // 多选模�?  multiple: propTypes.bool.def(false)
+  // 多选模式
+  multiple: propTypes.bool.def(false)
 })
 
-// 列表的总页�?const total = ref(0)
-// 列表的数�?const list = ref<PointActivityVO[]>([])
+// 列表的总页数
+const total = ref(0)
+// 列表的数据
+const list = ref<PointActivityVO[]>([])
 // 列表的加载中
 const loading = ref(false)
-// 弹窗的是否展�?const dialogVisible = ref(false)
+// 弹窗是否展示
+const dialogVisible = ref(false)
 // 查询参数
 const queryParams = ref({
   pageNo: 1,
@@ -206,10 +210,12 @@ const resetQuery = () => {
   getList()
 }
 
-// 是否全�?const isCheckAll = ref(false)
+// 是否全选
+const isCheckAll = ref(false)
 // 全选框是否处于中间状态：不是全部选中 && 任意一个选中
 const isIndeterminate = ref(false)
-// 选中的活�?const checkedActivities = ref<PointActivityVO[]>([])
+// 选中的活动
+const checkedActivities = ref<PointActivityVO[]>([])
 // 选中状态：key为活动ID，value为是否选中
 const checkedStatus = ref<Record<string, boolean>>({})
 
@@ -233,7 +239,7 @@ const handleEmitChange = () => {
 
 /** 确认选择时的触发事件 */
 const emits = defineEmits<{
-  (e: CHANGE_EVENT, v: PointActivityVO | PointActivityVO[] | any): void
+  (e: typeof CHANGE_EVENT, v: PointActivityVO | PointActivityVO[]): void
 }>()
 
 /** 全�?全不�?*/

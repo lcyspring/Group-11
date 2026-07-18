@@ -235,7 +235,7 @@ const resetQuery = () => {
     pageNo: 1,
     pageSize: 10,
     name: undefined,
-    createTime: []
+    status: undefined
   }
   getList()
 }

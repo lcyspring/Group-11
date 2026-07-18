@@ -34,7 +34,7 @@
           :value="item.value"
           :label="item.value"
         >
-          {{ item.value === ApproveType.USER ? t('simpleDesigner.manualApproval') : item.value === ApproveType.AUTO_PASS ? t('simpleDesigner.autoPass') : t('simpleDesigner.autoReject') }}
+          {{ item.value === ApproveType.USER ? t('simpleDesigner.manualApproval') : item.value === ApproveType.AUTO_APPROVE ? t('simpleDesigner.autoPass') : t('simpleDesigner.autoReject') }}
         </el-radio>
       </el-radio-group>
     </div>

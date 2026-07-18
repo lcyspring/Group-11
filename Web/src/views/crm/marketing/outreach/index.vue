@@ -190,7 +190,7 @@
               v-model="formData.templateParams"
               :placeholder="t('crm.marketing.templateParamsHint')"
               maxlength="4000"
-              rows="4"
+              :rows="4"
               show-word-limit
               type="textarea"
             />

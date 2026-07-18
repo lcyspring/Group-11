@@ -25,25 +25,29 @@
 
 <script lang="ts" setup>
 import { DICT_TYPE } from '@/utils/dict'
+import type { ContactVO } from '@/api/crm/contact'
 
 const { t } = useI18n('crm') // 国际化
+const { push } = useRouter()
+const openDetail = (id: number) => push({ name: 'CrmContactDetail', params: { id } })
 
 const props = defineProps<{
-  contacts: undefined
+  contacts?: ContactVO[]
 }>()
-const formData = ref([])
+const formData = ref<ContactVO[]>([])
 
 /** 初始化联系人列表 */
 watch(
   () => props.contacts,
   async (val) => {
-    formData.value = val
+    formData.value = val || []
   },
   { immediate: true }
 )
 
 /** 删除按钮操作 */
-const handleDelete = (index: number) => {
-  formData.value.splice(index, 1)
+const handleDelete = (id: number) => {
+  const index = formData.value.findIndex((item) => item.id === id)
+  if (index >= 0) formData.value.splice(index, 1)
 }
 </script>

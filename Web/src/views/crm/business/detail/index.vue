@@ -8,7 +8,7 @@
     </el-button>
     <el-button
       v-if="permissionListRef?.validateWrite"
-      :disabled="business.endStatus"
+      :disabled="Boolean(business.endStatus)"
       type="success"
       @click="openStatusForm()"
     >

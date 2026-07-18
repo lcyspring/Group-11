@@ -50,18 +50,6 @@
       </el-row>
       <el-row :gutter="20">
         <el-col :span="8">
-          <el-form-item :label="t('transfer.type')" prop="type">
-        <el-select v-model="queryParams.type" :placeholder="t('transfer.typePlaceholder')" clearable class="!w-240px">
-          <el-option
-            v-for="dict in getStrDictOptions(DICT_TYPE.PAY_TRANSFER_TYPE)"
-            :key="dict.value"
-            :label="dict.label"
-            :value="dict.value"
-          />
-        </el-select>
-      </el-form-item>
-        </el-col>
-        <el-col :span="8">
           <el-form-item :label="t('transfer.status')" prop="status">
         <el-select
           v-model="queryParams.status"
@@ -242,13 +230,14 @@ const queryParams = reactive({
   channelId: null,
   channelCode: null,
   merchantTransferId: null,
-  type: null,
   status: null,
   successTime: [],
   price: null,
   subject: null,
   userName: null,
   userAccount: null,
+  accountNo: null,
+  channelTransferNo: null,
   createTime: []
 })
 const queryFormRef = ref() // 搜索的表单

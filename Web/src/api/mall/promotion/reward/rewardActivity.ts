@@ -5,7 +5,7 @@ export interface RewardActivityVO {
   name?: string
   startTime?: Date
   endTime?: Date
-  startAndEndTime?: Date[] // 只前端使用
+  startAndEndTime?: [Date, Date] // 只前端使用
   remark?: string
   conditionType?: number
   productScope?: number

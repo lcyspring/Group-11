@@ -22,19 +22,20 @@ export interface ImageVO {
 export interface ImageDrawReqVO {
   prompt: string // 提示词
   modelId: number // 模型
-  style: string // 图像生成的风格
-  width: string // 图片宽度
-  height: string // 图片高度
+  style?: string // 图像生成的风格
+  width: string | number // 图片宽度
+  height: string | number // 图片高度
   options: object // 绘制参数，Map<String, String>
 }
 
 export interface ImageMidjourneyImagineReqVO {
   prompt: string // 提示词
   modelId: number // 模型
-  base64Array: string[] // size不能为空
+  base64Array?: string[] // 参考图的 Base64 列表
   width: string // 图片宽度
   height: string // 图片高度
   version: string // 版本
+  referImageUrl?: string // 参考图地址
 }
 
 export interface ImageMidjourneyActionVO {

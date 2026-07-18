@@ -169,6 +169,6 @@ const handleDelete = async (id: number) => {
 onMounted(async () => {
   await getList()
   // 属性项下拉框数据
-  propertyOptions.value.push(await PropertyApi.getProperty(queryParams.propertyId))
+  propertyOptions.value.push(await PropertyApi.getProperty(Number(queryParams.propertyId)))
 })
 </script>

@@ -116,7 +116,7 @@ const getUserData = async (id: number) => {
 const { currentRoute } = useRouter() // 路由
 const { delView } = useTagsViewStore() // 视图操作
 const route = useRoute()
-const id = route.params.id
+const id = Number(route.params.id)
 /* 用户钱包相关信息 */
 const WALLET_INIT_DATA = {
   balance: 0,
@@ -136,7 +136,7 @@ const getUserWallet = async () => {
 }
 
 onMounted(() => {
-  if (!id) {
+  if (!Number.isFinite(id) || id <= 0) {
     ElMessage.warning(t('detail.paramError'))
     delView(unref(currentRoute))
     return

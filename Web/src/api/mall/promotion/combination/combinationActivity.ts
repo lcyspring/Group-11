@@ -4,6 +4,7 @@ import { Sku, Spu } from '@/api/mall/product/spu'
 export interface CombinationActivityVO {
   id?: number
   name?: string
+  picUrl?: string
   spuId?: number
   totalLimitCount?: number
   singleLimitCount?: number

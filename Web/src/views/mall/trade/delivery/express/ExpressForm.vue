@@ -133,8 +133,10 @@ const submitForm = async () => {
 const resetForm = () => {
   formData.value = {
     id: undefined,
+    code: '',
     name: '',
-    picUrl: '',
+    logo: '',
+    sort: 0,
     status: CommonStatusEnum.ENABLE
   }
   formRef.value?.resetFields()

@@ -21,7 +21,6 @@
               :start-placeholder="t('common.startTimeText')"
               range-separator="-"
               type="datetimerange"
-              value-format="x"
             />
           </el-form-item>
         </el-col>
