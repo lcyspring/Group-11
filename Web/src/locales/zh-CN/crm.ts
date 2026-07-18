@@ -69,6 +69,8 @@ export default {
     poolDay: '距离进入公海天数',
     ownerUserDeptName: '所属部门',
     dayUnit: '天',
+    businessCount: '商机数量',
+    totalDealAmount: '成交总金额',
     exportFileName: '客户',
     poolExportFileName: '客户公海',
     // Tab标签
@@ -90,6 +92,14 @@ export default {
     levelDistribution: '等级分布',
     sourceDistribution: '来源分布',
     industryDistribution: '行业分布',
+    businessStatusDistribution: '商机状态分布',
+    businessAmountDistribution: '商机金额分布',
+    customerLevelDistribution: '客户等级分布',
+    customerSourceDistribution: '客户来源分布',
+    customerIndustryDistribution: '客户行业分布',
+    customerStatusDistribution: '客户状态分布',
+    businessStatus: '商机状态',
+    businessAmount: '商机金额',
     contactTab: '联系人',
     teamMemberTab: '团队成员',
     businessTab: '商机',
@@ -108,6 +118,14 @@ export default {
     putPoolConfirm: '确定将客户【{name}】放入公海吗？',
     putPoolSuccess: '客户【{name}】放入公海成功',
     paramError: '参数错误，客户不能为空！',
+    // 星级评估
+    starAssessment: '星级评估',
+    starAssessmentTitle: '客户星级评估',
+    star: '星级',
+    starRequired: '星级不能为空',
+    autoAssess: '自动评估',
+    starAssessmentSuccess: '星级评估成功',
+    starAssessmentRemarkPlaceholder: '请输入评估备注',
     // 配额限制配置
     limitConfig: {
       title: '客户数量限制配置',

@@ -203,4 +203,22 @@ public interface CrmCustomerService {
      */
     CrmCustomerDuplicateCheckRespVO checkDuplicate(CrmCustomerDuplicateCheckReqVO reqVO);
 
+    /**
+     * 评估客户星级
+     *
+     * @param reqVO 评估请求
+     * @param userId 用户编号
+     * @return 评估结果
+     */
+    CrmCustomerStarAssessmentRespVO assessCustomerStar(CrmCustomerStarAssessmentReqVO reqVO, Long userId);
+
+    /**
+     * 自动评估客户星级
+     *
+     * @param id 客户编号
+     * @param userId 用户编号
+     * @return 评估结果
+     */
+    CrmCustomerStarAssessmentRespVO autoAssessCustomerStar(Long id, Long userId);
+
 }

@@ -165,6 +165,14 @@ public interface CrmBusinessService {
     Long getBusinessCountByCustomerId(Long customerId);
 
     /**
+     * 获取关联客户的商机成交总金额
+     *
+     * @param customerId 客户编号
+     * @return 成交总金额
+     */
+    Long getTotalDealAmountByCustomerId(Long customerId);
+
+    /**
      * 获得使用指定商机状态组的商机数量
      *
      * @param statusTypeId 商机状态组编号

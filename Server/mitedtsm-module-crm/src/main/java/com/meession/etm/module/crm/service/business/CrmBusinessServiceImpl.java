@@ -368,6 +368,11 @@ public class CrmBusinessServiceImpl implements CrmBusinessService {
     }
 
     @Override
+    public Long getTotalDealAmountByCustomerId(Long customerId) {
+        return businessMapper.selectTotalDealAmountByCustomerId(customerId);
+    }
+
+    @Override
     public Long getBusinessCountByStatusTypeId(Long statusTypeId) {
         return businessMapper.selectCountByStatusTypeId(statusTypeId);
     }

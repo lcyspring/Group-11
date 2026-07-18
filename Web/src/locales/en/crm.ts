@@ -69,6 +69,8 @@ export default {
     poolDay: 'Days to Pool',
     ownerUserDeptName: 'Department',
     dayUnit: 'days',
+    businessCount: 'Business Count',
+    totalDealAmount: 'Total Deal Amount',
     exportFileName: 'customer',
     poolExportFileName: 'customer_pool',
     // Tab labels
@@ -90,6 +92,14 @@ export default {
     levelDistribution: 'Level Distribution',
     sourceDistribution: 'Source Distribution',
     industryDistribution: 'Industry Distribution',
+    businessStatusDistribution: 'Business Status Distribution',
+    businessAmountDistribution: 'Business Amount Distribution',
+    customerLevelDistribution: 'Customer Level Distribution',
+    customerSourceDistribution: 'Customer Source Distribution',
+    customerIndustryDistribution: 'Customer Industry Distribution',
+    customerStatusDistribution: 'Customer Status Distribution',
+    businessStatus: 'Business Status',
+    businessAmount: 'Business Amount',
     contactTab: 'Contacts',
     teamMemberTab: 'Team Members',
     businessTab: 'Business',
@@ -108,6 +118,14 @@ export default {
     putPoolConfirm: 'Are you sure to put customer [{name}] into pool?',
     putPoolSuccess: 'Put customer [{name}] into pool successfully',
     paramError: 'Parameter error, customer cannot be empty!',
+    // Star assessment
+    starAssessment: 'Star Assessment',
+    starAssessmentTitle: 'Customer Star Assessment',
+    star: 'Star',
+    starRequired: 'Star cannot be empty',
+    autoAssess: 'Auto Assess',
+    starAssessmentSuccess: 'Star assessment successfully',
+    starAssessmentRemarkPlaceholder: 'Please enter assessment remark',
     // Limit config
     limitConfig: {
       title: 'Customer Limit Config',

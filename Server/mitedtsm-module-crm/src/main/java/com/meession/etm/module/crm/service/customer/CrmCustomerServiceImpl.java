@@ -841,4 +841,200 @@ public class CrmCustomerServiceImpl implements CrmCustomerService {
         }
     }
 
+    // ==================== 星级评估 ====================
+
+    @Override
+    @LogRecord(type = CRM_CUSTOMER_TYPE, subType = CRM_CUSTOMER_STAR_ASSESSMENT_SUB_TYPE, bizNo = "{{#reqVO.id}}",
+            success = CRM_CUSTOMER_STAR_ASSESSMENT_SUCCESS)
+    @CrmPermission(bizType = CrmBizTypeEnum.CRM_CUSTOMER, bizId = "#reqVO.id", level = CrmPermissionLevelEnum.WRITE)
+    public CrmCustomerStarAssessmentRespVO assessCustomerStar(CrmCustomerStarAssessmentReqVO reqVO, Long userId) {
+        CrmCustomerDO customer = validateCustomerExists(reqVO.getId());
+
+        customerMapper.updateById(new CrmCustomerDO().setId(reqVO.getId()).setLevel(reqVO.getStar()));
+
+        AdminUserRespDTO assessor = adminUserApi.getUser(userId);
+
+        CrmCustomerStarAssessmentRespVO respVO = buildStarAssessmentRespVO(customer, reqVO.getStar(), reqVO.getRemark(), assessor);
+
+        LogRecordContext.putVariable("customerName", customer.getName());
+        LogRecordContext.putVariable("star", reqVO.getStar());
+
+        return respVO;
+    }
+
+    @Override
+    @LogRecord(type = CRM_CUSTOMER_TYPE, subType = CRM_CUSTOMER_STAR_ASSESSMENT_SUB_TYPE, bizNo = "{{#id}}",
+            success = CRM_CUSTOMER_STAR_ASSESSMENT_SUCCESS)
+    @CrmPermission(bizType = CrmBizTypeEnum.CRM_CUSTOMER, bizId = "#id", level = CrmPermissionLevelEnum.WRITE)
+    public CrmCustomerStarAssessmentRespVO autoAssessCustomerStar(Long id, Long userId) {
+        CrmCustomerDO customer = validateCustomerExists(id);
+
+        AssessmentScore score = calculateCustomerScore(customer);
+
+        int star = calculateStar(score.getTotalScore());
+
+        customerMapper.updateById(new CrmCustomerDO().setId(id).setLevel(star));
+
+        AdminUserRespDTO assessor = adminUserApi.getUser(userId);
+
+        CrmCustomerStarAssessmentRespVO.AssessmentDimension dimension = new CrmCustomerStarAssessmentRespVO.AssessmentDimension();
+        dimension.setDealAmountScore(score.getDealAmountScore());
+        dimension.setDealCountScore(score.getDealCountScore());
+        dimension.setFollowScore(score.getFollowScore());
+        dimension.setLevelScore(score.getLevelScore());
+        dimension.setSourceScore(score.getSourceScore());
+        dimension.setStatusScore(score.getStatusScore());
+
+        CrmCustomerStarAssessmentRespVO respVO = buildStarAssessmentRespVO(customer, star, "系统自动评估", assessor);
+        respVO.setScore(score.getTotalScore());
+        respVO.setDimension(dimension);
+
+        LogRecordContext.putVariable("customerName", customer.getName());
+        LogRecordContext.putVariable("star", star);
+
+        return respVO;
+    }
+
+    private AssessmentScore calculateCustomerScore(CrmCustomerDO customer) {
+        AssessmentScore score = new AssessmentScore();
+
+        Long totalDealAmount = businessService.getTotalDealAmountByCustomerId(customer.getId());
+        if (totalDealAmount != null && totalDealAmount > 0) {
+            if (totalDealAmount >= 1000000) {
+                score.dealAmountScore = 25;
+            } else if (totalDealAmount >= 500000) {
+                score.dealAmountScore = 20;
+            } else if (totalDealAmount >= 100000) {
+                score.dealAmountScore = 15;
+            } else if (totalDealAmount >= 10000) {
+                score.dealAmountScore = 10;
+            } else {
+                score.dealAmountScore = 5;
+            }
+        }
+
+        int dealCount = businessService.getBusinessCountByCustomerId(customer.getId());
+        if (dealCount >= 5) {
+            score.dealCountScore = 20;
+        } else if (dealCount >= 3) {
+            score.dealCountScore = 15;
+        } else if (dealCount >= 1) {
+            score.dealCountScore = 10;
+        }
+
+        if (customer.getContactLastTime() != null) {
+            LocalDateTime oneMonthAgo = LocalDateTime.now().minusMonths(1);
+            LocalDateTime threeMonthsAgo = LocalDateTime.now().minusMonths(3);
+            if (customer.getContactLastTime().isAfter(oneMonthAgo)) {
+                score.followScore = 20;
+            } else if (customer.getContactLastTime().isAfter(threeMonthsAgo)) {
+                score.followScore = 15;
+            } else {
+                score.followScore = 5;
+            }
+        }
+
+        if (customer.getLevel() != null) {
+            if (customer.getLevel() == 1) {
+                score.levelScore = 15;
+            } else if (customer.getLevel() == 2) {
+                score.levelScore = 10;
+            } else {
+                score.levelScore = 5;
+            }
+        }
+
+        if (customer.getSource() != null) {
+            score.sourceScore = 10;
+        }
+
+        if (customer.getStatus() != null) {
+            if (customer.getStatus() == 1) {
+                score.statusScore = 10;
+            } else if (customer.getStatus() == 2) {
+                score.statusScore = 8;
+            } else {
+                score.statusScore = 5;
+            }
+        }
+
+        return score;
+    }
+
+    private int calculateStar(int totalScore) {
+        if (totalScore >= 90) {
+            return 5;
+        } else if (totalScore >= 75) {
+            return 4;
+        } else if (totalScore >= 60) {
+            return 3;
+        } else if (totalScore >= 40) {
+            return 2;
+        } else {
+            return 1;
+        }
+    }
+
+    private CrmCustomerStarAssessmentRespVO buildStarAssessmentRespVO(CrmCustomerDO customer, Integer star, String remark, AdminUserRespDTO assessor) {
+        CrmCustomerStarAssessmentRespVO respVO = new CrmCustomerStarAssessmentRespVO();
+        respVO.setId(customer.getId());
+        respVO.setName(customer.getName());
+        respVO.setStar(star);
+        respVO.setStarName(getStarName(star));
+        respVO.setRemark(remark);
+        respVO.setAssessmentTime(LocalDateTime.now());
+        if (assessor != null) {
+            respVO.setAssessorName(assessor.getNickname());
+        }
+        return respVO;
+    }
+
+    private String getStarName(Integer star) {
+        return switch (star) {
+            case 1 -> "一星客户";
+            case 2 -> "二星客户";
+            case 3 -> "三星客户";
+            case 4 -> "四星客户";
+            case 5 -> "五星客户";
+            default -> "未评级";
+        };
+    }
+
+    private static class AssessmentScore {
+        private int dealAmountScore = 0;
+        private int dealCountScore = 0;
+        private int followScore = 0;
+        private int levelScore = 0;
+        private int sourceScore = 0;
+        private int statusScore = 0;
+
+        public int getTotalScore() {
+            return dealAmountScore + dealCountScore + followScore + levelScore + sourceScore + statusScore;
+        }
+
+        public int getDealAmountScore() {
+            return dealAmountScore;
+        }
+
+        public int getDealCountScore() {
+            return dealCountScore;
+        }
+
+        public int getFollowScore() {
+            return followScore;
+        }
+
+        public int getLevelScore() {
+            return levelScore;
+        }
+
+        public int getSourceScore() {
+            return sourceScore;
+        }
+
+        public int getStatusScore() {
+            return statusScore;
+        }
+    }
+
 }

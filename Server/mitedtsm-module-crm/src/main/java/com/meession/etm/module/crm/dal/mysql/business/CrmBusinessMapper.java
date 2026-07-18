@@ -71,4 +71,10 @@ public interface CrmBusinessMapper extends BaseMapperX<CrmBusinessDO> {
                 .betweenIfPresent(CrmBusinessDO::getCreateTime, pageVO.getTimes()));
     }
 
+    default Long selectTotalDealAmountByCustomerId(Long customerId) {
+        return selectSum(CrmBusinessDO::getTotalPrice,
+                new LambdaQueryWrapperX<CrmBusinessDO>()
+                        .eq(CrmBusinessDO::getCustomerId, customerId));
+    }
+
 }

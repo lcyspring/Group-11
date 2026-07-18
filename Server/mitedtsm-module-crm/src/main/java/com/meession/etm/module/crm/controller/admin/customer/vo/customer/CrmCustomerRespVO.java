@@ -132,4 +132,10 @@ public class CrmCustomerRespVO {
     @Schema(description = "距离加入公海时间", example = "1")
     private Long poolDay;
 
+    @Schema(description = "商机数量", example = "5")
+    private Long businessCount;
+
+    @Schema(description = "成交总金额", example = "1000000")
+    private Long totalDealAmount;
+
 }

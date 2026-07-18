@@ -15,6 +15,7 @@ import com.meession.etm.framework.ip.core.utils.AreaUtils;
 import com.meession.etm.module.crm.controller.admin.customer.vo.customer.*;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerPoolConfigDO;
+import com.meession.etm.module.crm.service.business.CrmBusinessService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerPoolConfigService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
 import com.meession.etm.module.system.api.dept.DeptApi;
@@ -56,6 +57,8 @@ public class CrmCustomerController {
     private CrmCustomerService customerService;
     @Resource
     private CrmCustomerPoolConfigService customerPoolConfigService;
+    @Resource
+    private CrmBusinessService businessService;
 
     @Resource
     private DeptApi deptApi;
@@ -139,6 +142,13 @@ public class CrmCustomerController {
         Map<Long, DeptRespDTO> deptMap = deptApi.getDeptMap(convertSet(userMap.values(), AdminUserRespDTO::getDeptId));
         // 1.2 获取距离进入公海的时间
         Map<Long, Long> poolDayMap = getPoolDayMap(list);
+        // 1.3 获取商机数量和成交金额
+        Map<Long, Long> businessCountMap = MapUtils.newHashMap();
+        Map<Long, Long> totalDealAmountMap = MapUtils.newHashMap();
+        list.forEach(customer -> {
+            businessCountMap.put(customer.getId(), businessService.getBusinessCountByCustomerId(customer.getId()));
+            totalDealAmountMap.put(customer.getId(), businessService.getTotalDealAmountByCustomerId(customer.getId()));
+        });
         // 2. 转换成 VO
         return BeanUtils.toBean(list, CrmCustomerRespVO.class, customerVO -> {
             customerVO.setAreaName(AreaUtils.format(customerVO.getAreaId()));
@@ -153,6 +163,9 @@ public class CrmCustomerController {
             if (customerVO.getOwnerUserId() != null) {
                 customerVO.setPoolDay(poolDayMap.get(customerVO.getId()));
             }
+            // 2.3 设置商机数量和成交金额
+            customerVO.setBusinessCount(businessCountMap.get(customerVO.getId()));
+            customerVO.setTotalDealAmount(totalDealAmountMap.get(customerVO.getId()));
         });
     }
 
@@ -318,6 +331,20 @@ public class CrmCustomerController {
     @PreAuthorize("@ss.hasPermission('crm:customer:query')")
     public CommonResult<CrmCustomerDuplicateCheckRespVO> checkDuplicate(@Valid @RequestBody CrmCustomerDuplicateCheckReqVO reqVO) {
         return success(customerService.checkDuplicate(reqVO));
+    }
+
+    @PostMapping("/star-assessment")
+    @Operation(summary = "评估客户星级")
+    @PreAuthorize("@ss.hasPermission('crm:customer:update')")
+    public CommonResult<CrmCustomerStarAssessmentRespVO> assessCustomerStar(@Valid @RequestBody CrmCustomerStarAssessmentReqVO reqVO) {
+        return success(customerService.assessCustomerStar(reqVO, getLoginUserId()));
+    }
+
+    @PostMapping("/star-assessment/auto")
+    @Operation(summary = "自动评估客户星级")
+    @PreAuthorize("@ss.hasPermission('crm:customer:update')")
+    public CommonResult<CrmCustomerStarAssessmentRespVO> autoAssessCustomerStar(@RequestParam("id") Long id) {
+        return success(customerService.autoAssessCustomerStar(id, getLoginUserId()));
     }
 
 }

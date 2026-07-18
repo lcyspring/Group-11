@@ -36,6 +36,13 @@
     >
       {{ t('putPool') }}
     </el-button>
+    <el-button
+      v-if="permissionListRef?.validateWrite"
+      v-hasPermi="['crm:customer:update']"
+      @click="handleStarAssessment"
+    >
+      {{ t('starAssessment') }}
+    </el-button>
   </CustomerDetailsHeader>
   <el-col>
     <el-tabs>
@@ -88,6 +95,7 @@
   <CustomerForm ref="formRef" @success="getCustomer" />
   <CustomerDistributeForm ref="distributeForm" @success="getCustomer" />
   <CrmTransferForm ref="transferFormRef" :biz-type="BizTypeEnum.CRM_CUSTOMER" @success="close" />
+  <CustomerStarAssessmentForm ref="starAssessmentFormRef" @success="getCustomer" />
 </template>
 <script lang="ts" setup>
 import { useTagsViewStore } from '@/store/modules/tagsView'
@@ -108,6 +116,7 @@ import { BizTypeEnum } from '@/api/crm/permission'
 import type { OperateLogVO } from '@/api/system/operatelog'
 import { getOperateLogPage } from '@/api/crm/operateLog'
 import CustomerDistributeForm from '@/views/crm/customer/pool/CustomerDistributeForm.vue'
+import CustomerStarAssessmentForm from '@/views/crm/customer/CustomerStarAssessmentForm.vue'
 
 defineOptions({ name: 'CrmCustomerDetail' })
 
@@ -186,6 +195,12 @@ const handleReceive = async () => {
 const distributeForm = ref<InstanceType<typeof CustomerDistributeForm>>() // 分配客户表单 Ref
 const handleDistributeForm = async () => {
   distributeForm.value?.open(customerId.value)
+}
+
+/** 星级评估 */
+const starAssessmentFormRef = ref<InstanceType<typeof CustomerStarAssessmentForm>>() // 星级评估表单 Ref
+const handleStarAssessment = () => {
+  starAssessmentFormRef.value?.open(customerId.value, customer.value.name, customer.value.level)
 }
 
 /** 客户放入公海 */

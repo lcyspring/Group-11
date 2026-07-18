@@ -11,6 +11,7 @@ export interface CustomerVO {
   ownerUserId: number // 负责人的用户编号
   ownerUserName?: string // 负责人的用户名称
   ownerUserDept?: string // 负责人的部门名称
+  ownerUserDeptName?: string // 负责人的部门名称
   lockStatus?: boolean
   dealStatus?: boolean
   mobile: string // 手机号
@@ -30,6 +31,8 @@ export interface CustomerVO {
   creatorName?: string // 创建人名称
   createTime: Date // 创建时间
   updateTime: Date // 更新时间
+  businessCount?: number // 商机数量
+  totalDealAmount?: number // 成交总金额
 }
 
 // 查询客户列表
@@ -130,4 +133,14 @@ export const distributeCustomer = async (ids: any[], ownerUserId: number) => {
 // 客户放入公海
 export const putCustomerPool = async (id: number) => {
   return await request.put({ url: `/crm/customer/put-pool?id=${id}` })
+}
+
+// 评估客户星级
+export const assessCustomerStar = async (data: { id: number; star: number; remark?: string }) => {
+  return await request.post({ url: `/crm/customer/star-assessment`, data })
+}
+
+// 自动评估客户星级
+export const autoAssessCustomerStar = async (id: number) => {
+  return await request.post({ url: `/crm/customer/star-assessment/auto`, params: { id } })
 }

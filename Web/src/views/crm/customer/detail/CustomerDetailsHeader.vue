@@ -30,6 +30,10 @@
       <el-descriptions-item :label="t('common.createTime')">
         {{ formatDate(customer.createTime) }}
       </el-descriptions-item>
+      <el-descriptions-item :label="t('businessCount')">{{ customer.businessCount || 0 }}</el-descriptions-item>
+      <el-descriptions-item :label="t('totalDealAmount')">
+        <span>{{ customer.totalDealAmount ? formatPrice(customer.totalDealAmount) : '0.00' }}</span>
+      </el-descriptions-item>
     </el-descriptions>
   </ContentWrap>
 </template>
@@ -37,6 +41,7 @@
 import { DICT_TYPE } from '@/utils/dict'
 import * as CustomerApi from '@/api/crm/customer'
 import { formatDate } from '@/utils/formatTime'
+import { formatPriceWithCurrency } from '@/utils/formatter'
 
 defineOptions({ name: 'CrmCustomerDetailsHeader' })
 const { t } = useI18n('crm.customer') // 国际化
