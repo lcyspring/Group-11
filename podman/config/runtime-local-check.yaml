@@ -33,10 +33,10 @@ network:
 image:
   source: auto
   archive_dir: ../images
-  redis_base: docker.io/library/redis:6-alpine
-  rabbitmq_base: docker.io/library/rabbitmq:3-management-alpine
-  tdengine_base: docker.io/tdengine/tdengine:3.3.6.0
-  mysql_base: docker.io/library/mysql:8.0
+  redis_base: docker.io/library/redis:6.2.22-alpine@sha256:60bbb39b25ee8311cfcefd599888ee5de5f2ffe0914b3351064fd2fa9af6c5a3
+  rabbitmq_base: docker.io/library/rabbitmq:3.13.7-management-alpine@sha256:3c498e636fd64462480c5f9ff842eb224ab84160a8ada1ded5375e9569e9230c
+  tdengine_base: docker.io/tdengine/tdengine:3.3.6.0@sha256:8a4ab7a4843066939d94d5b2d73f7f56292fe463aee76359aaad3adb44090203
+  mysql_base: docker.io/library/mysql:8.0.46@sha256:62fb722c78b24245ddff1796a0fcee4a49cc5b87e0aaaf20c92d1da9e0a2497b
   init_runtime: localhost/mitedtsm-rootless-init-service:latest
   server_runtime: localhost/mitedtsm-rootless-server:latest
   web_runtime: localhost/mitedtsm-rootless-web:latest

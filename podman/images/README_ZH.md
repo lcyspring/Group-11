@@ -8,17 +8,17 @@
 
 | YAML 字段/镜像 | 上游来源 | 项目内作用 | 使用方式 |
 |---|---|---|---|
-| `image.runtime_base`：`docker.io/library/eclipse-temurin:17-jdk` | Docker Hub 官方镜像库的 Eclipse Temurin JDK 17 | `InitService` 与 Server 项目运行镜像的 Java 基座 | `build-images.sh` 封装项目镜像时读取 |
-| `image.mysql_base`：`docker.io/library/mysql:8.0` | Docker Hub 官方 MySQL 镜像 | 直接承载项目数据库；部署脚本从仓库通过 stdin provision SQL | 作为运行容器直接启动，不生成项目 MySQL 镜像 |
-| `image.redis_base`：`docker.io/library/redis:6-alpine` | Docker Hub 官方 Redis 镜像 | CRM/系统缓存 | 作为运行容器直接启动 |
-| `image.rabbitmq_base`：`docker.io/library/rabbitmq:3-management-alpine` | Docker Hub 官方 RabbitMQ 镜像 | 异步消息与管理探针 | 作为运行容器直接启动 |
-| `image.tdengine_base`：`docker.io/tdengine/tdengine:3.3.6.0` | Docker Hub TDengine 官方仓库 | IoT 时序数据依赖；不是 CRM 业务真源 | 作为运行容器直接启动 |
-| `image.nginx_base`：`docker.io/library/nginx:stable-alpine` | Docker Hub 官方 Nginx 镜像 | 分别承载 Web 与 Mall 静态产物，并反代管理 API | 构建两个独立前端运行镜像 |
+| `image.runtime_base`：Temurin `17.0.19_10-jdk` + digest | Docker Hub 官方 Eclipse Temurin | `InitService` 与 Server 的 Java 基座 | 精确版本和 digest 双固定 |
+| `image.mysql_base`：MySQL `8.0.46` + digest | Docker Hub 官方 MySQL | 直接承载数据库，部署期 stdin provision SQL | 精确版本和 digest 双固定 |
+| `image.redis_base`：Redis `6.2.22-alpine` + digest | Docker Hub 官方 Redis | CRM/系统缓存 | 精确版本和 digest 双固定 |
+| `image.rabbitmq_base`：RabbitMQ `3.13.7-management-alpine` + digest | Docker Hub 官方 RabbitMQ | 异步消息与管理探针 | 精确版本和 digest 双固定 |
+| `image.tdengine_base`：TDengine `3.3.6.0` + digest | Docker Hub TDengine 官方仓库 | IoT 时序依赖；不是 CRM 真源 | 精确版本和 digest 双固定 |
+| `image.nginx_base`：Nginx `1.30.0-alpine` + digest | Docker Hub 官方 Nginx | Web/Mall 静态运行镜像 | 精确版本和 digest 双固定 |
 | 构建 `image.base`：`docker.io/library/ubuntu:26.04` | Docker Hub 官方 Ubuntu 镜像 | 两类统一编译工具链的操作系统基座 | 只用于构建镜像，不作为业务服务 |
 
 这里的“官方”指对应上游在 Docker Hub 发布的镜像，不表示项目自行维护。版本来源完全由 YAML
 指定；在线环境按 `image.source` 拉取，离线环境从本目录 OCI archive 加载。共享环境如需更严格的
-供应链固定，可把 YAML 标签升级为 digest 引用，脚本不会隐式替换来源。
+供应链固定已使用可读精确标签与 sha256 digest 双引用；升级必须显式修改 YAML、重新验证并更新清单。
 
 ### 项目运行镜像
 

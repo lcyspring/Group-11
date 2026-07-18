@@ -26,6 +26,7 @@
 | Pay 测试结果 | 167 个，132 通过、35 个外部集成跳过、失败 0、错误 0 |
 | Pay 覆盖率 | 指令 23.81%、分支 18.74%、行 24.57%、方法 22.96% |
 | 公共工具链 | `ghcr.io/elel-code/group-11-build-ubuntu:26.04`，依赖在容器运行时解析 |
+| 运行基础镜像 | Temurin、Nginx、MySQL、Redis、RabbitMQ、TDengine 均已使用精确版本 + digest |
 
 ## P1：前端构建告警治理
 
@@ -51,6 +52,10 @@
 | Nginx/RabbitMQ 浮动标签 → 精确标签或 digest | 相同 YAML 在不同时间可能拉到不同内容 | 镜像来源清单、代理/健康探针、消息积压与恢复回归 |
 | JDK 17 → 下一 LTS | Spring/Flowable/MyBatis、插件与反射兼容 | 全 reactor 编译、CRM 532+、BPM/System/Infra、启动与内存基线 |
 | MySQL 8.0 后续线 | 排序规则、认证插件、保留字和升级路径 | 备份/隔离恢复、343+ 表 bootstrap、388 表兼容迁移、财务与统计对账 |
+
+当前版本固定已完成：Temurin 17.0.19、Nginx 1.30.0、MySQL 8.0.46、Redis 6.2.22、RabbitMQ
+3.13.7、TDengine 3.3.6.0 均带 sha256 digest。此项只消除浮动来源，不等同于完成 Redis/JDK/MySQL
+大版本升级；后者仍需表中专项门禁。
 
 ## 执行顺序
 

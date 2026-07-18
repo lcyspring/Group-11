@@ -134,6 +134,15 @@ if rg -q '^  (engine|server|init_service|web): (standard|hbuilderx|true|false)$'
     "${PODMAN_DIR}/config" --glob '*.yaml'; then
     fail 'legacy engine or per-artifact build whitelist remains in a compile configuration'
 fi
+if rg --pcre2 -n '^(ARG (RUNTIME|NGINX)_BASE_IMAGE=docker\.io/|  (runtime|nginx|redis|rabbitmq|tdengine|mysql)_base: docker\.io/)(?!.*@sha256:[0-9a-f]{64}$)' \
+    "${PODMAN_DIR}/Containerfile" \
+    "${PODMAN_DIR}/config/runtime-local-check.yaml" \
+    "${PODMAN_DIR}/config/runtime-images-check.yaml" \
+    "${PODMAN_DIR}/config/runtime-images.example.yaml" \
+    "${PODMAN_DIR}/config/runtime-images-server.example.yaml" \
+    "${PODMAN_DIR}/config/runtime-images-web.example.yaml"; then
+    fail 'tracked runtime base images must use an exact version plus sha256 digest'
+fi
 
 bash "${PODMAN_DIR}/operations/database/database-backup.sh" "${PODMAN_DIR}/config/database-backup-check.yaml"
 bash "${PODMAN_DIR}/operations/database/database-restore.sh" "${PODMAN_DIR}/config/database-backup-check.yaml"

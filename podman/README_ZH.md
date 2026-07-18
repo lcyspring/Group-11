@@ -65,7 +65,7 @@ Web、Mall 及单组件更新均使用 `podman run --replace`。只有 `stop.sh`
 - `ghcr.io/elel-code` 下两个编译工具链镜像当前为 public，pull 无需登录，push 仍需维护者登录；
 - Server/Web/Mall 项目运行镜像只能在编译成功后由 `build-images.sh` 独立封装；`deploy.sh`
   不读取源码产物，也不执行镜像构建。
-- MySQL 直接使用 `docker.io/library/mysql:8.0`；`database/` SQL 留在仓库，由 `deploy.sh` 在部署期
+- MySQL 直接使用 YAML 中固定到 `8.0.46 + sha256 digest` 的官方镜像；`database/` SQL 留在仓库，由 `deploy.sh` 在部署期
   通过 stdin 初始化确认空库或重放幂等兼容清单，不烘焙到运行镜像。
 
 ## 配置分类

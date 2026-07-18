@@ -20,8 +20,8 @@ image:
   # auto 优先本地/归档，缺失时拉取；archive 只读归档；pull 强制拉取基础镜像
   source: auto
   archive_dir: ../images
-  runtime_base: docker.io/library/eclipse-temurin:17-jdk
-  nginx_base: docker.io/library/nginx:stable-alpine
+  runtime_base: docker.io/library/eclipse-temurin:17.0.19_10-jdk@sha256:7383a9e8e67a003c0e32ccdee3e5352ec24ca9c3848080c3f108bddb0322139e
+  nginx_base: docker.io/library/nginx:1.30.0-alpine@sha256:0272e4604ed93c1792f03695a033a6e8546840f86e0de20a884bb17d2c924883
   init_runtime: localhost/mitedtsm-rootless-init-service:latest
   server_runtime: localhost/mitedtsm-rootless-server:latest
   web_runtime: localhost/mitedtsm-rootless-web:latest

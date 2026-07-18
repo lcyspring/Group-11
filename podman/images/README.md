@@ -10,6 +10,6 @@ toolchain images with SHA-256 files. These archives are recommended for member o
 the toolchains is slower and more environment-sensitive than packaging project runtime images.
 
 MySQL is not a project runtime image. Deployment starts the configured official
-`docker.io/library/mysql:8.0` image directly and streams the repository bootstrap
+the configured digest-pinned official MySQL 8.0.46 image directly and streams the repository bootstrap
 or compatibility manifests over stdin. `build-images.sh` packages only the four
 application targets: InitService, Server, Web, and Mall.
