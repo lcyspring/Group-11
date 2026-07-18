@@ -26,12 +26,12 @@ pnpm、HBuilderX，也不能改用项目原有 Docker/Compose 构建链。
 
 ## 日常命令
 
-首次使用先在项目目录编译固定版本的 KDL 解析器。脚本固定 dasel `v3.11.2` 及上游 commit
-`008b0ed9cae7d5d5b0c72e23c84836c5b2f0338b`，产物只写入被 Git 忽略的
+首次使用直接下载固定版本的官方 KDL 解析器。脚本固定 dasel `v3.11.2` GitHub Release，并分别校验
+Linux amd64/arm64 官方资产的 SHA-256；不需要安装 Go 或 git。产物只写入被 Git 忽略的
 `podman/tools/bin/dasel`，各入口不会调用系统全局 dasel：
 
 ```bash
-bash ./podman/tools/build-dasel.sh
+bash ./podman/tools/install-dasel.sh
 ./podman/tools/bin/dasel version
 ```
 
@@ -105,4 +105,4 @@ Web、Mall 及单组件更新均使用 `podman run --replace`。只有 `stop.sh`
 - `tests/acceptance/` 保存真实 API/MySQL 验收脚本，`tests/*` 不参与普通启动；
 - `operations/database|images|bpm|diagnostics/` 保存低频运维入口；
 - `internal/` 保存容器内入口和标准编译助手，成员不应直接调用。
-- `tools/build-dasel.sh` 固定源码版本并构建 KDL 解析器；`tools/bin/` 是本机可复现产物，不提交 Git。
+- `tools/install-dasel.sh` 下载并校验固定官方 Release；`tools/bin/` 是本机可复现产物，不提交 Git。

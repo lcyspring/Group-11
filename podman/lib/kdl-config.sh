@@ -11,7 +11,7 @@ KDL_DASEL_BIN="${KDL_PODMAN_DIR}/tools/bin/dasel"
 
 _kdl_require_tools() {
     [[ -x "$KDL_DASEL_BIN" ]] || {
-        printf 'Project dasel binary is missing: %s\nRun: bash %s/tools/build-dasel.sh\n' \
+        printf 'Project dasel binary is missing: %s\nRun: bash %s/tools/install-dasel.sh\n' \
             "$KDL_DASEL_BIN" "$KDL_PODMAN_DIR" >&2
         return 2
     }

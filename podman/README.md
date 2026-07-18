@@ -13,12 +13,12 @@ Runtime entry points accept exactly one argument: a KDL configuration path.
 Deployment behavior is never selected with command options or environment
 variable overrides.
 
-The repository pins dasel `v3.11.2` (upstream commit
-`008b0ed9cae7d5d5b0c72e23c84836c5b2f0338b`) as its KDL parser. Build the
-project-local binary once; operational scripts never use a system-wide dasel:
+The repository pins the official dasel `v3.11.2` GitHub Release as its KDL
+parser. Install the checksum-pinned Linux release asset once; Go and git are
+not required, and operational scripts never use a system-wide dasel:
 
 ```bash
-bash ./tools/build-dasel.sh
+bash ./tools/install-dasel.sh
 ./tools/bin/dasel version
 ```
 
@@ -162,7 +162,7 @@ proxy hostnames are translated to the configured `network.host_proxy_name`.
 
 - `config/`: explicit build and runtime KDL files.
 - `lib/kdl-config.sh`: strict two-level KDL contract backed by project-local dasel.
-- `tools/build-dasel.sh`: reproducibly builds the pinned dasel source revision; `tools/bin/` is local and ignored.
+- `tools/install-dasel.sh`: downloads and verifies the pinned official dasel release; `tools/bin/` is local and ignored.
 - `tests/runtime-config/`: parser, CLI contract, preflight, and Pod-state tests.
 - `build-images.sh`: KDL-only runtime image packaging entry point.
 - `deploy.sh` / `stop.sh`: KDL-only container lifecycle entry points.

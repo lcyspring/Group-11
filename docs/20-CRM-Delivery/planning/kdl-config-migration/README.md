@@ -7,8 +7,8 @@
 Podman 编译、运行镜像封装、部署、数据库、BPM、诊断和验收入口已统一采用 KDL，命令行继续只接收
 一个 `.kdl` 配置路径。仓库不再维护 YAML/KDL 双份真源，也不再接受 `.yaml` 兼容入口。
 
-KDL 由项目本地固定版本的 dasel `v3.11.2` 原生解析，源码固定为上游 commit
-`008b0ed9cae7d5d5b0c72e23c84836c5b2f0338b`。`podman/tools/build-dasel.sh` 负责复现静态二进制，
+KDL 由项目本地固定版本的 dasel `v3.11.2` 原生解析。`podman/tools/install-dasel.sh` 直接下载
+GitHub Release 的 Linux amd64/arm64 官方可执行文件并校验固定 SHA-256，不要求 Host 安装 Go 或 git。
 运行脚本固定使用 `podman/tools/bin/dasel`，不会因 Host PATH 中存在其他版本而漂移。
 
 ## 配置契约

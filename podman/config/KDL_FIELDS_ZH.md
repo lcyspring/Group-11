@@ -2,7 +2,7 @@
 
 返回：[Podman 中文 README](../README_ZH.md)；配置分类见 [README_ZH.md](README_ZH.md)。
 
-所有入口命令行只接收一个 KDL 路径。项目固定使用本地构建的 dasel `v3.11.2` 解析 KDL 2.0；
+所有入口命令行只接收一个 KDL 路径。项目固定使用本地安装的官方 dasel `v3.11.2` 解析 KDL 2.0；
 严格契约只允许“顶层分组 + 一层标量”，不允许重复节点、数组、空值或第三层映射。逗号分隔值仍是
 一个字符串标量。安装与版本固定方式见 [Podman 中文 README](../README_ZH.md)。
 
