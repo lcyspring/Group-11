@@ -65,5 +65,7 @@
 | CRM-FEATURE-059 | 客户 Excel 导入预检、自定义字段映射、逐行结论、过期隔离及幂等确认闭环 | 工作计划 CUS-09 | 已实现 | `docs/20-CRM-Delivery/testing/crm-customer-import-preview/` |
 | CRM-FEATURE-060 | CRM 五态异步导出、权限快照、受保护结果文件和短期单次下载令牌 | 工作计划 CUS-10、GAP-IAM-003、GAP-SEC-003 | 已实现 | `docs/20-CRM-Delivery/testing/crm-async-export-task/` |
 | CRM-FEATURE-061 | 营销群发逐收件人安全跳转、独立/累计点击及逐链接统计 | GAP-MKT-003、ADR-016 | 已实现 | `docs/20-CRM-Delivery/testing/crm-marketing-link-click/` |
+| CRM-FEATURE-062 | 官方 MySQL 直接运行、部署期空库初始化、已有库兼容迁移和未知库保护 | 部署与数据治理 | 已实现 | `docs/20-CRM-Delivery/testing/database-deploy-provision/` |
+| CRM-FEATURE-063 | 短信渠道、邮件账号及模板的显式 YAML 幂等 provision | GAP-MKT-003、ADR-016 | 已实现；真实供应商 UAT 待账号 | `docs/20-CRM-Delivery/testing/crm-marketing-provider-provision/` |
 
 说明：`CRM-FEATURE-005/043` 共同关闭线索转换的首联系人、跟进及任务/通话/短信活动迁移、并发幂等、审计和失败回滚。`CRM-FEATURE-007` 是历史二态基线，现已由 `CRM-FEATURE-029` 升级为四态模型。`CRM-FEATURE-015/016/017` 已建立目标事实源、完成度展示和三层目标维护入口；目标逐级分解合计规则仍待业务签署。`CRM-FEATURE-028` 负责合同签署事实与基础版本轨迹，正式补充协议独立审批由 `CRM-FEATURE-049` 完成；二者均不宣称接入外部电子签平台。`CRM-FEATURE-030/035` 已聚合退款真源，但不伪造尚未实现的 OA 任务真源。`CRM-FEATURE-033` 已完成真实 BPM 提交、驳回、修订、重提和通过验收。`CRM-FEATURE-034` 的新附件已受保护，历史公开附件仍需物理迁移。客户联系人归属、公海、垃圾池、公共线索、活动迁移、报价版本、ERP 履约和工单协作分别由 `CRM-FEATURE-039`～`046` 关闭。

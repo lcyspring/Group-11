@@ -5,6 +5,7 @@ operation:
   shutdown_mode: check
   archive_mode: check
   remove_volumes_on_down: false
+  confirm_persistent_data_reset: false
 
 deployment:
   pod_name: mitedtsm-rootless
@@ -35,7 +36,7 @@ image:
   redis_base: docker.io/library/redis:6-alpine
   rabbitmq_base: docker.io/library/rabbitmq:3-management-alpine
   tdengine_base: docker.io/tdengine/tdengine:3.3.6.0
-  mysql_runtime: localhost/mitedtsm-rootless-mysql:latest
+  mysql_base: docker.io/library/mysql:8.0
   init_runtime: localhost/mitedtsm-rootless-init-service:latest
   server_runtime: localhost/mitedtsm-rootless-server:latest
   web_runtime: localhost/mitedtsm-rootless-web:latest
@@ -45,7 +46,7 @@ archive:
   redis_base: redis-6-alpine.tar
   rabbitmq_base: rabbitmq-3-management-alpine.tar
   tdengine_base: tdengine-3.3.6.0.tar
-  mysql_runtime: mitedtsm-rootless-mysql.tar
+  mysql_base: mysql-8.0.tar
   init_runtime: mitedtsm-rootless-init-service.tar
   server_runtime: mitedtsm-rootless-server.tar
   web_runtime: mitedtsm-rootless-web.tar
@@ -70,6 +71,8 @@ volume:
 mysql:
   database: mitedtsm_database
   dataset: legacy-demo-v1
+  bootstrap_policy: initialize-empty
+  bootstrap_manifest: ../../database/manifests/mysql-bootstrap.manifest
   root_password: 1234
   character_set: utf8mb4
   collation: utf8mb4_unicode_ci
@@ -156,6 +159,35 @@ crm_marketing:
   click_tracking_enabled: true
   click_allowed_hosts: example.com,localhost,127.0.0.1
   max_links_per_broadcast: 10
+
+marketing_provider:
+  # disabled 不修改数据库；create-only 仅补缺失项；managed 以本 YAML 更新稳定键对应项
+  provision_mode: disabled
+  sms_enabled: false
+  sms_channel_code: ALIYUN
+  sms_signature: not-configured
+  sms_api_key: not-configured
+  sms_api_secret: not-configured
+  sms_callback_url: none
+  sms_template_code: crm-marketing-sms
+  sms_template_name: CRM 营销短信
+  sms_template_content: "{content}"
+  sms_template_params: '["content"]'
+  sms_api_template_id: not-configured
+  mail_enabled: false
+  mail_address: noreply@example.com
+  mail_username: not-configured
+  mail_password: not-configured
+  mail_host: smtp.example.com
+  mail_port: 465
+  mail_ssl_enabled: true
+  mail_starttls_enabled: false
+  mail_template_code: crm-marketing-mail
+  mail_template_name: CRM 营销邮件
+  mail_template_nickname: CRM
+  mail_template_title: CRM 营销消息
+  mail_template_content: "<p>{content}</p>"
+  mail_template_params: '["content"]'
 
 health:
   http_host: 127.0.0.1

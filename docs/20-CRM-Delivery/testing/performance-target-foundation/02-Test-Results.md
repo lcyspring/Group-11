@@ -26,6 +26,6 @@ bash ./compile.sh ./config/test-crm-ubuntu-26.04.yaml
 
 ## 静态检查
 
-- `bash -n podman/init/init-mysql.sh`：通过；
+- 当时的旧 MySQL 镜像入口语法检查通过；该入口现已由部署期数据库 provision 取代并删除；
 - `git diff --check`：通过；
 - 新增 Java、SQL、Markdown：UTF-8/ASCII。

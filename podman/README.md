@@ -28,8 +28,9 @@ explicitly select a mode before making a stateful operation:
 - startup: `replace`, `fast`, `frontends-only`, `replace-server`, `replace-web`, or `replace-mall`;
 - shutdown: `stop`;
 - image archives: `save` or `pull-save`;
-- destructive data removal additionally requires
-  `operation.remove_volumes_on_down: true`.
+- destructive data removal additionally requires both
+  `operation.remove_volumes_on_down: true` and
+  `operation.confirm_persistent_data_reset: true`.
 
 Relative paths such as `image.archive_dir` are resolved relative to the YAML
 file. Missing values, duplicate keys, mappings deeper than two levels, invalid
@@ -84,8 +85,9 @@ Required runtime artifacts are:
 - `Web/dist-prod/`
 - `MallFrontend/unpackage/dist/build/web/`
 
-`Containerfile` only packages these artifacts and database files into runtime
-images. Packaging is a separate YAML-only stage:
+`Containerfile` only packages these four application artifacts into runtime
+images. Database SQL is not copied into an image. Packaging is a separate
+YAML-only stage:
 
 ```bash
 bash ./build-images.sh ./config/runtime-images.example.yaml
@@ -96,6 +98,13 @@ do not bind-mount project files; persistent service data lives in named volumes.
 Full replacement uses `podman pod create --replace`, while managed service and
 single-component replacement uses `podman run --replace`. Explicit Pod removal
 is isolated in `stop.sh`.
+
+MySQL runs directly from the configured official `mysql:8.0` image. During
+`replace` or `replace-server`, `deploy.sh` streams repository SQL over stdin:
+an explicitly confirmed empty schema can receive bootstrap plus its selected
+dataset, while an existing recognized schema preserves data and only receives
+the idempotent compatibility manifest. A non-empty unrecognized schema is
+rejected instead of being overwritten.
 
 ## Startup modes
 

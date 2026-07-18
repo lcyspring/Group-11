@@ -56,6 +56,8 @@ bash -n "${PODMAN_DIR}/internal/compile-standard.sh"
 bash -n "${PODMAN_DIR}/internal/hbuilderx-build-entrypoint.sh"
 bash -n "${PODMAN_DIR}/internal/mall-dependencies-entrypoint.sh"
 bash -n "${PODMAN_DIR}/internal/ubuntu-build-entrypoint.sh"
+bash -n "${PODMAN_DIR}/internal/provision-database.sh"
+bash -n "${PODMAN_DIR}/internal/provision-marketing-provider.sh"
 for container_entrypoint in \
     "${PODMAN_DIR}/internal/hbuilderx-build-entrypoint.sh" \
     "${PODMAN_DIR}/internal/mall-dependencies-entrypoint.sh" \
@@ -68,13 +70,14 @@ bash -n "${PODMAN_DIR}/build-images.sh"
 bash -n "${PODMAN_DIR}/stop.sh"
 bash -n "${PODMAN_DIR}/operations/images/image-archives.sh"
 bash -n "${PODMAN_DIR}/lib/yaml-config.sh"
-bash -n "${PODMAN_DIR}/init/init-mysql.sh"
 bash -n "${PODMAN_DIR}/operations/database/database-backup.sh"
 bash -n "${PODMAN_DIR}/operations/database/database-restore.sh"
 bash -n "${PODMAN_DIR}/operations/database/database-dataset.sh"
 bash -n "${PODMAN_DIR}/operations/images/build-image-archives.sh"
 bash -n "${PODMAN_DIR}/operations/bpm/provision-bpm-model.sh"
 bash -n "${PODMAN_DIR}/operations/bpm/provision-bpm-models.sh"
+bash -n "${PODMAN_DIR}/tests/database-deploy-provision/run.sh"
+bash -n "${PODMAN_DIR}/tests/marketing-provider-provision/run.sh"
 for bpm_key in leave receivable reimbursement contract refund trip loan customer_visit; do
     grep -Eq "for key in .*${bpm_key}" "${PODMAN_DIR}/operations/bpm/provision-bpm-models.sh" ||
         fail "BPM aggregate provisioner does not include configured model: ${bpm_key}"
@@ -91,6 +94,17 @@ rg -q 'podman_cmd pod create --replace' "${PODMAN_DIR}/deploy.sh" || \
 if rg -q 'podman_cmd pod rm' "${PODMAN_DIR}/deploy.sh"; then
     fail 'deploy.sh must not manually remove a Pod before replacement'
 fi
+if rg -q 'COPY[[:space:]]+(database/|podman/init/init-mysql\.sh)' "${PODMAN_DIR}/Containerfile"; then
+    fail 'database SQL or initialization scripts must not be packaged into runtime images'
+fi
+if rg -q 'mysql,init-service|target_selected mysql|mysql_runtime' \
+    "${PODMAN_DIR}/build-images.sh" "${PODMAN_DIR}/config/runtime-images"*.yaml; then
+    fail 'runtime image packaging must not build a project-specific MySQL image'
+fi
+rg -q 'internal/provision-database\.sh' "${PODMAN_DIR}/deploy.sh" || \
+    fail 'deploy.sh must run the explicit deploy-time database provisioner'
+rg -q 'internal/provision-marketing-provider\.sh' "${PODMAN_DIR}/deploy.sh" || \
+    fail 'deploy.sh must run the explicit marketing Provider provisioner'
 
 while IFS= read -r build_config; do
     yaml_config_init "$build_config"
@@ -240,11 +254,15 @@ expect_exit_2 bash "${PODMAN_DIR}/compile.sh" \
     "${SCRIPT_DIR}/fixtures/compile-invalid-selector.yaml"
 expect_exit_2 bash "${PODMAN_DIR}/compile.sh" \
     "${SCRIPT_DIR}/fixtures/compile-empty-selection.yaml"
+expect_exit_2 bash "${PODMAN_DIR}/internal/provision-marketing-provider.sh" \
+    "${SCRIPT_DIR}/fixtures/provider-placeholder-secret.yaml"
 expect_exit_2 bash "${PODMAN_DIR}/build-images.sh"
 expect_exit_2 bash "${PODMAN_DIR}/build-images.sh" \
     "${PODMAN_DIR}/config/runtime-images-check.yaml" extra
 expect_exit_2 bash "${PODMAN_DIR}/stop.sh"
 expect_exit_2 bash "${PODMAN_DIR}/stop.sh" "$CONFIG_PATH" extra
+expect_exit_2 bash "${PODMAN_DIR}/stop.sh" \
+    "${SCRIPT_DIR}/fixtures/cleanup-reset-unconfirmed.yaml"
 expect_exit_2 bash "${PODMAN_DIR}/operations/images/image-archives.sh"
 expect_exit_2 bash "${PODMAN_DIR}/operations/images/image-archives.sh" "$CONFIG_PATH" extra
 expect_exit_1 bash "${PODMAN_DIR}/operations/images/image-archives.sh" \

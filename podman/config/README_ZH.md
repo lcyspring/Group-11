@@ -7,7 +7,7 @@
 | Server/Web 构建 | `build-ubuntu-26.04.yaml` | Ubuntu 26.04 全量构建 |
 | Mall H5 构建 | `build-mall-h5-ubuntu-26.04.yaml` | 无图形 HBuilderX 构建 |
 | 四目标编译示例 | `compile-all-ubuntu-26.04.example.yaml` | `include_targets: all`、`exclude_targets: none`，一次选择全部产物 |
-| 运行镜像封装 | `runtime-images.example.yaml` | 将已有产物封装为五个运行镜像，不启动容器 |
+| 运行镜像封装 | `runtime-images.example.yaml` | 将已有产物封装为 Init/Server/Web/Mall 四个运行镜像，不启动容器 |
 | Server 单项封装 | `runtime-images-server.example.yaml` | 只重新封装已编译 Server JAR |
 | Web 单项封装 | `runtime-images-web.example.yaml` | 只重新封装已编译管理端产物 |
 | 镜像封装预检 | `runtime-images-check.yaml` | 校验产物与封装配置，不改变镜像 |
@@ -82,7 +82,8 @@ cp ./config/cleanup-reset.example.yaml ./config/runtime-reset-local.yaml
 bash ./stop.sh ./config/runtime-reset-local.yaml
 ```
 
-第二条命令不可恢复地清除 MySQL、Redis、RabbitMQ、TDengine 数据。执行前应先使用
+第二条命令只在 `remove_volumes_on_down` 与 `confirm_persistent_data_reset` 同时为 `true` 时执行，
+并不可恢复地清除 MySQL、Redis、RabbitMQ、TDengine 数据。执行前应先使用
 `operations/database/database-backup.sh` 完成备份，并确认下一次 `deploy.sh replace` 开启 BPM 自动恢复。构建产物不由
 `stop.sh` 删除；Maven `target`、`Web/dist-prod`、Mall `unpackage/dist` 应通过对应构建配置的
 clean 字段重建，避免把“清产物”和“销毁业务数据”混为一个操作。

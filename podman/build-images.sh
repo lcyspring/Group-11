@@ -28,15 +28,12 @@ ALL_PROXY_URL="$(yaml_require network.all_proxy)"
 NO_PROXY_VALUE="$(yaml_require network.no_proxy)"
 IMAGE_SOURCE="$(yaml_require image.source)"
 IMAGE_ARCHIVE_DIR="$(yaml_path image.archive_dir)"
-MYSQL_BASE_IMAGE="$(yaml_require image.mysql_base)"
 RUNTIME_BASE_IMAGE="$(yaml_require image.runtime_base)"
 NGINX_BASE_IMAGE="$(yaml_require image.nginx_base)"
-MYSQL_IMAGE="$(yaml_require image.mysql_runtime)"
 INIT_IMAGE="$(yaml_require image.init_runtime)"
 SERVER_IMAGE="$(yaml_require image.server_runtime)"
 WEB_IMAGE="$(yaml_require image.web_runtime)"
 MALL_IMAGE="$(yaml_require image.mall_runtime)"
-MYSQL_ARCHIVE="$(yaml_require archive.mysql_base)"
 RUNTIME_ARCHIVE="$(yaml_require archive.runtime_base)"
 NGINX_ARCHIVE="$(yaml_require archive.nginx_base)"
 
@@ -50,20 +47,16 @@ case "$IMAGE_SOURCE" in
 esac
 
 if [[ "$TARGETS_VALUE" == "all" ]]; then
-    TARGETS_VALUE="mysql,init-service,server,web,mall"
+    TARGETS_VALUE="init-service,server,web,mall"
 fi
-[[ "$TARGETS_VALUE" =~ ^(mysql|init-service|server|web|mall)(,(mysql|init-service|server|web|mall))*$ ]] || {
-    printf 'build.targets must be all or a comma-separated subset of mysql,init-service,server,web,mall.\n' >&2
+[[ "$TARGETS_VALUE" =~ ^(init-service|server|web|mall)(,(init-service|server|web|mall))*$ ]] || {
+    printf 'build.targets must be all or a comma-separated subset of init-service,server,web,mall.\n' >&2
     exit 2
 }
 IFS=',' read -r -a TARGETS <<< "$TARGETS_VALUE"
 
 require_file() {
     [[ -s "$1" ]] || { printf 'Required file is missing or empty: %s\n' "$1" >&2; exit 1; }
-}
-
-require_dir() {
-    [[ -d "$1" ]] || { printf 'Required directory is missing: %s\n' "$1" >&2; exit 1; }
 }
 
 verify_web_entry_assets() {
@@ -89,10 +82,6 @@ target_selected() {
 }
 
 require_file "$CONTAINERFILE"
-if target_selected mysql; then
-    require_file "${SCRIPT_DIR}/init/init-mysql.sh"
-    require_dir "${PROJECT_ROOT}/database"
-fi
 target_selected init-service && require_file "${PROJECT_ROOT}/InitService/target/mitedtsm-init-service.jar"
 target_selected server && require_file "${PROJECT_ROOT}/Server/mitedtsm-server/target/mitedtsm-server.jar"
 target_selected web && verify_web_entry_assets "${PROJECT_ROOT}/Web/dist-prod"
@@ -110,7 +99,6 @@ image_archive_path() {
 
 if [[ "$MODE" == "check" ]]; then
     if [[ "$IMAGE_SOURCE" == "archive" ]]; then
-        podman image exists "$MYSQL_BASE_IMAGE" || require_file "$(image_archive_path "$MYSQL_ARCHIVE")"
         podman image exists "$RUNTIME_BASE_IMAGE" || require_file "$(image_archive_path "$RUNTIME_ARCHIVE")"
         podman image exists "$NGINX_BASE_IMAGE" || require_file "$(image_archive_path "$NGINX_ARCHIVE")"
     fi
@@ -155,7 +143,6 @@ ensure_base_image() {
     podman image exists "$image" || { printf 'Base image is unavailable: %s\n' "$image" >&2; exit 1; }
 }
 
-target_selected mysql && ensure_base_image "$MYSQL_BASE_IMAGE" "$(image_archive_path "$MYSQL_ARCHIVE")"
 if target_selected init-service || target_selected server; then
     ensure_base_image "$RUNTIME_BASE_IMAGE" "$(image_archive_path "$RUNTIME_ARCHIVE")"
 fi
@@ -166,7 +153,6 @@ fi
 build_args=(
     --pull=never
     "${PODMAN_PROXY_ARGS[@]}"
-    --build-arg "MYSQL_BASE_IMAGE=${MYSQL_BASE_IMAGE}"
     --build-arg "RUNTIME_BASE_IMAGE=${RUNTIME_BASE_IMAGE}"
     --build-arg "NGINX_BASE_IMAGE=${NGINX_BASE_IMAGE}"
     --file "$CONTAINERFILE"
@@ -174,7 +160,6 @@ build_args=(
 
 for target in "${TARGETS[@]}"; do
     case "$target" in
-        mysql) image="$MYSQL_IMAGE" ;;
         init-service) image="$INIT_IMAGE" ;;
         server) image="$SERVER_IMAGE" ;;
         web) image="$WEB_IMAGE" ;;

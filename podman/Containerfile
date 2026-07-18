@@ -1,18 +1,13 @@
 # Build from the repository root, for example:
 # podman build --file podman/Containerfile --target server .
 #
-# This file packages existing artifacts only. It does not invoke Maven,
-# pnpm, or any compiler. Runtime containers use named volumes only; they do
-# not bind-mount project files from the host.
+# This file packages existing application artifacts only. It does not invoke
+# Maven, pnpm, HBuilderX, or package database SQL. MySQL uses its official
+# image and deploy.sh streams repository manifests during deployment.
 
-ARG MYSQL_BASE_IMAGE=docker.io/library/mysql:8.0
 ARG RUNTIME_BASE_IMAGE=docker.io/library/eclipse-temurin:17-jdk
 ARG NGINX_BASE_IMAGE=docker.io/library/nginx:stable-alpine
 
-FROM ${MYSQL_BASE_IMAGE} AS mysql
-COPY podman/init/init-mysql.sh /docker-entrypoint-initdb.d/init-mysql.sh
-COPY database/ /podman-init-sql/
-RUN chmod 0755 /docker-entrypoint-initdb.d/init-mysql.sh
 FROM ${RUNTIME_BASE_IMAGE} AS runtime-base
 
 ENV TZ=Asia/Shanghai

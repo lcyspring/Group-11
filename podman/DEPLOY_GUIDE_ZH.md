@@ -69,7 +69,7 @@ Podman named volume。不要在 Host 执行 Mall 的依赖安装；HBuilderX 编
 
 ## 4. 封装运行镜像
 
-编译成功后单独执行镜像封装；该阶段只读取 JAR、`dist-prod`、H5 产物和数据库目录，不运行编译器，
+编译成功后单独执行镜像封装；该阶段只读取 JAR、`dist-prod` 和 H5 产物，不运行编译器，
 也不会启动或替换容器：
 
 ```bash
@@ -78,7 +78,8 @@ bash ./build-images.sh ./config/runtime-images.example.yaml
 ```
 
 `operation.mode` 为 `check` 或 `package`，`build.targets` 为 `all`，或
-`mysql,init-service,server,web,mall` 的逗号分隔子集。基础镜像来源、归档名、产出镜像名及代理策略
+`init-service,server,web,mall` 的逗号分隔子集。数据库不属于封装目标，运行时直接使用 YAML 的
+`image.mysql_base` 官方镜像。基础镜像来源、归档名、产出镜像名及代理策略
 全部由该 YAML 显式声明。
 
 ## 5. 运行配置
@@ -148,6 +149,11 @@ bash ./deploy.sh ./config/runtime-local.yaml
 `deploy.sh` 不检查 Host 源码产物，也不执行 `podman build`。后端、管理端或商城端变化时，必须先用
 阶段一生成产物、阶段二封装相应镜像，再分别选择 `replace-server`、`replace-web` 或 `replace-mall`。
 
+`replace` 和 `replace-server` 会调用部署期数据库 provision：SQL 始终留在仓库 `database/`，通过
+stdin 发送给官方 MySQL 容器，不复制进镜像，也不挂载到长期运行容器。`mysql.bootstrap_policy` 为
+`initialize-empty` 时只初始化已确认的空库；已有 `system_users` 标记的库保留数据并仅重放幂等兼容
+清单；非空但无法识别的库直接拒绝。`require-existing` 则拒绝初始化空库。
+
 ## 8. 停止与数据删除
 
 仓库提供两份不含凭据、不可忽略的显式示例。日常停服直接使用保留数据的示例：
@@ -167,7 +173,8 @@ bash ./operations/database/database-backup.sh ./config/database-backup-local.yam
 bash ./stop.sh ./config/runtime-reset-local.yaml
 ```
 
-`cleanup-reset.example.yaml` 显式设置 `remove_volumes_on_down: true`，会永久删除四个数据卷；
+`cleanup-reset.example.yaml` 显式同时设置 `remove_volumes_on_down: true` 和
+`confirm_persistent_data_reset: true`，会永久删除四个数据卷；缺少任一确认时脚本拒绝执行。
 `runtime-reset-local.yaml` 被 Git 忽略，用于记录操作者核对后的本机卷名。该操作没有命令行快捷开关。
 重建后先用阶段二封装全量运行镜像，再使用 `deploy.sh replace`，并确保 `bpm.provision_after_start: true`，否则空数据库中不存在 Flowable
 流程定义，请假、回款、报销、合同、退款、出差、借款、客户拜访和请示提交审批都会失败。标准聚合清单必须包含
@@ -228,5 +235,5 @@ network:
 - 运行命令只传 YAML 路径；
 - 真实凭据只在不提交的本机配置中；
 - 首次执行状态操作前先运行 `check` 和结构化测试；
-- 删除卷前再次核对 `remove_volumes_on_down: true`；
+- 删除卷前再次核对 `remove_volumes_on_down: true` 与 `confirm_persistent_data_reset: true`；
 - 不使用项目原 Docker 文件和 Compose。

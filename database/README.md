@@ -1,7 +1,8 @@
 # 数据库脚本目录
 
-数据库脚本按生命周期分层，自动启动只读取 `manifests/mysql-bootstrap.manifest` 和运行 YAML 指定的
-兼容迁移清单，不再扫描目录猜测顺序。
+数据库脚本按生命周期分层。`deploy.sh` 通过 `internal/provision-database.sh` 读取
+`manifests/mysql-bootstrap.manifest` 和运行 YAML 指定的兼容迁移清单，不再扫描目录猜测顺序，也不把
+SQL 烘焙进 MySQL 镜像。
 
 | 目录 | 用途 | 自动执行 |
 |---|---|---|
@@ -19,10 +20,10 @@
 
 ## 数据集与持久化
 
-运行 YAML 的 `mysql.dataset` 仅供 MySQL 官方入口在新建空数据卷时选择初始数据集。已有卷不会因
+运行 YAML 的 `mysql.dataset` 仅供部署脚本在确认空库后选择初始数据集。已有卷不会因
 切换该字段而重新导入、清理或覆盖，因此正常重启和部署保持数据持久化。
 
-已有数据库需要替换数据集时，只能使用 `podman/database-dataset.sh <yaml>`。配置必须显式声明：
+已有数据库需要替换数据集时，只能使用 `podman/operations/database/database-dataset.sh <yaml>`。配置必须显式声明：
 
 - `mysql.cleanup_existing_before_dataset`：是否允许执行数据集内的 cleanup SQL；
 - `mysql.confirm_persistent_data_change`：在 `replace` 模式下确认修改持久数据。

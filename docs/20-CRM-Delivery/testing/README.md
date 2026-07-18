@@ -104,6 +104,8 @@
 | `crm-customer-import-preview/` | 客户导入预检、字段映射、确认幂等、Ubuntu 构建和覆盖率 |
 | `crm-async-export-task/` | CRM 五态异步导出、三阶段权限复验、单次令牌、过期清理和覆盖率 |
 | `crm-marketing-link-click/` | 营销逐收件人安全跳转、独立/累计点击、逐链接统计和覆盖率 |
+| `database-deploy-provision/` | 官方 MySQL 部署期 bootstrap、已有库保留、未知库拒绝和策略覆盖 |
+| `crm-marketing-provider-provision/` | 短信/邮件渠道、账号与模板的三模式幂等 provision |
 
 运行入口统一为：
 

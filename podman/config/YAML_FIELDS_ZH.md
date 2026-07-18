@@ -37,6 +37,7 @@
 | `operation.shutdown_mode` | `check` 只预检，`stop` 停止 Pod |
 | `operation.archive_mode` | `check/save/pull-save`，供镜像归档脚本使用 |
 | `operation.remove_volumes_on_down` | 停止时是否永久删除四个数据卷；默认必须为 `false` |
+| `operation.confirm_persistent_data_reset` | 删除持久卷的第二道确认；必须与 `remove_volumes_on_down` 同为 `true`，日常必须为 `false` |
 | `deployment.pod_name` | rootless Pod 名称 |
 | `deployment.stop_timeout_seconds` | Server 优雅停止最大等待秒数 |
 
@@ -44,7 +45,7 @@
 
 | 字段 | 作用 |
 |---|---|
-| `network.host_address` | 发布端口绑定地址；本地观察使用 `127.0.0.1` |
+| `network.host_address` | Server/Web/Mall 发布端口绑定地址；团队验收示例为 `0.0.0.0`，并由 UFW/安全组限制来源 |
 | `network.*_host_port` | Server/Web/Mall 的宿主端口 |
 | `network.*_container_port` | Pod 内对应端口 |
 | `network.use_host_proxy` | 是否把显式代理注入 build/run；不会读取宿主隐式环境 |
@@ -58,8 +59,8 @@
 |---|---|
 | `image.source` | `auto` 优先本地/归档再拉取，`archive` 仅离线归档，`pull` 强制仓库 |
 | `image.archive_dir` | 归档目录，相对 YAML 文件解析 |
-| `image.*_base` | 启动配置只需 Redis、RabbitMQ、TDengine；JDK、MySQL、Nginx 属于独立运行镜像封装配置 |
-| `image.*_runtime` | 项目打包后的 MySQL/Init/Server/Web/Mall 本地镜像名 |
+| `image.redis_base/rabbitmq_base/tdengine_base/mysql_base` | 直接运行的四个基础服务镜像；MySQL 使用官方镜像，不再生成项目 MySQL 镜像 |
+| `image.init_runtime/server_runtime/web_runtime/mall_runtime` | 项目打包后的四个应用运行镜像名 |
 | `archive.*` | 启动阶段所需基础镜像和项目运行镜像的 tar 文件名 |
 
 ### 运行镜像封装配置
@@ -69,16 +70,16 @@
 | 字段 | 作用 |
 |---|---|
 | `operation.mode` | `check` 只校验产物和配置，`package` 执行运行镜像封装 |
-| `build.targets` | `all`，或 `mysql,init-service,server,web,mall` 的逗号分隔子集 |
+| `build.targets` | `all`，或 `init-service,server,web,mall` 的逗号分隔子集 |
 | `build.containerfile` | 多阶段运行镜像 Containerfile；相对 YAML 文件解析 |
 | `network.use_host_proxy` | 是否使用本 YAML 的显式代理下载缺失基础镜像 |
 | `network.http_proxy/https_proxy/all_proxy` | Host 侧拉取镜像的代理 URL；不用写 `none` |
 | `network.no_proxy` | 不走代理的地址列表 |
 | `image.source` | 基础镜像来源：`auto/archive/pull` |
 | `image.archive_dir` | 基础镜像离线归档目录 |
-| `image.mysql_base/runtime_base/nginx_base` | MySQL、Java、Nginx 封装基座 |
-| `image.mysql_runtime/init_runtime/server_runtime/web_runtime/mall_runtime` | 五个产出镜像的完整名称和标签 |
-| `archive.mysql_base/runtime_base/nginx_base` | 三种封装基座的 OCI tar 文件名 |
+| `image.runtime_base/nginx_base` | Java 与 Nginx 封装基座 |
+| `image.init_runtime/server_runtime/web_runtime/mall_runtime` | 四个产出镜像的完整名称和标签 |
+| `archive.runtime_base/nginx_base` | 两种封装基座的 OCI tar 文件名 |
 
 ### 容器、卷和基础设施
 
@@ -88,6 +89,8 @@
 | `volume.mysql/redis/rabbitmq/tdengine` | 四个持久数据卷名称 |
 | `mysql.database` | 主业务库名 |
 | `mysql.dataset` | 仅空数据卷初始化时选择的数据集；切换它不会修改已有持久卷 |
+| `mysql.bootstrap_policy` | `initialize-empty` 只初始化确认空库；`require-existing` 拒绝空库 |
+| `mysql.bootstrap_manifest` | 空库建表、必要基础数据和显式种子的执行清单；SQL 在部署期通过 stdin 发送 |
 | `mysql.root_password` | 本地 MySQL root 密码；真实值只能在忽略的本机 YAML |
 | `mysql.character_set/collation` | 建库、客户端和迁移字符集/排序规则 |
 | `mysql.authentication_plugin` | MySQL 认证插件 |
@@ -151,6 +154,14 @@
 | `crm_marketing.click_tracking_enabled` | 是否生成逐收件人营销跳转令牌并记录点击；关闭时禁止保存带跟踪链接的群发 |
 | `crm_marketing.click_allowed_hosts` | 营销目标域名白名单，逗号分隔；支持 `*.example.com`，不允许把目标 URL 作为匿名接口参数 |
 | `crm_marketing.max_links_per_broadcast` | 单个群发允许配置的营销跟踪链接上限 |
+| `marketing_provider.provision_mode` | `disabled` 不改库；`create-only` 只补稳定键缺项；`managed` 由 YAML 幂等更新受管项 |
+| `marketing_provider.sms_enabled/mail_enabled` | 是否 provision 短信或邮件聚合；非 disabled 至少开启一项，并要求 `crm_marketing.provider_mode: system` |
+| `marketing_provider.sms_channel_code` | System 模块支持的短信渠道编码：`ALIYUN/TENCENT/HUAWEI/QINIU/DEBUG_DING_TALK` |
+| `marketing_provider.sms_signature/api_key/api_secret/callback_url` | 短信签名、账号秘密及可选回调；启用短信时占位值会被拒绝 |
+| `marketing_provider.sms_template_*` | 短信模板稳定编码、名称、内容、JSON 参数数组和供应商模板 ID |
+| `marketing_provider.mail_address/username/password/host/port` | 邮件账号稳定地址和 SMTP 连接；启用邮件时占位账号会被拒绝 |
+| `marketing_provider.mail_ssl_enabled/mail_starttls_enabled` | SMTP 加密方式，SSL 与 STARTTLS 不允许同时开启 |
+| `marketing_provider.mail_template_*` | 邮件模板稳定编码、名称、昵称、标题、HTML 内容和 JSON 参数数组 |
 | `crm_customer_import.max_rows` | 单次客户导入预检允许的数据行上限，防止超大文件占满内存 |
 | `crm_customer_import.preview_ttl_minutes` | 预检快照允许确认的分钟数，过期后必须重新预检 |
 | `crm_export_task.enabled` | 是否启用 CRM 异步导出后台任务 |
@@ -209,9 +220,9 @@
 | `cleanup-reset.example.yaml` | 删除运行 Pod，并永久删除四个 named volume |
 
 `stop.sh` 只读取 `schema_version`、`operation.shutdown_mode`、
-`operation.remove_volumes_on_down`、`deployment.*`、`container.server` 和 `volume.*`。
-`remove_volumes_on_down` 必须显式填写；日常值为 `false`。只有已备份且确实需要空数据库、空缓存、
-空消息队列和空时序库时才复制 reset 示例到 ignored 本机配置并改为 `true`。
+`operation.remove_volumes_on_down`、`operation.confirm_persistent_data_reset`、`deployment.*`、
+`container.server` 和 `volume.*`。两个删除确认必须显式填写且值保持一致；日常均为 `false`。只有已备份
+且确实需要空数据库、空缓存、空消息队列和空时序库时才复制 reset 示例，并将两者同时改为 `true`。
 
 ## Ubuntu 26.04 Server/Web 构建配置
 

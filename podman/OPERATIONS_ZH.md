@@ -21,7 +21,7 @@ Mall H5：                         ghcr.io/elel-code/group-11-hbuilderx-ubuntu:2
 |---|---|---|
 | Server/Web/测试编译 | `compile.sh <yaml>` | JAR、Web `dist-prod`、测试与 JaCoCo |
 | Mall H5 编译 | `compile.sh <yaml>` | 本地 ignored 的 H5 构建目录 |
-| 运行镜像封装 | `build-images.sh <yaml>` | 只把已有产物封装为 MySQL/Init/Server/Web/Mall 镜像 |
+| 运行镜像封装 | `build-images.sh <yaml>` | 只把已有产物封装为 Init/Server/Web/Mall 四个应用镜像 |
 | 启动/替换容器 | `deploy.sh <yaml>` | 只消费运行镜像，启动或替换 rootless Pod/容器 |
 | 停止 | `stop.sh <yaml>` | 停止 Pod；是否删卷只看 YAML |
 | 离线镜像 | `operations/images/image-archives.sh <yaml>` | 保存/拉取并保存基础镜像 tar |
@@ -31,6 +31,7 @@ Mall H5：                         ghcr.io/elel-code/group-11-hbuilderx-ubuntu:2
 | CRM 性能基线 | `tests/acceptance/verify-crm-performance-baseline.sh <yaml>` | 五类只读负载、分位数、错误率和吞吐证据 |
 | CRM 诊断包 | `operations/diagnostics/collect-crm-diagnostics.sh <yaml>` | 健康、容器、日志、数据库与宿主 SLI 诊断 |
 | 配置门禁 | `tests/runtime-config/run.sh <yaml>` | 无状态检查 YAML、manifest、脚本和 Pod 不变性 |
+| 数据库部署期 provision | `deploy.sh <yaml>` | 直接运行官方 MySQL，并通过 stdin 初始化空库或执行幂等兼容迁移 |
 
 宿主 JDK/Node/pnpm 构建入口已删除，所有成员统一通过 `compile.sh` 使用上述 `elel-code`
 公共镜像。项目原 Docker/Compose 不进入本流程。
@@ -77,12 +78,18 @@ bash ./podman/deploy.sh ./podman/config/runtime-local.yaml
 | 变更 | 阶段一编译 | 阶段二 `build.targets` | 阶段三 `startup_mode` |
 |---|---|---|---|
 | Java/配置 | Ubuntu Server build | `server` | `replace-server` |
-| 数据库初始化内容 | Ubuntu Init build（按需） | `mysql,init-service` | `replace` |
+| 数据库建表/迁移/数据集 | 无编译；维护 `database/` manifest | 无；数据库不封装镜像 | `replace` |
 | 管理端 Web | Ubuntu Web build | `web` | `replace-web` |
 | Mall H5 | Ubuntu HBuilderX build | `mall` | `replace-mall` |
 | Web + Mall | 两项前端 build | `web,mall` | `frontends-only` |
 | 仅重启已有 Pod | 无 | 无 | `fast` |
 | 首次或完整替换 | 全部所需产物 | `all` | `replace` |
+
+`mysql.bootstrap_policy: initialize-empty` 只允许初始化确认无表的库；
+`mysql.bootstrap_policy: require-existing` 用于禁止部署脚本创建基线。已有完整库不会因切换
+`mysql.dataset` 被覆盖。整套持久卷销毁必须同时开启
+`operation.remove_volumes_on_down` 和 `operation.confirm_persistent_data_reset`；已有库数据集替换则使用
+独立 `operations/database/database-dataset.sh` 及其双确认字段。
 
 任何 stateful 操作前先用 `runtime-images-check.yaml` 和 `runtime-local-check.yaml`。`runtime-local.yaml`、各 replace 配置含本地凭据，
 被 Git 忽略；共享模板不得写真实账号。

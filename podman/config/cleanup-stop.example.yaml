@@ -3,6 +3,7 @@ schema_version: 1
 operation:
   shutdown_mode: stop
   remove_volumes_on_down: false
+  confirm_persistent_data_reset: false
 
 deployment:
   pod_name: mitedtsm

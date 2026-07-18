@@ -28,6 +28,7 @@ STOP_TIMEOUT="$(yaml_positive_integer deployment.stop_timeout_seconds)"
 SERVER_CONTAINER="$(yaml_require container.server)"
 SHUTDOWN_MODE="$(yaml_require operation.shutdown_mode)"
 REMOVE_VOLUMES="$(yaml_bool operation.remove_volumes_on_down)"
+CONFIRM_DATA_RESET="$(yaml_bool operation.confirm_persistent_data_reset)"
 VOLUMES=(
     "$(yaml_require volume.mysql)"
     "$(yaml_require volume.redis)"
@@ -50,16 +51,27 @@ rootless="$(podman info --format '{{.Host.Security.Rootless}}')" || {
 }
 
 case "$SHUTDOWN_MODE" in
-    check)
-        printf 'Podman shutdown preflight passed. No Pod or volume was stopped or removed.\n'
-        exit 0
-        ;;
+    check) ;;
     stop) ;;
     *)
         printf 'operation.shutdown_mode must be check or stop; got: %s\n' "$SHUTDOWN_MODE" >&2
         exit 2
         ;;
 esac
+
+if [[ "$REMOVE_VOLUMES" == true && "$CONFIRM_DATA_RESET" != true ]]; then
+    printf 'Removing persistent volumes requires operation.confirm_persistent_data_reset=true.\n' >&2
+    exit 2
+fi
+if [[ "$REMOVE_VOLUMES" == false && "$CONFIRM_DATA_RESET" == true ]]; then
+    printf 'operation.confirm_persistent_data_reset must be false when volume removal is disabled.\n' >&2
+    exit 2
+fi
+
+if [[ "$SHUTDOWN_MODE" == check ]]; then
+    printf 'Podman shutdown preflight passed. No Pod or volume was stopped or removed.\n'
+    exit 0
+fi
 
 if podman pod inspect "$POD_NAME" >/dev/null 2>&1; then
     printf 'Stopping Pod %s gracefully (timeout: %ss).\n' "$POD_NAME" "$STOP_TIMEOUT"

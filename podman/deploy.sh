@@ -50,7 +50,7 @@ IMAGE_ARCHIVE_DIR="$(yaml_path image.archive_dir)"
 REDIS_BASE_IMAGE="$(yaml_require image.redis_base)"
 RABBITMQ_BASE_IMAGE="$(yaml_require image.rabbitmq_base)"
 TDENGINE_BASE_IMAGE="$(yaml_require image.tdengine_base)"
-MYSQL_IMAGE="$(yaml_require image.mysql_runtime)"
+MYSQL_BASE_IMAGE="$(yaml_require image.mysql_base)"
 INIT_IMAGE="$(yaml_require image.init_runtime)"
 SERVER_IMAGE="$(yaml_require image.server_runtime)"
 WEB_IMAGE="$(yaml_require image.web_runtime)"
@@ -59,7 +59,7 @@ MALL_IMAGE="$(yaml_require image.mall_runtime)"
 REDIS_ARCHIVE="$(yaml_require archive.redis_base)"
 RABBITMQ_ARCHIVE="$(yaml_require archive.rabbitmq_base)"
 TDENGINE_ARCHIVE="$(yaml_require archive.tdengine_base)"
-MYSQL_RUNTIME_ARCHIVE="$(yaml_require archive.mysql_runtime)"
+MYSQL_BASE_ARCHIVE="$(yaml_require archive.mysql_base)"
 INIT_RUNTIME_ARCHIVE="$(yaml_require archive.init_runtime)"
 SERVER_RUNTIME_ARCHIVE="$(yaml_require archive.server_runtime)"
 WEB_RUNTIME_ARCHIVE="$(yaml_require archive.web_runtime)"
@@ -80,22 +80,11 @@ RABBITMQ_VOLUME="$(yaml_require volume.rabbitmq)"
 TDENGINE_VOLUME="$(yaml_require volume.tdengine)"
 
 MYSQL_DATABASE="$(yaml_require mysql.database)"
-MYSQL_DATASET="$(yaml_require mysql.dataset)"
 MYSQL_ROOT_PASSWORD="$(yaml_require mysql.root_password)"
 MYSQL_CHARACTER_SET="$(yaml_require mysql.character_set)"
 MYSQL_COLLATION="$(yaml_require mysql.collation)"
 MYSQL_AUTHENTICATION_PLUGIN="$(yaml_require mysql.authentication_plugin)"
 MYSQL_TIMEZONE="$(yaml_require mysql.timezone)"
-MYSQL_COMPATIBILITY_MIGRATION_MANIFEST="$(yaml_path mysql.compatibility_migration_manifest)"
-
-[[ "$MYSQL_DATASET" =~ ^[a-z0-9][a-z0-9._-]*$ ]] || {
-    printf 'mysql.dataset contains unsupported characters: %s\n' "$MYSQL_DATASET" >&2
-    exit 2
-}
-[[ -s "${PROJECT_ROOT}/database/datasets/${MYSQL_DATASET}.manifest" ]] || {
-    printf 'Selected MySQL dataset manifest is missing: %s\n' "$MYSQL_DATASET" >&2
-    exit 2
-}
 RABBITMQ_USERNAME="$(yaml_require rabbitmq.username)"
 RABBITMQ_PASSWORD="$(yaml_require rabbitmq.password)"
 TDENGINE_HOST="$(yaml_require tdengine.host)"
@@ -618,26 +607,6 @@ configure_proxy() {
     fi
 }
 
-apply_mysql_compatibility_migrations() {
-    require_file "$MYSQL_COMPATIBILITY_MIGRATION_MANIFEST"
-    local manifest_dir migration_path migration_file
-    manifest_dir="$(cd -- "$(dirname -- "$MYSQL_COMPATIBILITY_MIGRATION_MANIFEST")" && pwd)"
-    while IFS= read -r migration_path || [[ -n "$migration_path" ]]; do
-        [[ -n "$migration_path" && "$migration_path" != \#* ]] || continue
-        if [[ "$migration_path" == /* ]]; then
-            migration_file="$migration_path"
-        else
-            migration_file="${manifest_dir}/${migration_path}"
-        fi
-        require_file "$migration_file"
-        printf 'Applying idempotent MySQL compatibility migration: %s\n' "$(basename -- "$migration_file")"
-        podman_cmd exec -i "$MYSQL_CONTAINER" \
-            mysql "--default-character-set=${MYSQL_CHARACTER_SET}" \
-            "-u${MYSQL_USER}" "-p${MYSQL_ROOT_PASSWORD}" "--database=${MYSQL_DATABASE}" \
-            < "$migration_file"
-    done < "$MYSQL_COMPATIBILITY_MIGRATION_MANIFEST"
-}
-
 apply_runtime_file_storage() {
     [[ "$FILE_STORAGE_MODE" == "database" ]] || {
         printf 'file.storage_mode currently supports only database; got: %s\n' "$FILE_STORAGE_MODE" >&2
@@ -662,7 +631,7 @@ check_archive_mode_prerequisites() {
         "$REDIS_BASE_IMAGE"
         "$RABBITMQ_BASE_IMAGE"
         "$TDENGINE_BASE_IMAGE"
-        "$MYSQL_IMAGE"
+        "$MYSQL_BASE_IMAGE"
         "$INIT_IMAGE"
         "$SERVER_IMAGE"
         "$WEB_IMAGE"
@@ -672,7 +641,7 @@ check_archive_mode_prerequisites() {
         "$(image_archive_path "$REDIS_ARCHIVE")"
         "$(image_archive_path "$RABBITMQ_ARCHIVE")"
         "$(image_archive_path "$TDENGINE_ARCHIVE")"
-        "$(image_archive_path "$MYSQL_RUNTIME_ARCHIVE")"
+        "$(image_archive_path "$MYSQL_BASE_ARCHIVE")"
         "$(image_archive_path "$INIT_RUNTIME_ARCHIVE")"
         "$(image_archive_path "$SERVER_RUNTIME_ARCHIVE")"
         "$(image_archive_path "$WEB_RUNTIME_ARCHIVE")"
@@ -690,7 +659,7 @@ ensure_deployment_images() {
     ensure_image "$REDIS_BASE_IMAGE" "$(image_archive_path "$REDIS_ARCHIVE")"
     ensure_image "$RABBITMQ_BASE_IMAGE" "$(image_archive_path "$RABBITMQ_ARCHIVE")"
     ensure_image "$TDENGINE_BASE_IMAGE" "$(image_archive_path "$TDENGINE_ARCHIVE")"
-    ensure_image "$MYSQL_IMAGE" "$(image_archive_path "$MYSQL_RUNTIME_ARCHIVE")"
+    ensure_image "$MYSQL_BASE_IMAGE" "$(image_archive_path "$MYSQL_BASE_ARCHIVE")"
     ensure_image "$INIT_IMAGE" "$(image_archive_path "$INIT_RUNTIME_ARCHIVE")"
     ensure_image "$SERVER_IMAGE" "$(image_archive_path "$SERVER_RUNTIME_ARCHIVE")"
     ensure_image "$WEB_IMAGE" "$(image_archive_path "$WEB_RUNTIME_ARCHIVE")"
@@ -711,7 +680,8 @@ replace_server_only() {
         printf 'MySQL container is not running: %s. Use startup_mode=replace first.\n' "$MYSQL_CONTAINER" >&2
         return 1
     }
-    apply_mysql_compatibility_migrations
+    bash "${SCRIPT_DIR}/internal/provision-database.sh" "$YAML_CONFIG_PATH"
+    bash "${SCRIPT_DIR}/internal/provision-marketing-provider.sh" "$YAML_CONFIG_PATH"
     apply_runtime_file_storage
     if container_is_running "$SERVER_CONTAINER"; then
         podman_cmd stop --time "$STOP_TIMEOUT" "$SERVER_CONTAINER"
@@ -751,6 +721,10 @@ replace_mall_only() {
 }
 
 validate_configuration
+if [[ "$START_MODE" == "check" ]]; then
+    bash "${SCRIPT_DIR}/internal/provision-database.sh" "$YAML_CONFIG_PATH"
+    bash "${SCRIPT_DIR}/internal/provision-marketing-provider.sh" "$YAML_CONFIG_PATH"
+fi
 verify_rootless_podman
 configure_proxy
 
@@ -840,10 +814,9 @@ printf 'Starting infrastructure containers.\n'
 podman_cmd run -d --replace --name "$MYSQL_CONTAINER" --pod "$POD_NAME" --pull=never \
     --volume "${MYSQL_VOLUME}:/var/lib/mysql" \
     --env "MYSQL_DATABASE=${MYSQL_DATABASE}" \
-    --env "MYSQL_DATASET=${MYSQL_DATASET}" \
     --env "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}" \
     --env "TZ=${MYSQL_TIMEZONE}" \
-    "$MYSQL_IMAGE" \
+    "$MYSQL_BASE_IMAGE" \
     "--character-set-server=${MYSQL_CHARACTER_SET}" \
     "--collation-server=${MYSQL_COLLATION}" \
     "--default-authentication-plugin=${MYSQL_AUTHENTICATION_PLUGIN}"
@@ -863,12 +836,10 @@ podman_cmd run -d --replace --name "$TDENGINE_CONTAINER" --pod "$POD_NAME" --pul
     --env "TAOS_FQDN=${TDENGINE_FQDN}" \
     "$TDENGINE_BASE_IMAGE"
 
-wait_for 'MySQL' "$MYSQL_ATTEMPTS" podman_cmd exec "$MYSQL_CONTAINER" mysqladmin ping -h "$MYSQL_HEALTH_HOST" --silent &
+wait_for 'MySQL' "$MYSQL_ATTEMPTS" podman_cmd exec --env "MYSQL_PWD=${MYSQL_ROOT_PASSWORD}" \
+    "$MYSQL_CONTAINER" mysql --user "$MYSQL_USER" --host "$MYSQL_HEALTH_HOST" \
+    --batch --skip-column-names --execute 'SELECT 1' &
 mysql_ready_pid=$!
-wait_for 'MySQL schema initialization' "$MYSQL_SCHEMA_ATTEMPTS" podman_cmd exec "$MYSQL_CONTAINER" \
-    mysql "--default-character-set=${MYSQL_CHARACTER_SET}" \
-    "-u${MYSQL_USER}" "-p${MYSQL_ROOT_PASSWORD}" "--database=${MYSQL_DATABASE}" -Nse "$MYSQL_SCHEMA_QUERY" &
-mysql_schema_ready_pid=$!
 wait_for 'Redis' "$REDIS_ATTEMPTS" podman_cmd exec "$REDIS_CONTAINER" redis-cli ping &
 redis_ready_pid=$!
 # Run the probe as RabbitMQ's own user. Running this Erlang client as root
@@ -886,8 +857,11 @@ initialize_tdengine &
 tdengine_init_pid=$!
 
 wait "$mysql_ready_pid"
-wait "$mysql_schema_ready_pid"
-apply_mysql_compatibility_migrations
+bash "${SCRIPT_DIR}/internal/provision-database.sh" "$YAML_CONFIG_PATH"
+wait_for 'MySQL schema initialization' "$MYSQL_SCHEMA_ATTEMPTS" podman_cmd exec "$MYSQL_CONTAINER" \
+    mysql "--default-character-set=${MYSQL_CHARACTER_SET}" \
+    "-u${MYSQL_USER}" "-p${MYSQL_ROOT_PASSWORD}" "--database=${MYSQL_DATABASE}" -Nse "$MYSQL_SCHEMA_QUERY"
+bash "${SCRIPT_DIR}/internal/provision-marketing-provider.sh" "$YAML_CONFIG_PATH"
 apply_runtime_file_storage
 wait "$redis_ready_pid"
 wait "$rabbitmq_ready_pid"

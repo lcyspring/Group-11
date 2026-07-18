@@ -65,6 +65,8 @@ Web、Mall 及单组件更新均使用 `podman run --replace`。只有 `stop.sh`
 - `ghcr.io/elel-code` 下两个编译工具链镜像当前为 public，pull 无需登录，push 仍需维护者登录；
 - Server/Web/Mall 项目运行镜像只能在编译成功后由 `build-images.sh` 独立封装；`deploy.sh`
   不读取源码产物，也不执行镜像构建。
+- MySQL 直接使用 `docker.io/library/mysql:8.0`；`database/` SQL 留在仓库，由 `deploy.sh` 在部署期
+  通过 stdin 初始化确认空库或重放幂等兼容清单，不烘焙到运行镜像。
 
 ## 配置分类
 
@@ -79,7 +81,8 @@ Web、Mall 及单组件更新均使用 `podman run --replace`。只有 `stop.sh`
 ## 安全边界
 
 - `runtime-local-check.yaml` 不改变 Pod/卷；
-- 删除数据卷必须在 YAML 同时选择 stop 和 `remove_volumes_on_down: true`；
+- 删除数据卷必须在 YAML 同时选择 stop、`remove_volumes_on_down: true` 和
+  `confirm_persistent_data_reset: true`；
 - 恢复覆盖真源库必须二次授权且 Server 已停止；
 - 真实密码只写被 Git 忽略的本机 YAML；
 - 编译镜像 tar、备份文件和 checksum 均被 Git 忽略，不提交仓库。
