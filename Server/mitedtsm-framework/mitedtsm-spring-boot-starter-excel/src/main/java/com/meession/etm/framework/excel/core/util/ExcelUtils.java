@@ -10,6 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -43,6 +44,17 @@ public class ExcelUtils {
         // 设置 header 和 contentType。写在最后的原因是，避免报错时，响应 contentType 已经被修改了
         response.addHeader("Content-Disposition", "attachment;filename=" + HttpUtils.encodeUtf8(filename));
         response.setContentType("application/vnd.ms-excel;charset=UTF-8");
+    }
+
+    /** 将 Excel 写入内存，供异步任务保存到受管文件存储。 */
+    public static <T> byte[] writeBytes(String sheetName, Class<T> head, List<T> data) {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        FastExcelFactory.write(output, head)
+                .autoCloseStream(false)
+                .registerWriteHandler(new ColumnWidthMatchStyleStrategy())
+                .registerConverter(new LongStringConverter())
+                .sheet(sheetName).doWrite(data);
+        return output.toByteArray();
     }
 
     public static <T> List<T> read(MultipartFile file, Class<T> head) throws IOException {

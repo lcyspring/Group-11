@@ -41,4 +41,10 @@ public class FileApiImpl implements FileApi {
         return fileService.getFileContent(configId, path);
     }
 
+    @Override
+    @SneakyThrows
+    public void deleteFileByUrl(String url) {
+        fileService.deleteFile(fileService.getFileByUrl(url).getId());
+    }
+
 }

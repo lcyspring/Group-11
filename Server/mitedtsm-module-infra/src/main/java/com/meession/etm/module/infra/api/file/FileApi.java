@@ -63,4 +63,7 @@ public interface FileApi {
      */
     byte[] getFileContent(Long configId, @NotEmpty(message = "文件路径不能为空") String path);
 
+    /** 删除由业务模块创建的受管文件。 */
+    void deleteFileByUrl(@NotEmpty(message = "URL 不能为空") String url);
+
 }

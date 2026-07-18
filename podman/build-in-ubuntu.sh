@@ -106,6 +106,7 @@ BUILD_COMMON_TEST_PATTERN="$(config_value build.common_test_pattern '')"
 BUILD_FRAMEWORK_TESTS="$(normalize_bool "$(config_value build.framework_tests false)")"
 BUILD_FRAMEWORK_COVERAGE="$(normalize_bool "$(config_value build.framework_coverage false)")"
 BUILD_FRAMEWORK_TEST_PATTERN="$(config_value build.framework_test_pattern '')"
+BUILD_FRAMEWORK_MODULES="$(config_value build.framework_modules 'mitedtsm-framework/mitedtsm-spring-boot-starter-security,mitedtsm-framework/mitedtsm-spring-boot-starter-web')"
 BUILD_SYSTEM_TESTS="$(normalize_bool "$(config_value build.system_tests false)")"
 BUILD_SYSTEM_COVERAGE="$(normalize_bool "$(config_value build.system_coverage false)")"
 BUILD_SYSTEM_TEST_PATTERN="$(config_value build.system_test_pattern '')"
@@ -159,6 +160,11 @@ if [[ "$BUILD_FRAMEWORK_COVERAGE" == "true" && "$BUILD_FRAMEWORK_TESTS" != "true
 fi
 if [[ "$BUILD_FRAMEWORK_TESTS" == "true" && ! "$BUILD_FRAMEWORK_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?,]+$ ]]; then
     printf 'build.framework_test_pattern is required for framework tests and contains unsupported characters.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_FRAMEWORK_TESTS" == "true" &&
+      ! "$BUILD_FRAMEWORK_MODULES" =~ ^[A-Za-z0-9_./-]+(,[A-Za-z0-9_./-]+)*$ ]]; then
+    printf 'build.framework_modules must be a comma-separated Maven module path list.\n' >&2
     exit 2
 fi
 if [[ "$BUILD_SYSTEM_COVERAGE" == "true" && "$BUILD_SYSTEM_TESTS" != "true" ]]; then
@@ -253,6 +259,7 @@ podman run "${podman_proxy_args[@]}" --rm --pull=never \
     --env "BUILD_FRAMEWORK_TESTS=$BUILD_FRAMEWORK_TESTS" \
     --env "BUILD_FRAMEWORK_COVERAGE=$BUILD_FRAMEWORK_COVERAGE" \
     --env "BUILD_FRAMEWORK_TEST_PATTERN=$BUILD_FRAMEWORK_TEST_PATTERN" \
+    --env "BUILD_FRAMEWORK_MODULES=$BUILD_FRAMEWORK_MODULES" \
     --env "BUILD_SYSTEM_TESTS=$BUILD_SYSTEM_TESTS" \
     --env "BUILD_SYSTEM_COVERAGE=$BUILD_SYSTEM_COVERAGE" \
     --env "BUILD_SYSTEM_TEST_PATTERN=$BUILD_SYSTEM_TEST_PATTERN" \

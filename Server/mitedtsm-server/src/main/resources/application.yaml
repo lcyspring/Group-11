@@ -381,6 +381,18 @@ mitedtsm:
     customer-import:
       max-rows: ${MITEDTSM_CRM_CUSTOMER_IMPORT_MAX_ROWS:2000}
       preview-ttl-minutes: ${MITEDTSM_CRM_CUSTOMER_IMPORT_PREVIEW_TTL_MINUTES:60}
+    export-task:
+      enabled: ${MITEDTSM_CRM_EXPORT_TASK_ENABLED:true}
+      batch-size: ${MITEDTSM_CRM_EXPORT_TASK_BATCH_SIZE:10}
+      max-batch-size: ${MITEDTSM_CRM_EXPORT_TASK_MAX_BATCH_SIZE:100}
+      max-pending-per-user: ${MITEDTSM_CRM_EXPORT_TASK_MAX_PENDING_PER_USER:3}
+      max-rows: ${MITEDTSM_CRM_EXPORT_TASK_MAX_ROWS:5000}
+      retention-hours: ${MITEDTSM_CRM_EXPORT_TASK_RETENTION_HOURS:24}
+      token-ttl-seconds: ${MITEDTSM_CRM_EXPORT_TASK_TOKEN_TTL_SECONDS:300}
+      cron: ${MITEDTSM_CRM_EXPORT_TASK_CRON:0/5 * * * * ?}
+      zone: ${MITEDTSM_CRM_EXPORT_TASK_ZONE:Asia/Shanghai}
+      lock-key: ${MITEDTSM_CRM_EXPORT_TASK_LOCK_KEY:crm:export-task:scheduler}
+      lock-lease-seconds: ${MITEDTSM_CRM_EXPORT_TASK_LOCK_LEASE_SECONDS:300}
     authorization:
       # 平台超级管理员和专用 CRM 管理员均可执行 CRM 管理命令；普通角色仍受功能权限和数据范围约束。
       admin-role-codes: [super_admin, crm_admin]

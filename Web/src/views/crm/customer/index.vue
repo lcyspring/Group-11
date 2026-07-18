@@ -168,6 +168,15 @@
               <Icon class="mr-5px" icon="ep:download" />
               {{ t('common.export') }}
             </el-button>
+            <el-button
+              v-hasPermi="['crm:customer:export']"
+              plain
+              type="success"
+              @click="openExportTasks"
+            >
+              <Icon class="mr-5px" icon="ep:clock" />
+              {{ t('exportTaskEntry') }}
+            </el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -295,15 +304,16 @@
   <!-- 表单弹窗：添加/修改 -->
   <CustomerForm ref="formRef" @success="getList" />
   <CustomerImportForm ref="importFormRef" @success="getList" />
+  <CustomerExportTaskDialog ref="exportTaskDialogRef" />
 </template>
 
 <script lang="ts" setup>
 import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import { dateFormatter } from '@/utils/formatTime'
-import download from '@/utils/download'
 import * as CustomerApi from '@/api/crm/customer'
 import CustomerForm from './CustomerForm.vue'
 import CustomerImportForm from './CustomerImportForm.vue'
+import CustomerExportTaskDialog from './CustomerExportTaskDialog.vue'
 import { TabsPaneContext } from 'element-plus'
 
 defineOptions({ name: 'CrmCustomer' })
@@ -417,15 +427,22 @@ const handleImport = () => {
   importFormRef.value?.open()
 }
 
+const exportTaskDialogRef = ref<InstanceType<typeof CustomerExportTaskDialog>>()
+const openExportTasks = () => exportTaskDialogRef.value?.open()
+
 /** 导出按钮操作 */
 const handleExport = async () => {
   try {
     // 导出的二次确认
     await message.exportConfirm()
-    // 发起导出
+    // 提交后台任务；服务端冻结当前筛选和对象权限快照
     exportLoading.value = true
-    const data = await CustomerApi.exportCustomer(queryParams)
-    download.excel(data, t('exportFileName') + '.xls')
+    await CustomerApi.createCustomerExportTask({
+      ...queryParams,
+      sceneType: queryParams.sceneType ? Number(queryParams.sceneType) : undefined
+    })
+    message.success(t('exportTaskSubmitted'))
+    await exportTaskDialogRef.value?.open()
   } catch {
   } finally {
     exportLoading.value = false

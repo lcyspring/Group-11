@@ -22,6 +22,7 @@ import com.meession.etm.module.crm.service.contact.CrmContactService;
 import com.meession.etm.module.crm.service.customer.CrmCustomer360Service;
 import com.meession.etm.module.crm.service.customer.CrmCustomerImportPreviewService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
+import com.meession.etm.module.crm.service.customer.CrmCustomerResponseAssembler;
 import com.meession.etm.module.crm.service.permission.CrmPermissionService;
 import com.meession.etm.module.system.api.dept.DeptApi;
 import com.meession.etm.module.system.api.dept.dto.DeptRespDTO;
@@ -63,6 +64,8 @@ public class CrmCustomerController {
     private CrmCustomerService customerService;
     @Resource
     private CrmCustomerImportPreviewService customerImportPreviewService;
+    @Resource
+    private CrmCustomerResponseAssembler customerResponseAssembler;
     @Resource
     private CrmCustomer360Service customer360Service;
     @Resource
@@ -216,47 +219,7 @@ public class CrmCustomerController {
     }
 
     public List<CrmCustomerRespVO> buildCustomerDetailList(List<CrmCustomerDO> list) {
-        if (CollUtil.isEmpty(list)) {
-            return java.util.Collections.emptyList();
-        }
-        // 1.1 批量获取首联系人，避免客户列表产生 N+1 查询
-        Map<Long, CrmContactDO> primaryContactMap = convertMap(
-                contactService.getPrimaryContactListByCustomerIds(convertSet(list, CrmCustomerDO::getId)),
-                CrmContactDO::getCustomerId);
-        // 1.2 批量获取上级客户名称，避免列表产生 N+1 查询
-        Set<Long> parentCustomerIds = convertSet(list, CrmCustomerDO::getParentCustomerId);
-        parentCustomerIds.remove(null);
-        Map<Long, CrmCustomerDO> parentCustomerMap = customerService.getCustomerMap(parentCustomerIds);
-        // 1.3 获取创建人、负责人列表
-        Map<Long, AdminUserRespDTO> userMap = adminUserApi.getUserMap(convertSetByFlatMap(list,
-                contact -> Stream.of(NumberUtils.parseLong(contact.getCreator()), contact.getOwnerUserId(),
-                        contact.getPoolPreviousOwnerUserId())));
-        Map<Long, DeptRespDTO> deptMap = deptApi.getDeptMap(convertSet(userMap.values(), AdminUserRespDTO::getDeptId));
-        // 1.4 获取距离进入公海的时间
-        Map<Long, Long> poolDayMap = getPoolDayMap(list);
-        // 2. 转换成 VO
-        return BeanUtils.toBean(list, CrmCustomerRespVO.class, customerVO -> {
-            customerVO.setAreaName(AreaUtils.format(customerVO.getAreaId()));
-            // 2.1 设置首联系人姓名和手机
-            MapUtils.findAndThen(primaryContactMap, customerVO.getId(), contact -> customerVO
-                    .setPrimaryContactName(contact.getName()).setPrimaryContactMobile(contact.getMobile()));
-            // 2.2 设置上级客户名称
-            MapUtils.findAndThen(parentCustomerMap, customerVO.getParentCustomerId(), parent ->
-                    customerVO.setParentCustomerName(parent.getName()));
-            // 2.3 设置创建人、负责人名称
-            MapUtils.findAndThen(userMap, NumberUtils.parseLong(customerVO.getCreator()),
-                    user -> customerVO.setCreatorName(user.getNickname()));
-            MapUtils.findAndThen(userMap, customerVO.getOwnerUserId(), user -> {
-                customerVO.setOwnerUserName(user.getNickname());
-                MapUtils.findAndThen(deptMap, user.getDeptId(), dept -> customerVO.setOwnerUserDeptName(dept.getName()));
-            });
-            MapUtils.findAndThen(userMap, customerVO.getPoolPreviousOwnerUserId(),
-                    user -> customerVO.setPoolPreviousOwnerUserName(user.getNickname()));
-            // 2.4 设置距离进入公海的时间
-            if (customerVO.getOwnerUserId() != null) {
-                customerVO.setPoolDay(poolDayMap.get(customerVO.getId()));
-            }
-        });
+        return customerResponseAssembler.buildDetailList(list);
     }
 
     @GetMapping("/put-pool-remind-page")
@@ -296,10 +259,6 @@ public class CrmCustomerController {
      * @param list 客户列表
      * @return key 客户编号, value 距离进入公海的时间
      */
-    private Map<Long, Long> getPoolDayMap(List<CrmCustomerDO> list) {
-        return customerService.getPoolDayMap(list);
-    }
-
     @GetMapping(value = "/simple-list")
     @Operation(summary = "获取客户精简信息列表", description = "只包含有读权限的客户，主要用于前端的下拉选项")
     public CommonResult<List<CrmCustomerRespVO>> getCustomerSimpleList() {

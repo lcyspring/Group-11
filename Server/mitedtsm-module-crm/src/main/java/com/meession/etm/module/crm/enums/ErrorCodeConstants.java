@@ -462,4 +462,15 @@ public interface ErrorCodeConstants {
     ErrorCode WORK_REPORT_SUBMITTED_IMMUTABLE = new ErrorCode(1_020_023_003, "已提交的工作报告不能修改或删除");
     ErrorCode WORK_REPORT_RECEIVER_REQUIRED = new ErrorCode(1_020_023_004, "工作报告至少需要一名接收人");
 
+    // ========== CRM 异步导出任务 1_020_024_000 ==========
+    ErrorCode EXPORT_TASK_DISABLED = new ErrorCode(1_020_024_000, "CRM 异步导出未在 YAML 中启用");
+    ErrorCode EXPORT_TASK_CAPACITY_EXCEEDED = new ErrorCode(1_020_024_001, "当前排队或运行中的导出任务已达到上限 {}");
+    ErrorCode EXPORT_TASK_ROW_LIMIT = new ErrorCode(1_020_024_002, "本次导出 {} 行，超过 YAML 上限 {}");
+    ErrorCode EXPORT_TASK_NOT_EXISTS = new ErrorCode(1_020_024_003, "导出任务不存在或无权访问");
+    ErrorCode EXPORT_TASK_STATUS_INVALID = new ErrorCode(1_020_024_004, "当前导出任务状态不允许该操作");
+    ErrorCode EXPORT_TASK_EXPIRED = new ErrorCode(1_020_024_005, "导出任务或结果已过期，请重新提交");
+    ErrorCode EXPORT_TASK_TOKEN_INVALID = new ErrorCode(1_020_024_006, "下载令牌无效、已使用或已过期");
+    ErrorCode EXPORT_TASK_OBJECT_CHANGED = new ErrorCode(1_020_024_007, "导出对象已删除或权限发生变化，请重新提交任务");
+    ErrorCode EXPORT_TASK_PROVIDER_NOT_EXISTS = new ErrorCode(1_020_024_008, "导出对象类型【{}】未注册 Provider");
+
 }

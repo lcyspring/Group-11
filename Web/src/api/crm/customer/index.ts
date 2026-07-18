@@ -82,6 +82,34 @@ export interface CustomerImportResultVO {
   failureCustomerNames: Record<string, string>
 }
 
+export enum ExportTaskStatus {
+  QUEUED = 10,
+  RUNNING = 20,
+  SUCCESS = 30,
+  FAILED = 40,
+  EXPIRED = 50
+}
+
+export interface ExportTaskVO {
+  id: number
+  objectType: 'CUSTOMER' | string
+  status: ExportTaskStatus
+  totalCount: number
+  fileName?: string
+  failureReason?: string
+  downloadAvailable: boolean
+  startedAt?: string | number
+  finishedAt?: string | number
+  downloadedAt?: string | number
+  expiresAt: string | number
+  createTime: string | number
+}
+
+export interface ExportDownloadTokenVO {
+  token: string
+  expiresAt: string | number
+}
+
 export enum CustomerLifecycleStatus {
   POTENTIAL = 10,
   INTENTIONAL = 20,
@@ -257,6 +285,41 @@ export const deleteCustomer = async (id: number) => {
 // 导出客户 Excel
 export const exportCustomer = async (params: any) => {
   return await request.download({ url: `/crm/customer/export-excel`, params })
+}
+
+// 创建客户异步导出任务。服务端会冻结筛选条件和对象权限快照。
+export const createCustomerExportTask = async (data: Record<string, unknown>) => {
+  return await request.post<number>({ url: '/crm/export-task/customer', data })
+}
+
+export const getExportTaskPage = async (params: {
+  pageNo: number
+  pageSize: number
+  objectType?: string
+  status?: ExportTaskStatus
+}) => {
+  return await request.get<{ list: ExportTaskVO[]; total: number }>({
+    url: '/crm/export-task/page',
+    params
+  })
+}
+
+export const getExportTask = async (id: number) => {
+  return await request.get<ExportTaskVO>({ url: '/crm/export-task/get', params: { id } })
+}
+
+export const issueExportDownloadToken = async (id: number) => {
+  return await request.post<ExportDownloadTokenVO>({
+    url: '/crm/export-task/download-token',
+    data: { id }
+  })
+}
+
+export const downloadExportTask = async (id: number, token: string) => {
+  return await request.download<Blob>({
+    url: '/crm/export-task/download',
+    params: { id, token }
+  })
 }
 
 // 下载客户导入模板
