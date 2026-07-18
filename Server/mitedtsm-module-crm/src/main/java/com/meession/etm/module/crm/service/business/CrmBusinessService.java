@@ -173,6 +173,22 @@ public interface CrmBusinessService {
     Long getTotalDealAmountByCustomerId(Long customerId);
 
     /**
+     * 批量获取客户商机数量
+     *
+     * @param customerIds 客户编号集合
+     * @return 客户编号 -> 商机数量 的 Map
+     */
+    Map<Long, Long> getBusinessCountMapByCustomerIds(Collection<Long> customerIds);
+
+    /**
+     * 批量获取客户成交总金额
+     *
+     * @param customerIds 客户编号集合
+     * @return 客户编号 -> 成交总金额 的 Map
+     */
+    Map<Long, Long> getTotalDealAmountMapByCustomerIds(Collection<Long> customerIds);
+
+    /**
      * 获得使用指定商机状态组的商机数量
      *
      * @param statusTypeId 商机状态组编号

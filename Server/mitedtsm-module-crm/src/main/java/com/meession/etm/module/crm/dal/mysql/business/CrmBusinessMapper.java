@@ -14,6 +14,7 @@ import org.apache.ibatis.annotations.Mapper;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 商机 Mapper
@@ -75,6 +76,33 @@ public interface CrmBusinessMapper extends BaseMapperX<CrmBusinessDO> {
         return selectSum(CrmBusinessDO::getTotalPrice,
                 new LambdaQueryWrapperX<CrmBusinessDO>()
                         .eq(CrmBusinessDO::getCustomerId, customerId));
+    }
+
+    default Map<Long, Long> selectBusinessCountMapByCustomerIds(Collection<Long> customerIds) {
+        return selectMaps(new LambdaQueryWrapperX<CrmBusinessDO>()
+                        .select(CrmBusinessDO::getCustomerId, "COUNT(*) as count")
+                        .in(CrmBusinessDO::getCustomerId, customerIds)
+                        .groupBy(CrmBusinessDO::getCustomerId))
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        row -> ((Number) row.get("customerId")).longValue(),
+                        row -> ((Number) row.get("count")).longValue()
+                ));
+    }
+
+    default Map<Long, Long> selectTotalDealAmountMapByCustomerIds(Collection<Long> customerIds) {
+        return selectMaps(new LambdaQueryWrapperX<CrmBusinessDO>()
+                        .select(CrmBusinessDO::getCustomerId, "SUM(total_price) as totalAmount")
+                        .in(CrmBusinessDO::getCustomerId, customerIds)
+                        .groupBy(CrmBusinessDO::getCustomerId))
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        row -> ((Number) row.get("customerId")).longValue(),
+                        row -> {
+                            Object totalAmount = row.get("totalAmount");
+                            return totalAmount != null ? ((Number) totalAmount).longValue() : 0L;
+                        }
+                ));
     }
 
 }

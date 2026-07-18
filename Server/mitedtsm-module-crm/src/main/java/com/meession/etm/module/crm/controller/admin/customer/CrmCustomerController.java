@@ -142,13 +142,9 @@ public class CrmCustomerController {
         Map<Long, DeptRespDTO> deptMap = deptApi.getDeptMap(convertSet(userMap.values(), AdminUserRespDTO::getDeptId));
         // 1.2 获取距离进入公海的时间
         Map<Long, Long> poolDayMap = getPoolDayMap(list);
-        // 1.3 获取商机数量和成交金额
-        Map<Long, Long> businessCountMap = MapUtils.newHashMap();
-        Map<Long, Long> totalDealAmountMap = MapUtils.newHashMap();
-        list.forEach(customer -> {
-            businessCountMap.put(customer.getId(), businessService.getBusinessCountByCustomerId(customer.getId()));
-            totalDealAmountMap.put(customer.getId(), businessService.getTotalDealAmountByCustomerId(customer.getId()));
-        });
+        // 1.3 获取商机数量和成交金额（批量查询，优化性能）
+        Map<Long, Long> businessCountMap = businessService.getBusinessCountMapByCustomerIds(convertSet(list, CrmCustomerDO::getId));
+        Map<Long, Long> totalDealAmountMap = businessService.getTotalDealAmountMapByCustomerIds(convertSet(list, CrmCustomerDO::getId));
         // 2. 转换成 VO
         return BeanUtils.toBean(list, CrmCustomerRespVO.class, customerVO -> {
             customerVO.setAreaName(AreaUtils.format(customerVO.getAreaId()));

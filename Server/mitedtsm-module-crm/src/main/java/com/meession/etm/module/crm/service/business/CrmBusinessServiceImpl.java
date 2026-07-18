@@ -43,6 +43,7 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static com.meession.etm.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static com.meession.etm.framework.common.util.collection.CollectionUtils.*;
@@ -370,6 +371,22 @@ public class CrmBusinessServiceImpl implements CrmBusinessService {
     @Override
     public Long getTotalDealAmountByCustomerId(Long customerId) {
         return businessMapper.selectTotalDealAmountByCustomerId(customerId);
+    }
+
+    @Override
+    public Map<Long, Long> getBusinessCountMapByCustomerIds(Collection<Long> customerIds) {
+        if (CollUtil.isEmpty(customerIds)) {
+            return Collections.emptyMap();
+        }
+        return businessMapper.selectBusinessCountMapByCustomerIds(customerIds);
+    }
+
+    @Override
+    public Map<Long, Long> getTotalDealAmountMapByCustomerIds(Collection<Long> customerIds) {
+        if (CollUtil.isEmpty(customerIds)) {
+            return Collections.emptyMap();
+        }
+        return businessMapper.selectTotalDealAmountMapByCustomerIds(customerIds);
     }
 
     @Override
