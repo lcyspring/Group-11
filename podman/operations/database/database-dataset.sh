@@ -26,17 +26,20 @@ yaml_config_init "$CONFIG_PATH"
     exit 2
 }
 
-MODE="$(yaml_require operation.dataset_mode)"
+ACTION="$(yaml_require operation.action)"
 MYSQL_CONTAINER="$(yaml_require container.mysql)"
 MYSQL_DATABASE="$(yaml_require mysql.database)"
 MYSQL_USERNAME="$(yaml_require mysql.username)"
 MYSQL_PASSWORD="$(yaml_require mysql.password)"
 DATASET_NAME="$(yaml_require mysql.dataset)"
-CLEANUP_EXISTING="$(yaml_bool mysql.cleanup_existing_before_dataset)"
-CONFIRM_CHANGE="$(yaml_bool mysql.confirm_persistent_data_change)"
+DATASET_MODE="$(yaml_require mysql.dataset_mode)"
 
-[[ "$MODE" == check || "$MODE" == replace ]] || {
-    printf 'operation.dataset_mode must be check or replace.\n' >&2
+[[ "$ACTION" == check || "$ACTION" == apply ]] || {
+    printf 'operation.action must be check or apply.\n' >&2
+    exit 2
+}
+[[ "$DATASET_MODE" == insert || "$DATASET_MODE" == replace ]] || {
+    printf 'mysql.dataset_mode must be insert or replace for an explicit dataset operation.\n' >&2
     exit 2
 }
 [[ "$DATASET_NAME" =~ ^[a-z0-9][a-z0-9._-]*$ ]] || {
@@ -53,6 +56,7 @@ MANIFEST="${PROJECT_ROOT}/database/datasets/${DATASET_NAME}.manifest"
 manifest_dir="$(dirname -- "$MANIFEST")"
 sql_files=()
 has_cleanup=false
+first_entry_is_cleanup=false
 while IFS= read -r entry || [[ -n "$entry" ]]; do
     [[ -n "$entry" && "$entry" != \#* ]] || continue
     [[ "$entry" != /* ]] || { printf 'Absolute dataset paths are forbidden.\n' >&2; exit 2; }
@@ -65,7 +69,11 @@ while IFS= read -r entry || [[ -n "$entry" ]]; do
         printf 'Dataset replacement cannot execute teardown SQL.\n' >&2
         exit 2
     }
-    [[ "$resolved" != "${PROJECT_ROOT}/database/maintenance/cleanup/"* ]] || has_cleanup=true
+    if [[ "$resolved" == "${PROJECT_ROOT}/database/maintenance/cleanup/"* ||
+          "$(basename -- "$resolved")" == *cleanup*.sql ]]; then
+        has_cleanup=true
+        ((${#sql_files[@]} == 0)) && first_entry_is_cleanup=true
+    fi
     sql_files+=("$resolved")
 done < "$MANIFEST"
 
@@ -73,31 +81,33 @@ done < "$MANIFEST"
     printf 'Dataset %s has no executable replacement entries.\n' "$DATASET_NAME" >&2
     exit 2
 }
-if [[ "$CLEANUP_EXISTING" == true && "$has_cleanup" != true ]]; then
-    printf 'Cleanup was requested, but the dataset has no explicit cleanup entry.\n' >&2
-    exit 2
-fi
-if [[ "$CLEANUP_EXISTING" == false && "$has_cleanup" == true ]]; then
-    printf 'Dataset contains cleanup SQL; set mysql.cleanup_existing_before_dataset=true explicitly.\n' >&2
-    exit 2
-fi
+case "$DATASET_MODE" in
+    insert)
+        [[ "$has_cleanup" == false ]] || {
+            printf 'mysql.dataset_mode=insert forbids cleanup SQL in the dataset manifest.\n' >&2
+            exit 2
+        }
+        ;;
+    replace)
+        [[ "$has_cleanup" == true && "$first_entry_is_cleanup" == true ]] || {
+            printf 'mysql.dataset_mode=replace requires cleanup SQL as the first dataset manifest entry.\n' >&2
+            exit 2
+        }
+        ;;
+esac
 
-if [[ "$MODE" == check ]]; then
-    printf 'Dataset replacement configuration is valid: dataset=%s cleanup_existing=%s files=%s\n' \
-        "$DATASET_NAME" "$CLEANUP_EXISTING" "${#sql_files[@]}"
+if [[ "$ACTION" == check ]]; then
+    printf 'Dataset configuration is valid: dataset=%s mode=%s files=%s\n' \
+        "$DATASET_NAME" "$DATASET_MODE" "${#sql_files[@]}"
     exit 0
 fi
 
-[[ "$CONFIRM_CHANGE" == true ]] || {
-    printf 'Refusing persistent data replacement: mysql.confirm_persistent_data_change must be true.\n' >&2
-    exit 2
-}
 command -v podman >/dev/null 2>&1 || { printf 'Podman is required.\n' >&2; exit 1; }
 podman container exists "$MYSQL_CONTAINER" || { printf 'MySQL container is not running.\n' >&2; exit 1; }
 
 for sql_file in "${sql_files[@]}"; do
-    printf 'Applying dataset replacement SQL: %s\n' "${sql_file#${PROJECT_ROOT}/database/}"
+    printf 'Applying dataset %s SQL: %s\n' "$DATASET_MODE" "${sql_file#${PROJECT_ROOT}/database/}"
     podman exec -i "$MYSQL_CONTAINER" mysql --default-character-set=utf8mb4 \
         -u"$MYSQL_USERNAME" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" < "$sql_file"
 done
-printf 'Dataset replacement completed: %s\n' "$DATASET_NAME"
+printf 'Dataset %s completed: %s\n' "$DATASET_MODE" "$DATASET_NAME"

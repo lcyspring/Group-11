@@ -27,9 +27,7 @@ MYSQL_CONTAINER="$(yaml_require container.mysql)"
 MYSQL_DATABASE="$(yaml_require mysql.database)"
 MYSQL_DATASET="$(yaml_require mysql.dataset)"
 MYSQL_DATASET_MANIFEST="$(yaml_path mysql.dataset_manifest)"
-MYSQL_EXISTING_DATASET_POLICY="$(yaml_require mysql.existing_dataset_policy)"
-MYSQL_DATASET_CLEANUP="$(yaml_bool mysql.cleanup_existing_before_dataset)"
-MYSQL_CONFIRM_DATA_CHANGE="$(yaml_bool mysql.confirm_persistent_data_change)"
+MYSQL_DATASET_MODE="$(yaml_require mysql.dataset_mode)"
 MYSQL_BOOTSTRAP_POLICY="$(yaml_require mysql.bootstrap_policy)"
 MYSQL_BOOTSTRAP_MANIFEST="$(yaml_path mysql.bootstrap_manifest)"
 MYSQL_COMPATIBILITY_MANIFEST="$(yaml_path mysql.compatibility_migration_manifest)"
@@ -46,19 +44,10 @@ case "$MYSQL_BOOTSTRAP_POLICY" in
         exit 2
         ;;
 esac
-case "$MYSQL_EXISTING_DATASET_POLICY" in
-    preserve|replace) ;;
-    *) printf 'mysql.existing_dataset_policy must be preserve or replace.\n' >&2; exit 2 ;;
+case "$MYSQL_DATASET_MODE" in
+    preserve|insert|replace) ;;
+    *) printf 'mysql.dataset_mode must be preserve, insert, or replace.\n' >&2; exit 2 ;;
 esac
-if [[ "$MYSQL_EXISTING_DATASET_POLICY" == replace ]]; then
-    [[ "$MYSQL_DATASET_CLEANUP" == true && "$MYSQL_CONFIRM_DATA_CHANGE" == true ]] || {
-        printf 'Replacing an existing dataset requires cleanup_existing_before_dataset=true and confirm_persistent_data_change=true.\n' >&2
-        exit 2
-    }
-elif [[ "$MYSQL_DATASET_CLEANUP" == true || "$MYSQL_CONFIRM_DATA_CHANGE" == true ]]; then
-    printf 'Dataset replacement confirmations must be false when existing_dataset_policy=preserve.\n' >&2
-    exit 2
-fi
 [[ "$MYSQL_CONTAINER" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]] || {
     printf 'container.mysql contains unsupported characters.\n' >&2
     exit 2
@@ -102,6 +91,8 @@ resolve_manifest_entry() {
     printf '%s' "$resolved"
 }
 
+DATASET_HAS_CLEANUP=false
+DATASET_FIRST_ENTRY_IS_CLEANUP=false
 validate_manifest() {
     local manifest="$1" purpose="$2" entry sql_file entries=0
     require_file "$manifest"
@@ -117,6 +108,12 @@ validate_manifest() {
             printf 'Cleanup SQL is forbidden in %s manifest: %s\n' "$purpose" "$entry" >&2
             exit 2
         fi
+        if [[ "$purpose" == dataset &&
+              ( "$sql_file" == "${DATABASE_ROOT}/maintenance/cleanup/"* ||
+                "$(basename -- "$sql_file")" == *cleanup*.sql ) ]]; then
+            DATASET_HAS_CLEANUP=true
+            ((entries == 0)) && DATASET_FIRST_ENTRY_IS_CLEANUP=true
+        fi
         entries=$((entries + 1))
     done < "$manifest"
     [[ "$purpose" == dataset ]] || ((entries > 0)) || {
@@ -129,10 +126,27 @@ validate_manifest "$MYSQL_BOOTSTRAP_MANIFEST" bootstrap
 validate_manifest "$MYSQL_COMPATIBILITY_MANIFEST" compatibility
 validate_manifest "$DATASET_MANIFEST" dataset
 
+case "$MYSQL_DATASET_MODE" in
+    preserve)
+        ;;
+    insert)
+        [[ "$DATASET_HAS_CLEANUP" == false ]] || {
+            printf 'mysql.dataset_mode=insert forbids cleanup SQL in the dataset manifest.\n' >&2
+            exit 2
+        }
+        ;;
+    replace)
+        [[ "$DATASET_HAS_CLEANUP" == true && "$DATASET_FIRST_ENTRY_IS_CLEANUP" == true ]] || {
+            printf 'mysql.dataset_mode=replace requires cleanup SQL as the first dataset manifest entry.\n' >&2
+            exit 2
+        }
+        ;;
+esac
+
 case "$START_MODE" in
     check)
-        printf 'Database deployment preflight passed: policy=%s dataset=%s. No SQL was executed.\n' \
-            "$MYSQL_BOOTSTRAP_POLICY" "$MYSQL_DATASET"
+        printf 'Database deployment preflight passed: bootstrap=%s dataset=%s mode=%s. No SQL was executed.\n' \
+            "$MYSQL_BOOTSTRAP_POLICY" "$MYSQL_DATASET" "$MYSQL_DATASET_MODE"
         exit 0
         ;;
     replace|replace-server) ;;
@@ -190,9 +204,13 @@ elif ((marker_count == 0)); then
         "$table_count" >&2
     exit 1
 else
-    if [[ "$MYSQL_EXISTING_DATASET_POLICY" == replace ]]; then
+    if [[ "$MYSQL_DATASET_MODE" == replace ]]; then
         printf 'Existing MySQL schema detected (%s tables); bootstrap is preserved.\n' "$table_count"
-        printf 'Explicitly replacing existing data from dataset: %s\n' "$MYSQL_DATASET"
+        printf 'Replacing existing dataset (cleanup first, then insert): %s\n' "$MYSQL_DATASET"
+        execute_manifest "$DATASET_MANIFEST" dataset
+    elif [[ "$MYSQL_DATASET_MODE" == insert ]]; then
+        printf 'Existing MySQL schema detected (%s tables); bootstrap is preserved.\n' "$table_count"
+        printf 'Inserting selected dataset without cleanup: %s\n' "$MYSQL_DATASET"
         execute_manifest "$DATASET_MANIFEST" dataset
     else
         printf 'Existing MySQL schema detected (%s tables); bootstrap and dataset are preserved.\n' "$table_count"

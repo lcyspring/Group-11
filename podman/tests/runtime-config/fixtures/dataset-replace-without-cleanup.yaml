@@ -1,7 +1,7 @@
 schema_version: 1
 
 operation:
-  dataset_mode: check
+  action: check
 
 container:
   mysql: mitedtsm-rootless-mysql
@@ -10,6 +10,5 @@ mysql:
   database: mitedtsm_database
   username: root
   password: check-only
-  dataset: none
-  cleanup_existing_before_dataset: false
-  confirm_persistent_data_change: false
+  dataset: legacy-demo-v1
+  dataset_mode: replace

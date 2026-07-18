@@ -148,9 +148,9 @@ bash "${PODMAN_DIR}/operations/database/database-backup.sh" "${PODMAN_DIR}/confi
 bash "${PODMAN_DIR}/operations/database/database-restore.sh" "${PODMAN_DIR}/config/database-backup-check.yaml"
 bash "${PODMAN_DIR}/operations/database/database-dataset.sh" "${PODMAN_DIR}/config/database-dataset-check.yaml"
 expect_exit_2 bash "${PODMAN_DIR}/operations/database/database-dataset.sh" \
-    "${SCRIPT_DIR}/fixtures/dataset-replace-unconfirmed.yaml"
+    "${SCRIPT_DIR}/fixtures/dataset-replace-without-cleanup.yaml"
 expect_exit_2 bash "${PODMAN_DIR}/operations/database/database-dataset.sh" \
-    "${SCRIPT_DIR}/fixtures/dataset-cleanup-not-authorized.yaml"
+    "${SCRIPT_DIR}/fixtures/dataset-insert-with-cleanup.yaml"
 bash "${PODMAN_DIR}/operations/images/build-image-archives.sh" "${PODMAN_DIR}/config/build-image-archives-check.yaml"
 bash "${PODMAN_DIR}/build-images.sh" "${PODMAN_DIR}/config/runtime-images-check.yaml"
 if rg -q 'podman(_cmd)?[[:space:]]+build|Containerfile|target/mitedtsm|dist-prod|unpackage/dist' \

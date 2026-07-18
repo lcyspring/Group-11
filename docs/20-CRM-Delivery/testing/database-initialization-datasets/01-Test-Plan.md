@@ -5,5 +5,5 @@
 3. 验证 `none` 清理 CRM 演示业务数据并保留首次登录所需基础链路；
 4. 验证 `legacy-demo-v1` 保留上游演示数据；
 5. 验证 cleanup 不进入 bootstrap 或 compatibility 清单；
-6. 验证已有库替换必须显式授权 cleanup 和持久数据修改；
+6. 验证 `insert` 禁止 cleanup，`replace` 要求 cleanup 为 manifest 第一项；
 7. 验证配置检查不改变当前 Pod 状态。

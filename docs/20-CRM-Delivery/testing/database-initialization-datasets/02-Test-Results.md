@@ -6,6 +6,6 @@
 - `legacy-demo-v1` 独立空卷：用户 20、CRM 核心演示记录 74；
 - 两个临时数据库容器、卷和测试镜像已清理；
 - 数据集路径越界、teardown 引用、缺失 manifest 均受门禁约束；
-- `cleanup_existing_before_dataset=false` 时执行 cleanup 数据集被拒绝；
-- `replace` 未开启 `confirm_persistent_data_change` 时被拒绝；
+- `dataset_mode=insert` 携带 cleanup 时被拒绝；
+- `dataset_mode=replace` 缺少首项 cleanup 时被拒绝；
 - 现有运行 Pod 未因数据集检查发生变化。

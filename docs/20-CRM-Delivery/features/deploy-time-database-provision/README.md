@@ -23,7 +23,8 @@ mysql:
 - 已存在 `system_users`：保留业务数据，跳过 bootstrap 和数据集，仅重放幂等兼容清单；
 - 非空但缺少 `system_users`：视为未知或不完整库，拒绝破坏性覆盖。
 
-已有库的数据集替换不属于普通部署，必须使用独立运维入口和双确认。整套持久卷重建也必须在停止
+已有库的数据集由运行 YAML 的单一 `mysql.dataset_mode` 控制：`preserve`、`insert` 或 `replace`；
+`replace` 强制先清理旧数据集再插入。整套持久卷重建仍必须在停止
 配置中同时开启 `remove_volumes_on_down` 与 `confirm_persistent_data_reset`。
 
 ## 实现入口
