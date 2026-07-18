@@ -12,6 +12,13 @@ const service = await readFile(new URL(
   '../../../../../../Server/mitedtsm-module-crm/src/main/java/com/meession/etm/module/crm/service/marketing/CrmMarketingOutreachService.java',
   import.meta.url
 ), 'utf8')
+const trackingController = await readFile(new URL(
+  '../../../../../../Server/mitedtsm-module-crm/src/main/java/com/meession/etm/module/crm/controller/app/marketing/AppCrmMarketingTrackingController.java',
+  import.meta.url
+), 'utf8')
+const linkMigration = await readFile(new URL(
+  '../../../../../../database/migrations/new-crm-marketing-link-click.sql', import.meta.url
+), 'utf8')
 
 test('broadcast maintenance exposes detail, draft deletion and recipient results', () => {
   assert.match(api, /broadcast\/get/)
@@ -33,6 +40,22 @@ test('delivery analytics distinguishes SMS delivery from email acceptance and op
   assert.match(service, /SmsReceiveStatusEnum\.SUCCESS/)
   assert.match(service, /MailSendStatusEnum\.SUCCESS/)
   assert.match(service, /recordMailOpen/)
+})
+
+test('click tracking uses stored targets, opaque tokens and separate unique and total metrics', () => {
+  assert.match(page, /formData\.links/)
+  assert.match(page, /uniqueClickRate/)
+  assert.match(page, /totalClickCount/)
+  assert.match(api, /MarketingLinkVO/)
+  assert.match(service, /recordLinkClick/)
+  assert.match(service, /isAllowedTargetUrl/)
+  assert.match(service, /params\.put\(link\.getCode\(\), buildClickUrl/)
+  assert.match(trackingController, /@GetMapping\("\/click\/\{token\}"\)/)
+  assert.match(trackingController, /location\(URI\.create\(target\)\)/)
+  assert.doesNotMatch(trackingController, /RequestParam.*target/)
+  assert.match(linkMigration, /crm_marketing_link_recipient/)
+  assert.match(linkMigration, /first_clicked_at/)
+  assert.match(linkMigration, /click_count/)
 })
 
 test('page uses actual customer and contact selectors instead of comma separated IDs', () => {

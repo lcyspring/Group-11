@@ -30,6 +30,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.net.URI;
+import java.security.SecureRandom;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
@@ -39,9 +41,12 @@ import static com.meession.etm.module.crm.enums.ErrorCodeConstants.*;
 
 @Service
 public class CrmMarketingOutreachService {
+    private static final SecureRandom TRACKING_RANDOM = new SecureRandom();
     @Resource private CrmMarketingBroadcastMapper broadcastMapper;
     @Resource private CrmMarketingBroadcastRecipientMapper recipientMapper;
     @Resource private CrmMarketingConsentMapper consentMapper;
+    @Resource private CrmMarketingLinkMapper linkMapper;
+    @Resource private CrmMarketingLinkRecipientMapper linkRecipientMapper;
     @Resource private CrmCustomerMapper customerMapper;
     @Resource private CrmContactMapper contactMapper;
     @Resource private CrmAuthorizationService authorizationService;
@@ -53,6 +58,7 @@ public class CrmMarketingOutreachService {
     @Transactional(rollbackFor = Exception.class)
     public Long saveBroadcast(CrmMarketingBroadcastSaveReqVO request, Long userId) {
         validateChannel(request.getChannel(), request.getSmsTemplateCode(), request.getMailTemplateCode());
+        validateLinks(request.getLinks());
         CrmMarketingBroadcastDO existing = request.getId() == null ? null : requireBroadcast(request.getId());
         if (existing != null) {
             requireCreatorOrAdmin(existing, userId);
@@ -73,6 +79,7 @@ public class CrmMarketingOutreachService {
         }
         List<CrmMarketingBroadcastRecipientDO> recipients = resolveRecipients(request, row.getId(), userId);
         recipients.forEach(recipientMapper::insert);
+        replaceLinks(row.getId(), request.getLinks());
         row.setTotalCount(recipients.size());
         row.setValidCount((int) recipients.stream().filter(item -> item.getStatus().equals(CrmMarketingRecipientStatusEnum.PENDING.getStatus())).count());
         row.setSuppressedCount(recipients.size() - row.getValidCount());
@@ -141,6 +148,11 @@ public class CrmMarketingOutreachService {
         return recipientMapper.selectList(CrmMarketingBroadcastRecipientDO::getBroadcastId, id);
     }
 
+    public List<CrmMarketingLinkDO> getBroadcastLinks(Long id, Long userId, boolean privilegedReader) {
+        requireReadable(requireBroadcast(id), userId, privilegedReader);
+        return linkMapper.selectByBroadcastId(id);
+    }
+
     @Transactional(rollbackFor = Exception.class)
     public int refreshDraftRecipients(Long id, Long userId) {
         CrmMarketingBroadcastDO row = requireBroadcast(id);
@@ -185,6 +197,7 @@ public class CrmMarketingOutreachService {
             throw exception(MARKETING_BROADCAST_STATUS_INVALID);
         }
         recipientMapper.delete(CrmMarketingBroadcastRecipientDO::getBroadcastId, id);
+        deleteLinks(id);
     }
 
     public PageResult<CrmMarketingBroadcastRecipientDO> getRecipientPage(CrmMarketingRecipientPageReqVO request) {
@@ -199,8 +212,10 @@ public class CrmMarketingOutreachService {
 
     public CrmMarketingDeliverySummaryRespVO getDeliverySummary(Long id, Long userId, boolean privilegedReader) {
         requireReadable(requireBroadcast(id), userId, privilegedReader);
+        List<CrmMarketingLinkDO> links = linkMapper.selectByBroadcastId(id);
         return buildDeliverySummary(id, recipientMapper.selectList(
-                CrmMarketingBroadcastRecipientDO::getBroadcastId, id));
+                CrmMarketingBroadcastRecipientDO::getBroadcastId, id), links,
+                linkRecipientMapper.selectByLinkIds(links.stream().map(CrmMarketingLinkDO::getId).toList()));
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -224,6 +239,22 @@ public class CrmMarketingOutreachService {
             return;
         }
         recipientMapper.markOpened(token, LocalDateTime.now());
+    }
+
+    public Optional<String> recordLinkClick(String token) {
+        if (!properties.isClickTrackingEnabled() || token == null || !token.matches("[A-Za-z0-9_-]{48}")) {
+            return Optional.empty();
+        }
+        CrmMarketingLinkRecipientDO fact = linkRecipientMapper.selectByTrackingToken(token);
+        if (fact == null) return Optional.empty();
+        CrmMarketingBroadcastRecipientDO recipient = recipientMapper.selectByIdIgnoringTenant(fact.getRecipientId());
+        if (recipient == null || !CrmMarketingRecipientStatusEnum.SENT.getStatus().equals(recipient.getStatus())) {
+            return Optional.empty();
+        }
+        CrmMarketingLinkDO link = linkMapper.selectByIdIgnoringTenant(fact.getLinkId());
+        if (link == null || !isAllowedTargetUrl(link.getTargetUrl())) return Optional.empty();
+        if (linkRecipientMapper.recordClick(fact.getId(), LocalDateTime.now()) == 0) return Optional.empty();
+        return Optional.of(link.getTargetUrl());
     }
 
     public void submitReview(Long id, Long userId) {
@@ -337,6 +368,7 @@ public class CrmMarketingOutreachService {
     }
 
     void sendRecipients(CrmMarketingBroadcastDO broadcast) {
+        List<CrmMarketingLinkDO> links = linkMapper.selectByBroadcastId(broadcast.getId());
         List<CrmMarketingBroadcastRecipientDO> recipients;
         while (true) {
             recipients = recipientMapper.selectPending(broadcast.getId(), properties.getBatchSize());
@@ -351,6 +383,7 @@ public class CrmMarketingOutreachService {
                                 .setDeliveryStatus(CrmMarketingDeliveryStatusEnum.UNKNOWN.getStatus());
                     } else {
                         Map<String, Object> params = new HashMap<>(parseParams(broadcast.getTemplateParams()));
+                        addTrackedLinkParams(recipient, links, params);
                         Long logId;
                         if (recipient.getChannel() == 1) {
                             SmsSendSingleToUserReqDTO req = new SmsSendSingleToUserReqDTO();
@@ -439,7 +472,9 @@ public class CrmMarketingOutreachService {
     }
 
     private CrmMarketingDeliverySummaryRespVO buildDeliverySummary(Long broadcastId,
-                                                                    List<CrmMarketingBroadcastRecipientDO> recipients) {
+                                                                    List<CrmMarketingBroadcastRecipientDO> recipients,
+                                                                    List<CrmMarketingLinkDO> links,
+                                                                    List<CrmMarketingLinkRecipientDO> clickFacts) {
         int smsSent = count(recipients, 1, null, false);
         int smsDelivered = count(recipients, 1, CrmMarketingDeliveryStatusEnum.DELIVERED.getStatus(), false);
         int smsFailed = count(recipients, 1, CrmMarketingDeliveryStatusEnum.FAILED.getStatus(), false);
@@ -451,12 +486,31 @@ public class CrmMarketingOutreachService {
                 CrmMarketingDeliveryStatusEnum.PROVIDER_PENDING.getStatus(), item.getDeliveryStatus())).count();
         int unknown = (int) recipients.stream().filter(item -> item.getDeliveryStatus() == null
                 || Objects.equals(CrmMarketingDeliveryStatusEnum.UNKNOWN.getStatus(), item.getDeliveryStatus())).count();
+        int trackedRecipients = (int) clickFacts.stream().map(CrmMarketingLinkRecipientDO::getRecipientId).distinct().count();
+        int uniqueClicks = (int) clickFacts.stream().filter(item -> item.getFirstClickedAt() != null)
+                .map(CrmMarketingLinkRecipientDO::getRecipientId).distinct().count();
+        int totalClicks = clickFacts.stream().map(CrmMarketingLinkRecipientDO::getClickCount)
+                .filter(Objects::nonNull).mapToInt(Integer::intValue).sum();
+        List<CrmMarketingLinkSummaryRespVO> linkSummaries = links.stream().map(link -> {
+            List<CrmMarketingLinkRecipientDO> facts = clickFacts.stream()
+                    .filter(item -> Objects.equals(link.getId(), item.getLinkId())).toList();
+            int linkUniqueClicks = (int) facts.stream().filter(item -> item.getFirstClickedAt() != null).count();
+            int linkTotalClicks = facts.stream().map(CrmMarketingLinkRecipientDO::getClickCount)
+                    .filter(Objects::nonNull).mapToInt(Integer::intValue).sum();
+            return new CrmMarketingLinkSummaryRespVO().setLinkId(link.getId()).setCode(link.getCode())
+                    .setName(link.getName()).setTargetUrl(link.getTargetUrl())
+                    .setTrackedRecipientCount(facts.size()).setUniqueClickCount(linkUniqueClicks)
+                    .setTotalClickCount(linkTotalClicks).setUniqueClickRate(rate(linkUniqueClicks, facts.size()));
+        }).toList();
         return new CrmMarketingDeliverySummaryRespVO().setBroadcastId(broadcastId)
                 .setSmsSentCount(smsSent).setSmsDeliveredCount(smsDelivered).setSmsFailedCount(smsFailed)
                 .setSmsDeliveryRate(rate(smsDelivered, smsSent))
                 .setEmailSentCount(emailSent).setEmailAcceptedCount(emailAccepted).setEmailFailedCount(emailFailed)
                 .setEmailOpenedCount(emailOpened).setEmailOpenRate(rate(emailOpened, emailAccepted))
-                .setProviderPendingCount(pending).setUnknownCount(unknown);
+                .setProviderPendingCount(pending).setUnknownCount(unknown)
+                .setTrackedRecipientCount(trackedRecipients).setUniqueClickCount(uniqueClicks)
+                .setTotalClickCount(totalClicks).setUniqueClickRate(rate(uniqueClicks, trackedRecipients))
+                .setLinks(linkSummaries);
     }
 
     private int count(List<CrmMarketingBroadcastRecipientDO> recipients, int channel,
@@ -476,6 +530,76 @@ public class CrmMarketingOutreachService {
     private String buildTrackingUrl(String token) {
         String baseUrl = properties.getPublicBaseUrl().replaceAll("/+$", "");
         return baseUrl + "/app-api/crm/marketing/open/" + token + ".gif";
+    }
+
+    private String buildClickUrl(String token) {
+        String baseUrl = properties.getPublicBaseUrl().replaceAll("/+$", "");
+        return baseUrl + "/app-api/crm/marketing/click/" + token;
+    }
+
+    void validateLinks(List<CrmMarketingLinkSaveReqVO> links) {
+        List<CrmMarketingLinkSaveReqVO> values = Optional.ofNullable(links).orElse(List.of());
+        if (values.isEmpty()) return;
+        if (!properties.isClickTrackingEnabled()) throw exception(MARKETING_LINK_TRACKING_DISABLED);
+        if (values.size() > properties.getMaxLinksPerBroadcast()) throw exception(MARKETING_LINK_INVALID);
+        Set<String> codes = new HashSet<>();
+        for (CrmMarketingLinkSaveReqVO link : values) {
+            if (link == null || link.getCode() == null || link.getName() == null
+                    || !link.getCode().matches("^[A-Za-z][A-Za-z0-9_]{0,31}$")
+                    || !codes.add(link.getCode().toLowerCase(Locale.ROOT))
+                    || !isAllowedTargetUrl(link.getTargetUrl())) {
+                throw exception(MARKETING_LINK_INVALID);
+            }
+        }
+    }
+
+    boolean isAllowedTargetUrl(String targetUrl) {
+        try {
+            URI uri = URI.create(targetUrl);
+            if (uri.getUserInfo() != null || uri.getHost() == null
+                    || !("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme()))) {
+                return false;
+            }
+            String host = uri.getHost().toLowerCase(Locale.ROOT);
+            return Arrays.stream(properties.getClickAllowedHosts().split(","))
+                    .map(String::trim).filter(value -> !value.isEmpty()).map(value -> value.toLowerCase(Locale.ROOT))
+                    .anyMatch(allowed -> allowed.startsWith("*.")
+                            ? host.endsWith(allowed.substring(1)) && host.length() > allowed.length() - 1
+                            : host.equals(allowed));
+        } catch (IllegalArgumentException ignored) {
+            return false;
+        }
+    }
+
+    private void replaceLinks(Long broadcastId, List<CrmMarketingLinkSaveReqVO> links) {
+        deleteLinks(broadcastId);
+        for (CrmMarketingLinkSaveReqVO request : Optional.ofNullable(links).orElse(List.of())) {
+            linkMapper.insert(BeanUtils.toBean(request, CrmMarketingLinkDO.class).setBroadcastId(broadcastId));
+        }
+    }
+
+    private void deleteLinks(Long broadcastId) {
+        List<CrmMarketingLinkDO> links = linkMapper.selectByBroadcastId(broadcastId);
+        if (!links.isEmpty()) {
+            linkRecipientMapper.deletePhysicalByLinkIds(links.stream().map(CrmMarketingLinkDO::getId).toList());
+        }
+        linkMapper.deletePhysicalByBroadcast(broadcastId);
+    }
+
+    private void addTrackedLinkParams(CrmMarketingBroadcastRecipientDO recipient, List<CrmMarketingLinkDO> links,
+                                      Map<String, Object> params) {
+        if (!properties.isClickTrackingEnabled() || links.isEmpty()) return;
+        for (CrmMarketingLinkDO link : links) {
+            CrmMarketingLinkRecipientDO fact = linkRecipientMapper.selectByLinkAndRecipient(link.getId(), recipient.getId());
+            if (fact == null) {
+                byte[] random = new byte[36];
+                TRACKING_RANDOM.nextBytes(random);
+                fact = new CrmMarketingLinkRecipientDO().setLinkId(link.getId()).setRecipientId(recipient.getId())
+                        .setTrackingToken(Base64.getUrlEncoder().withoutPadding().encodeToString(random)).setClickCount(0);
+                linkRecipientMapper.insert(fact);
+            }
+            params.put(link.getCode(), buildClickUrl(fact.getTrackingToken()));
+        }
     }
 
     private void enforceQuota(Long broadcastId) {

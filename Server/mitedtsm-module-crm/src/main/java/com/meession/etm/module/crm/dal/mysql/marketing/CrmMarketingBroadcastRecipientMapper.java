@@ -62,6 +62,11 @@ public interface CrmMarketingBroadcastRecipientMapper extends BaseMapperX<CrmMar
     }
 
     @TenantIgnore
+    default CrmMarketingBroadcastRecipientDO selectByIdIgnoringTenant(Long id) {
+        return selectById(id);
+    }
+
+    @TenantIgnore
     default int markOpened(String token, LocalDateTime openedAt) {
         return update(new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<CrmMarketingBroadcastRecipientDO>()
                 .eq(CrmMarketingBroadcastRecipientDO::getTrackingToken, token)

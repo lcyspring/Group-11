@@ -27,6 +27,12 @@ public interface ErrorCodeConstants {
     ErrorCode MARKETING_RECIPIENT_NOT_FOUND = new ErrorCode(1_020_014_014, "没有可用的 CRM 联系人或客户名单");
     ErrorCode MARKETING_RECIPIENT_NONE_SENDABLE = new ErrorCode(1_020_014_021,
             "当前群发没有可发送的收件人，请查看收件人结果并补充手机号/邮箱或渠道授权");
+    ErrorCode MARKETING_LINK_TRACKING_DISABLED = new ErrorCode(1_020_014_022,
+            "营销链接点击统计未在 YAML 中启用");
+    ErrorCode MARKETING_LINK_INVALID = new ErrorCode(1_020_014_023,
+            "营销链接无效、重复、超过数量上限，或目标域名未进入 YAML 白名单");
+    ErrorCode MARKETING_LINK_TOKEN_INVALID = new ErrorCode(1_020_014_024,
+            "营销链接令牌无效或已停用");
     ErrorCode MARKETING_CONSENT_NOT_EXISTS = new ErrorCode(1_020_014_015, "营销同意记录不存在");
     ErrorCode MARKETING_CARE_PLAN_NOT_EXISTS = new ErrorCode(1_020_014_016, "客户关怀计划不存在");
     ErrorCode MARKETING_CARE_PLAN_CODE_EXISTS = new ErrorCode(1_020_014_017, "客户关怀计划编码已存在");

@@ -30,6 +30,7 @@ export interface MarketingBroadcastVO {
   scheduledAt?: Date | string
   customerIds?: number[]
   contactIds?: number[]
+  links?: MarketingLinkVO[]
   status?: number
   totalCount?: number
   validCount?: number
@@ -43,6 +44,11 @@ export interface MarketingBroadcastVO {
   creatorUserId?: number
   createTime?: Date | string
   updateTime?: Date | string
+}
+export interface MarketingLinkVO {
+  code: string
+  name: string
+  targetUrl: string
 }
 export interface MarketingRecipientVO {
   id: number
@@ -76,6 +82,17 @@ export interface MarketingDeliverySummaryVO {
   emailOpenRate: number
   providerPendingCount: number
   unknownCount: number
+  trackedRecipientCount: number
+  uniqueClickCount: number
+  totalClickCount: number
+  uniqueClickRate: number
+  links: Array<MarketingLinkVO & {
+    linkId: number
+    trackedRecipientCount: number
+    uniqueClickCount: number
+    totalClickCount: number
+    uniqueClickRate: number
+  }>
 }
 export interface MarketingTargetOptionsVO {
   customers: Array<{ id: number; name: string; mobile?: string; email?: string }>

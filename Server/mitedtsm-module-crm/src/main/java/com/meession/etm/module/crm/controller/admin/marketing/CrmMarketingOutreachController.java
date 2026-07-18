@@ -66,6 +66,8 @@ public class CrmMarketingOutreachController {
         boolean privilegedReader = canReadAllBroadcasts();
         CrmMarketingBroadcastDO row = service.getBroadcast(id, userId, privilegedReader);
         CrmMarketingBroadcastRespVO response = toResponse(row);
+        response.setLinks(BeanUtils.toBean(service.getBroadcastLinks(id, userId, privilegedReader),
+                CrmMarketingLinkSaveReqVO.class));
         response.setCustomerIds(new ArrayList<>()).setContactIds(new ArrayList<>());
         service.getBroadcastRecipients(id, userId, privilegedReader).stream().forEach(recipient -> {
             if (recipient.getContactId() == null && recipient.getCustomerId() != null

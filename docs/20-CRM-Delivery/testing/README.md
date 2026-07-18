@@ -103,10 +103,11 @@
 | `oa-work-report/` | OA 日/周/月工作报告周期、接收人可见性、提交锁定和真实 API 验收 |
 | `crm-customer-import-preview/` | 客户导入预检、字段映射、确认幂等、Ubuntu 构建和覆盖率 |
 | `crm-async-export-task/` | CRM 五态异步导出、三阶段权限复验、单次令牌、过期清理和覆盖率 |
+| `crm-marketing-link-click/` | 营销逐收件人安全跳转、独立/累计点击、逐链接统计和覆盖率 |
 
 运行入口统一为：
 
 ```bash
 cd podman
-bash ./build-in-ubuntu.sh ./config/test-crm-ubuntu-26.04.yaml
+bash ./compile.sh ./config/test-crm-ubuntu-26.04.yaml
 ```

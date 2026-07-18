@@ -44,6 +44,11 @@ public class CrmMarketingProperties {
     private String publicBaseUrl;
     @Min(1)
     private int deliverySyncBatchSize = 200;
+    private boolean clickTrackingEnabled = true;
+    @NotBlank
+    private String clickAllowedHosts = "example.com";
+    @Min(1)
+    private int maxLinksPerBroadcast = 10;
 
     @AssertTrue(message = "CRM marketing batch size must not exceed max-batch-size")
     public boolean isBatchWithinLimit() {

@@ -4,9 +4,13 @@ import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.meession.etm.module.crm.dal.dataobject.marketing.CrmMarketingBroadcastDO;
 import com.meession.etm.module.crm.dal.dataobject.marketing.CrmMarketingBroadcastRecipientDO;
 import com.meession.etm.module.crm.dal.dataobject.marketing.CrmMarketingConsentDO;
+import com.meession.etm.module.crm.dal.dataobject.marketing.CrmMarketingLinkDO;
+import com.meession.etm.module.crm.dal.dataobject.marketing.CrmMarketingLinkRecipientDO;
 import com.meession.etm.module.crm.dal.mysql.marketing.CrmMarketingBroadcastMapper;
 import com.meession.etm.module.crm.dal.mysql.marketing.CrmMarketingBroadcastRecipientMapper;
 import com.meession.etm.module.crm.dal.mysql.marketing.CrmMarketingConsentMapper;
+import com.meession.etm.module.crm.dal.mysql.marketing.CrmMarketingLinkMapper;
+import com.meession.etm.module.crm.dal.mysql.marketing.CrmMarketingLinkRecipientMapper;
 import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerMapper;
 import com.meession.etm.module.crm.dal.mysql.contact.CrmContactMapper;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
@@ -21,6 +25,7 @@ import com.meession.etm.module.crm.framework.permission.CrmOwnerReadScope;
 import com.meession.etm.module.crm.controller.admin.marketing.vo.CrmMarketingReviewReqVO;
 import com.meession.etm.module.crm.controller.admin.marketing.vo.CrmMarketingBroadcastPageReqVO;
 import com.meession.etm.module.crm.controller.admin.marketing.vo.CrmMarketingBroadcastSaveReqVO;
+import com.meession.etm.module.crm.controller.admin.marketing.vo.CrmMarketingLinkSaveReqVO;
 import com.meession.etm.framework.common.exception.ServiceException;
 import com.meession.etm.module.system.api.sms.SmsSendApi;
 import com.meession.etm.module.system.api.sms.dto.SmsSendStatusRespDTO;
@@ -43,6 +48,7 @@ import org.mockito.ArgumentCaptor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.*;
@@ -52,6 +58,8 @@ class CrmMarketingOutreachServiceTest {
     @Mock CrmMarketingBroadcastMapper broadcastMapper;
     @Mock CrmMarketingBroadcastRecipientMapper recipientMapper;
     @Mock CrmMarketingConsentMapper consentMapper;
+    @Mock CrmMarketingLinkMapper linkMapper;
+    @Mock CrmMarketingLinkRecipientMapper linkRecipientMapper;
     @Mock SmsSendApi smsSendApi;
     @Mock MailSendApi mailSendApi;
     @Mock CrmAuthorizationService authorizationService;
@@ -70,9 +78,12 @@ class CrmMarketingOutreachServiceTest {
         properties.setMonthlyRecipientLimit(10000);
         properties.setPublicBaseUrl("https://crm.example.com");
         properties.setDeliverySyncBatchSize(200);
+        properties.setClickAllowedHosts("example.com,crm.example.com");
         ReflectionTestUtils.setField(service, "broadcastMapper", broadcastMapper);
         ReflectionTestUtils.setField(service, "recipientMapper", recipientMapper);
         ReflectionTestUtils.setField(service, "consentMapper", consentMapper);
+        ReflectionTestUtils.setField(service, "linkMapper", linkMapper);
+        ReflectionTestUtils.setField(service, "linkRecipientMapper", linkRecipientMapper);
         ReflectionTestUtils.setField(service, "smsSendApi", smsSendApi);
         ReflectionTestUtils.setField(service, "mailSendApi", mailSendApi);
         ReflectionTestUtils.setField(service, "authorizationService", authorizationService);
@@ -329,6 +340,95 @@ class CrmMarketingOutreachServiceTest {
 
         verify(recipientMapper).markOpened(eq("0123456789abcdef0123456789abcdef"), any(LocalDateTime.class));
         verify(recipientMapper, never()).selectByTrackingToken("bad-token");
+    }
+
+    @Test
+    void linkValidationRejectsOpenRedirectsDuplicateCodesAndDisabledTracking() {
+        CrmMarketingLinkSaveReqVO valid = new CrmMarketingLinkSaveReqVO()
+                .setCode("offerLink").setName("优惠页").setTargetUrl("https://example.com/offer");
+        service.validateLinks(List.of(valid));
+
+        assertThrows(ServiceException.class, () -> service.validateLinks(List.of(
+                valid, new CrmMarketingLinkSaveReqVO().setCode("OfferLink").setName("重复")
+                        .setTargetUrl("https://example.com/other"))));
+        assertThrows(ServiceException.class, () -> service.validateLinks(List.of(
+                new CrmMarketingLinkSaveReqVO().setCode("bad").setName("恶意")
+                        .setTargetUrl("https://evil.example/redirect"))));
+        assertThrows(ServiceException.class, () -> service.validateLinks(List.of(
+                new CrmMarketingLinkSaveReqVO().setCode("bad").setName("脚本")
+                        .setTargetUrl("javascript:alert(1)"))));
+        properties.setClickTrackingEnabled(false);
+        assertThrows(ServiceException.class, () -> service.validateLinks(List.of(valid)));
+    }
+
+    @Test
+    void systemSendInjectsRecipientSpecificServerLinkInsteadOfRawTarget() {
+        properties.setProviderMode("system");
+        CrmMarketingBroadcastDO broadcast = new CrmMarketingBroadcastDO().setId(55L)
+                .setMailTemplateCode("crm-mail");
+        CrmMarketingBroadcastRecipientDO recipient = new CrmMarketingBroadcastRecipientDO()
+                .setId(501L).setBroadcastId(55L).setChannel(2).setEmail("user@example.com")
+                .setStatus(CrmMarketingRecipientStatusEnum.PENDING.getStatus()).setAttemptCount(0);
+        CrmMarketingLinkDO link = new CrmMarketingLinkDO().setId(601L).setBroadcastId(55L)
+                .setCode("offerLink").setName("优惠页").setTargetUrl("https://example.com/offer");
+        when(linkMapper.selectByBroadcastId(55L)).thenReturn(List.of(link));
+        when(recipientMapper.selectPending(55L, 2)).thenReturn(List.of(recipient), List.of());
+        when(recipientMapper.claimForSending(eq(501L), any())).thenReturn(1);
+        when(mailSendApi.sendSingleMailToAdmin(any())).thenReturn(701L);
+        when(recipientMapper.selectList(any(SFunction.class), eq(55L))).thenReturn(List.of(recipient));
+
+        service.sendRecipients(broadcast);
+
+        ArgumentCaptor<com.meession.etm.module.system.api.mail.dto.MailSendSingleToUserReqDTO> request =
+                ArgumentCaptor.forClass(com.meession.etm.module.system.api.mail.dto.MailSendSingleToUserReqDTO.class);
+        verify(mailSendApi).sendSingleMailToAdmin(request.capture());
+        String trackedUrl = String.valueOf(request.getValue().getTemplateParams().get("offerLink"));
+        org.junit.jupiter.api.Assertions.assertTrue(trackedUrl.startsWith(
+                "https://crm.example.com/app-api/crm/marketing/click/"));
+        org.junit.jupiter.api.Assertions.assertFalse(trackedUrl.contains("example.com/offer"));
+        verify(linkRecipientMapper).insert(any(CrmMarketingLinkRecipientDO.class));
+    }
+
+    @Test
+    void clickRequiresSentRecipientAndAllowedStoredTargetThenCountsAtomically() {
+        String token = "a".repeat(48);
+        CrmMarketingLinkRecipientDO fact = new CrmMarketingLinkRecipientDO()
+                .setId(801L).setLinkId(601L).setRecipientId(501L).setTrackingToken(token);
+        when(linkRecipientMapper.selectByTrackingToken(token)).thenReturn(fact);
+        when(recipientMapper.selectByIdIgnoringTenant(501L)).thenReturn(new CrmMarketingBroadcastRecipientDO()
+                .setId(501L).setStatus(CrmMarketingRecipientStatusEnum.SENT.getStatus()));
+        when(linkMapper.selectByIdIgnoringTenant(601L)).thenReturn(new CrmMarketingLinkDO()
+                .setId(601L).setTargetUrl("https://example.com/offer"));
+        when(linkRecipientMapper.recordClick(eq(801L), any())).thenReturn(1);
+
+        assertEquals("https://example.com/offer", service.recordLinkClick(token).orElseThrow());
+        assertTrue(service.recordLinkClick("bad-token").isEmpty());
+        verify(linkRecipientMapper).recordClick(eq(801L), any());
+        verify(linkRecipientMapper, never()).selectByTrackingToken("bad-token");
+    }
+
+    @Test
+    void deliverySummarySeparatesUniqueRecipientsFromTotalClicks() {
+        CrmMarketingBroadcastDO broadcast = readableBroadcast(56L, 7L);
+        CrmMarketingLinkDO link = new CrmMarketingLinkDO().setId(601L).setBroadcastId(56L)
+                .setCode("offerLink").setName("优惠页").setTargetUrl("https://example.com/offer");
+        CrmMarketingLinkRecipientDO clicked = new CrmMarketingLinkRecipientDO().setLinkId(601L)
+                .setRecipientId(501L).setFirstClickedAt(LocalDateTime.now()).setClickCount(3);
+        CrmMarketingLinkRecipientDO notClicked = new CrmMarketingLinkRecipientDO().setLinkId(601L)
+                .setRecipientId(502L).setClickCount(0);
+        when(broadcastMapper.selectById(56L)).thenReturn(broadcast);
+        when(recipientMapper.selectList(any(SFunction.class), eq(56L))).thenReturn(List.of());
+        when(linkMapper.selectByBroadcastId(56L)).thenReturn(List.of(link));
+        when(linkRecipientMapper.selectByLinkIds(List.of(601L))).thenReturn(List.of(clicked, notClicked));
+
+        var summary = service.getDeliverySummary(56L, 7L, false);
+
+        assertEquals(2, summary.getTrackedRecipientCount());
+        assertEquals(1, summary.getUniqueClickCount());
+        assertEquals(3, summary.getTotalClickCount());
+        assertEquals("50.00", summary.getUniqueClickRate().toPlainString());
+        assertEquals(1, summary.getLinks().size());
+        assertEquals("50.00", summary.getLinks().get(0).getUniqueClickRate().toPlainString());
     }
 
     @Test

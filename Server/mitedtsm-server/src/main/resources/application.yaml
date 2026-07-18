@@ -378,6 +378,9 @@ mitedtsm:
       tracking-enabled: ${MITEDTSM_CRM_MARKETING_TRACKING_ENABLED:true}
       public-base-url: ${MITEDTSM_CRM_MARKETING_PUBLIC_BASE_URL:http://127.0.0.1:8080}
       delivery-sync-batch-size: ${MITEDTSM_CRM_MARKETING_DELIVERY_SYNC_BATCH_SIZE:200}
+      click-tracking-enabled: ${MITEDTSM_CRM_MARKETING_CLICK_TRACKING_ENABLED:true}
+      click-allowed-hosts: ${MITEDTSM_CRM_MARKETING_CLICK_ALLOWED_HOSTS:example.com,localhost,127.0.0.1}
+      max-links-per-broadcast: ${MITEDTSM_CRM_MARKETING_MAX_LINKS_PER_BROADCAST:10}
     customer-import:
       max-rows: ${MITEDTSM_CRM_CUSTOMER_IMPORT_MAX_ROWS:2000}
       preview-ttl-minutes: ${MITEDTSM_CRM_CUSTOMER_IMPORT_PREVIEW_TTL_MINUTES:60}

@@ -196,6 +196,32 @@
             />
           </el-form-item>
         </el-col>
+        <el-col :span="24">
+          <el-form-item :label="t('crm.marketing.trackingLinks')">
+            <div class="w-full">
+              <div class="mb-8px text-12px text-gray-500">{{ t('crm.marketing.trackingLinksHint') }}</div>
+              <el-table :data="formData.links" border>
+                <el-table-column :label="t('crm.marketing.linkCode')" min-width="150">
+                  <template #default="{ row }"><el-input v-model="row.code" maxlength="32" /></template>
+                </el-table-column>
+                <el-table-column :label="t('crm.marketing.linkName')" min-width="160">
+                  <template #default="{ row }"><el-input v-model="row.name" maxlength="100" /></template>
+                </el-table-column>
+                <el-table-column :label="t('crm.marketing.targetUrl')" min-width="300">
+                  <template #default="{ row }"><el-input v-model="row.targetUrl" maxlength="2000" /></template>
+                </el-table-column>
+                <el-table-column :label="t('common.action')" width="90">
+                  <template #default="{ $index }">
+                    <el-button link type="danger" @click="removeTrackingLink($index)">{{ t('common.delete') }}</el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
+              <el-button class="mt-8px" type="primary" plain @click="addTrackingLink">
+                <Icon class="mr-5px" icon="ep:plus" />{{ t('crm.marketing.addTrackingLink') }}
+              </el-button>
+            </div>
+          </el-form-item>
+        </el-col>
       </el-row>
     </el-form>
     <template #footer>
@@ -232,7 +258,26 @@
       <el-descriptions-item :label="t('crm.marketing.providerPending')">
         {{ deliverySummary.providerPendingCount }} / {{ deliverySummary.unknownCount }}
       </el-descriptions-item>
+      <el-descriptions-item :label="t('crm.marketing.uniqueClicks')">
+        {{ deliverySummary.uniqueClickCount }} / {{ deliverySummary.trackedRecipientCount }}
+        ({{ formatMetricRate(deliverySummary.uniqueClickRate) }})
+      </el-descriptions-item>
+      <el-descriptions-item :label="t('crm.marketing.totalClicks')">
+        {{ deliverySummary.totalClickCount }}
+      </el-descriptions-item>
     </el-descriptions>
+    <el-table v-if="deliverySummary?.links?.length" :data="deliverySummary.links" border class="mb-16px">
+      <el-table-column prop="name" :label="t('crm.marketing.linkName')" min-width="150" />
+      <el-table-column prop="code" :label="t('crm.marketing.linkCode')" min-width="130" />
+      <el-table-column prop="targetUrl" :label="t('crm.marketing.targetUrl')" min-width="260" show-overflow-tooltip />
+      <el-table-column :label="t('crm.marketing.uniqueClicks')" min-width="150">
+        <template #default="{ row }">
+          {{ row.uniqueClickCount }} / {{ row.trackedRecipientCount }}
+          ({{ formatMetricRate(row.uniqueClickRate) }})
+        </template>
+      </el-table-column>
+      <el-table-column prop="totalClickCount" :label="t('crm.marketing.totalClicks')" min-width="110" />
+    </el-table>
     <el-table v-loading="recipientLoading" :data="recipients" max-height="520" stripe>
       <el-table-column min-width="160" :label="t('crm.marketing.customers')">
         <template #default="{ row }">{{ customerName(row.customerId) }}</template>
@@ -358,7 +403,8 @@ const emptyForm = (): MarketingApi.MarketingBroadcastVO => ({
   templateParams: '',
   scheduledAt: undefined,
   customerIds: [],
-  contactIds: []
+  contactIds: [],
+  links: []
 })
 const formData = ref<MarketingApi.MarketingBroadcastVO>(emptyForm())
 
@@ -470,6 +516,21 @@ const openForm = async (id?: number) => {
 }
 const save = async () => {
   await formRef.value?.validate()
+  const links = formData.value.links || []
+  const codes = links.map((item) => item.code.trim().toLowerCase())
+  const linksValid = links.every((item) => {
+    if (!/^[A-Za-z][A-Za-z0-9_]{0,31}$/.test(item.code.trim()) || !item.name.trim()) return false
+    try {
+      const target = new URL(item.targetUrl)
+      return target.protocol === 'http:' || target.protocol === 'https:'
+    } catch {
+      return false
+    }
+  }) && new Set(codes).size === codes.length
+  if (!linksValid) {
+    message.error(t('crm.marketing.trackingLinkInvalid'))
+    return
+  }
   formLoading.value = true
   try {
     const id = await MarketingApi.saveBroadcast(formData.value)
@@ -484,6 +545,13 @@ const save = async () => {
   } finally {
     formLoading.value = false
   }
+}
+const addTrackingLink = () => {
+  const links = formData.value.links ?? (formData.value.links = [])
+  links.push({ code: '', name: '', targetUrl: '' })
+}
+const removeTrackingLink = (index: number) => {
+  formData.value.links?.splice(index, 1)
 }
 const submitReview = async (row: MarketingApi.MarketingBroadcastVO) => {
   await message.confirm(t('crm.marketing.confirmSubmitReview'))
