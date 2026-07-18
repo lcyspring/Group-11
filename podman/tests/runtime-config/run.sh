@@ -5,6 +5,8 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PODMAN_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
 DATABASE_DIR="$(cd -- "${PODMAN_DIR}/../database" && pwd)"
+WEB_DIR="$(cd -- "${PODMAN_DIR}/../Web" && pwd)"
+MALL_DIR="$(cd -- "${PODMAN_DIR}/../MallFrontend" && pwd)"
 
 usage() {
     printf 'Usage: bash ./tests/runtime-config/run.sh <runtime-config.yaml>\n' >&2
@@ -61,6 +63,12 @@ rg -q 'BUILD_PAY_TESTS' "${PODMAN_DIR}/internal/compile-standard.sh" || \
 rg -q 'mitedtsm-module-pay/target/site/jacoco/jacoco.csv' \
     "${PODMAN_DIR}/internal/ubuntu-build-entrypoint.sh" || \
     fail 'Ubuntu entrypoint must preserve Pay JaCoCo evidence'
+[[ -s "${WEB_DIR}/vite.config.mts" && ! -e "${WEB_DIR}/vite.config.ts" ]] || \
+    fail 'Web Vite configuration must use the native ESM .mts entry'
+if rg -n '(^|[^.[:alnum:]_])(map-merge|map-get|map-has-key|type-of|desaturate|darken|mix|nth|append|zip)\(' \
+    "${MALL_DIR}/sheep/scss" --glob '*.scss'; then
+    fail 'Mall-owned Sass must not reintroduce deprecated global built-in functions'
+fi
 bash -n "${PODMAN_DIR}/internal/provision-database.sh"
 bash -n "${PODMAN_DIR}/internal/provision-marketing-provider.sh"
 for container_entrypoint in \

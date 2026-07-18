@@ -72,5 +72,6 @@
 | CRM-FEATURE-066 | 工单 16 条可重复 UAT、知识转移、故障处置、清理回滚和四方签署模板 | 工作计划 WO 专项 | 交付物已完成；人员签署待组织 | `docs/20-CRM-Delivery/testing/crm-work-order-uat-handover/` |
 | CRM-FEATURE-067 | 支付与 CRM/OA/营销的边界、映射、回调、安全、补偿、权限及 YAML 集成规范 | 工作计划 COM-06 | 规范已完成；自动集成未实现 | `docs/20-CRM-Delivery/testing/payment-cross-domain-integration-contract/` |
 | CRM-FEATURE-068 | Pay 模块 Ubuntu 26.04 容器测试、JaCoCo 和单 YAML 标准入口 | 构建与测试治理 | 已实现 | `docs/20-CRM-Delivery/testing/pay-container-test-entry/` |
+| CRM-FEATURE-069 | Web 原生 ESM 构建和 Mall 自有 Sass 现代函数告警治理 | 技术栈清理 P1 | 第一阶段已实现 | `docs/20-CRM-Delivery/testing/frontend-build-warning-governance/` |
 
 说明：`CRM-FEATURE-005/043` 共同关闭线索转换的首联系人、跟进及任务/通话/短信活动迁移、并发幂等、审计和失败回滚。`CRM-FEATURE-007` 是历史二态基线，现已由 `CRM-FEATURE-029` 升级为四态模型。`CRM-FEATURE-015/016/017` 已建立目标事实源、完成度展示和三层目标维护入口；目标逐级分解合计规则仍待业务签署。`CRM-FEATURE-028` 负责合同签署事实与基础版本轨迹，正式补充协议独立审批由 `CRM-FEATURE-049` 完成；二者均不宣称接入外部电子签平台。`CRM-FEATURE-030/035` 已聚合退款真源，但不伪造尚未实现的 OA 任务真源。`CRM-FEATURE-033` 已完成真实 BPM 提交、驳回、修订、重提和通过验收。`CRM-FEATURE-034` 的新附件已受保护，历史公开附件仍需物理迁移。客户联系人归属、公海、垃圾池、公共线索、活动迁移、报价版本、ERP 履约和工单协作分别由 `CRM-FEATURE-039`～`046` 关闭。

@@ -1,3 +1,5 @@
+@use 'sass:map';
+
 @import 'mixins';
 
 //颜色 ，渐变背景60%
@@ -18,7 +20,7 @@ $gray: #aaaaaa;     // 草灰
 $black: #333333;    // 墨黑
 
 $colors: ();
-$colors: map-merge(
+$colors: map.merge(
   (
     'red':$red,
     'orange':$orange,
@@ -60,7 +62,7 @@ $dark-1: #111111;
 $black: #000000;
 
 $grays: ();
-$grays: map-merge(
+$grays: map.merge(
   (
     'white': $white,
     'gray-f': $gray-f,
@@ -75,7 +77,7 @@ $grays: map-merge(
 );
 
 $darks: ();
-$darks: map-merge(
+$darks: map.merge(
   (
     'dark-9': $dark-9,
     'dark-8': $dark-8,
@@ -110,7 +112,7 @@ $transition-collapse: height 0.35s ease !default; // 收缩过渡
 // 间距
 $spacer: 20rpx !default;
 $spacers: () !default;
-$spacers: map-merge(
+$spacers: map.merge(
   (
     0: 0,
     1: $spacer * 0.25,
@@ -129,7 +131,7 @@ $font-weight-normal: 400 !default;
 $font-weight-bold: 700 !default;
 $font-weight-bolder: 900 !default;
 $fontsize: () !default;
-$fontsize: map-merge(
+$fontsize: map.merge(
   (
     xs: 20,
     sm: 24,
@@ -148,7 +150,7 @@ $line-height-lg: 2 !default;
 $line-height-sm: 1.25 !default;
 // 图标
 $iconsize: () !default;
-$iconsize: map-merge(
+$iconsize: map.merge(
   (
     xs: 0.5,
     sm: 0.75,

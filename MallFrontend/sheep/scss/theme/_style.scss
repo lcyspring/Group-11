@@ -1,3 +1,5 @@
+@use 'sass:color';
+
 @import 'light'; //浅蓝主题
 @import 'dark'; //深蓝主题
 // 多主题
@@ -59,10 +61,10 @@
     --ui-BG-Main-opacity-1: #{rgba($value, 0.1)};
     --ui-BG-Main-opacity-4: #{rgba($value, 0.4)};
     --ui-Main-box-shadow: 0 0.2em 0.5em #{rgba($value, var(--ui-Shadow-opacity))};
-    --ui-BG-Main-1: #{mix(rgba(255, 255, 255, 0.7), desaturate($value, 20%), 10%)};
-    --ui-BG-Main-2: #{mix(rgba(255, 255, 255, 0.6), desaturate($value, 40%), 20%)};
-    --ui-BG-Main-3: #{mix(rgba(119, 119, 119, 0.2), desaturate($value, 40%), 40%)};
-    --ui-BG-Main-4: #{mix(rgba(119, 119, 119, 0.1), desaturate($value, 40%), 60%)};
+    --ui-BG-Main-1: #{color.mix(rgba(255, 255, 255, 0.7), color.adjust($value, $saturation: -20%), 10%)};
+    --ui-BG-Main-2: #{color.mix(rgba(255, 255, 255, 0.6), color.adjust($value, $saturation: -40%), 20%)};
+    --ui-BG-Main-3: #{color.mix(rgba(119, 119, 119, 0.2), color.adjust($value, $saturation: -40%), 40%)};
+    --ui-BG-Main-4: #{color.mix(rgba(119, 119, 119, 0.1), color.adjust($value, $saturation: -40%), 60%)};
     --ui-BG-Main-TC: #ffffff !important;
   }
 }

@@ -80,6 +80,8 @@
 | PAY-SEC-BUG-001 | 支付跨域安全审计 | P0/安全 | Provider 支付/退款/转账回调把完整参数和正文写入 INFO；改为只记录 channelId、参数数量和正文长度 | 专项 2/2、Pay 167 个失败 0 | 已关闭 |
 | PAY-TEST-BUG-001 | 支付测试基线 | P1/测试 | 支付宝夹具用相对资源路径充当绝对回调 URL，29 条用例被 DTO 校验提前拦截；改用固定 HTTPS 测试 origin 并清空非目标 returnUrl | 支付宝组合 43/43、Pay 167 个失败 0 | 已关闭 |
 | PODMAN-BUILD-BUG-009 | Pay 测试入口 | P1/工程 | Pay 测试和覆盖率只能通过手写 Maven 参数执行，无法由单 YAML 标准入口复现；新增受校验的测试模式、覆盖率开关和证据路径 | YAML 入口 BUILD SUCCESS；Pay 167 个失败 0；行覆盖率 24.57% | 已关闭 |
+| WEB-BUILD-BUG-001 | Web 构建告警 | P2/维护 | Vite TS 配置按 CJS 加载，每轮重复报告 Node API 弃用；切换 `.mts` 并移除 `__dirname` 依赖 | CJS 告警 2→0；Web 容器构建成功；媒体专项 3/3 | 已关闭 |
+| MALL-H5-BUILD-BUG-002 | H5 Sass 告警 | P2/维护 | Mall 自有 Sass 大量使用全局 map/list/color 函数，HBuilderX 构建日志被 895+ 条显式旧函数告警及重复项淹没 | 旧全局函数告警 0；日志 28732→4624 行；H5 构建成功、媒体专项 7/7 | 已关闭 |
 
 ## 边界说明
 

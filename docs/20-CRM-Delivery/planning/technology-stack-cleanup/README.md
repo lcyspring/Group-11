@@ -34,6 +34,15 @@
 3. 在标准 Web 和 Mall H5 两个容器构建入口分别建立告警基线；
 4. 每类迁移独立提交，要求 Web 类型检查、H5 构建、关键 CRM/OA 页面和静态资源回归通过。
 
+当前进度（2026-07-18）：
+
+- Web Vite 配置已切换原生 ESM，CJS Node API 告警 2 → 0；
+- Mall 自有 Sass 已迁移 `map`、`list`、`meta`、`color` 全局旧函数，相关告警 895+ → 0；
+- Mall H5 完整日志由 28732 行降为 4624 行，构建与媒体专项 7/7 通过；
+- 仍保留 HBuilderX 5.05 内置 legacy JS API 178 次、内置 Browserslist 数据 1 次，以及项目/`uni_modules`
+  的 `@import` 366 次。后续先迁移仓库自有 `@import`，再通过新 HBuilderX 工具链镜像处理内置编译器，
+  不修改已发布镜像内部文件。
+
 ## P1/P2：运行依赖版本治理
 
 | 候选 | 当前风险 | 前置门禁 |

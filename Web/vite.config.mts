@@ -1,4 +1,4 @@
-import {resolve} from 'path'
+import { resolve } from 'path'
 import type {ConfigEnv, UserConfig} from 'vite'
 import {loadEnv} from 'vite'
 import {createVitePlugins} from './build/vite'

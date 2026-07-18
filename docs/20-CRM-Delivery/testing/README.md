@@ -111,6 +111,7 @@
 | `crm-work-order-uat-handover/` | 工单 16 条 UAT、执行记录、知识转移、覆盖映射和四方签署模板 |
 | `payment-cross-domain-integration-contract/` | 支付与 CRM/OA/营销边界、API、安全、补偿和显式 YAML 契约 |
 | `pay-container-test-entry/` | Pay 167 条测试、JaCoCo 覆盖率和 Ubuntu 26.04 单 YAML 入口 |
+| `frontend-build-warning-governance/` | Web CJS 与 Mall Sass 告警基线、来源归属和容器构建回归 |
 | `deterministic-demo-data/` | 固定 seed 演示数据生成、引用/状态校验、cleanup 和部署隔离 |
 
 运行入口统一为：
