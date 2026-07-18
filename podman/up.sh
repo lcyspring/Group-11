@@ -47,24 +47,23 @@ NO_PROXY_VALUE="$(yaml_require network.no_proxy)"
 
 IMAGE_SOURCE="$(yaml_require image.source)"
 IMAGE_ARCHIVE_DIR="$(yaml_path image.archive_dir)"
-RUNTIME_BASE_IMAGE="$(yaml_require image.runtime_base)"
-MYSQL_BASE_IMAGE="$(yaml_require image.mysql_base)"
 REDIS_BASE_IMAGE="$(yaml_require image.redis_base)"
 RABBITMQ_BASE_IMAGE="$(yaml_require image.rabbitmq_base)"
 TDENGINE_BASE_IMAGE="$(yaml_require image.tdengine_base)"
-NGINX_BASE_IMAGE="$(yaml_require image.nginx_base)"
 MYSQL_IMAGE="$(yaml_require image.mysql_runtime)"
 INIT_IMAGE="$(yaml_require image.init_runtime)"
 SERVER_IMAGE="$(yaml_require image.server_runtime)"
 WEB_IMAGE="$(yaml_require image.web_runtime)"
 MALL_IMAGE="$(yaml_require image.mall_runtime)"
 
-RUNTIME_ARCHIVE="$(yaml_require archive.runtime_base)"
-MYSQL_ARCHIVE="$(yaml_require archive.mysql_base)"
 REDIS_ARCHIVE="$(yaml_require archive.redis_base)"
 RABBITMQ_ARCHIVE="$(yaml_require archive.rabbitmq_base)"
 TDENGINE_ARCHIVE="$(yaml_require archive.tdengine_base)"
-NGINX_ARCHIVE="$(yaml_require archive.nginx_base)"
+MYSQL_RUNTIME_ARCHIVE="$(yaml_require archive.mysql_runtime)"
+INIT_RUNTIME_ARCHIVE="$(yaml_require archive.init_runtime)"
+SERVER_RUNTIME_ARCHIVE="$(yaml_require archive.server_runtime)"
+WEB_RUNTIME_ARCHIVE="$(yaml_require archive.web_runtime)"
+MALL_RUNTIME_ARCHIVE="$(yaml_require archive.mall_runtime)"
 
 MYSQL_CONTAINER="$(yaml_require container.mysql)"
 REDIS_CONTAINER="$(yaml_require container.redis)"
@@ -154,6 +153,17 @@ CRM_MARKETING_PUBLIC_BASE_URL="$(yaml_require crm_marketing.public_base_url)"
 CRM_MARKETING_DELIVERY_SYNC_BATCH_SIZE="$(yaml_positive_integer crm_marketing.delivery_sync_batch_size)"
 CRM_CUSTOMER_IMPORT_MAX_ROWS="$(yaml_positive_integer crm_customer_import.max_rows)"
 CRM_CUSTOMER_IMPORT_PREVIEW_TTL_MINUTES="$(yaml_positive_integer crm_customer_import.preview_ttl_minutes)"
+CRM_EXPORT_TASK_ENABLED="$(yaml_bool crm_export_task.enabled)"
+CRM_EXPORT_TASK_BATCH_SIZE="$(yaml_positive_integer crm_export_task.batch_size)"
+CRM_EXPORT_TASK_MAX_BATCH_SIZE="$(yaml_positive_integer crm_export_task.max_batch_size)"
+CRM_EXPORT_TASK_MAX_PENDING_PER_USER="$(yaml_positive_integer crm_export_task.max_pending_per_user)"
+CRM_EXPORT_TASK_MAX_ROWS="$(yaml_positive_integer crm_export_task.max_rows)"
+CRM_EXPORT_TASK_RETENTION_HOURS="$(yaml_positive_integer crm_export_task.retention_hours)"
+CRM_EXPORT_TASK_TOKEN_TTL_SECONDS="$(yaml_positive_integer crm_export_task.token_ttl_seconds)"
+CRM_EXPORT_TASK_CRON="$(yaml_require crm_export_task.cron)"
+CRM_EXPORT_TASK_ZONE="$(yaml_require crm_export_task.zone)"
+CRM_EXPORT_TASK_LOCK_KEY="$(yaml_require crm_export_task.lock_key)"
+CRM_EXPORT_TASK_LOCK_LEASE_SECONDS="$(yaml_positive_integer crm_export_task.lock_lease_seconds)"
 
 HEALTH_INTERVAL="$(yaml_positive_integer health.interval_seconds)"
 HEALTH_HTTP_HOST="$(yaml_require health.http_host)"
@@ -185,7 +195,7 @@ podman_cmd() {
     local command=("${PODMAN[@]}" "$subcommand")
 
     case "$subcommand" in
-        build|run)
+        run)
             command+=("${PODMAN_PROXY_ARGS[@]}")
             ;;
     esac
@@ -210,14 +220,6 @@ require_file() {
     local path="$1"
     [[ -s "$path" ]] || {
         printf 'Required file is missing or empty: %s\n' "$path" >&2
-        exit 1
-    }
-}
-
-require_dir() {
-    local path="$1"
-    [[ -d "$path" ]] || {
-        printf 'Required directory is missing: %s\n' "$path" >&2
         exit 1
     }
 }
@@ -388,6 +390,17 @@ start_server() {
         --env "MITEDTSM_CRM_MARKETING_DELIVERY_SYNC_BATCH_SIZE=${CRM_MARKETING_DELIVERY_SYNC_BATCH_SIZE}" \
         --env "MITEDTSM_CRM_CUSTOMER_IMPORT_MAX_ROWS=${CRM_CUSTOMER_IMPORT_MAX_ROWS}" \
         --env "MITEDTSM_CRM_CUSTOMER_IMPORT_PREVIEW_TTL_MINUTES=${CRM_CUSTOMER_IMPORT_PREVIEW_TTL_MINUTES}" \
+        --env "MITEDTSM_CRM_EXPORT_TASK_ENABLED=${CRM_EXPORT_TASK_ENABLED}" \
+        --env "MITEDTSM_CRM_EXPORT_TASK_BATCH_SIZE=${CRM_EXPORT_TASK_BATCH_SIZE}" \
+        --env "MITEDTSM_CRM_EXPORT_TASK_MAX_BATCH_SIZE=${CRM_EXPORT_TASK_MAX_BATCH_SIZE}" \
+        --env "MITEDTSM_CRM_EXPORT_TASK_MAX_PENDING_PER_USER=${CRM_EXPORT_TASK_MAX_PENDING_PER_USER}" \
+        --env "MITEDTSM_CRM_EXPORT_TASK_MAX_ROWS=${CRM_EXPORT_TASK_MAX_ROWS}" \
+        --env "MITEDTSM_CRM_EXPORT_TASK_RETENTION_HOURS=${CRM_EXPORT_TASK_RETENTION_HOURS}" \
+        --env "MITEDTSM_CRM_EXPORT_TASK_TOKEN_TTL_SECONDS=${CRM_EXPORT_TASK_TOKEN_TTL_SECONDS}" \
+        --env "MITEDTSM_CRM_EXPORT_TASK_CRON=${CRM_EXPORT_TASK_CRON}" \
+        --env "MITEDTSM_CRM_EXPORT_TASK_ZONE=${CRM_EXPORT_TASK_ZONE}" \
+        --env "MITEDTSM_CRM_EXPORT_TASK_LOCK_KEY=${CRM_EXPORT_TASK_LOCK_KEY}" \
+        --env "MITEDTSM_CRM_EXPORT_TASK_LOCK_LEASE_SECONDS=${CRM_EXPORT_TASK_LOCK_LEASE_SECONDS}" \
         "$SERVER_IMAGE"
 }
 
@@ -413,31 +426,9 @@ container_is_running() {
     [[ "$(podman_cmd inspect --format '{{.State.Running}}' "$container" 2>/dev/null)" == "true" ]]
 }
 
-require_runtime_images() {
-    local image
-    local -a images=(
-        "$MYSQL_IMAGE"
-        "$INIT_IMAGE"
-        "$SERVER_IMAGE"
-        "$WEB_IMAGE"
-        "$MALL_IMAGE"
-        "$REDIS_BASE_IMAGE"
-        "$RABBITMQ_BASE_IMAGE"
-        "$TDENGINE_BASE_IMAGE"
-    )
-
-    for image in "${images[@]}"; do
-        podman_cmd image exists "$image" || {
-            printf 'Required local image is unavailable: %s\n' "$image" >&2
-            printf 'Run up.sh with operation.startup_mode=full to package it.\n' >&2
-            exit 1
-        }
-    done
-}
-
 fast_start_existing_pod() {
     podman_cmd pod inspect "$POD_NAME" >/dev/null 2>&1 || {
-        printf 'Pod does not exist: %s. Run up.sh with operation.startup_mode=full first.\n' "$POD_NAME" >&2
+        printf 'Pod does not exist: %s. Run up.sh with operation.startup_mode=replace first.\n' "$POD_NAME" >&2
         return 1
     }
 
@@ -451,14 +442,14 @@ fast_start_existing_pod() {
             podman_cmd pod start "$POD_NAME"
             ;;
         *)
-            printf 'Pod %s is in state %s and cannot use startup_mode=fast. Use startup_mode=full.\n' \
+            printf 'Pod %s is in state %s and cannot use startup_mode=fast. Use startup_mode=replace.\n' \
                 "$POD_NAME" "$pod_state" >&2
             return 1
             ;;
     esac
 
     podman_cmd container exists "$SERVER_CONTAINER" || {
-        printf 'Server container is missing from Pod %s. Use startup_mode=full.\n' "$POD_NAME" >&2
+        printf 'Server container is missing from Pod %s. Use startup_mode=replace.\n' "$POD_NAME" >&2
         return 1
     }
     if ! container_is_running "$SERVER_CONTAINER"; then
@@ -468,11 +459,11 @@ fast_start_existing_pod() {
 
     if ! container_is_running "$WEB_CONTAINER" || ! container_is_running "$MALL_CONTAINER"; then
         podman_cmd image exists "$WEB_IMAGE" || {
-            printf 'Required Web image is unavailable: %s. Use startup_mode=full first.\n' "$WEB_IMAGE" >&2
+            printf 'Required Web image is unavailable: %s. Package it before replacement.\n' "$WEB_IMAGE" >&2
             return 1
         }
         podman_cmd image exists "$MALL_IMAGE" || {
-            printf 'Required Mall image is unavailable: %s. Use startup_mode=full first.\n' "$MALL_IMAGE" >&2
+            printf 'Required Mall image is unavailable: %s. Package it before replacement.\n' "$MALL_IMAGE" >&2
             return 1
         }
         start_frontends
@@ -516,9 +507,9 @@ show_logs_on_error() {
 
 validate_configuration() {
     case "$START_MODE" in
-        full|check|fast|no-build|frontends-only|rebuild-server|rebuild-web|rebuild-mall) ;;
+        replace|check|fast|frontends-only|replace-server|replace-web|replace-mall) ;;
         *)
-            printf 'operation.startup_mode must be full, check, fast, no-build, frontends-only, rebuild-server, rebuild-web, or rebuild-mall; got: %s\n' "$START_MODE" >&2
+            printf 'operation.startup_mode must be replace, check, fast, frontends-only, replace-server, replace-web, or replace-mall; got: %s\n' "$START_MODE" >&2
             exit 2
             ;;
     esac
@@ -617,34 +608,6 @@ configure_proxy() {
     fi
 }
 
-require_project_assets() {
-    require_file "${PROJECT_ROOT}/InitService/target/mitedtsm-init-service.jar"
-    require_file "${PROJECT_ROOT}/Server/mitedtsm-server/target/mitedtsm-server.jar"
-    require_file "${SCRIPT_DIR}/init/init-mysql.sh"
-    require_dir "${PROJECT_ROOT}/database"
-    require_web_assets
-    require_mall_assets
-}
-
-require_web_assets() {
-    require_file "${SCRIPT_DIR}/Containerfile"
-    require_dir "${PROJECT_ROOT}/Web/dist-prod"
-    require_file "${PROJECT_ROOT}/Web/dist-prod/index.html"
-    verify_web_entry_assets "${PROJECT_ROOT}/Web/dist-prod"
-}
-
-require_mall_assets() {
-    require_file "${SCRIPT_DIR}/Containerfile"
-    require_dir "${PROJECT_ROOT}/MallFrontend/unpackage/dist/build/web"
-    require_file "${PROJECT_ROOT}/MallFrontend/unpackage/dist/build/web/index.html"
-    verify_web_entry_assets "${PROJECT_ROOT}/MallFrontend/unpackage/dist/build/web"
-}
-
-require_server_assets() {
-    require_file "${SCRIPT_DIR}/Containerfile"
-    require_file "${PROJECT_ROOT}/Server/mitedtsm-server/target/mitedtsm-server.jar"
-}
-
 apply_mysql_compatibility_migrations() {
     require_file "$MYSQL_COMPATIBILITY_MIGRATION_MANIFEST"
     local manifest_dir migration_path migration_file
@@ -681,47 +644,29 @@ apply_runtime_file_storage() {
         "UPDATE infra_file_config SET master=(id=${FILE_CLIENT_ID}), config=CASE WHEN id=${FILE_CLIENT_ID} THEN JSON_SET(config, '$.domain', '${FILE_PUBLIC_BASE_URL}') ELSE config END WHERE deleted=b'0';"
 }
 
-verify_web_entry_assets() {
-    local web_output="$1"
-    local entry_html="${web_output}/index.html"
-    local asset_path
-    local found_asset=false
-
-    while IFS= read -r asset_path; do
-        [[ -n "$asset_path" ]] || continue
-        found_asset=true
-        if [[ ! -s "${web_output}${asset_path}" ]]; then
-            printf 'Web entry references a missing asset: %s%s\n' "$web_output" "$asset_path" >&2
-            printf '%s\n' 'Rebuild Web successfully before running up.sh; do not deploy this output.' >&2
-            exit 1
-        fi
-    done < <(sed -nE 's/.*(src|href)="(\/assets\/[^"?]+)(\?[^" ]*)?".*/\2/p' "$entry_html" | sort -u)
-
-    if [[ "$found_asset" == false ]]; then
-        printf 'Web entry does not reference any hashed assets: %s\n' "$entry_html" >&2
-        exit 1
-    fi
-}
-
 check_archive_mode_prerequisites() {
     [[ "$IMAGE_SOURCE" == "archive" ]] || return 0
 
     local image archive
     local -a images=(
-        "$RUNTIME_BASE_IMAGE"
-        "$MYSQL_BASE_IMAGE"
         "$REDIS_BASE_IMAGE"
         "$RABBITMQ_BASE_IMAGE"
         "$TDENGINE_BASE_IMAGE"
-        "$NGINX_BASE_IMAGE"
+        "$MYSQL_IMAGE"
+        "$INIT_IMAGE"
+        "$SERVER_IMAGE"
+        "$WEB_IMAGE"
+        "$MALL_IMAGE"
     )
     local -a archives=(
-        "$(image_archive_path "$RUNTIME_ARCHIVE")"
-        "$(image_archive_path "$MYSQL_ARCHIVE")"
         "$(image_archive_path "$REDIS_ARCHIVE")"
         "$(image_archive_path "$RABBITMQ_ARCHIVE")"
         "$(image_archive_path "$TDENGINE_ARCHIVE")"
-        "$(image_archive_path "$NGINX_ARCHIVE")"
+        "$(image_archive_path "$MYSQL_RUNTIME_ARCHIVE")"
+        "$(image_archive_path "$INIT_RUNTIME_ARCHIVE")"
+        "$(image_archive_path "$SERVER_RUNTIME_ARCHIVE")"
+        "$(image_archive_path "$WEB_RUNTIME_ARCHIVE")"
+        "$(image_archive_path "$MALL_RUNTIME_ARCHIVE")"
     )
 
     for ((index = 0; index < ${#images[@]}; index++)); do
@@ -731,66 +676,29 @@ check_archive_mode_prerequisites() {
     done
 }
 
-build_runtime_images() {
-    local -a build_args=(
-        --build-arg "MYSQL_BASE_IMAGE=${MYSQL_BASE_IMAGE}"
-        --build-arg "RUNTIME_BASE_IMAGE=${RUNTIME_BASE_IMAGE}"
-        --build-arg "NGINX_BASE_IMAGE=${NGINX_BASE_IMAGE}"
-    )
-
-    printf 'Packaging existing runtime assets with podman/Containerfile.\n'
-    podman_cmd build --pull=never "${build_args[@]}" --target mysql --tag "$MYSQL_IMAGE" --file "${SCRIPT_DIR}/Containerfile" "$PROJECT_ROOT"
-    podman_cmd build --pull=never "${build_args[@]}" --target init-service --tag "$INIT_IMAGE" --file "${SCRIPT_DIR}/Containerfile" "$PROJECT_ROOT"
-    podman_cmd build --pull=never "${build_args[@]}" --target server --tag "$SERVER_IMAGE" --file "${SCRIPT_DIR}/Containerfile" "$PROJECT_ROOT"
-    podman_cmd build --pull=never "${build_args[@]}" --target web --tag "$WEB_IMAGE" --file "${SCRIPT_DIR}/Containerfile" "$PROJECT_ROOT"
-    podman_cmd build --pull=never "${build_args[@]}" --target mall --tag "$MALL_IMAGE" --file "${SCRIPT_DIR}/Containerfile" "$PROJECT_ROOT"
+ensure_deployment_images() {
+    ensure_image "$REDIS_BASE_IMAGE" "$(image_archive_path "$REDIS_ARCHIVE")"
+    ensure_image "$RABBITMQ_BASE_IMAGE" "$(image_archive_path "$RABBITMQ_ARCHIVE")"
+    ensure_image "$TDENGINE_BASE_IMAGE" "$(image_archive_path "$TDENGINE_ARCHIVE")"
+    ensure_image "$MYSQL_IMAGE" "$(image_archive_path "$MYSQL_RUNTIME_ARCHIVE")"
+    ensure_image "$INIT_IMAGE" "$(image_archive_path "$INIT_RUNTIME_ARCHIVE")"
+    ensure_image "$SERVER_IMAGE" "$(image_archive_path "$SERVER_RUNTIME_ARCHIVE")"
+    ensure_image "$WEB_IMAGE" "$(image_archive_path "$WEB_RUNTIME_ARCHIVE")"
+    ensure_image "$MALL_IMAGE" "$(image_archive_path "$MALL_RUNTIME_ARCHIVE")"
 }
 
-build_web_image() {
-    local -a build_args=(
-        --build-arg "MYSQL_BASE_IMAGE=${MYSQL_BASE_IMAGE}"
-        --build-arg "RUNTIME_BASE_IMAGE=${RUNTIME_BASE_IMAGE}"
-        --build-arg "NGINX_BASE_IMAGE=${NGINX_BASE_IMAGE}"
-    )
-
-    printf 'Packaging current Web assets without rebuilding Java artifacts.\n'
-    podman_cmd build --pull=never "${build_args[@]}" --target web --tag "$WEB_IMAGE" --file "${SCRIPT_DIR}/Containerfile" "$PROJECT_ROOT"
-}
-
-build_mall_image() {
-    local -a build_args=(
-        --build-arg "MYSQL_BASE_IMAGE=${MYSQL_BASE_IMAGE}"
-        --build-arg "RUNTIME_BASE_IMAGE=${RUNTIME_BASE_IMAGE}"
-        --build-arg "NGINX_BASE_IMAGE=${NGINX_BASE_IMAGE}"
-    )
-
-    printf 'Packaging current Mall H5 assets without rebuilding Java artifacts.\n'
-    podman_cmd build --pull=never "${build_args[@]}" --target mall --tag "$MALL_IMAGE" --file "${SCRIPT_DIR}/Containerfile" "$PROJECT_ROOT"
-}
-
-build_server_image() {
-    local -a build_args=(
-        --build-arg "MYSQL_BASE_IMAGE=${MYSQL_BASE_IMAGE}"
-        --build-arg "RUNTIME_BASE_IMAGE=${RUNTIME_BASE_IMAGE}"
-        --build-arg "NGINX_BASE_IMAGE=${NGINX_BASE_IMAGE}"
-    )
-    printf 'Packaging current Server artifact without rebuilding frontends.\n'
-    podman_cmd build --pull=never "${build_args[@]}" --target server --tag "$SERVER_IMAGE" --file "${SCRIPT_DIR}/Containerfile" "$PROJECT_ROOT"
-}
-
-rebuild_server_only() {
+replace_server_only() {
     podman_cmd pod inspect "$POD_NAME" >/dev/null 2>&1 || {
-        printf 'Pod does not exist: %s. Use startup_mode=full first.\n' "$POD_NAME" >&2
+        printf 'Pod does not exist: %s. Use startup_mode=replace first.\n' "$POD_NAME" >&2
         return 1
     }
     [[ "$(podman_cmd pod inspect --format '{{.State}}' "$POD_NAME")" == "Running" ]] || {
-        printf 'Pod is not running: %s. Use startup_mode=fast or full.\n' "$POD_NAME" >&2
+        printf 'Pod is not running: %s. Use startup_mode=fast or replace.\n' "$POD_NAME" >&2
         return 1
     }
-    ensure_image "$RUNTIME_BASE_IMAGE" "$(image_archive_path "$RUNTIME_ARCHIVE")"
-    build_server_image
+    ensure_image "$SERVER_IMAGE" "$(image_archive_path "$SERVER_RUNTIME_ARCHIVE")"
     container_is_running "$MYSQL_CONTAINER" || {
-        printf 'MySQL container is not running: %s. Use startup_mode=full first.\n' "$MYSQL_CONTAINER" >&2
+        printf 'MySQL container is not running: %s. Use startup_mode=replace first.\n' "$MYSQL_CONTAINER" >&2
         return 1
     }
     apply_mysql_compatibility_migrations
@@ -802,34 +710,32 @@ rebuild_server_only() {
     wait_for 'Spring Boot server' "$SERVER_ATTEMPTS" host_curl --fail --silent --show-error "http://${HEALTH_HTTP_HOST}:${SERVER_PORT}${SERVER_HEALTH_PATH}"
 }
 
-rebuild_web_only() {
+replace_web_only() {
     podman_cmd pod inspect "$POD_NAME" >/dev/null 2>&1 || {
-        printf 'Pod does not exist: %s. Use startup_mode=full first.\n' "$POD_NAME" >&2
+        printf 'Pod does not exist: %s. Use startup_mode=replace first.\n' "$POD_NAME" >&2
         return 1
     }
     [[ "$(podman_cmd pod inspect --format '{{.State}}' "$POD_NAME")" == "Running" ]] || {
-        printf 'Pod is not running: %s. Use startup_mode=fast or full.\n' "$POD_NAME" >&2
+        printf 'Pod is not running: %s. Use startup_mode=fast or replace.\n' "$POD_NAME" >&2
         return 1
     }
 
-    ensure_image "$NGINX_BASE_IMAGE" "$(image_archive_path "$NGINX_ARCHIVE")"
-    build_web_image
+    ensure_image "$WEB_IMAGE" "$(image_archive_path "$WEB_RUNTIME_ARCHIVE")"
     start_web_frontend
     wait_for 'Web frontend' "$WEB_ATTEMPTS" host_curl --fail --silent --show-error "http://${HEALTH_HTTP_HOST}:${WEB_PORT}${WEB_HEALTH_PATH}"
 }
 
-rebuild_mall_only() {
+replace_mall_only() {
     podman_cmd pod inspect "$POD_NAME" >/dev/null 2>&1 || {
-        printf 'Pod does not exist: %s. Use startup_mode=full first.\n' "$POD_NAME" >&2
+        printf 'Pod does not exist: %s. Use startup_mode=replace first.\n' "$POD_NAME" >&2
         return 1
     }
     [[ "$(podman_cmd pod inspect --format '{{.State}}' "$POD_NAME")" == "Running" ]] || {
-        printf 'Pod is not running: %s. Use startup_mode=fast or full.\n' "$POD_NAME" >&2
+        printf 'Pod is not running: %s. Use startup_mode=fast or replace.\n' "$POD_NAME" >&2
         return 1
     }
 
-    ensure_image "$NGINX_BASE_IMAGE" "$(image_archive_path "$NGINX_ARCHIVE")"
-    build_mall_image
+    ensure_image "$MALL_IMAGE" "$(image_archive_path "$MALL_RUNTIME_ARCHIVE")"
     start_mall_frontend
     wait_for 'Mall frontend' "$MALL_ATTEMPTS" host_curl --fail --silent --show-error "http://${HEALTH_HTTP_HOST}:${MALL_PORT}${MALL_HEALTH_PATH}"
 }
@@ -838,21 +744,12 @@ validate_configuration
 verify_rootless_podman
 configure_proxy
 
-if [[ "$START_MODE" == "full" || "$START_MODE" == "check" ]]; then
-    require_project_assets
+if [[ "$START_MODE" == "check" ]]; then
     check_archive_mode_prerequisites
-elif [[ "$START_MODE" == "no-build" ]]; then
-    require_runtime_images
-elif [[ "$START_MODE" == "rebuild-server" ]]; then
-    require_server_assets
-elif [[ "$START_MODE" == "rebuild-web" ]]; then
-    require_web_assets
-elif [[ "$START_MODE" == "rebuild-mall" ]]; then
-    require_mall_assets
 fi
 
 if [[ "$START_MODE" == "check" ]]; then
-    printf 'Podman deployment preflight passed. No images were loaded, pulled, built, or started.\n'
+    printf 'Podman startup/replacement preflight passed. No images were loaded, pulled, built, or started.\n'
     exit 0
 fi
 
@@ -866,21 +763,15 @@ fi
 
 if [[ "$START_MODE" == "frontends-only" ]]; then
     podman_cmd pod inspect "$POD_NAME" >/dev/null 2>&1 || {
-        printf 'Pod does not exist: %s. Use startup_mode=full first.\n' "$POD_NAME" >&2
+        printf 'Pod does not exist: %s. Use startup_mode=replace first.\n' "$POD_NAME" >&2
         exit 1
     }
     [[ "$(podman_cmd pod inspect --format '{{.State}}' "$POD_NAME")" == "Running" ]] || {
-        printf 'Pod is not running: %s. Use startup_mode=full to recreate it.\n' "$POD_NAME" >&2
+        printf 'Pod is not running: %s. Use startup_mode=replace to recreate it.\n' "$POD_NAME" >&2
         exit 1
     }
-    podman_cmd image exists "$WEB_IMAGE" || {
-        printf 'Required Web image is unavailable: %s. Use startup_mode=full first.\n' "$WEB_IMAGE" >&2
-        exit 1
-    }
-    podman_cmd image exists "$MALL_IMAGE" || {
-        printf 'Required Mall image is unavailable: %s. Use startup_mode=full first.\n' "$MALL_IMAGE" >&2
-        exit 1
-    }
+    ensure_image "$WEB_IMAGE" "$(image_archive_path "$WEB_RUNTIME_ARCHIVE")"
+    ensure_image "$MALL_IMAGE" "$(image_archive_path "$MALL_RUNTIME_ARCHIVE")"
 
     start_frontends
     wait_for_frontends
@@ -888,34 +779,29 @@ if [[ "$START_MODE" == "frontends-only" ]]; then
     exit 0
 fi
 
-if [[ "$START_MODE" == "rebuild-server" ]]; then
-    rebuild_server_only
+if [[ "$START_MODE" == "replace-server" ]]; then
+    replace_server_only
     show_access_urls
     exit 0
 fi
 
-if [[ "$START_MODE" == "rebuild-web" ]]; then
-    rebuild_web_only
+if [[ "$START_MODE" == "replace-web" ]]; then
+    replace_web_only
     show_access_urls
     exit 0
 fi
 
-if [[ "$START_MODE" == "rebuild-mall" ]]; then
-    rebuild_mall_only
+if [[ "$START_MODE" == "replace-mall" ]]; then
+    replace_mall_only
     show_access_urls
     exit 0
 fi
 
-if [[ "$START_MODE" == "full" ]]; then
-    ensure_image "$RUNTIME_BASE_IMAGE" "$(image_archive_path "$RUNTIME_ARCHIVE")"
-    ensure_image "$MYSQL_BASE_IMAGE" "$(image_archive_path "$MYSQL_ARCHIVE")"
-    ensure_image "$REDIS_BASE_IMAGE" "$(image_archive_path "$REDIS_ARCHIVE")"
-    ensure_image "$RABBITMQ_BASE_IMAGE" "$(image_archive_path "$RABBITMQ_ARCHIVE")"
-    ensure_image "$TDENGINE_BASE_IMAGE" "$(image_archive_path "$TDENGINE_ARCHIVE")"
-    ensure_image "$NGINX_BASE_IMAGE" "$(image_archive_path "$NGINX_ARCHIVE")"
-
-    build_runtime_images
-fi
+[[ "$START_MODE" == "replace" ]] || {
+    printf 'Unsupported startup flow after validation: %s\n' "$START_MODE" >&2
+    exit 2
+}
+ensure_deployment_images
 
 ensure_volume "$MYSQL_VOLUME"
 ensure_volume "$REDIS_VOLUME"

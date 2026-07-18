@@ -52,6 +52,7 @@ pod_snapshot() {
 }
 
 bash -n "${PODMAN_DIR}/up.sh"
+bash -n "${PODMAN_DIR}/build-runtime-images.sh"
 bash -n "${PODMAN_DIR}/down.sh"
 bash -n "${PODMAN_DIR}/image-archives.sh"
 bash -n "${PODMAN_DIR}/lib/yaml-config.sh"
@@ -80,10 +81,17 @@ expect_exit_2 bash "${PODMAN_DIR}/database-dataset.sh" \
 expect_exit_2 bash "${PODMAN_DIR}/database-dataset.sh" \
     "${SCRIPT_DIR}/fixtures/dataset-cleanup-not-authorized.yaml"
 bash "${PODMAN_DIR}/build-image-archives.sh" "${PODMAN_DIR}/config/build-image-archives-check.yaml"
+bash "${PODMAN_DIR}/build-runtime-images.sh" "${PODMAN_DIR}/config/runtime-images-check.yaml"
+if rg -q 'podman(_cmd)?[[:space:]]+build|Containerfile|target/mitedtsm|dist-prod|unpackage/dist' \
+    "${PODMAN_DIR}/up.sh"; then
+    fail 'up.sh must not build images or read host build artifacts'
+fi
 
 required_examples=(
     cleanup-stop.example.yaml
     cleanup-reset.example.yaml
+    runtime-images.example.yaml
+    runtime-images-server.example.yaml
     bpm-provision.example.yaml
     bpm-provision-receivable.example.yaml
     bpm-provision-contract.example.yaml
@@ -188,6 +196,9 @@ fi
 
 expect_exit_2 bash "${PODMAN_DIR}/up.sh"
 expect_exit_2 bash "${PODMAN_DIR}/up.sh" "$CONFIG_PATH" extra
+expect_exit_2 bash "${PODMAN_DIR}/build-runtime-images.sh"
+expect_exit_2 bash "${PODMAN_DIR}/build-runtime-images.sh" \
+    "${PODMAN_DIR}/config/runtime-images-check.yaml" extra
 expect_exit_2 bash "${PODMAN_DIR}/down.sh"
 expect_exit_2 bash "${PODMAN_DIR}/down.sh" "$CONFIG_PATH" extra
 expect_exit_2 bash "${PODMAN_DIR}/image-archives.sh"

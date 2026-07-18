@@ -32,12 +32,9 @@ network:
 image:
   source: auto
   archive_dir: ../images
-  runtime_base: docker.io/library/eclipse-temurin:17-jdk
-  mysql_base: docker.io/library/mysql:8.0
   redis_base: docker.io/library/redis:6-alpine
   rabbitmq_base: docker.io/library/rabbitmq:3-management-alpine
   tdengine_base: docker.io/tdengine/tdengine:3.3.6.0
-  nginx_base: docker.io/library/nginx:stable-alpine
   mysql_runtime: localhost/mitedtsm-rootless-mysql:latest
   init_runtime: localhost/mitedtsm-rootless-init-service:latest
   server_runtime: localhost/mitedtsm-rootless-server:latest
@@ -45,12 +42,14 @@ image:
   mall_runtime: localhost/mitedtsm-rootless-mall:latest
 
 archive:
-  runtime_base: eclipse-temurin-17-jdk.tar
-  mysql_base: mysql-8.0.tar
   redis_base: redis-6-alpine.tar
   rabbitmq_base: rabbitmq-3-management-alpine.tar
   tdengine_base: tdengine-3.3.6.0.tar
-  nginx_base: nginx-stable-alpine.tar
+  mysql_runtime: mitedtsm-rootless-mysql.tar
+  init_runtime: mitedtsm-rootless-init-service.tar
+  server_runtime: mitedtsm-rootless-server.tar
+  web_runtime: mitedtsm-rootless-web.tar
+  mall_runtime: mitedtsm-rootless-mall.tar
 
 container:
   mysql: mitedtsm-rootless-mysql
@@ -135,6 +134,19 @@ file:
 crm_customer_import:
   max_rows: 2000
   preview_ttl_minutes: 60
+
+crm_export_task:
+  enabled: true
+  batch_size: 10
+  max_batch_size: 100
+  max_pending_per_user: 3
+  max_rows: 5000
+  retention_hours: 24
+  token_ttl_seconds: 300
+  cron: "0/5 * * * * ?"
+  zone: Asia/Shanghai
+  lock_key: crm:export-task:scheduler
+  lock_lease_seconds: 300
 
 crm_marketing:
   provider_mode: record-only

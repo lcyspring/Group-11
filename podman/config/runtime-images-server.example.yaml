@@ -1,0 +1,32 @@
+schema_version: 1
+
+operation:
+  mode: package
+
+build:
+  targets: server
+  containerfile: ../Containerfile
+
+network:
+  use_host_proxy: false
+  http_proxy: none
+  https_proxy: none
+  all_proxy: none
+  no_proxy: 127.0.0.1,localhost
+
+image:
+  source: auto
+  archive_dir: ../images
+  mysql_base: docker.io/library/mysql:8.0
+  runtime_base: docker.io/library/eclipse-temurin:17-jdk
+  nginx_base: docker.io/library/nginx:stable-alpine
+  mysql_runtime: localhost/mitedtsm-rootless-mysql:latest
+  init_runtime: localhost/mitedtsm-rootless-init-service:latest
+  server_runtime: localhost/mitedtsm-rootless-server:latest
+  web_runtime: localhost/mitedtsm-rootless-web:latest
+  mall_runtime: localhost/mitedtsm-rootless-mall:latest
+
+archive:
+  mysql_base: mysql-8.0.tar
+  runtime_base: eclipse-temurin-17-jdk.tar
+  nginx_base: nginx-stable-alpine.tar

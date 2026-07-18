@@ -87,10 +87,10 @@ docs/20-CRM-Delivery/daily/
 
 # Local stateful runtime configuration may contain deployment credentials.
 podman/config/runtime-local.yaml
-podman/config/runtime-local-rebuild-server.yaml
+podman/config/runtime-local-replace-server.yaml
 podman/config/database-backup-local.yaml
-podman/config/runtime-local-rebuild-web.yaml
-podman/config/runtime-local-rebuild-mall.yaml
+podman/config/runtime-local-replace-web.yaml
+podman/config/runtime-local-replace-mall.yaml
 podman/config/runtime-reset-local.yaml
 podman/config/bpm-provision-local.yaml
 podman/config/bpm-provision-*-local.yaml

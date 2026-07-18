@@ -12,7 +12,7 @@
 | 字段 | 作用 |
 |---|---|
 | `schema_version` | 配置协议版本，当前固定为 `1` |
-| `operation.startup_mode` | `check/full/fast/no-build/frontends-only/rebuild-server/rebuild-web/rebuild-mall` |
+| `operation.startup_mode` | `check/replace/fast/frontends-only/replace-server/replace-web/replace-mall`；只控制容器，不触发镜像构建 |
 | `operation.shutdown_mode` | `check` 只预检，`stop` 停止 Pod |
 | `operation.archive_mode` | `check/save/pull-save`，供镜像归档脚本使用 |
 | `operation.remove_volumes_on_down` | 停止时是否永久删除四个数据卷；默认必须为 `false` |
@@ -37,9 +37,27 @@
 |---|---|
 | `image.source` | `auto` 优先本地/归档再拉取，`archive` 仅离线归档，`pull` 强制仓库 |
 | `image.archive_dir` | 归档目录，相对 YAML 文件解析 |
-| `image.*_base` | JDK、MySQL、Redis、RabbitMQ、TDengine、Nginx 基础 OCI 镜像 |
+| `image.*_base` | 启动配置只需 Redis、RabbitMQ、TDengine；JDK、MySQL、Nginx 属于独立运行镜像封装配置 |
 | `image.*_runtime` | 项目打包后的 MySQL/Init/Server/Web/Mall 本地镜像名 |
-| `archive.*` | 各基础镜像对应的 tar 文件名 |
+| `archive.*` | 启动阶段所需基础镜像和项目运行镜像的 tar 文件名 |
+
+### 运行镜像封装配置
+
+`build-runtime-images.sh` 只接收一个 YAML 路径，不调用编译脚本或 `up.sh`。
+
+| 字段 | 作用 |
+|---|---|
+| `operation.mode` | `check` 只校验产物和配置，`package` 执行运行镜像封装 |
+| `build.targets` | `all`，或 `mysql,init-service,server,web,mall` 的逗号分隔子集 |
+| `build.containerfile` | 多阶段运行镜像 Containerfile；相对 YAML 文件解析 |
+| `network.use_host_proxy` | 是否使用本 YAML 的显式代理下载缺失基础镜像 |
+| `network.http_proxy/https_proxy/all_proxy` | Host 侧拉取镜像的代理 URL；不用写 `none` |
+| `network.no_proxy` | 不走代理的地址列表 |
+| `image.source` | 基础镜像来源：`auto/archive/pull` |
+| `image.archive_dir` | 基础镜像离线归档目录 |
+| `image.mysql_base/runtime_base/nginx_base` | MySQL、Java、Nginx 封装基座 |
+| `image.mysql_runtime/init_runtime/server_runtime/web_runtime/mall_runtime` | 五个产出镜像的完整名称和标签 |
+| `archive.mysql_base/runtime_base/nginx_base` | 三种封装基座的 OCI tar 文件名 |
 
 ### 容器、卷和基础设施
 
@@ -111,6 +129,17 @@
 | `crm_marketing.delivery_sync_batch_size` | 每轮调度最多回收的短信/邮件提供商结果数 |
 | `crm_customer_import.max_rows` | 单次客户导入预检允许的数据行上限，防止超大文件占满内存 |
 | `crm_customer_import.preview_ttl_minutes` | 预检快照允许确认的分钟数，过期后必须重新预检 |
+| `crm_export_task.enabled` | 是否启用 CRM 异步导出后台任务 |
+| `crm_export_task.batch_size` | 每次租户调度领取的排队任务数 |
+| `crm_export_task.max_batch_size` | 调度和过期清理的硬上限，且 `batch_size` 不得超过它 |
+| `crm_export_task.max_pending_per_user` | 单用户允许同时排队或运行的任务数 |
+| `crm_export_task.max_rows` | 单任务允许冻结和导出的最大对象行数 |
+| `crm_export_task.retention_hours` | 任务、受保护结果文件和重新下载能力的保留小时数 |
+| `crm_export_task.token_ttl_seconds` | 单次下载令牌的有效秒数；每个令牌成功下载后立即失效 |
+| `crm_export_task.cron` | 后台导出与过期清理的 Quartz cron |
+| `crm_export_task.zone` | cron 时区 |
+| `crm_export_task.lock_key` | 多实例调度使用的 Redisson 分布式锁键 |
+| `crm_export_task.lock_lease_seconds` | 调度锁最长持有秒数 |
 | `health.http_host` | 宿主健康探针地址 |
 | `health.interval_seconds` | 重试间隔 |
 | `health.*_attempts` | 各服务最大探测次数 |
@@ -169,6 +198,9 @@
 | `build.server/init_service/web` | 是否构建对应产物 |
 | `build.clean` | Maven/Web 是否清理旧产物 |
 | `build.crm_tests/crm_coverage` | 是否执行 CRM 测试和 JaCoCo |
+| `build.framework_tests/framework_coverage` | 是否执行显式选择的 Framework 模块测试和 JaCoCo |
+| `build.framework_modules` | Framework Maven 模块路径，多个模块用逗号分隔；未配置时为 Security/Web 组合 |
+| `build.framework_test_pattern` | Framework Surefire 测试类模式，不接受任意命令 |
 | `build.system_tests/system_coverage` | 是否执行指定 System 模块测试和 JaCoCo |
 | `build.system_test_pattern` | System 模块 Surefire 测试类模式，不接受任意命令 |
 | `build.ci` | 使用 CI 行为和非交互输出 |

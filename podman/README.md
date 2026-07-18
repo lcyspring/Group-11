@@ -25,7 +25,7 @@ The committed configuration uses `operation.startup_mode: check` and
 changing Pod or volume state. Copy it to a local deployment configuration and
 explicitly select a mode before making a stateful operation:
 
-- startup: `full`, `fast`, `no-build`, `frontends-only`, `rebuild-server`, `rebuild-web`, or `rebuild-mall`;
+- startup: `replace`, `fast`, `frontends-only`, `replace-server`, `replace-web`, or `replace-mall`;
 - shutdown: `stop`;
 - image archives: `save` or `pull-save`;
 - destructive data removal additionally requires
@@ -85,8 +85,14 @@ Required runtime artifacts are:
 - `MallFrontend/unpackage/dist/build/web/`
 
 `Containerfile` only packages these artifacts and database files into runtime
-images. Running containers do not bind-mount project files; persistent service
-data lives in named volumes.
+images. Packaging is a separate YAML-only stage:
+
+```bash
+bash ./build-runtime-images.sh ./config/runtime-images.example.yaml
+```
+
+`up.sh` never reads build artifacts or runs `podman build`. Running containers
+do not bind-mount project files; persistent service data lives in named volumes.
 
 ## Startup modes
 
@@ -96,19 +102,18 @@ Set `operation.startup_mode` in the selected YAML and run the same command:
 bash ./up.sh ./config/my-runtime.yaml
 ```
 
-- `full` loads or pulls configured base images, packages current artifacts,
-  then replaces the Pod while retaining named volumes.
-- `no-build` recreates the Pod from configured local runtime images.
+- `replace` loads or pulls configured pre-packaged runtime images and replaces
+  the Pod while retaining named volumes.
 - `fast` starts an existing stopped Pod and missing frontend containers.
 - `frontends-only` replaces only Web and Mall containers in a running Pod.
-- `rebuild-server` packages the current Server JAR, applies compatibility migrations, and replaces only Server.
-- `rebuild-web` packages current `Web/dist-prod/` and replaces only Web.
-- `rebuild-mall` packages current Mall H5 output and replaces only Mall.
-- `check` validates rootless Podman, configuration, artifacts, and offline
-  archive prerequisites without loading, pulling, building, or starting.
+- `replace-server` applies compatibility migrations and replaces only Server.
+- `replace-web` replaces only Web with an already packaged image.
+- `replace-mall` replaces only Mall with an already packaged image.
+- `check` validates runtime configuration and offline archive prerequisites
+  without loading, pulling, building, or starting.
 
-Use `rebuild-server` after an ordinary backend change and `full` when database
-packaging, base images, or artifact freshness is uncertain. The
+Compile first, package the selected image targets second, and replace containers
+third. The
 Web Nginx configuration does not cache `index.html`, while hashed assets remain
 cacheable.
 
@@ -137,7 +142,8 @@ proxy hostnames are translated to the configured `network.host_proxy_name`.
 - `config/`: explicit build and runtime YAML files.
 - `lib/yaml-config.sh`: non-evaluating, two-level YAML scalar reader.
 - `tests/runtime-config/`: parser, CLI contract, preflight, and Pod-state tests.
-- `up.sh` / `down.sh`: YAML-only runtime entry points.
+- `build-runtime-images.sh`: YAML-only runtime image packaging entry point.
+- `up.sh` / `down.sh`: YAML-only container lifecycle entry points.
 - `Containerfile.build-ubuntu`: Ubuntu 26.04 build toolchain image.
 - `Containerfile.hbuilderx-ubuntu`: headless Mall H5 compiler image.
 - `build-mall-h5-in-ubuntu.sh`: YAML-only Mall H5 container build entry point.

@@ -6,11 +6,13 @@
 |---|---|---|
 | Server/Web 构建 | `build-ubuntu-26.04.yaml` | Ubuntu 26.04 全量构建 |
 | Mall H5 构建 | `build-mall-h5-ubuntu-26.04.yaml` | 无图形 HBuilderX 构建 |
+| 运行镜像封装 | `runtime-images.example.yaml` | 将已有产物封装为五个运行镜像，不启动容器 |
+| 镜像封装预检 | `runtime-images-check.yaml` | 校验产物与封装配置，不改变镜像 |
 | 运行预检 | `runtime-local-check.yaml` | 不改变 Pod、镜像和卷 |
-| 本机运行 | `runtime-local.yaml` | ignored，保存真实本地凭据和 full 模式 |
+| 本机运行 | `runtime-local.yaml` | ignored，保存真实本地凭据和 replace 模式 |
 | 安全停服示例 | `cleanup-stop.example.yaml` | 删除 Pod，但保留 MySQL、Redis、RabbitMQ、TDengine 数据卷 |
 | 数据重置示例 | `cleanup-reset.example.yaml` | 删除 Pod 和四个持久卷；仅用于明确要求的全新环境重建 |
-| 单项热替换 | `runtime-local-rebuild-*.yaml` | ignored，仅替换 Server/Web/Mall |
+| 单项热替换 | `runtime-local-replace-*.yaml` | ignored，仅消费预先封装镜像并替换 Server/Web/Mall |
 | 数据保护 | `database-backup-check.yaml` | 备份/恢复安全模板 |
 | 编译镜像 | `build-image-archives-check.yaml` | 工具链镜像 check/save/load/push 模板 |
 | CRM 性能基线 | `verify-crm-performance-baseline.example.yaml` | 只读并发负载与阈值共享模板 |
@@ -53,7 +55,7 @@ cp ./config/bpm-provision-customer-visit.example.yaml ./config/bpm-provision-cus
 
 聚合清单中的相对路径以清单所在目录解析。正式部署应让 ignored 的
 `bpm-provision-all-local.yaml` 引用各 ignored 单模型配置；全新数据卷启动时，运行配置设置
-`bpm.provision_after_start: true`，`up.sh full` 会在 Server 健康后恢复全部流程定义。
+`bpm.provision_after_start: true`，`up.sh replace` 会在 Server 健康后恢复全部流程定义。
 
 若现有环境只缺少请假模型，可在填写 ignored 本机配置后单独幂等补配：
 
@@ -77,7 +79,7 @@ bash ./down.sh ./config/runtime-reset-local.yaml
 ```
 
 第二条命令不可恢复地清除 MySQL、Redis、RabbitMQ、TDengine 数据。执行前应先使用
-`database-backup.sh` 完成备份，并确认下一次 `up.sh full` 开启 BPM 自动恢复。构建产物不由
+`database-backup.sh` 完成备份，并确认下一次 `up.sh replace` 开启 BPM 自动恢复。构建产物不由
 `down.sh` 删除；Maven `target`、`Web/dist-prod`、Mall `unpackage/dist` 应通过对应构建配置的
 clean 字段重建，避免把“清产物”和“销毁业务数据”混为一个操作。
 

@@ -8,7 +8,7 @@
 
 | YAML 字段/镜像 | 上游来源 | 项目内作用 | 使用方式 |
 |---|---|---|---|
-| `image.runtime_base`：`docker.io/library/eclipse-temurin:17-jdk` | Docker Hub 官方镜像库的 Eclipse Temurin JDK 17 | `InitService` 与 Server 项目运行镜像的 Java 基座 | `up.sh full` 构建项目镜像时读取 |
+| `image.runtime_base`：`docker.io/library/eclipse-temurin:17-jdk` | Docker Hub 官方镜像库的 Eclipse Temurin JDK 17 | `InitService` 与 Server 项目运行镜像的 Java 基座 | `build-runtime-images.sh` 封装项目镜像时读取 |
 | `image.mysql_base`：`docker.io/library/mysql:8.0` | Docker Hub 官方 MySQL 镜像 | 加入初始化入口和 `database/` SQL，生成项目 MySQL 镜像 | 不直接启动，先构建 `mysql_runtime` |
 | `image.redis_base`：`docker.io/library/redis:6-alpine` | Docker Hub 官方 Redis 镜像 | CRM/系统缓存 | 作为运行容器直接启动 |
 | `image.rabbitmq_base`：`docker.io/library/rabbitmq:3-management-alpine` | Docker Hub 官方 RabbitMQ 镜像 | 异步消息与管理探针 | 作为运行容器直接启动 |
@@ -30,7 +30,8 @@
 | `localhost/mitedtsm-rootless-web:latest` | Nginx + 当前 `Web/dist-prod` | 提供 8081 管理端 | 否，优先由当前 Web 产物重建 |
 | `localhost/mitedtsm-rootless-mall:latest` | Nginx + 当前 H5 构建产物 | 提供 8082 Mall H5 | 否，优先由当前 H5 产物重建 |
 
-上述五个镜像由 `podman/Containerfile` 的不同 target 构建。Redis、RabbitMQ 和 TDengine 没有再包一层
+上述五个镜像由 `build-runtime-images.sh` 按 YAML 选择 `podman/Containerfile` 的不同 target 独立
+封装；`up.sh` 只拉取/加载并消费它们，不再构建镜像。Redis、RabbitMQ 和 TDengine 没有再包一层
 项目镜像；Podman 自动创建的 infra/pause 容器只负责共享 Pod 网络命名空间，也不是可交付业务镜像。
 
 ### 编译工具链镜像

@@ -21,7 +21,8 @@ Mall H5：                         ghcr.io/elel-code/group-11-hbuilderx-ubuntu:2
 |---|---|---|
 | Server/Web/测试编译 | `build-in-ubuntu.sh <yaml>` | JAR、Web `dist-prod`、测试与 JaCoCo |
 | Mall H5 编译 | `build-mall-h5-in-ubuntu.sh <yaml>` | 本地 ignored 的 H5 构建目录 |
-| 运行镜像打包与部署 | `up.sh <yaml>` | MySQL/Init/Server/Web/Mall 镜像和 rootless Pod |
+| 运行镜像封装 | `build-runtime-images.sh <yaml>` | 只把已有产物封装为 MySQL/Init/Server/Web/Mall 镜像 |
+| 启动/替换容器 | `up.sh <yaml>` | 只消费运行镜像，启动或替换 rootless Pod/容器 |
 | 停止 | `down.sh <yaml>` | 停止 Pod；是否删卷只看 YAML |
 | 离线镜像 | `image-archives.sh <yaml>` | 保存/拉取并保存基础镜像 tar |
 | 编译镜像归档/上传 | `build-image-archives.sh <yaml>` | 两个工具链镜像 check/save/load/push |
@@ -40,12 +41,13 @@ Mall H5：                         ghcr.io/elel-code/group-11-hbuilderx-ubuntu:2
 cd /path/to/Group-11
 bash ./podman/build-in-ubuntu.sh ./podman/config/build-ubuntu-26.04.yaml
 bash ./podman/build-mall-h5-in-ubuntu.sh ./podman/config/build-mall-h5-ubuntu-26.04.yaml
+bash ./podman/build-runtime-images.sh ./podman/config/runtime-images.example.yaml
 bash ./podman/tests/runtime-config/run.sh ./podman/config/runtime-local-check.yaml
 bash ./podman/up.sh ./podman/config/runtime-local.yaml
 ```
 
 全新数据库卷会同时清空 Flowable 已部署定义。`runtime-local.yaml` 应显式设置
-`bpm.provision_after_start: true` 和 `bpm.provision_manifest: bpm-provision-all-local.yaml`；`up.sh full`
+`bpm.provision_after_start: true` 和 `bpm.provision_manifest: bpm-provision-all-local.yaml`；`up.sh replace`
 在 Server 健康后、暴露前端前自动恢复请假、回款、报销、合同、退款、出差、借款和客户拜访流程。若任一模型失败，部署
 立即失败，不会继续显示一个看似可用但提交审批必然报错的前端。
 
@@ -59,7 +61,7 @@ bash ./podman/up.sh ./podman/config/runtime-local.yaml
 | 重新编译 | 对应 Ubuntu 26.04 构建 YAML 的 `build.clean: true` | 清理并重建所选源码产物，不触碰业务数据 |
 | 全新数据环境 | 复制 `cleanup-reset.example.yaml` 为 ignored `runtime-reset-local.yaml` 后执行 `down.sh` | 永久删除 MySQL、Redis、RabbitMQ、TDengine 卷 |
 
-执行全新数据环境前必须先备份并核对 YAML 中的四个卷名。之后使用 `up.sh full` 重建；运行 YAML
+执行全新数据环境前必须先备份并核对 YAML 中的四个卷名。之后先封装运行镜像，再使用 `up.sh replace` 重建；运行 YAML
 必须开启 BPM 自动恢复。`down.sh` 会逐个打印被保留或被删除的卷，不再静默完成数据销毁。
 
 所有 `.example.yaml` 都属于仓库交付内容，不得加入 `.gitignore`；真实账号、密码和环境地址写入
@@ -70,17 +72,17 @@ bash ./podman/up.sh ./podman/config/runtime-local.yaml
 
 ## 按变更选择模式
 
-| 变更 | 构建 | `startup_mode` |
-|---|---|---|
-| Java/配置/数据库 | Ubuntu Server build | `rebuild-server`；数据库镜像或全链不确定时 `full` |
-| 管理端 Web | Ubuntu Web build | `rebuild-web` |
-| Mall H5 | Ubuntu HBuilderX build | `rebuild-mall` |
-| Web + Mall | 两项前端 build | `frontends-only` |
-| 仅重启现有 Pod | 无 | `fast` |
-| 用现有运行镜像重建 Pod | 无 | `no-build` |
-| 首次、数据库布局或基础镜像变化 | 全部所需产物 | `full` |
+| 变更 | 阶段一编译 | 阶段二 `build.targets` | 阶段三 `startup_mode` |
+|---|---|---|---|
+| Java/配置 | Ubuntu Server build | `server` | `replace-server` |
+| 数据库初始化内容 | Ubuntu Init build（按需） | `mysql,init-service` | `replace` |
+| 管理端 Web | Ubuntu Web build | `web` | `replace-web` |
+| Mall H5 | Ubuntu HBuilderX build | `mall` | `replace-mall` |
+| Web + Mall | 两项前端 build | `web,mall` | `frontends-only` |
+| 仅重启已有 Pod | 无 | 无 | `fast` |
+| 首次或完整替换 | 全部所需产物 | `all` | `replace` |
 
-任何 stateful 操作前先用 `runtime-local-check.yaml`。`runtime-local.yaml`、各 rebuild 配置含本地凭据，
+任何 stateful 操作前先用 `runtime-images-check.yaml` 和 `runtime-local-check.yaml`。`runtime-local.yaml`、各 replace 配置含本地凭据，
 被 Git 忽略；共享模板不得写真实账号。
 
 ## 验收
@@ -108,7 +110,7 @@ bash ./podman/verify-crm-performance-baseline.sh ./podman/config/verify-crm-perf
 
 ## 日常入口与验收资产
 
-- 日常入口：`build-in-ubuntu.sh`、`build-mall-h5-in-ubuntu.sh`、`up.sh`、`down.sh`、
+- 日常入口：`build-in-ubuntu.sh`、`build-mall-h5-in-ubuntu.sh`、`build-runtime-images.sh`、`up.sh`、`down.sh`、
   `image-archives.sh`、`database-backup.sh`、`database-restore.sh`；
 - `verify-*.sh` 与 `config/verify-*`、`test-*`、`check-*` 是结构化测试资产，不用于普通启动；
 - 编译工具链镜像推荐 save，并可在登录 GHCR 后使用 `operation.mode: push` 上传；项目运行镜像仍由
