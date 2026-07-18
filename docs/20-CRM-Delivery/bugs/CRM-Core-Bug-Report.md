@@ -83,6 +83,7 @@
 | WEB-BUILD-BUG-001 | Web 构建告警 | P2/维护 | Vite TS 配置按 CJS 加载，每轮重复报告 Node API 弃用；切换 `.mts` 并移除 `__dirname` 依赖 | CJS 告警 2→0；Web 容器构建成功；媒体专项 3/3 | 已关闭 |
 | MALL-H5-BUILD-BUG-002 | H5 Sass 告警 | P2/维护 | Mall 自有 Sass 大量使用全局 map/list/color 函数，HBuilderX 构建日志被 895+ 条显式旧函数告警及重复项淹没 | 旧全局函数告警 0；日志 28732→4624 行；H5 构建成功、媒体专项 7/7 | 已关闭 |
 | PODMAN-RUNTIME-BUG-013 | 运行供应链 | P1/可复现 | 六类基础镜像使用大版本或 stable 浮动标签，相同 YAML 可得到不同二进制；改为精确版本和 sha256 digest 双固定 | 6/6 本地 digest 匹配；配置门禁通过；运行服务健康 | 已关闭 |
+| DEMO-DATA-BUG-002 | 演示数据替换 | P1/数据 | 通用旧演示清理脚本早于工单模块，replace 后遗留 1 条旧工单；补齐工单交易、抄送、签到、轨迹和 SLA 实例清理 | 客户/商机/工单旧数据 0/0/0；新数据 1000/1600/2000；Server UP | 已关闭 |
 
 ## 边界说明
 

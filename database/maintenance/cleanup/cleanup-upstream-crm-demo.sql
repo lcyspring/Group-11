@@ -5,6 +5,14 @@
 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS;
 SET FOREIGN_KEY_CHECKS=0;
 
+-- Work-order transaction tables were added after the upstream CRM dump. They
+-- belong to the replaceable demo dataset; group/SLA policy configuration stays.
+DELETE FROM crm_work_order_cc;
+DELETE FROM crm_work_order_check_in;
+DELETE FROM crm_work_order_record;
+DELETE FROM crm_work_order_sla;
+DELETE FROM crm_work_order;
+
 DELETE FROM crm_permission;
 DELETE FROM crm_follow_up_record;
 DELETE FROM crm_receivable_plan;
