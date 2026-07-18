@@ -32,6 +32,8 @@ DELETE w FROM crm_receivable_write_off w JOIN crm_receivable r ON r.id=w.receiva
 DELETE p FROM crm_permission p JOIN crm_receivable r ON p.biz_type=7 AND p.biz_id=r.id
  WHERE r.tenant_id=@demo_tenant AND r.no LIKE CONCAT(@demo_batch,'-REC-%');
 DELETE FROM crm_receivable WHERE tenant_id=@demo_tenant AND no LIKE CONCAT(@demo_batch,'-REC-%');
+DELETE o FROM crm_receivable_overdue_reminder o JOIN crm_receivable_plan r ON r.id=o.receivable_plan_id
+ WHERE r.tenant_id=@demo_tenant AND r.remark LIKE CONCAT('generated-batch:',@demo_batch,'%');
 DELETE p FROM crm_permission p JOIN crm_receivable_plan r ON p.biz_type=8 AND p.biz_id=r.id
  WHERE r.tenant_id=@demo_tenant AND r.remark LIKE CONCAT('generated-batch:',@demo_batch,'%');
 DELETE FROM crm_receivable_plan WHERE tenant_id=@demo_tenant AND remark LIKE CONCAT('generated-batch:',@demo_batch,'%');
@@ -58,6 +60,10 @@ DELETE FROM crm_work_order WHERE tenant_id=@demo_tenant AND title LIKE CONCAT(@d
 DELETE FROM crm_follow_up_record WHERE tenant_id=@demo_tenant
  AND content LIKE CONCAT('%generated-batch:',@demo_batch,'%');
 DELETE FROM crm_business WHERE tenant_id=@demo_tenant AND name LIKE CONCAT(@demo_batch,'-BUS-%');
+DELETE s FROM crm_business_status s JOIN crm_business_status_type t ON t.id=s.type_id
+ WHERE t.tenant_id=@demo_tenant AND t.name=CONCAT(@demo_batch,'-标准销售流程');
+DELETE FROM crm_business_status_type
+ WHERE tenant_id=@demo_tenant AND name=CONCAT(@demo_batch,'-标准销售流程');
 DELETE p FROM crm_permission p JOIN crm_clue c ON p.biz_type=1 AND p.biz_id=c.id
  WHERE c.tenant_id=@demo_tenant AND c.name LIKE CONCAT(@demo_batch,'-CLUE-%');
 DELETE r FROM crm_clue_owner_record r JOIN crm_clue c ON c.id=r.clue_id

@@ -17,6 +17,7 @@ START="$(yaml_require dataset_generation.time_start)"
 END="$(yaml_require dataset_generation.time_end)"
 CUSTOMERS="$(yaml_positive_integer dataset_generation.customer_count)"
 BUSINESSES="$(yaml_positive_integer dataset_generation.business_count)"
+BUSINESS_STAGES="$(yaml_positive_integer dataset_generation.business_stage_count)"
 CLUES="$(yaml_positive_integer dataset_generation.clue_count)"
 FOLLOW_UPS="$(yaml_positive_integer dataset_generation.follow_up_count)"
 PRODUCTS="$(yaml_positive_integer dataset_generation.product_count)"
@@ -45,10 +46,11 @@ OUTPUT="$(realpath -m -- "$(yaml_path dataset_generation.output_dir)")"
   CARE_RECORDS<=100000 && OA_EVENTS<=50000 && OA_TASKS<=100000)) || {
   printf 'Configured associated-domain scale exceeds the safety ceiling.\n' >&2; exit 2;
 }
-((CONTRACTS<=CUSTOMERS && CONTRACTS<=BUSINESSES && PLANS>=CONTRACTS && PLANS%CONTRACTS==0 &&
-  RECEIVABLES<=PLANS && INVOICES<=CONTRACTS && REIMBURSEMENTS<=CONTRACTS &&
+((BUSINESS_STAGES>=3 && BUSINESS_STAGES<=8 && CONTRACTS<=CUSTOMERS && CONTRACTS<BUSINESSES &&
+  PLANS>=CONTRACTS && PLANS%CONTRACTS==0 && RECEIVABLES<PLANS &&
+  INVOICES<=CONTRACTS && REIMBURSEMENTS<=CONTRACTS &&
   REFUNDS<=RECEIVABLES)) || {
-  printf 'Associated counts violate customer/business/contract/finance cardinality constraints.\n' >&2; exit 2;
+  printf 'Counts must keep 3..8 stages, non-contract opportunities, and outstanding receivable plans.\n' >&2; exit 2;
 }
 DATABASE_GENERATED="$(realpath -m -- "${PROJECT_ROOT}/database/generated")"
 case "$OUTPUT" in
@@ -59,8 +61,8 @@ span="$(( ( $(date -d "$END" +%s) - $(date -d "$START" +%s) ) / 86400 + 1 ))"
 ((span>0)) || { printf 'time_end must not precede time_start.\n' >&2; exit 2; }
 BATCH="DEMO2-${SEED}"
 
-printf 'Demo dataset plan: name=%s batch=%s customers=%s contacts=%s clues=%s follow-ups=%s businesses=%s products=%s contracts=%s plans=%s receivables=%s invoices=%s reimbursements=%s refunds=%s campaigns=%s care=%s oa-events=%s oa-tasks=%s work-orders=%s span-days=%s\n' \
-  "$NAME" "$BATCH" "$CUSTOMERS" "$CUSTOMERS" "$CLUES" "$FOLLOW_UPS" "$BUSINESSES" "$PRODUCTS" "$CONTRACTS" "$PLANS" \
+printf 'Demo dataset plan: name=%s batch=%s customers=%s contacts=%s clues=%s follow-ups=%s businesses=%s stages=%s products=%s contracts=%s plans=%s receivables=%s invoices=%s reimbursements=%s refunds=%s campaigns=%s care=%s oa-events=%s oa-tasks=%s work-orders=%s span-days=%s\n' \
+  "$NAME" "$BATCH" "$CUSTOMERS" "$CUSTOMERS" "$CLUES" "$FOLLOW_UPS" "$BUSINESSES" "$BUSINESS_STAGES" "$PRODUCTS" "$CONTRACTS" "$PLANS" \
   "$RECEIVABLES" "$INVOICES" "$REIMBURSEMENTS" "$REFUNDS" "$CAMPAIGNS" \
   "$CARE_RECORDS" "$OA_EVENTS" "$OA_TASKS" "$WORK_ORDERS" "$span"
 [[ "$MODE" == generate ]] || { printf 'Check passed. No generated file was written.\n'; exit 0; }
@@ -68,8 +70,9 @@ printf 'Demo dataset plan: name=%s batch=%s customers=%s contacts=%s clues=%s fo
 mkdir -p "$OUTPUT"
 render() {
   sed -e "s/__BATCH__/${BATCH}/g" -e "s/__SEED__/${SEED}/g" -e "s/__TENANT__/${TENANT}/g" \
-    -e "s/__OWNER__/${OWNER}/g" -e "s/__START__/${START}/g" -e "s/__SPAN__/${span}/g" \
+    -e "s/__OWNER__/${OWNER}/g" -e "s/__START__/${START}/g" -e "s/__END__/${END}/g" -e "s/__SPAN__/${span}/g" \
     -e "s/__CUSTOMERS__/${CUSTOMERS}/g" -e "s/__BUSINESSES__/${BUSINESSES}/g" \
+    -e "s/__STAGES__/${BUSINESS_STAGES}/g" \
     -e "s/__CLUES__/${CLUES}/g" -e "s/__FOLLOW_UPS__/${FOLLOW_UPS}/g" \
     -e "s/__PRODUCTS__/${PRODUCTS}/g" \
     -e "s/__WORK_ORDERS__/${WORK_ORDERS}/g" -e "s/__CONTRACTS__/${CONTRACTS}/g" \
@@ -82,7 +85,8 @@ render() {
 render "${PROJECT_ROOT}/database/generator/templates/crm-core-work-order.sql.tpl" "${OUTPUT}/02-insert.sql"
 render "${PROJECT_ROOT}/database/generator/templates/crm-associated-domains.sql.tpl" "${OUTPUT}/03-associated.sql"
 render "${PROJECT_ROOT}/database/generator/templates/crm-core-work-order-cleanup.sql.tpl" "${OUTPUT}/01-cleanup.sql"
-printf '%s\n' './01-cleanup.sql' './02-insert.sql' './03-associated.sql' >"${OUTPUT}/${NAME}.manifest"
-sha256sum "${OUTPUT}/01-cleanup.sql" "${OUTPUT}/02-insert.sql" "${OUTPUT}/03-associated.sql" \
+render "${PROJECT_ROOT}/database/generator/templates/crm-demo-validation.sql.tpl" "${OUTPUT}/04-validate.sql"
+printf '%s\n' './01-cleanup.sql' './02-insert.sql' './03-associated.sql' './04-validate.sql' >"${OUTPUT}/${NAME}.manifest"
+sha256sum "${OUTPUT}/01-cleanup.sql" "${OUTPUT}/02-insert.sql" "${OUTPUT}/03-associated.sql" "${OUTPUT}/04-validate.sql" \
   "${OUTPUT}/${NAME}.manifest" >"${OUTPUT}/SHA256SUMS"
 printf 'Generated deterministic dataset files under %s. No database was changed.\n' "$OUTPUT"

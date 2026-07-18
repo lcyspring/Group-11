@@ -5,6 +5,7 @@ SET @demo_batch = _utf8mb4'__BATCH__' COLLATE utf8mb4_unicode_ci;
 SET @demo_tenant = __TENANT__;
 SET @demo_owner = __OWNER__;
 SET @demo_start = '__START__ 00:00:00';
+SET @demo_end = '__END__ 23:59:59';
 SET @demo_span_days = __SPAN__;
 
 DELIMITER $$
@@ -33,6 +34,8 @@ BEGIN
   DECLARE contract_amount DECIMAL(24,6);
   DECLARE plan_amount DECIMAL(24,6);
   DECLARE receipt_amount DECIMAL(24,6);
+  DECLARE event_time DATETIME;
+  DECLARE finance_status INT;
   DECLARE plans_per_contract INT DEFAULT (__PLANS__ / __CONTRACTS__);
 
   IF (SELECT COUNT(*) FROM crm_customer WHERE tenant_id=@demo_tenant
@@ -66,6 +69,7 @@ BEGIN
   END WHILE;
   SET i=1;
   WHILE i<=__PRODUCTS__ DO
+    SET event_time=DATE_ADD(@demo_start,INTERVAL MOD(__SEED__+i*59,@demo_span_days) DAY);
     SELECT id INTO category_id FROM crm_product_category WHERE tenant_id=@demo_tenant
       AND name=CONCAT(@demo_batch,'-CATEGORY-',LPAD(MOD(i-1,5)+1,2,'0'));
     INSERT INTO crm_product
@@ -73,8 +77,8 @@ BEGIN
        creator,create_time,updater,update_time,tenant_id,deleted)
       VALUES(CONCAT(@demo_batch,'-PRODUCT-',LPAD(i,4,'0')),
        CONCAT('D2P',MOD(__SEED__,100000),LPAD(i,4,'0')),MOD(i,4)+1,500+MOD(i*__SEED__,9500),0,
-       category_id,'固定种子演示产品',@demo_owner,1,CAST(@demo_owner AS CHAR),NOW(),
-       CAST(@demo_owner AS CHAR),NOW(),@demo_tenant,b'0');
+       category_id,'固定种子演示产品',@demo_owner,1,CAST(@demo_owner AS CHAR),event_time,
+       CAST(@demo_owner AS CHAR),event_time,@demo_tenant,b'0');
     INSERT INTO crm_permission
       (biz_type,biz_id,user_id,level,creator,create_time,updater,update_time,deleted,tenant_id)
       VALUES(6,LAST_INSERT_ID(),@demo_owner,1,CAST(@demo_owner AS CHAR),NOW(),
@@ -98,6 +102,7 @@ BEGIN
 
   SET i=1;
   WHILE i<=__CONTRACTS__ DO
+    SET event_time=DATE_ADD(@demo_start,INTERVAL MOD(__SEED__+i*43,GREATEST(@demo_span_days-60,1)) DAY);
     SELECT c.id,b.id,ct.id INTO customer_id,business_id,contact_id
       FROM crm_customer c
       JOIN crm_business b ON b.tenant_id=@demo_tenant
@@ -107,10 +112,10 @@ BEGIN
        AND c.name=CONCAT(@demo_batch,'-CUS-',LPAD(MOD(i-1,__CUSTOMERS__)+1,6,'0'))
      LIMIT 1;
     SET contract_amount=10000+MOD(i*__SEED__,90000);
-    UPDATE crm_business SET end_status=1,
-      deal_time=DATE_ADD(@demo_start,INTERVAL MOD(i*__SEED__,@demo_span_days) DAY),
-      end_time=DATE_ADD(@demo_start,INTERVAL MOD(i*__SEED__,@demo_span_days) DAY),
-      total_price=contract_amount,update_time=NOW()
+    UPDATE crm_business SET status_id=NULL,end_status=1,
+      deal_time=DATE_ADD(event_time,INTERVAL 30 DAY),
+      end_time=DATE_ADD(event_time,INTERVAL 45 DAY),
+      total_price=contract_amount,update_time=DATE_ADD(event_time,INTERVAL 45 DAY)
       WHERE id=business_id;
     INSERT INTO crm_contract
       (name,no,customer_id,business_id,owner_user_id,process_instance_id,audit_status,
@@ -119,13 +124,13 @@ BEGIN
        base_gross_amount,sign_contact_id,sign_user_id,remark,creator,create_time,updater,update_time,deleted,tenant_id)
       VALUES(CONCAT(@demo_batch,'-CONTRACT-',LPAD(i,6,'0')),
        CONCAT('D2C-',__SEED__,'-',LPAD(i,6,'0')),customer_id,business_id,@demo_owner,NULL,20,
-       DATE_ADD(@demo_start,INTERVAL MOD(i*__SEED__,@demo_span_days) DAY),
-       DATE_ADD(@demo_start,INTERVAL MOD(i*__SEED__,@demo_span_days) DAY),
-       DATE_ADD(@demo_start,INTERVAL MOD(i*__SEED__,@demo_span_days)+365 DAY),
+       DATE_ADD(event_time,INTERVAL 45 DAY),DATE_ADD(event_time,INTERVAL 45 DAY),
+       DATE_ADD(event_time,INTERVAL 410 DAY),
        contract_amount,100,contract_amount,'CNY','CNY',1,
        ROUND(contract_amount*0.13,6),ROUND(contract_amount*1.13,6),ROUND(contract_amount*1.13,6),
        contact_id,@demo_owner,CONCAT('generated-batch:',@demo_batch,'; imported-approved-history'),
-       CAST(@demo_owner AS CHAR),NOW(),CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant);
+       CAST(@demo_owner AS CHAR),DATE_ADD(event_time,INTERVAL 45 DAY),CAST(@demo_owner AS CHAR),
+       DATE_ADD(event_time,INTERVAL 45 DAY),b'0',@demo_tenant);
     SET contract_id=LAST_INSERT_ID();
     INSERT INTO demo_contract_ids VALUES(i,contract_id,customer_id,contract_amount);
     INSERT INTO crm_permission
@@ -152,14 +157,18 @@ BEGIN
     SELECT id,customer_id,total_price INTO contract_id,customer_id,contract_amount
       FROM demo_contract_ids WHERE seq=MOD(i-1,__CONTRACTS__)+1;
     SET plan_amount=ROUND(contract_amount/plans_per_contract,6);
+    SET event_time=CASE MOD(i,4)
+      WHEN 0 THEN DATE_SUB(@demo_end,INTERVAL 120 DAY)
+      WHEN 1 THEN DATE_SUB(@demo_end,INTERVAL 45 DAY)
+      WHEN 2 THEN DATE_ADD(@demo_end,INTERVAL 30 DAY)
+      ELSE DATE_ADD(@demo_end,INTERVAL 90 DAY) END;
     INSERT INTO crm_receivable_plan
       (period,customer_id,contract_id,owner_user_id,receivable_id,return_time,return_type,
        price,remind_days,remind_time,remark,creator,create_time,updater,update_time,deleted,tenant_id)
       VALUES(MOD(i-1,plans_per_contract)+1,customer_id,contract_id,@demo_owner,NULL,
-       DATE_ADD(@demo_start,INTERVAL MOD(i*__SEED__,@demo_span_days) DAY),1,plan_amount,7,
-       DATE_SUB(DATE_ADD(@demo_start,INTERVAL MOD(i*__SEED__,@demo_span_days) DAY),INTERVAL 7 DAY),
-       CONCAT('generated-batch:',@demo_batch,'; contract-installment'),CAST(@demo_owner AS CHAR),NOW(),
-       CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant);
+       event_time,1,plan_amount,7,DATE_SUB(event_time,INTERVAL 7 DAY),
+       CONCAT('generated-batch:',@demo_batch,'; contract-installment'),CAST(@demo_owner AS CHAR),
+       DATE_SUB(event_time,INTERVAL 60 DAY),CAST(@demo_owner AS CHAR),DATE_SUB(event_time,INTERVAL 60 DAY),b'0',@demo_tenant);
     SET plan_id=LAST_INSERT_ID();
     INSERT INTO demo_plan_ids VALUES(i,plan_id,contract_id,customer_id,plan_amount);
     INSERT INTO crm_permission
@@ -173,13 +182,16 @@ BEGIN
   WHILE i<=__RECEIVABLES__ DO
     SELECT id,contract_id,customer_id,price INTO plan_id,contract_id,customer_id,plan_amount
       FROM demo_plan_ids WHERE seq=i;
+    SET finance_status=IF(i<=__REFUNDS__,20,
+      CASE MOD(i,5) WHEN 0 THEN 0 WHEN 1 THEN 20 WHEN 2 THEN 20 WHEN 3 THEN 30 ELSE 40 END);
+    SELECT return_time INTO event_time FROM crm_receivable_plan WHERE id=plan_id;
     INSERT INTO crm_receivable
       (no,plan_id,customer_id,contract_id,owner_user_id,audit_status,process_instance_id,
        return_time,return_type,price,remark,creator,create_time,updater,update_time,deleted,tenant_id)
-      VALUES(CONCAT(@demo_batch,'-REC-',LPAD(i,6,'0')),plan_id,customer_id,contract_id,@demo_owner,20,NULL,
-       DATE_ADD(@demo_start,INTERVAL MOD(i*__SEED__,@demo_span_days) DAY),1,plan_amount,
-       CONCAT('generated-batch:',@demo_batch,'; imported-approved-history'),CAST(@demo_owner AS CHAR),NOW(),
-       CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant);
+      VALUES(CONCAT(@demo_batch,'-REC-',LPAD(i,6,'0')),plan_id,customer_id,contract_id,@demo_owner,finance_status,NULL,
+       event_time,1,plan_amount,
+       CONCAT('generated-batch:',@demo_batch,IF(finance_status=0,'; editable-draft','; imported-audit-history')),
+       CAST(@demo_owner AS CHAR),event_time,CAST(@demo_owner AS CHAR),event_time,b'0',@demo_tenant);
     SET receivable_id=LAST_INSERT_ID();
     UPDATE crm_receivable_plan SET receivable_id=receivable_id,update_time=NOW() WHERE id=plan_id;
     INSERT INTO demo_receivable_ids VALUES(i,receivable_id,contract_id,customer_id,plan_amount);
@@ -190,7 +202,7 @@ BEGIN
     INSERT INTO crm_receivable_write_off
       (receivable_id,amount,write_off_time,source_type,reference_no,remark,status,
        creator,create_time,updater,update_time,deleted,tenant_id)
-      VALUES(receivable_id,ROUND(plan_amount*0.8,6),NOW(),3,
+      VALUES(receivable_id,ROUND(plan_amount*0.8,6),event_time,3,
        CONCAT(@demo_batch,'-WOFF-',LPAD(i,6,'0')),CONCAT('generated-batch:',@demo_batch),0,
        CAST(@demo_owner AS CHAR),NOW(),CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant);
     SET i=i+1;
@@ -200,13 +212,16 @@ BEGIN
   WHILE i<=__REFUNDS__ DO
     SELECT id,contract_id,customer_id,price INTO receivable_id,contract_id,customer_id,receipt_amount
       FROM demo_receivable_ids WHERE seq=i;
+    SET finance_status=CASE MOD(i,4) WHEN 0 THEN 0 WHEN 1 THEN 20 WHEN 2 THEN 30 ELSE 40 END;
+    SET event_time=DATE_ADD(@demo_start,INTERVAL MOD(__SEED__+i*61,@demo_span_days) DAY);
     INSERT INTO crm_receivable_refund
       (no,receivable_id,customer_id,contract_id,owner_user_id,type,refund_time,amount,reason,
        remark,process_instance_id,audit_status,creator,create_time,updater,update_time,deleted,tenant_id)
       VALUES(CONCAT(@demo_batch,'-REF-',LPAD(i,6,'0')),receivable_id,customer_id,contract_id,@demo_owner,
-       IF(MOD(i,2)=0,2,1),NOW(),ROUND(receipt_amount*0.1,6),
-       '固定种子演示退款，已校验不超过原回款可退金额',CONCAT('generated-batch:',@demo_batch),NULL,20,
-       CAST(@demo_owner AS CHAR),NOW(),CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant);
+       IF(MOD(i,2)=0,2,1),event_time,ROUND(receipt_amount*0.1,6),
+       '固定种子演示退款，已校验不超过原回款可退金额',
+       CONCAT('generated-batch:',@demo_batch,IF(finance_status=0,'; editable-draft','; imported-audit-history')),
+       NULL,finance_status,CAST(@demo_owner AS CHAR),event_time,CAST(@demo_owner AS CHAR),event_time,b'0',@demo_tenant);
     SET refund_id=LAST_INSERT_ID();
     INSERT INTO crm_permission
       (biz_type,biz_id,user_id,level,creator,create_time,updater,update_time,deleted,tenant_id)
@@ -215,13 +230,17 @@ BEGIN
     INSERT INTO crm_receivable_refund_action_record
       (refund_id,action_type,from_status,to_status,operator_user_id,action_time,process_instance_id,
        remark,creator,create_time,updater,update_time,deleted,tenant_id)
-      VALUES(refund_id,1,NULL,20,@demo_owner,NOW(),NULL,'导入历史审批通过事实',
-       CAST(@demo_owner AS CHAR),NOW(),CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant);
+      VALUES(refund_id,CASE finance_status WHEN 20 THEN 4 WHEN 30 THEN 5 WHEN 40 THEN 6 ELSE 1 END,
+       NULL,finance_status,@demo_owner,event_time,NULL,
+       IF(finance_status=0,'固定种子草稿创建','导入历史审批结果'),CAST(@demo_owner AS CHAR),event_time,
+       CAST(@demo_owner AS CHAR),event_time,b'0',@demo_tenant);
     SET i=i+1;
   END WHILE;
 
   SET i=1;
   WHILE i<=__INVOICES__ DO
+    SET event_time=DATE_ADD(@demo_start,INTERVAL MOD(__SEED__+i*67,@demo_span_days) DAY);
+    SET finance_status=CASE MOD(i,5) WHEN 0 THEN 0 WHEN 1 THEN 10 WHEN 2 THEN 20 WHEN 3 THEN 30 ELSE 40 END;
     SELECT id,customer_id,total_price INTO contract_id,customer_id,contract_amount
       FROM demo_contract_ids WHERE seq=i;
     INSERT INTO crm_invoice
@@ -229,11 +248,14 @@ BEGIN
        type,amount,red_amount,invoice_no,invoice_date,title,tax_no,email,content,remark,
        creator,create_time,updater,update_time,deleted,tenant_id)
       VALUES(CONCAT(@demo_batch,'-INV-',LPAD(i,6,'0')),contract_id,customer_id,@demo_owner,@demo_owner,
-       1,NULL,10,IF(MOD(i,2)=0,2,1),ROUND(contract_amount*0.5,6),0,
-       CONCAT('D2F',__SEED__,LPAD(i,6,'0')),NOW(),CONCAT(@demo_batch,' 演示客户'),
+       1,NULL,finance_status,IF(MOD(i,2)=0,2,1),ROUND(contract_amount*0.5,6),
+       CASE finance_status WHEN 20 THEN ROUND(contract_amount*0.2,6)
+            WHEN 30 THEN ROUND(contract_amount*0.5,6) ELSE 0 END,
+       IF(finance_status=0,NULL,CONCAT('D2F',__SEED__,LPAD(i,6,'0'))),
+       IF(finance_status=0,NULL,event_time),CONCAT(@demo_batch,' 演示客户'),
        CONCAT('TAX',__SEED__,LPAD(i,6,'0')),CONCAT('invoice.',__SEED__,'.',i,'@example.invalid'),
-       '软件与技术服务',CONCAT('generated-batch:',@demo_batch),CAST(@demo_owner AS CHAR),NOW(),
-       CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant);
+       '软件与技术服务',CONCAT('generated-batch:',@demo_batch),CAST(@demo_owner AS CHAR),event_time,
+       CAST(@demo_owner AS CHAR),event_time,b'0',@demo_tenant);
     SET invoice_id=LAST_INSERT_ID();
     INSERT INTO crm_permission
       (biz_type,biz_id,user_id,level,creator,create_time,updater,update_time,deleted,tenant_id)
@@ -242,8 +264,28 @@ BEGIN
     INSERT INTO crm_invoice_action_record
       (invoice_id,action_type,from_status,to_status,operator_user_id,action_time,remark,
        creator,create_time,updater,update_time,deleted,tenant_id)
-      VALUES(invoice_id,3,0,10,@demo_owner,NOW(),'固定种子演示开票',CAST(@demo_owner AS CHAR),NOW(),
-       CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant);
+      VALUES(invoice_id,1,NULL,0,@demo_owner,event_time,'固定种子发票草稿创建',CAST(@demo_owner AS CHAR),event_time,
+       CAST(@demo_owner AS CHAR),event_time,b'0',@demo_tenant);
+    IF finance_status<>0 THEN
+      INSERT INTO crm_invoice_action_record
+        (invoice_id,action_type,from_status,to_status,operator_user_id,action_time,remark,
+         creator,create_time,updater,update_time,deleted,tenant_id)
+        VALUES(invoice_id,3,0,10,@demo_owner,event_time,'固定种子演示开票',CAST(@demo_owner AS CHAR),event_time,
+         CAST(@demo_owner AS CHAR),event_time,b'0',@demo_tenant);
+    END IF;
+    IF finance_status IN (20,30) THEN
+      INSERT INTO crm_invoice_action_record
+        (invoice_id,action_type,from_status,to_status,operator_user_id,action_time,remark,
+         creator,create_time,updater,update_time,deleted,tenant_id)
+        VALUES(invoice_id,5,10,finance_status,@demo_owner,event_time,'固定种子演示红冲',CAST(@demo_owner AS CHAR),event_time,
+         CAST(@demo_owner AS CHAR),event_time,b'0',@demo_tenant);
+    ELSEIF finance_status=40 THEN
+      INSERT INTO crm_invoice_action_record
+        (invoice_id,action_type,from_status,to_status,operator_user_id,action_time,remark,
+         creator,create_time,updater,update_time,deleted,tenant_id)
+        VALUES(invoice_id,4,10,40,@demo_owner,event_time,'固定种子演示作废',CAST(@demo_owner AS CHAR),event_time,
+         CAST(@demo_owner AS CHAR),event_time,b'0',@demo_tenant);
+    END IF;
     SET i=i+1;
   END WHILE;
 
@@ -254,6 +296,8 @@ BEGIN
   SET category_id=LAST_INSERT_ID();
   SET i=1;
   WHILE i<=__REIMBURSEMENTS__ DO
+    SET event_time=DATE_ADD(@demo_start,INTERVAL MOD(__SEED__+i*71,@demo_span_days) DAY);
+    SET finance_status=CASE MOD(i,4) WHEN 0 THEN 0 WHEN 1 THEN 20 WHEN 2 THEN 30 ELSE 40 END;
     SELECT id,customer_id INTO contract_id,customer_id FROM demo_contract_ids WHERE seq=i;
     SET receipt_amount=200+MOD(i*__SEED__,4800);
     INSERT INTO crm_reimbursement
@@ -261,14 +305,15 @@ BEGIN
        total_amount,expense_start_date,expense_end_date,reason,remark,process_instance_id,audit_status,version,
        creator,create_time,updater,update_time,deleted,tenant_id)
       VALUES(CONCAT(@demo_batch,'-RMB-',LPAD(i,6,'0')),@demo_owner,@demo_owner,NULL,customer_id,contract_id,NULL,
-       'CNY',receipt_amount,DATE(@demo_start),DATE_ADD(DATE(@demo_start),INTERVAL MOD(i,30) DAY),
-       '固定种子演示项目差旅报销',CONCAT('generated-batch:',@demo_batch),NULL,0,0,
-       CAST(@demo_owner AS CHAR),NOW(),CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant);
+       'CNY',receipt_amount,DATE_SUB(DATE(event_time),INTERVAL MOD(i,5)+1 DAY),DATE(event_time),
+       '固定种子演示项目差旅报销',
+       CONCAT('generated-batch:',@demo_batch,IF(finance_status=0,'; editable-draft','; imported-audit-history')),
+       NULL,finance_status,0,CAST(@demo_owner AS CHAR),event_time,CAST(@demo_owner AS CHAR),event_time,b'0',@demo_tenant);
     SET reimbursement_id=LAST_INSERT_ID();
     INSERT INTO crm_reimbursement_item
       (reimbursement_id,category_id,occurred_date,amount,description,invoice_no,attachment_urls,sort,
        creator,create_time,updater,update_time,deleted,tenant_id)
-      VALUES(reimbursement_id,category_id,DATE(@demo_start),receipt_amount,'客户项目差旅费用',
+      VALUES(reimbursement_id,category_id,DATE(event_time),receipt_amount,'客户项目差旅费用',
        CONCAT('D2R-',__SEED__,'-',LPAD(i,6,'0')),NULL,1,CAST(@demo_owner AS CHAR),NOW(),
        CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant);
     INSERT INTO crm_permission
@@ -278,23 +323,25 @@ BEGIN
     INSERT INTO crm_reimbursement_action_record
       (reimbursement_id,action_type,from_status,to_status,amount_snapshot,operator_user_id,action_time,
        process_instance_id,remark,creator,create_time,updater,update_time,deleted,tenant_id)
-      VALUES(reimbursement_id,1,NULL,0,receipt_amount,@demo_owner,NOW(),NULL,'固定种子草稿创建',
-       CAST(@demo_owner AS CHAR),NOW(),CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant);
+      VALUES(reimbursement_id,CASE finance_status WHEN 20 THEN 4 WHEN 30 THEN 5 WHEN 40 THEN 6 ELSE 1 END,
+       NULL,finance_status,receipt_amount,@demo_owner,event_time,NULL,
+       IF(finance_status=0,'固定种子草稿创建','导入历史审批结果'),CAST(@demo_owner AS CHAR),event_time,
+       CAST(@demo_owner AS CHAR),event_time,b'0',@demo_tenant);
     SET i=i+1;
   END WHILE;
 
   SET i=1;
   WHILE i<=__CAMPAIGNS__ DO
+    SET event_time=DATE_ADD(@demo_start,INTERVAL MOD(__SEED__+i*73,GREATEST(@demo_span_days-30,1)) DAY);
     INSERT INTO crm_marketing_campaign
       (code,name,status,owner_user_id,start_time,end_time,budget_amount,actual_cost_amount,
        target_lead_count,target_customer_count,description,summary,creator,create_time,updater,update_time,deleted,tenant_id)
       VALUES(CONCAT(@demo_batch,'-MKT-',LPAD(i,4,'0')),CONCAT(@demo_batch,'-营销活动-',LPAD(i,4,'0')),
-       CASE MOD(i,3) WHEN 0 THEN 10 WHEN 1 THEN 20 ELSE 50 END,@demo_owner,
-       DATE_ADD(@demo_start,INTERVAL MOD(i*__SEED__,@demo_span_days) DAY),
-       DATE_ADD(@demo_start,INTERVAL MOD(i*__SEED__,@demo_span_days)+30 DAY),
+       CASE MOD(i,5) WHEN 0 THEN 10 WHEN 1 THEN 20 WHEN 2 THEN 30 WHEN 3 THEN 40 ELSE 50 END,@demo_owner,
+       event_time,DATE_ADD(event_time,INTERVAL 30 DAY),
        10000+MOD(i*137,90000),5000+MOD(i*97,40000),100,50,
-       CONCAT('generated-batch:',@demo_batch),'固定种子活动总结',CAST(@demo_owner AS CHAR),NOW(),
-       CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant);
+       CONCAT('generated-batch:',@demo_batch),'固定种子活动总结',CAST(@demo_owner AS CHAR),event_time,
+       CAST(@demo_owner AS CHAR),event_time,b'0',@demo_tenant);
     SET campaign_id=LAST_INSERT_ID();
     SELECT id INTO customer_id FROM crm_customer WHERE tenant_id=@demo_tenant
       AND name=CONCAT(@demo_batch,'-CUS-',LPAD(MOD(i-1,__CUSTOMERS__)+1,6,'0'));
@@ -320,6 +367,8 @@ BEGIN
   END WHILE;
   SET i=1;
   WHILE i<=__CARE_RECORDS__ DO
+    SET event_time=DATE_ADD(@demo_start,INTERVAL MOD(__SEED__+i*79,@demo_span_days) DAY);
+    SET finance_status=CASE MOD(i,5) WHEN 0 THEN 10 WHEN 1 THEN 20 WHEN 2 THEN 30 WHEN 3 THEN 40 ELSE 50 END;
     SELECT p.id,c.id,ct.id INTO care_plan_id,customer_id,contact_id
       FROM crm_customer_care_plan p
       JOIN crm_customer c ON c.tenant_id=@demo_tenant
@@ -330,26 +379,28 @@ BEGIN
       (plan_id,customer_id,contact_id,event_date,channel,status,failure_reason,provider_log_id,sent_at,
        creator,create_time,updater,update_time,deleted,tenant_id)
       VALUES(care_plan_id,customer_id,contact_id,
-       DATE_ADD(DATE(@demo_start),INTERVAL MOD(i*__SEED__,@demo_span_days) DAY),MOD(i,2)+1,10,
-       NULL,NULL,NULL,CAST(@demo_owner AS CHAR),NOW(),CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant);
+       DATE(event_time),MOD(i,2)+1,finance_status,
+       IF(finance_status=30,'演示渠道发送失败',NULL),NULL,IF(finance_status IN (20,50),event_time,NULL),
+       CAST(@demo_owner AS CHAR),event_time,CAST(@demo_owner AS CHAR),event_time,b'0',@demo_tenant);
     SET i=i+1;
   END WHILE;
 
   SET i=1;
   WHILE i<=__OA_EVENTS__ DO
+    SET event_time=DATE_ADD(@demo_start,INTERVAL MOD(__SEED__+i*83,@demo_span_days) DAY);
     INSERT INTO bpm_oa_event
       (user_id,title,description,start_time,end_time,all_day,location,participant_user_ids,
        reminder_minutes,status,reminder_status,creator,create_time,updater,update_time,deleted,tenant_id)
       VALUES(@demo_owner,CONCAT(@demo_batch,'-EVENT-',LPAD(i,6,'0')),
-       '固定种子客户拜访日程',DATE_ADD(@demo_start,INTERVAL MOD(i*__SEED__,@demo_span_days) DAY),
-       DATE_ADD(DATE_ADD(@demo_start,INTERVAL MOD(i*__SEED__,@demo_span_days) DAY),INTERVAL 1 HOUR),b'0','客户现场',
-       CAST(@demo_owner AS CHAR),30,IF(MOD(i,10)=0,10,0),0,CAST(@demo_owner AS CHAR),NOW(),
-       CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant);
+       '固定种子客户拜访日程',event_time,DATE_ADD(event_time,INTERVAL 1 HOUR),b'0','客户现场',
+       CAST(@demo_owner AS CHAR),30,IF(MOD(i,10)=0,10,0),0,CAST(@demo_owner AS CHAR),event_time,
+       CAST(@demo_owner AS CHAR),event_time,b'0',@demo_tenant);
     SET i=i+1;
   END WHILE;
 
   SET i=1;
   WHILE i<=__OA_TASKS__ DO
+    SET event_time=DATE_ADD(@demo_start,INTERVAL MOD(__SEED__+i*89,@demo_span_days) DAY);
     SELECT id INTO customer_id FROM crm_customer WHERE tenant_id=@demo_tenant
       AND name=CONCAT(@demo_batch,'-CUS-',LPAD(MOD(i-1,__CUSTOMERS__)+1,6,'0'));
     INSERT INTO bpm_oa_task
@@ -358,10 +409,10 @@ BEGIN
        creator,create_time,updater,update_time,deleted,tenant_id)
       VALUES(CONCAT(@demo_batch,'-TASK-',LPAD(i,6,'0')),'跟进关联演示客户',@demo_owner,@demo_owner,
        CAST(@demo_owner AS CHAR),MOD(i,3),MOD(i,3),
-       DATE_ADD(@demo_start,INTERVAL MOD(i*__SEED__,@demo_span_days) DAY),60,0,
-       IF(MOD(i,3)=2,NOW(),NULL),'CRM_CUSTOMER',customer_id,
-       IF(MOD(i,3)=2,'已完成客户跟进',NULL),CAST(@demo_owner AS CHAR),NOW(),
-       CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant);
+       DATE_ADD(event_time,INTERVAL 14 DAY),60,0,
+       IF(MOD(i,3)=2,DATE_ADD(event_time,INTERVAL 7 DAY),NULL),'CRM_CUSTOMER',customer_id,
+       IF(MOD(i,3)=2,'已完成客户跟进',NULL),CAST(@demo_owner AS CHAR),event_time,
+       CAST(@demo_owner AS CHAR),event_time,b'0',@demo_tenant);
     SET i=i+1;
   END WHILE;
 

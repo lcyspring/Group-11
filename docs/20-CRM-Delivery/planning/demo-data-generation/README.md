@@ -1,60 +1,59 @@
-# 可重复演示数据生成与替换 Plan
+# 可重复 CRM 广覆盖演示数据生成与替换
 
 制定日期：2026-07-18。实施分支：`develop`。
 
-## 目标
+## 目标与边界
 
-生成比上游样例数量更大、关系更可靠、适合 CRM/OA/统计/审批联合验收的演示数据，同时保持生产
-默认零替换。数据包可使用不同固定随机种子重复生成，结果可对账、可清理、可换版本。
+生成关系可靠、适合 CRM 统计、财务、营销、OA 和工单联合验收的演示数据。生成器只输出 SQL、manifest
+和 checksum，不连接数据库，也不调用部署脚本；数据替换仅由 `deploy.sh` 消费已生成 manifest。
 
-## YAML 契约草案
+当前生成入口仍读取显式 YAML；KDL 已列为下一阶段唯一配置目标，迁移计划见
+`../kdl-config-migration/README.md`。迁移期间不改变生成与部署分离原则。
 
-```yaml
-dataset_generation:
-  mode: check
-  dataset_name: crm-demo-v2
-  random_seed: 20260718
-  tenant_id: 1
-  time_start: 2025-01-01
-  time_end: 2026-12-31
-  customer_count: 1000
-  contacts_per_customer_max: 4
-  business_count: 1600
-  contract_count: 900
-  receivable_plan_count: 1800
-  work_order_count: 2000
+## 当前规模
+
+| 对象 | 数量 |
+|---|---:|
+| 客户 / 联系人 / 线索 / 跟进 | 120 / 120 / 120 / 300 |
+| 商机 / 阶段 / 产品 / 合同 | 180 / 5 / 80 / 72 |
+| 回款计划 / 回款 / 发票 / 报销 / 退款 | 144 / 90 / 60 / 60 / 30 |
+| 营销活动 / 客户关怀 | 36 / 120 |
+| OA 日程 / OA 任务 / CRM 工单 | 100 / 150 / 160 |
+
+时间范围为 2025-07-01 至 2026-07-18。固定 seed 和相同配置会生成相同业务键、金额和状态分布；
+数据库自增 ID 不作为确定性输出的一部分。
+
+## 统计覆盖设计
+
+- 合同少于商机，保留开放、赢单、输单和无效商机；
+- 批次拥有独立五阶段流程，每个阶段必须至少有一条开放商机；
+- 开放商机有预计成交时间，赢单有实际结单时间；
+- 客户覆盖地区、行业、来源、等级和生命周期维度；
+- 回款计划同时覆盖已回款、未回款逾期和未回款未来计划；
+- 发票、回款、报销、退款、营销关怀和工单均覆盖多个合法状态；
+- 审批完成记录只标记为导入历史，不伪造 Flowable 实例；可编辑草稿保留真实前端操作能力。
+
+## 使用
+
+```bash
+bash podman/operations/database/generate-demo-dataset.sh \
+  podman/config/generate-demo-dataset.example.yaml
 ```
 
-命令行只接收 YAML 路径。`check` 只生成规模估算与引用计划；`generate` 只输出版本化
-SQL/manifest/checksum，且不连接数据库。生成与部署是独立链路；生成器绝不调用 `deploy.sh`。
-`deploy.sh` 仍按运行 YAML 消费已经生成好的 manifest：默认 `mysql.dataset_mode: preserve`；选择
-`insert` 时只插入，选择 `replace` 时先完整清理旧数据集再插入。部署脚本不会现场生成数据。
+将 `operation.mode` 设为 `check` 时只校验配置；设为 `generate` 时写入被 Git 忽略的
+`database/generated/crm-demo-v2/`。运行库替换时，本机配置临时使用：
 
-## 可靠性要求
+```yaml
+mysql:
+  dataset: crm-demo-v2
+  dataset_manifest: ../../database/generated/crm-demo-v2/crm-demo-v2.manifest
+  dataset_mode: replace
+```
 
-- 所有记录带稳定批次标识，清理只命中本生成器数据；
-- 客户、联系人、线索、商机、合同、产品快照、回款计划/回款/发票/报销/退款、工单和审批引用一致；
-- 金额满足合同、计划、回款、退款、核销守恒；状态与动作轨迹一致；
-- 时间分布覆盖未成交、成交、逾期、跨月、跨年和统计空桶；
-- 固定 seed + 相同 YAML 生成相同业务键和分布；
-- 生成后运行外键孤儿、金额守恒、状态轨迹、租户隔离、统计对账和数量断言；
-- 真实个人信息、真实手机号、可投递邮箱和真实 Provider 授权一律禁止进入演示数据。
+执行 `bash podman/deploy.sh <runtime-config>` 后必须把 `dataset_mode` 恢复为 `preserve`。
 
-## 分阶段
+## 可执行质量门禁
 
-1. 建立 YAML schema、规模计算和固定种子生成器；
-2. 先覆盖 CRM 核心与财务真源，再覆盖工单、营销、OA 和 BPM 实例；
-3. 输出 `crm-demo-v2` manifest、cleanup、insert 和校验报告；
-4. 在临时数据库完成生成→校验→清理→换 seed→再生成；
-5. 通过 `deploy.sh` 的单一 `dataset_mode: replace` 替换本地演示数据，生产模板保持 `preserve`。
-
-## 执行进度
-
-2026-07-18 已使用 `deploy.sh` 的替换模式把 `crm-demo-v2` 核心批次写入本机已有卷；配置契约随后收敛为
-单一 `mysql.dataset_mode`，执行后本机 YAML 已恢复 `preserve`，避免普通重启重复替换。
-
-当前批次包含客户/联系人/归属各 1000、商机 1600、工单/轨迹各 2000，孤儿引用为 0，Server、Web、
-Mall 均恢复健康。替换前快照保存在本机 `/tmp`，未提交数据库内容或秘密配置。
-
-阶段 1、核心/工单生成和本机显式替换已完成；财务、OA 与真实 BPM 流程实例仍按阶段 2～4继续，
-不得通过直接伪造 Flowable 引擎表来填充“已审批”记录。
+manifest 最后一项为 `04-validate.sql`，会在服务启动前校验数量、阶段非空、四类结单结果、预测与实际、
+客户画像、逾期与未来计划、多状态覆盖和关键引用。任一断言失败都会中止部署，不允许启动一个看似有数据、
+实际统计退化的环境。

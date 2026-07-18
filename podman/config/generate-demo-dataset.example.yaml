@@ -8,22 +8,23 @@ dataset_generation:
   random_seed: 20260718
   tenant_id: 1
   owner_user_id: 1
-  time_start: 2025-01-01
-  time_end: 2026-12-31
-  customer_count: 50
-  clue_count: 50
-  follow_up_count: 50
-  business_count: 50
-  product_count: 50
-  contract_count: 50
-  receivable_plan_count: 50
-  receivable_count: 50
-  invoice_count: 50
-  reimbursement_count: 50
-  refund_count: 50
-  marketing_campaign_count: 50
-  customer_care_record_count: 50
-  oa_event_count: 50
-  oa_task_count: 50
-  work_order_count: 50
+  time_start: 2025-07-01
+  time_end: 2026-07-18
+  customer_count: 120
+  clue_count: 120
+  follow_up_count: 300
+  business_count: 180
+  business_stage_count: 5
+  product_count: 80
+  contract_count: 72
+  receivable_plan_count: 144
+  receivable_count: 90
+  invoice_count: 60
+  reimbursement_count: 60
+  refund_count: 30
+  marketing_campaign_count: 36
+  customer_care_record_count: 120
+  oa_event_count: 100
+  oa_task_count: 150
+  work_order_count: 160
   output_dir: ../../database/generated/crm-demo-v2
