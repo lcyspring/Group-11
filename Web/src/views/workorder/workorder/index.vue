@@ -264,6 +264,7 @@
 <script lang="ts" setup>
 import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import { dateFormatter } from '@/utils/formatTime'
+import download from '@/utils/download'
 import * as WorkOrderApi from '@/api/workorder/workOrder'
 import * as WorkOrderTypeApi from '@/api/workorder/workOrderType'
 import WorkOrderForm from './WorkOrderForm.vue'
@@ -390,7 +391,8 @@ const handleDelete = async (id: number) => {
 
 /** 导出按钮操作 */
 const handleExport = async () => {
-  await WorkOrderApi.exportWorkOrderExcel(queryParams)
+  const data = await WorkOrderApi.exportWorkOrderExcel(queryParams)
+  download.excel(data, '工单导出.xls')
 }
 
 /** 加载工单类型列表 */
