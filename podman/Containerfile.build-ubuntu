@@ -25,7 +25,7 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-COPY podman/ubuntu-build-entrypoint.sh /usr/local/bin/mitedtsm-build
+COPY podman/internal/ubuntu-build-entrypoint.sh /usr/local/bin/mitedtsm-build
 RUN chmod 0755 /usr/local/bin/mitedtsm-build
 
 WORKDIR /workspace
