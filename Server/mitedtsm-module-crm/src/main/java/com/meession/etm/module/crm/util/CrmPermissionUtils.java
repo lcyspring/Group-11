@@ -46,11 +46,12 @@ public class CrmPermissionUtils {
         MybatisPlusJoinProperties mybatisPlusJoinProperties = SpringUtil.getBean(MybatisPlusJoinProperties.class);
         final String ownerUserIdField = mybatisPlusJoinProperties.getTableAlias() + ".owner_user_id";
         // 缺省场景不能等价于“无数据权限条件”。CRM 管理员保留全量视图，普通用户默认仅看本人负责。
+        boolean crmAdmin = isCrmAdmin();
+        if (shouldBypassPermissionCondition(sceneType, crmAdmin)) {
+            return;
+        }
         if (sceneType == null) {
-            sceneType = resolveDefaultSceneType(false, isCrmAdmin());
-            if (sceneType == null) {
-                return;
-            }
+            sceneType = resolveDefaultSceneType(false, false);
         }
         // 场景一：我负责的数据
         if (CrmSceneTypeEnum.isOwner(sceneType)) {
@@ -58,9 +59,6 @@ public class CrmPermissionUtils {
         }
         // 场景二：我参与的数据（我有读或写权限，并且不是负责人）
         if (CrmSceneTypeEnum.isInvolved(sceneType)) {
-            if (CrmPermissionUtils.isCrmAdmin()) {
-                return;
-            }
             query.innerJoin(CrmPermissionDO.class, on -> on.eq(CrmPermissionDO::getBizType, bizType)
                     .eq(CrmPermissionDO::getBizId, bizId)
                     .in(CrmPermissionDO::getLevel, CrmPermissionLevelEnum.READ.getLevel(), CrmPermissionLevelEnum.WRITE.getLevel())
@@ -99,6 +97,11 @@ public class CrmPermissionUtils {
             return null;
         }
         return CrmSceneTypeEnum.OWNER.getType();
+    }
+
+    /** CRM 管理员只在未显式选择场景时使用全量视图。 */
+    static boolean shouldBypassPermissionCondition(Integer sceneType, boolean crmAdmin) {
+        return crmAdmin && sceneType == null;
     }
 
 }
