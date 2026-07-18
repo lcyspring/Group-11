@@ -107,6 +107,7 @@
 | `database-deploy-provision/` | 官方 MySQL 部署期 bootstrap、已有库保留、未知库拒绝和策略覆盖 |
 | `crm-marketing-provider-provision/` | 短信/邮件渠道、账号与模板的三模式幂等 provision |
 | `crm-work-order-performance-security/` | 工单 50 并发业务链、资源基线、数据清理与安全负向矩阵 |
+| `crm-work-order-uat-handover/` | 工单 16 条 UAT、执行记录、知识转移、覆盖映射和四方签署模板 |
 | `deterministic-demo-data/` | 固定 seed 演示数据生成、引用/状态校验、cleanup 和部署隔离 |
 
 运行入口统一为：
