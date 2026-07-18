@@ -66,6 +66,7 @@ BEGIN
     END IF;
     SET i=i+1;
   END WHILE;
+  INSERT INTO demo_owner_ids VALUES(0,@demo_owner);
 
   INSERT INTO crm_product_category
     (name,parent_id,creator,create_time,updater,update_time,deleted,tenant_id)
@@ -82,7 +83,7 @@ BEGIN
   END WHILE;
   SET i=1;
   WHILE i<=__PRODUCTS__ DO
-    SELECT id INTO record_owner FROM demo_owner_ids WHERE seq=MOD(i-1,4)+1;
+    SELECT id INTO record_owner FROM demo_owner_ids WHERE seq=MOD(i,5);
     SET event_time=DATE_ADD(@demo_start,INTERVAL MOD(__SEED__+i*59,@demo_span_days) DAY);
     SELECT id INTO category_id FROM crm_product_category WHERE tenant_id=@demo_tenant
       AND name=CONCAT(@demo_batch,'-CATEGORY-',LPAD(MOD(i-1,5)+1,2,'0'));
@@ -116,7 +117,7 @@ BEGIN
 
   SET i=1;
   WHILE i<=__CONTRACTS__ DO
-    SELECT id INTO record_owner FROM demo_owner_ids WHERE seq=MOD(i-1,4)+1;
+    SELECT id INTO record_owner FROM demo_owner_ids WHERE seq=MOD(i,5);
     SET event_time=DATE_ADD(@demo_start,INTERVAL MOD(__SEED__+i*43,GREATEST(@demo_span_days-60,1)) DAY);
     SELECT c.id,b.id,ct.id INTO customer_id,business_id,contact_id
       FROM crm_customer c
@@ -124,7 +125,8 @@ BEGIN
        AND b.name=CONCAT(@demo_batch,'-BUS-',LPAD(MOD(i-1,__BUSINESSES__)+1,6,'0'))
       JOIN crm_contact ct ON ct.customer_id=c.id AND ct.primary_contact=b'1' AND ct.deleted=b'0'
      WHERE c.tenant_id=@demo_tenant
-       AND c.name=CONCAT(@demo_batch,'-CUS-',LPAD(MOD(i-1,__CUSTOMERS__)+1,6,'0'))
+       AND c.name=CONCAT(@demo_batch,'-CUS-',
+        LPAD(MOD(i-1,(__CUSTOMERS__-__PUBLIC_CUSTOMERS__))+1,6,'0'))
      LIMIT 1;
     SET contract_amount=10000+MOD(i*__SEED__,90000);
     UPDATE crm_business SET status_id=NULL,end_status=1,
@@ -169,7 +171,7 @@ BEGIN
 
   SET i=1;
   WHILE i<=__PLANS__ DO
-    SELECT id INTO record_owner FROM demo_owner_ids WHERE seq=MOD(i-1,4)+1;
+    SELECT id INTO record_owner FROM demo_owner_ids WHERE seq=MOD(i,5);
     SELECT id,customer_id,total_price INTO contract_id,customer_id,contract_amount
       FROM demo_contract_ids WHERE seq=MOD(i-1,__CONTRACTS__)+1;
     SET plan_amount=ROUND(contract_amount/plans_per_contract,6);
@@ -196,7 +198,7 @@ BEGIN
 
   SET i=1;
   WHILE i<=__RECEIVABLES__ DO
-    SELECT id INTO record_owner FROM demo_owner_ids WHERE seq=MOD(i-1,4)+1;
+    SELECT id INTO record_owner FROM demo_owner_ids WHERE seq=MOD(i,5);
     SELECT id,contract_id,customer_id,price INTO plan_id,contract_id,customer_id,plan_amount
       FROM demo_plan_ids WHERE seq=i;
     SET finance_status=IF(i<=__REFUNDS__,20,
@@ -257,7 +259,7 @@ BEGIN
 
   SET i=1;
   WHILE i<=__INVOICES__ DO
-    SELECT id INTO record_owner FROM demo_owner_ids WHERE seq=MOD(i-1,4)+1;
+    SELECT id INTO record_owner FROM demo_owner_ids WHERE seq=MOD(i,5);
     SELECT id INTO handler_owner FROM demo_owner_ids WHERE seq=MOD(i-1,2)+5;
     SET event_time=DATE_ADD(@demo_start,INTERVAL MOD(__SEED__+i*67,@demo_span_days) DAY);
     SET finance_status=CASE MOD(i,5) WHEN 0 THEN 0 WHEN 1 THEN 10 WHEN 2 THEN 20 WHEN 3 THEN 30 ELSE 40 END;
@@ -443,6 +445,33 @@ BEGIN
        CAST(@demo_owner AS CHAR),event_time,b'0',@demo_tenant);
     SET i=i+1;
   END WHILE;
+
+  -- Complete the base administrator's participant samples for associated CRM objects.
+  INSERT INTO crm_permission
+    (biz_type,biz_id,user_id,level,creator,create_time,updater,update_time,deleted,tenant_id)
+  SELECT 6,p.id,@demo_owner,3,CAST(@demo_owner AS CHAR),NOW(),CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant
+    FROM crm_product p WHERE p.tenant_id=@demo_tenant AND p.deleted=b'0'
+     AND p.name LIKE CONCAT(@demo_batch,'-PRODUCT-%') AND p.owner_user_id<>@demo_owner;
+  INSERT INTO crm_permission
+    (biz_type,biz_id,user_id,level,creator,create_time,updater,update_time,deleted,tenant_id)
+  SELECT 5,c.id,@demo_owner,3,CAST(@demo_owner AS CHAR),NOW(),CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant
+    FROM crm_contract c WHERE c.tenant_id=@demo_tenant AND c.deleted=b'0'
+     AND c.name LIKE CONCAT(@demo_batch,'-CONTRACT-%') AND c.owner_user_id<>@demo_owner;
+  INSERT INTO crm_permission
+    (biz_type,biz_id,user_id,level,creator,create_time,updater,update_time,deleted,tenant_id)
+  SELECT 8,p.id,@demo_owner,3,CAST(@demo_owner AS CHAR),NOW(),CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant
+    FROM crm_receivable_plan p WHERE p.tenant_id=@demo_tenant AND p.deleted=b'0'
+     AND p.remark LIKE CONCAT('generated-batch:',@demo_batch,'%') AND p.owner_user_id<>@demo_owner;
+  INSERT INTO crm_permission
+    (biz_type,biz_id,user_id,level,creator,create_time,updater,update_time,deleted,tenant_id)
+  SELECT 7,r.id,@demo_owner,3,CAST(@demo_owner AS CHAR),NOW(),CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant
+    FROM crm_receivable r WHERE r.tenant_id=@demo_tenant AND r.deleted=b'0'
+     AND r.no LIKE CONCAT(@demo_batch,'-REC-%') AND r.owner_user_id<>@demo_owner;
+  INSERT INTO crm_permission
+    (biz_type,biz_id,user_id,level,creator,create_time,updater,update_time,deleted,tenant_id)
+  SELECT 9,x.id,@demo_owner,3,CAST(@demo_owner AS CHAR),NOW(),CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant
+    FROM crm_invoice x WHERE x.tenant_id=@demo_tenant AND x.deleted=b'0'
+     AND x.no LIKE CONCAT(@demo_batch,'-INV-%') AND x.owner_user_id<>@demo_owner;
 
   DROP TEMPORARY TABLE demo_receivable_ids;
   DROP TEMPORARY TABLE demo_plan_ids;

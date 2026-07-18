@@ -8,12 +8,17 @@ dataset_generation:
   random_seed: 20260718
   tenant_id: 1
   owner_user_id: 1
+  # replace 会清空该租户的 CRM/OA 演示业务事实，但保留管理员和业务策略配置。
+  replacement_cleanup_scope: tenant-crm-demo
   demo_user_count: 8
   demo_user_password_source: owner
   time_start: 2025-07-01
   time_end: 2026-07-18
-  customer_count: 120
-  clue_count: 120
+  customer_count: 160
+  customer_public_pool_count: 32
+  contact_count: 240
+  clue_count: 160
+  clue_public_pool_count: 32
   follow_up_count: 300
   business_count: 180
   business_stage_count: 5

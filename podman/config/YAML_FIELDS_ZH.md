@@ -316,9 +316,11 @@
 | `operation.mode` | `check` 只校验和估算；`generate` 渲染 SQL/manifest/checksum |
 | `dataset_generation.dataset_name` | 数据集稳定名称，只允许小写字母、数字、点、下划线和连字符 |
 | `dataset_generation.random_seed` | 固定正整数 seed；相同配置生成相同业务键与分布 |
-| `dataset_generation.tenant_id/owner_user_id` | 生成数据的租户与负责人引用 |
+| `dataset_generation.tenant_id/owner_user_id` | 生成数据的租户与基准管理员；该管理员同时获得“我负责的”和“我参与的”样本 |
+| `dataset_generation.replacement_cleanup_scope` | 固定为 `tenant-crm-demo`；`replace` 清空该租户 CRM/OA 演示业务事实，保留管理员与策略配置 |
 | `dataset_generation.time_start/time_end` | 演示事实的日期范围 |
-| `dataset_generation.customer_count/clue_count/follow_up_count` | 客户、联系人（与客户同数）、线索和客户跟进记录规模 |
+| `dataset_generation.customer_count/contact_count/clue_count/follow_up_count` | 客户、联系人、线索和客户跟进记录规模；联系人可多于客户以覆盖一对多关系 |
+| `dataset_generation.customer_public_pool_count/clue_public_pool_count` | 客户公海和公共线索数量，均必须小于对应总数 |
 | `dataset_generation.business_count/product_count/work_order_count` | 商机、产品和工单规模；商机/合同均生成产品明细 |
 | `dataset_generation.contract_count/receivable_plan_count/receivable_count` | 合同、计划和回款规模；计划数必须是合同数的整数倍 |
 | `dataset_generation.invoice_count/reimbursement_count/refund_count` | 发票、报销和退款规模，均受上游合同或回款数量约束 |

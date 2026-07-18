@@ -48,12 +48,34 @@ BEGIN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Demo validation failed: role permission separation';
   END IF;
 
-  IF (SELECT COUNT(*) FROM crm_customer WHERE tenant_id=@demo_tenant
-      AND name LIKE CONCAT(@demo_batch,'-CUS-%')) <> __CUSTOMERS__ THEN
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Demo validation failed: customer count';
+  IF (SELECT COUNT(*) FROM crm_customer WHERE tenant_id=@demo_tenant AND deleted=b'0') <> __CUSTOMERS__ OR
+     (SELECT COUNT(*) FROM crm_customer WHERE tenant_id=@demo_tenant AND deleted=b'0'
+       AND pool_status=1 AND owner_user_id IS NULL) <> __PUBLIC_CUSTOMERS__ OR
+     (SELECT COUNT(*) FROM crm_customer WHERE tenant_id=@demo_tenant AND deleted=b'0'
+       AND pool_status=0 AND owner_user_id IS NOT NULL) <> (__CUSTOMERS__-__PUBLIC_CUSTOMERS__) THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Demo validation failed: customer or public-pool count';
   END IF;
-  IF (SELECT COUNT(*) FROM crm_business WHERE tenant_id=@demo_tenant
-      AND name LIKE CONCAT(@demo_batch,'-BUS-%')) <> __BUSINESSES__ THEN
+  IF (SELECT COUNT(*) FROM crm_contact WHERE tenant_id=@demo_tenant AND deleted=b'0') <> __CONTACTS__ OR
+     (SELECT COUNT(*) FROM crm_contact c JOIN crm_customer u ON u.id=c.customer_id
+       WHERE c.tenant_id=@demo_tenant AND c.deleted=b'0' AND u.pool_status=1
+         AND c.owner_user_id IS NOT NULL) <> 0 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Demo validation failed: contact count or public ownership';
+  END IF;
+  IF (SELECT COUNT(*) FROM crm_clue WHERE tenant_id=@demo_tenant AND deleted=b'0') <> __CLUES__ OR
+     (SELECT COUNT(*) FROM crm_clue WHERE tenant_id=@demo_tenant AND deleted=b'0'
+       AND pool_status=1 AND owner_user_id IS NULL) <> __PUBLIC_CLUES__ THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Demo validation failed: clue or public-pool count';
+  END IF;
+  IF (SELECT COUNT(*) FROM crm_customer WHERE tenant_id=@demo_tenant AND deleted=b'0'
+       AND name LIKE CONCAT(@demo_batch,'-CUS-%') AND pool_status=0 AND owner_user_id=__OWNER__) = 0 OR
+     (SELECT COUNT(*) FROM crm_permission p JOIN crm_customer c ON c.id=p.biz_id
+       WHERE p.tenant_id=@demo_tenant AND p.deleted=b'0' AND p.biz_type=2
+         AND p.user_id=__OWNER__ AND p.level=3 AND c.name LIKE CONCAT(@demo_batch,'-CUS-%')) = 0 OR
+     (SELECT COUNT(*) FROM crm_customer WHERE tenant_id=@demo_tenant AND deleted=b'0'
+       AND name LIKE CONCAT(@demo_batch,'-CUS-%') AND pool_status=0 AND owner_user_id<>__OWNER__) = 0 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Demo validation failed: responsible/participant/subordinate scenes';
+  END IF;
+  IF (SELECT COUNT(*) FROM crm_business WHERE tenant_id=@demo_tenant AND deleted=b'0') <> __BUSINESSES__ THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Demo validation failed: business count';
   END IF;
   IF (SELECT COUNT(*) FROM crm_contract WHERE tenant_id=@demo_tenant
@@ -178,6 +200,9 @@ SELECT
   (SELECT COUNT(*) FROM system_users WHERE tenant_id=@demo_tenant AND deleted=b'0'
     AND remark LIKE CONCAT('generated-batch:',@demo_batch,'%')) AS demo_users,
   (SELECT COUNT(*) FROM crm_customer WHERE tenant_id=@demo_tenant AND name LIKE CONCAT(@demo_batch,'-CUS-%')) AS customers,
+  (SELECT COUNT(*) FROM crm_customer WHERE tenant_id=@demo_tenant AND pool_status=1 AND deleted=b'0') AS public_customers,
+  (SELECT COUNT(*) FROM crm_contact WHERE tenant_id=@demo_tenant AND deleted=b'0') AS contacts,
+  (SELECT COUNT(*) FROM crm_clue WHERE tenant_id=@demo_tenant AND pool_status=1 AND deleted=b'0') AS public_clues,
   (SELECT COUNT(*) FROM crm_business WHERE tenant_id=@demo_tenant AND name LIKE CONCAT(@demo_batch,'-BUS-%')) AS businesses,
   (SELECT COUNT(*) FROM crm_contract WHERE tenant_id=@demo_tenant AND name LIKE CONCAT(@demo_batch,'-CONTRACT-%')) AS contracts,
   (SELECT COUNT(*) FROM crm_receivable_plan WHERE tenant_id=@demo_tenant AND remark LIKE CONCAT('generated-batch:',@demo_batch,'%')) AS plans,

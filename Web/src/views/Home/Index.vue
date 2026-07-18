@@ -130,6 +130,8 @@ import { useUserStore } from '@/store/modules/user'
 import type { WorkplaceTotal, Project, Notice, Shortcut } from './types'
 import { pieOptions, barOptions } from './echarts-data'
 import { useRouter } from 'vue-router'
+import * as TaskApi from '@/api/bpm/task'
+import { checkPermi } from '@/utils/permission'
 
 defineOptions({ name: 'Index' })
 
@@ -149,10 +151,13 @@ let totalSate = reactive<WorkplaceTotal>({
 })
 
 const getCount = async () => {
+  const todo = checkPermi(['bpm:task:query'])
+    ? (await TaskApi.getTaskTodoPage({ pageNo: 1, pageSize: 1 })).total
+    : 0
   const data = {
     project: 40,
     access: 2340,
-    todo: 10
+    todo
   }
   totalSate = Object.assign(totalSate, data)
 }
