@@ -1,4 +1,11 @@
 <template>
+  <el-alert
+    class="mb-16px"
+    :closable="false"
+    :title="t('funnel.forecastMetricExplanation')"
+    type="info"
+    show-icon
+  />
   <el-card shadow="never">
     <el-skeleton :loading="loading" animated>
       <Echart :height="420" :options="echartsOption" />
@@ -12,27 +19,34 @@
       <el-table-column
         align="right"
         :label="t('funnel.forecastBusinessCount')"
-        prop="businessCount"
+        prop="forecastBusinessCount"
+        min-width="160"
+      />
+      <el-table-column
+        align="right"
+        :label="t('funnel.actualBusinessCount')"
+        prop="actualBusinessCount"
         min-width="160"
       />
       <el-table-column
         align="right"
         :formatter="erpPriceTableColumnFormatter"
-        :label="t('funnel.expectedAmount')"
-        prop="expectedAmount"
+        :label="t('funnel.forecastAmount')"
+        prop="forecastAmount"
         min-width="180"
       />
       <el-table-column
         align="right"
         :formatter="erpPriceTableColumnFormatter"
-        :label="t('funnel.weightedAmount')"
-        prop="weightedAmount"
+        :label="t('funnel.actualAmount')"
+        prop="actualAmount"
         min-width="180"
       />
     </el-table>
   </el-card>
 
   <el-card class="mt-16px" shadow="never">
+    <template #header>{{ t('funnel.forecastDetails') }}</template>
     <el-table v-loading="loading" :data="businessList" :table-layout="'auto'">
       <el-table-column align="center" :label="t('customer.index')" type="index" width="80" />
       <el-table-column align="center" :label="t('funnel.businessName')" min-width="180">
@@ -68,9 +82,6 @@
         min-width="180"
       />
       <el-table-column align="center" :label="t('funnel.statusName')" prop="statusName" min-width="140" />
-      <el-table-column align="right" :label="t('winRate')" min-width="120">
-        <template #default="scope">{{ scope.row.statusPercent }}%</template>
-      </el-table-column>
       <el-table-column
         align="center"
         :label="t('funnel.ownerUserName')"
@@ -115,8 +126,8 @@ const echartsOption = reactive<EChartsOption>({
   xAxis: { type: 'category', name: t('customer.date'), data: [] },
   yAxis: { type: 'value', min: 0 },
   series: [
-    { name: t('funnel.expectedAmount'), type: 'bar', data: [] },
-    { name: t('funnel.weightedAmount'), type: 'bar', data: [] }
+    { name: t('funnel.forecastAmount'), type: 'bar', data: [] },
+    { name: t('funnel.actualAmount'), type: 'bar', data: [] }
   ]
 }) as EChartsOption
 
@@ -125,10 +136,10 @@ const fillChart = (rows: CrmStatisticsBusinessForecastByDateRespVO[]) => {
     echartsOption.xAxis['data'] = rows.map((item) => item.time)
   }
   if (echartsOption.series?.[0]?.['data']) {
-    echartsOption.series[0]['data'] = rows.map((item) => item.expectedAmount)
+    echartsOption.series[0]['data'] = rows.map((item) => item.forecastAmount)
   }
   if (echartsOption.series?.[1]?.['data']) {
-    echartsOption.series[1]['data'] = rows.map((item) => item.weightedAmount)
+    echartsOption.series[1]['data'] = rows.map((item) => item.actualAmount)
   }
 }
 

@@ -12,6 +12,7 @@ import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 import static com.meession.etm.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY;
 
@@ -77,6 +78,11 @@ public class CrmContactSaveReqVO {
     @Schema(description = "性别")
     @DiffLogField(name = "性别", function = SysSexParseFunction.NAME)
     private Integer sex;
+
+    @Schema(description = "生日，用于客户关怀提醒")
+    @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY)
+    @DiffLogField(name = "生日")
+    private LocalDate birthday;
 
     @Schema(description = "是否关键决策人")
     @DiffLogField(name = "关键决策人", function = SysBooleanParseFunction.NAME)

@@ -115,7 +115,7 @@
         </el-col>
       </el-row>
       <el-row>
-        <el-col :span="12">
+        <el-col :span="8">
           <el-form-item :label="t('crm.contact.sex')" prop="sex">
             <el-select v-model="formData.sex" :placeholder="t('common.select')" class="w-1/1">
               <el-option
@@ -127,7 +127,18 @@
             </el-select>
           </el-form-item>
         </el-col>
-        <el-col :span="12">
+        <el-col :span="8">
+          <el-form-item :label="t('crm.contact.birthday')" prop="birthday">
+            <el-date-picker
+              v-model="formData.birthday"
+              type="date"
+              value-format="YYYY-MM-DD"
+              :placeholder="t('crm.contact.birthdayPlaceholder')"
+              class="!w-1/1"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="8">
           <el-form-item :label="t('crm.contact.parentName')" prop="parentId">
             <el-select v-model="formData.parentId" :placeholder="t('crm.contact.parentPlaceholder')" class="w-1/1">
               <el-option
@@ -218,6 +229,7 @@ const formData = ref({
   areaId: undefined,
   detailAddress: undefined,
   sex: undefined,
+  birthday: undefined,
   master: false,
   primaryContact: false,
   post: undefined,
@@ -323,6 +335,7 @@ const resetForm = () => {
     areaId: undefined,
     detailAddress: undefined,
     sex: undefined,
+    birthday: undefined,
     master: false,
     primaryContact: false,
     post: undefined,

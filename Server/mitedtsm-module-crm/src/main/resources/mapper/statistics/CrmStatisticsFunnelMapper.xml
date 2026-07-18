@@ -53,7 +53,6 @@
                 ON business.status_id = status.id
                 AND business.status_type_id = status.type_id
                 AND business.deleted = 0
-                AND business.end_status IS NULL
                 AND business.owner_user_id IN
                 <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                     #{userId}
@@ -68,20 +67,26 @@
 
             SELECT NULL AS statusId,
                    NULL AS statusName,
-                   2147483647 AS sort,
-                   1 AS endStatus,
-                   COUNT(*) AS businessCount,
+                   2147483640 + outcome.end_status AS sort,
+                   outcome.end_status AS endStatus,
+                   COUNT(business.id) AS businessCount,
                    COALESCE(SUM(business.total_price), 0) AS totalPrice
-            FROM crm_business AS business
-            WHERE business.deleted = 0
+            FROM (
+                SELECT 1 AS end_status
+                UNION ALL SELECT 2
+                UNION ALL SELECT 3
+            ) AS outcome
+            LEFT JOIN crm_business AS business
+              ON business.deleted = 0
               AND business.status_type_id = #{statusTypeId}
-              AND business.end_status = 1
+              AND business.end_status = outcome.end_status
               AND business.owner_user_id IN
                 <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                     #{userId}
                 </foreach>
               AND business.create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime}
               AND #{times[1],javaType=java.time.LocalDateTime}
+            GROUP BY outcome.end_status
         ) AS stage
         ORDER BY stage.sort, stage.statusId
     </select>
@@ -139,25 +144,50 @@
 
     <select id="selectBusinessForecastGroupByDate"
             resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessForecastByDateRespVO">
-        SELECT
-            DATE_FORMAT(business.deal_time, '%Y-%m-%d') AS time,
-            COUNT(*) AS businessCount,
-            COALESCE(SUM(business.total_price), 0) AS expectedAmount,
-            COALESCE(SUM(COALESCE(business.total_price, 0) * COALESCE(status.percent, 0) / 100), 0) AS weightedAmount
-        FROM crm_business AS business
-        INNER JOIN crm_business_status AS status
-            ON status.id = business.status_id AND status.deleted = 0
-        WHERE business.deleted = 0
-          AND business.end_status IS NULL
-          AND business.deal_time IS NOT NULL
-          AND business.owner_user_id IN
-            <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
-                #{userId}
-            </foreach>
-          AND business.deal_time BETWEEN #{times[0],javaType=java.time.LocalDateTime}
-          AND #{times[1],javaType=java.time.LocalDateTime}
-        GROUP BY time
-        ORDER BY time
+        SELECT daily.time,
+               SUM(daily.forecastBusinessCount) AS forecastBusinessCount,
+               SUM(daily.actualBusinessCount) AS actualBusinessCount,
+               COALESCE(SUM(daily.forecastAmount), 0) AS forecastAmount,
+               COALESCE(SUM(daily.actualAmount), 0) AS actualAmount
+        FROM (
+            SELECT DATE_FORMAT(business.deal_time, '%Y-%m-%d') AS time,
+                   COUNT(*) AS forecastBusinessCount,
+                   0 AS actualBusinessCount,
+                   COALESCE(SUM(business.total_price), 0) AS forecastAmount,
+                   0 AS actualAmount
+            FROM crm_business AS business
+            WHERE business.deleted = 0
+              AND business.end_status IS NULL
+              AND business.deal_time IS NOT NULL
+              AND business.owner_user_id IN
+                <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+                    #{userId}
+                </foreach>
+              AND business.deal_time BETWEEN #{times[0],javaType=java.time.LocalDateTime}
+              AND #{times[1],javaType=java.time.LocalDateTime}
+            GROUP BY time
+
+            UNION ALL
+
+            SELECT DATE_FORMAT(business.end_time, '%Y-%m-%d') AS time,
+                   0 AS forecastBusinessCount,
+                   COUNT(*) AS actualBusinessCount,
+                   0 AS forecastAmount,
+                   COALESCE(SUM(business.total_price), 0) AS actualAmount
+            FROM crm_business AS business
+            WHERE business.deleted = 0
+              AND business.end_status = 1
+              AND business.end_time IS NOT NULL
+              AND business.owner_user_id IN
+                <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+                    #{userId}
+                </foreach>
+              AND business.end_time BETWEEN #{times[0],javaType=java.time.LocalDateTime}
+              AND #{times[1],javaType=java.time.LocalDateTime}
+            GROUP BY time
+        ) AS daily
+        GROUP BY daily.time
+        ORDER BY daily.time
     </select>
 
 </mapper>

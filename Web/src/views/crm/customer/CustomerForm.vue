@@ -93,6 +93,19 @@
       </el-row>
       <el-row>
         <el-col :span="12">
+          <el-form-item :label="t('birthday')" prop="birthday">
+            <el-date-picker
+              v-model="formData.birthday"
+              type="date"
+              value-format="YYYY-MM-DD"
+              :placeholder="t('birthdayPlaceholder')"
+              class="!w-1/1"
+            />
+          </el-form-item>
+        </el-col>
+      </el-row>
+      <el-row>
+        <el-col :span="12">
           <el-form-item :label="t('wechat')" prop="wechat">
             <el-input v-model="formData.wechat" :placeholder="t('wechatPlaceholder')" />
           </el-form-item>
@@ -231,6 +244,7 @@ const formData = ref({
   qq: undefined,
   wechat: undefined,
   email: undefined,
+  birthday: undefined,
   areaId: undefined,
   detailAddress: undefined,
   industryId: undefined,
@@ -357,6 +371,7 @@ const resetForm = () => {
     qq: undefined,
     wechat: undefined,
     email: undefined,
+    birthday: undefined,
     areaId: undefined,
     detailAddress: undefined,
     industryId: undefined,

@@ -1,4 +1,12 @@
 <template>
+  <el-alert
+    v-if="!loading && list.length > 0 && !hasConfiguredStages"
+    class="mb-16px"
+    :closable="false"
+    :title="t('funnel.statusGroupMissingStages')"
+    type="warning"
+    show-icon
+  />
   <el-card shadow="never">
     <el-skeleton :loading="loading" animated>
       <Echart :height="500" :options="echartsOption" />
@@ -30,7 +38,7 @@
         min-width="180"
         prop="totalPrice"
       />
-      <el-table-column align="center" :label="t('funnel.stageConversionRate')" min-width="160">
+      <el-table-column align="center" :label="t('funnel.conversionOrOutcomeRate')" min-width="180">
         <template #default="scope">{{ scope.row.conversionRate }}%</template>
       </el-table-column>
       <el-table-column align="center" fixed="right" :label="t('common.action')" width="100">
@@ -109,7 +117,7 @@ import {
   CrmStatisticsBusinessStageSummaryRespVO,
   StatisticFunnelApi
 } from '@/api/crm/statistics/funnel'
-import { DICT_TYPE } from '@/utils/dict'
+import { DICT_TYPE, getDictLabel } from '@/utils/dict'
 import { EChartsOption } from 'echarts'
 import type { BusinessVO } from '@/api/crm/business'
 import { erpPriceTableColumnFormatter } from '@/utils'
@@ -127,15 +135,16 @@ const selectedStage = ref<CrmStatisticsBusinessStageSummaryRespVO>()
 const businessList = ref<BusinessVO[]>([])
 const detailsTotal = ref(0)
 const detailsPage = reactive({ pageNo: 1, pageSize: 10 })
+const hasConfiguredStages = computed(() => list.value.some((row) => !row.endStatus && row.statusId))
 
 const echartsOption = reactive<EChartsOption>({
-  title: { text: t('funnel.funnel') },
+  title: { text: t('funnel.stageAndOutcome') },
   tooltip: {
     trigger: 'item',
     formatter: (params: any) => {
       const row = params.data.raw as CrmStatisticsBusinessStageSummaryRespVO
       return `${params.name}<br/>${t('funnel.businessTotalPrice')}: ${row.totalPrice}<br/>${t(
-        'funnel.stageConversionRate'
+        'funnel.conversionOrOutcomeRate'
       )}: ${row.conversionRate}%`
     }
   },
@@ -150,10 +159,10 @@ const echartsOption = reactive<EChartsOption>({
     {
       name: t('funnel.funnel'),
       type: 'funnel',
-      left: '10%',
+      left: '4%',
       top: 60,
       bottom: 40,
-      width: '80%',
+      width: '58%',
       min: 0,
       minSize: '0%',
       maxSize: '100%',
@@ -163,12 +172,22 @@ const echartsOption = reactive<EChartsOption>({
       itemStyle: { borderColor: '#fff', borderWidth: 1 },
       emphasis: { label: { fontSize: 18 } },
       data: []
+    },
+    {
+      name: t('funnel.outcomeDistribution'),
+      type: 'pie',
+      center: ['82%', '38%'],
+      radius: ['22%', '38%'],
+      label: { formatter: '{b}\n{c}' },
+      data: []
     }
   ]
 }) as EChartsOption
 
 const stageLabel = (row: CrmStatisticsBusinessStageSummaryRespVO) =>
-  row.endStatus ? t('funnel.win') : row.statusName || '-'
+  row.endStatus
+    ? getDictLabel(DICT_TYPE.CRM_BUSINESS_END_STATUS_TYPE, row.endStatus) || '-'
+    : row.statusName || '-'
 
 const detailsTitle = computed(() =>
   selectedStage.value
@@ -186,7 +205,10 @@ const loadStageDetails = async () => {
       pageSize: detailsPage.pageSize
     }
     const data = selectedStage.value.endStatus
-      ? await StatisticFunnelApi.getBusinessWonPage(params)
+      ? await StatisticFunnelApi.getBusinessOutcomePage({
+          ...params,
+          endStatus: selectedStage.value.endStatus
+        })
       : await StatisticFunnelApi.getBusinessStagePage({
           ...params,
           statusId: selectedStage.value.statusId
@@ -210,6 +232,7 @@ const clearData = () => {
   if (echartsOption.series?.[0]) {
     echartsOption.series[0]['data'] = []
   }
+  if (echartsOption.series?.[1]) echartsOption.series[1]['data'] = []
 }
 
 const loadData = async () => {
@@ -225,9 +248,16 @@ const loadData = async () => {
     )) as CrmStatisticsBusinessStageSummaryRespVO[]
     list.value = data
     if (echartsOption.series?.[0]) {
-      echartsOption.series[0]['data'] = data.map((row) => ({
+      echartsOption.series[0]['data'] = data.filter((row) => !row.endStatus).map((row) => ({
         value: row.businessCount,
         name: `${stageLabel(row)}-${row.businessCount}${t('funnel.unit')}`,
+        raw: row
+      }))
+    }
+    if (echartsOption.series?.[1]) {
+      echartsOption.series[1]['data'] = data.filter((row) => row.endStatus).map((row) => ({
+        value: row.businessCount,
+        name: stageLabel(row),
         raw: row
       }))
     }

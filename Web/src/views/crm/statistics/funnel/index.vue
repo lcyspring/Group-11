@@ -5,7 +5,10 @@
     <el-form ref="queryFormRef" :model="queryParams" class="-mb-15px" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
-          <el-form-item :label="t('timeRange')" prop="orderDate">
+          <el-form-item
+            :label="activeTab === 'salesForecastRef' ? t('funnel.forecastPeriod') : t('timeRange')"
+            prop="orderDate"
+          >
             <el-date-picker
               v-model="queryParams.times"
               :default-time="[new Date('1 00:00:00'), new Date('1 23:59:59')]"
@@ -20,7 +23,10 @@
           </el-form-item>
         </el-col>
         <el-col :span="8">
-          <el-form-item :label="t('timeInterval')" prop="interval">
+          <el-form-item
+            :label="activeTab === 'salesForecastRef' ? t('funnel.forecastGranularity') : t('timeInterval')"
+            prop="interval"
+          >
             <el-select
               v-model="queryParams.interval"
               class="!w-240px"

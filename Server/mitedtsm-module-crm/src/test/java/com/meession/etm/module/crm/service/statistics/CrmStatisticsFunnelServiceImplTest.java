@@ -96,7 +96,9 @@ class CrmStatisticsFunnelServiceImplTest {
                 stage(11L, "初步接洽", 10, null, 10L, "100000.00"),
                 stage(12L, "需求确认", 20, null, 4L, "50000.00"),
                 stage(13L, "方案报价", 30, null, 1L, "20000.00"),
-                stage(null, null, Integer.MAX_VALUE, 1, 2L, "40000.00")
+                stage(null, null, Integer.MAX_VALUE - 2, 1, 2L, "40000.00"),
+                stage(null, null, Integer.MAX_VALUE - 1, 2, 3L, "30000.00"),
+                stage(null, null, Integer.MAX_VALUE, 3, 1L, "10000.00")
         );
         ReflectionTestUtils.setField(funnelService, "funnelMapper", proxy(CrmStatisticsFunnelMapper.class,
                 (proxy, method, args) -> {
@@ -123,13 +125,15 @@ class CrmStatisticsFunnelServiceImplTest {
         List<CrmStatisticsBusinessStageSummaryRespVO> result = funnelService.getBusinessStageSummary(reqVO);
 
         assertAll(
-                () -> assertEquals(List.of(17L, 7L, 3L, 2L),
+                () -> assertEquals(List.of(15L, 5L, 1L, 2L, 3L, 1L),
                         result.stream().map(CrmStatisticsBusinessStageSummaryRespVO::getBusinessCount).toList()),
-                () -> assertEquals(List.of(new BigDecimal("210000.00"), new BigDecimal("110000.00"),
-                                new BigDecimal("60000.00"), new BigDecimal("40000.00")),
+                () -> assertEquals(List.of(new BigDecimal("170000.00"), new BigDecimal("70000.00"),
+                                new BigDecimal("20000.00"), new BigDecimal("40000.00"),
+                                new BigDecimal("30000.00"), new BigDecimal("10000.00")),
                         result.stream().map(CrmStatisticsBusinessStageSummaryRespVO::getTotalPrice).toList()),
-                () -> assertEquals(List.of(new BigDecimal("100.00"), new BigDecimal("41.18"),
-                                new BigDecimal("42.86"), new BigDecimal("66.67")),
+                () -> assertEquals(List.of(new BigDecimal("100.00"), new BigDecimal("33.33"),
+                                new BigDecimal("20.00"), new BigDecimal("33.33"),
+                                new BigDecimal("50.00"), new BigDecimal("16.67")),
                         result.stream().map(CrmStatisticsBusinessStageSummaryRespVO::getConversionRate).toList())
         );
     }
@@ -197,11 +201,11 @@ class CrmStatisticsFunnelServiceImplTest {
     }
 
     @Test
-    void getBusinessForecastAggregatesExpectedAndWeightedAmountsByInterval() {
+    void getBusinessForecastAggregatesForecastAndActualAmountsByInterval() {
         CrmStatisticsFunnelServiceImpl funnelService = new CrmStatisticsFunnelServiceImpl();
         List<CrmStatisticsBusinessForecastByDateRespVO> dailyRows = List.of(
-                forecast("2026-07-01", 2L, "100000.00", "30000.00"),
-                forecast("2026-07-20", 1L, "50000.00", "20000.00")
+                forecast("2026-07-01", 2L, 1L, "100000.00", "30000.00"),
+                forecast("2026-07-20", 1L, 2L, "50000.00", "20000.00")
         );
         ReflectionTestUtils.setField(funnelService, "funnelMapper", proxy(CrmStatisticsFunnelMapper.class,
                 (proxy, method, args) -> {
@@ -223,22 +227,26 @@ class CrmStatisticsFunnelServiceImplTest {
 
         assertAll(
                 () -> assertEquals(2, result.size()),
-                () -> assertEquals(3L, result.get(0).getBusinessCount()),
-                () -> assertEquals(new BigDecimal("150000.00"), result.get(0).getExpectedAmount()),
-                () -> assertEquals(new BigDecimal("50000.00"), result.get(0).getWeightedAmount()),
-                () -> assertEquals(0L, result.get(1).getBusinessCount()),
-                () -> assertEquals(new BigDecimal("0.00"), result.get(1).getExpectedAmount()),
-                () -> assertEquals(new BigDecimal("0.00"), result.get(1).getWeightedAmount())
+                () -> assertEquals(3L, result.get(0).getForecastBusinessCount()),
+                () -> assertEquals(3L, result.get(0).getActualBusinessCount()),
+                () -> assertEquals(new BigDecimal("150000.00"), result.get(0).getForecastAmount()),
+                () -> assertEquals(new BigDecimal("50000.00"), result.get(0).getActualAmount()),
+                () -> assertEquals(0L, result.get(1).getForecastBusinessCount()),
+                () -> assertEquals(0L, result.get(1).getActualBusinessCount()),
+                () -> assertEquals(new BigDecimal("0.00"), result.get(1).getForecastAmount()),
+                () -> assertEquals(new BigDecimal("0.00"), result.get(1).getActualAmount())
         );
     }
 
-    private static CrmStatisticsBusinessForecastByDateRespVO forecast(String time, long count,
-                                                                       String expected, String weighted) {
+    private static CrmStatisticsBusinessForecastByDateRespVO forecast(String time, long forecastCount,
+                                                                       long actualCount, String forecast,
+                                                                       String actual) {
         return new CrmStatisticsBusinessForecastByDateRespVO()
                 .setTime(time)
-                .setBusinessCount(count)
-                .setExpectedAmount(new BigDecimal(expected))
-                .setWeightedAmount(new BigDecimal(weighted));
+                .setForecastBusinessCount(forecastCount)
+                .setActualBusinessCount(actualCount)
+                .setForecastAmount(new BigDecimal(forecast))
+                .setActualAmount(new BigDecimal(actual));
     }
 
     private static CrmStatisticsBusinessStageSummaryRespVO stage(Long statusId, String statusName, Integer sort,

@@ -279,6 +279,33 @@ class CrmCustomerCareServiceImplTest {
         assertEquals(0, result.getList().get(0).getDaysUntil());
     }
 
+    @Test
+    void customerBirthdayPageUsesCustomerBirthdaySource() {
+        LocalDate today = LocalDate.now(java.time.ZoneId.of(properties.getCareZone()));
+        CrmCustomerDO customer = new CrmCustomerDO().setId(61L).setName("生日客户")
+                .setBirthday(today.minusYears(20)).setMobile("13800000000").setEmail("customer@example.com");
+        when(authorizationService.resolveOwnerReadScope(7L))
+                .thenReturn(new CrmOwnerReadScope(false, Set.of(7L)));
+        when(customerMapper.selectUpcomingBirthdayPage(any(), eq(today), eq(false), eq(Set.of(7L))))
+                .thenReturn(new PageResult<>(List.of(customer), 1L));
+
+        CrmCustomerBirthdayPageReqVO request = new CrmCustomerBirthdayPageReqVO();
+        request.setTargetType(1);
+        PageResult<CrmCustomerBirthdayRespVO> result = service.getBirthdayPage(request, 7L);
+
+        CrmCustomerBirthdayRespVO birthday = result.getList().get(0);
+        assertEquals(1, birthday.getTargetType());
+        assertEquals(61L, birthday.getCustomerId());
+        assertEquals("生日客户", birthday.getCustomerName());
+        assertNull(birthday.getContactId());
+        assertNull(birthday.getContactName());
+        assertEquals(today.minusYears(20), birthday.getBirthday());
+        assertEquals(0, birthday.getDaysUntil());
+        assertEquals("13800000000", birthday.getMobile());
+        assertEquals("customer@example.com", birthday.getEmail());
+        verifyNoInteractions(contactMapper);
+    }
+
     private void stubBirthdayTarget() {
         CrmCustomerCarePlanDO plan = new CrmCustomerCarePlanDO().setId(11L).setRuleType(1)
                 .setChannel(1).setSmsTemplateCode("birthday").setEnabled(true);

@@ -210,6 +210,7 @@
       <el-table-column align="center" :label="t('mobile')" prop="mobile" min-width="120" />
       <el-table-column align="center" :label="t('telephone')" prop="telephone" min-width="130" />
       <el-table-column align="center" :label="t('email')" prop="email" min-width="180" />
+      <el-table-column align="center" :label="t('birthday')" prop="birthday" min-width="120" />
       <el-table-column align="center" :label="t('level')" prop="level" min-width="135">
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.CRM_CUSTOMER_LEVEL" :value="scope.row.level" />

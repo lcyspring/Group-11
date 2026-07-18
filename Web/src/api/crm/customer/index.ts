@@ -33,6 +33,7 @@ export interface CustomerVO {
   qq: string // QQ
   wechat: string // wechat
   email: string // email
+  birthday?: string // 客户自身生日
   areaId: number // 所在地
   areaName?: string // 所在地名称
   detailAddress: string // 详细地址

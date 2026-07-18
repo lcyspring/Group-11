@@ -19,6 +19,7 @@ import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 import static com.meession.etm.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
 import static com.meession.etm.module.crm.enums.DictTypeConstants.CRM_CUSTOMER_INDUSTRY;
@@ -74,6 +75,11 @@ public class CrmCustomerSaveReqVO {
     @Email(message = "邮箱格式不正确")
     @Size(max = 255, message = "邮箱长度不能超过 255 个字符")
     private String email;
+
+    @Schema(description = "客户自身生日")
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    @DiffLogField(name = "生日")
+    private LocalDate birthday;
 
     @Schema(description = "地区编号", example = "20158")
     @DiffLogField(name = "地区编号", function = SysAreaParseFunction.NAME)

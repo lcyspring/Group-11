@@ -1,5 +1,6 @@
 package com.meession.etm.module.crm.controller.admin.customer.vo.customer;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.meession.etm.framework.excel.core.annotations.DictFormat;
 import com.meession.etm.framework.excel.core.convert.DictConvert;
 import com.meession.etm.module.infra.enums.DictTypeConstants;
@@ -9,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Schema(description = "管理后台 - CRM 客户 Response VO")
 @Data
@@ -124,6 +126,11 @@ public class CrmCustomerRespVO {
     @Schema(description = "email", example = "25682")
     @ExcelProperty("email")
     private String email;
+
+    @Schema(description = "客户自身生日")
+    @ExcelProperty("生日")
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate birthday;
 
     @Schema(description = "地区编号", example = "1024")
     @ExcelProperty("地区编号")

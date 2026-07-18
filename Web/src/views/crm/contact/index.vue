@@ -151,6 +151,7 @@
       <el-table-column align="center" :label="t('crm.contact.telephone')" prop="telephone" min-width="130" />
       <el-table-column align="center" :label="t('crm.contact.email')" prop="email" min-width="180" />
       <el-table-column align="center" :label="t('crm.contact.post')" prop="post" min-width="120" />
+      <el-table-column align="center" :label="t('crm.contact.birthday')" prop="birthday" min-width="120" />
       <el-table-column align="center" :label="t('crm.contact.detailAddress')" prop="detailAddress" min-width="120" />
       <el-table-column align="center" :label="t('crm.contact.master')" prop="master" min-width="100">
         <template #default="scope">

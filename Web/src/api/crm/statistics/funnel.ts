@@ -31,9 +31,10 @@ export interface CrmStatisticsBusinessInversionRateSummaryByDateRespVO {
 
 export interface CrmStatisticsBusinessForecastByDateRespVO {
   time: string
-  businessCount: number
-  expectedAmount: number | string
-  weightedAmount: number | string
+  forecastBusinessCount: number
+  actualBusinessCount: number
+  forecastAmount: number | string
+  actualAmount: number | string
 }
 
 // 客户分析 API
@@ -63,6 +64,13 @@ export const StatisticFunnelApi = {
   getBusinessWonPage: (params: any) => {
     return request.get({
       url: '/crm/statistics-funnel/get-business-won-page',
+      params
+    })
+  },
+  // 1.4 获取赢单、输单或无效商机明细
+  getBusinessOutcomePage: (params: any) => {
+    return request.get({
+      url: '/crm/statistics-funnel/get-business-outcome-page',
       params
     })
   },

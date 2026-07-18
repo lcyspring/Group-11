@@ -150,10 +150,11 @@ export interface CustomerCareRecordVO {
   createTime?: Date | string
 }
 export interface CustomerBirthdayVO {
+  targetType: number
   customerId: number
   customerName?: string
-  contactId: number
-  contactName: string
+  contactId?: number
+  contactName?: string
   birthday: string
   nextBirthday: string
   daysUntil: number

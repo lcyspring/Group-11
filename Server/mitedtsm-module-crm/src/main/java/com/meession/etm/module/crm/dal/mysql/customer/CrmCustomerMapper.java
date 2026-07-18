@@ -10,6 +10,7 @@ import com.meession.etm.framework.mybatis.core.query.LambdaQueryWrapperX;
 import com.meession.etm.framework.mybatis.core.query.MPJLambdaWrapperX;
 import com.meession.etm.module.crm.controller.admin.customer.vo.customer.CrmCustomerPageReqVO;
 import com.meession.etm.module.crm.controller.admin.customer.vo.garbage.CrmCustomerGarbagePageReqVO;
+import com.meession.etm.module.crm.controller.admin.marketing.vo.CrmCustomerBirthdayPageReqVO;
 import com.meession.etm.module.crm.dal.dataobject.clue.CrmClueDO;
 import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
@@ -29,8 +30,11 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 客户 Mapper
@@ -39,6 +43,30 @@ import java.util.List;
  */
 @Mapper
 public interface CrmCustomerMapper extends BaseMapperX<CrmCustomerDO> {
+
+    default PageResult<CrmCustomerDO> selectUpcomingBirthdayPage(CrmCustomerBirthdayPageReqVO request,
+                                                                  LocalDate today, boolean all,
+                                                                  Set<Long> ownerUserIds) {
+        LocalDate endDate = today.plusDays(request.getUpcomingDays());
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-dd");
+        String start = today.format(formatter);
+        String end = endDate.format(formatter);
+        LambdaQueryWrapperX<CrmCustomerDO> query = new LambdaQueryWrapperX<>();
+        query.isNotNull(CrmCustomerDO::getBirthday);
+        query.likeIfPresent(CrmCustomerDO::getName, request.getKeyword());
+        if (endDate.getYear() == today.getYear()) {
+            query.apply("DATE_FORMAT(birthday, '%m-%d') BETWEEN {0} AND {1}", start, end);
+        } else {
+            query.and(date -> date.apply("DATE_FORMAT(birthday, '%m-%d') >= {0}", start)
+                    .or().apply("DATE_FORMAT(birthday, '%m-%d') <= {0}", end));
+        }
+        if (!all) {
+            if (ownerUserIds.isEmpty()) query.eq(CrmCustomerDO::getOwnerUserId, -1L);
+            else query.in(CrmCustomerDO::getOwnerUserId, ownerUserIds);
+        }
+        query.last("ORDER BY DATE_FORMAT(birthday, '%m-%d'), id");
+        return selectPage(request, query);
+    }
 
     default Long selectCountByLockStatusAndOwnerUserId(Boolean lockStatus, Long ownerUserId) {
         return selectCount(new LambdaUpdateWrapper<CrmCustomerDO>()

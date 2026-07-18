@@ -127,6 +127,9 @@ public class CrmCustomerDO extends BaseDO {
      * email
      */
     private String email;
+
+    /** 客户自身生日；联系人生日保存在 crm_contact.birthday。 */
+    private java.time.LocalDate birthday;
     /**
      * 所在地
      *

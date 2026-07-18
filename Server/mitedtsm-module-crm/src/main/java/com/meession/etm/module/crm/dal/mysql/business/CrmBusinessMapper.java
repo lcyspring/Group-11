@@ -42,12 +42,14 @@ public interface CrmBusinessMapper extends BaseMapperX<CrmBusinessDO> {
     }
 
     default int updateStatusIfUnchanged(Long id, Long oldStatusId, Integer oldEndStatus,
-                                        Long newStatusId, Integer newEndStatus, String endRemark) {
+                                        Long newStatusId, Integer newEndStatus, String endRemark,
+                                        java.time.LocalDateTime endTime) {
         LambdaUpdateWrapper<CrmBusinessDO> update = new LambdaUpdateWrapper<CrmBusinessDO>()
                 .eq(CrmBusinessDO::getId, id)
                 .set(CrmBusinessDO::getStatusId, newStatusId)
                 .set(CrmBusinessDO::getEndStatus, newEndStatus)
-                .set(CrmBusinessDO::getEndRemark, endRemark);
+                .set(CrmBusinessDO::getEndRemark, endRemark)
+                .set(CrmBusinessDO::getEndTime, endTime);
         if (oldStatusId == null) {
             update.isNull(CrmBusinessDO::getStatusId);
         } else {
@@ -140,11 +142,7 @@ public interface CrmBusinessMapper extends BaseMapperX<CrmBusinessDO> {
                 .eq(CrmBusinessDO::getStatusTypeId, pageVO.getStatusTypeId())
                 .in(CrmBusinessDO::getOwnerUserId, pageVO.getUserIds())
                 .between(CrmBusinessDO::getCreateTime, pageVO.getTimes()[0], pageVO.getTimes()[1])
-                .and(scope -> scope
-                        .and(active -> active.isNull(CrmBusinessDO::getEndStatus)
-                                .ge(CrmBusinessStatusDO::getSort, stageSort))
-                        .or()
-                        .eq(CrmBusinessDO::getEndStatus, CrmBusinessEndStatusEnum.WIN.getStatus()))
+                .ge(CrmBusinessStatusDO::getSort, stageSort)
                 .orderByAsc(CrmBusinessDO::getDealTime)
                 .orderByAsc(CrmBusinessDO::getId);
         return selectJoinPage(pageVO, CrmBusinessDO.class, query);
@@ -157,6 +155,17 @@ public interface CrmBusinessMapper extends BaseMapperX<CrmBusinessDO> {
                 .in(CrmBusinessDO::getOwnerUserId, pageVO.getUserIds())
                 .between(CrmBusinessDO::getCreateTime, pageVO.getTimes()[0], pageVO.getTimes()[1])
                 .orderByAsc(CrmBusinessDO::getDealTime)
+                .orderByAsc(CrmBusinessDO::getId));
+    }
+
+    default PageResult<CrmBusinessDO> selectOutcomePage(
+            com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessOutcomePageReqVO pageVO) {
+        return selectPage(pageVO, new LambdaQueryWrapperX<CrmBusinessDO>()
+                .eq(CrmBusinessDO::getStatusTypeId, pageVO.getStatusTypeId())
+                .eq(CrmBusinessDO::getEndStatus, pageVO.getEndStatus())
+                .in(CrmBusinessDO::getOwnerUserId, pageVO.getUserIds())
+                .between(CrmBusinessDO::getCreateTime, pageVO.getTimes()[0], pageVO.getTimes()[1])
+                .orderByAsc(CrmBusinessDO::getEndTime)
                 .orderByAsc(CrmBusinessDO::getId));
     }
 

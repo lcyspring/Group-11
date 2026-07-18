@@ -275,7 +275,8 @@ public class CrmBusinessServiceImpl implements CrmBusinessService {
         }
         Long newStatusId = reqVO.getStatusId() != null ? reqVO.getStatusId() : business.getStatusId();
         int updated = businessMapper.updateStatusIfUnchanged(reqVO.getId(), business.getStatusId(), business.getEndStatus(),
-                newStatusId, reqVO.getEndStatus(), endRemark);
+                newStatusId, reqVO.getEndStatus(), endRemark,
+                reqVO.getEndStatus() != null ? LocalDateTime.now() : null);
         if (updated == 0) {
             throw exception(BUSINESS_UPDATE_STATUS_CONCURRENT);
         }

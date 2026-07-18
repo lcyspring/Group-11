@@ -1,5 +1,6 @@
 package com.meession.etm.module.crm.controller.admin.contact.vo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.meession.etm.framework.excel.core.annotations.DictFormat;
 import com.meession.etm.framework.excel.core.convert.DictConvert;
 import com.meession.etm.module.infra.enums.DictTypeConstants;
@@ -10,6 +11,7 @@ import lombok.Data;
 import lombok.ToString;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Schema(description = "管理后台 - CRM 联系人 Response VO")
 @Data
@@ -85,6 +87,11 @@ public class CrmContactRespVO {
     @ExcelProperty(value = "性别", converter = DictConvert.class, order = 3)
     @DictFormat(com.meession.etm.module.system.enums.DictTypeConstants.USER_SEX)
     private Integer sex;
+
+    @Schema(description = "生日，用于客户关怀提醒")
+    @ExcelProperty(value = "生日", order = 3)
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate birthday;
 
     @Schema(description = "是否关键决策人")
     @ExcelProperty(value = "是否关键决策人", converter = DictConvert.class, order = 3)

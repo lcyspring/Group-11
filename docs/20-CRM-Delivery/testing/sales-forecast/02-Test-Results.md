@@ -1,6 +1,6 @@
 # 测试结果
 
-日期：2026-07-14
+日期：2026-07-18
 
 ## Ubuntu 26.04 CRM
 
@@ -9,9 +9,9 @@ cd podman
 bash ./compile.sh ./config/test-crm-ubuntu-26.04.yaml
 ```
 
-- `CrmStatisticsFunnelServiceImplTest`：3/3；
-- `CrmStatisticsFunnelMapperTest`：2/2；
-- CRM 全量：80/80；
+- `CrmStatisticsFunnelServiceImplTest`：6/6；
+- `CrmStatisticsFunnelMapperTest`：3/3；
+- CRM 全量：533/533；
 - Failures 0、Errors 0、Skipped 0；
 - Maven reactor：20/20 SUCCESS。
 
@@ -27,9 +27,13 @@ bash ./compile.sh ./config/build-web-ubuntu-26.04.yaml
 
 - Node 22.22.1、pnpm 11.3.0；
 - Vite production build 成功；
-- `Web/dist-prod/index.html`：3694 bytes。
+- Web 类型检查通过；
+- 漏斗/预测前端契约与合同/生日专项合计 8/8；
+- 生产构建成功并替换 8081 Web 容器。
 
-## 未执行项
+## 真实运行验收
 
-未构造真实 MySQL 多阶段、跨部门预测数据进行 API 对账；SQL 契约测试不能替代
-`STAT-DATA-001` 和 `STAT-SEC-001` 的运行时证据。
+- `crm_business.end_time` 已通过已有库兼容迁移并完成历史终态回填；
+- 预测 API 返回 `forecastBusinessCount`、`actualBusinessCount`、`forecastAmount`、`actualAmount`；
+- 真实请求 `code=0`，无数据周期四项指标稳定返回 0；
+- Server 与 Web 运行镜像已分别封装并用 `replace-server`、`replace-web` 替换。

@@ -31,6 +31,7 @@
           <el-descriptions-item :label="t('mobile')">{{ customer.mobile }}</el-descriptions-item>
           <el-descriptions-item :label="t('telephone')">{{ customer.telephone }}</el-descriptions-item>
           <el-descriptions-item :label="t('email')">{{ customer.email }}</el-descriptions-item>
+          <el-descriptions-item :label="t('birthday')">{{ customer.birthday || '-' }}</el-descriptions-item>
           <el-descriptions-item :label="t('areaId')">
             {{ customer.areaName }} {{ customer.detailAddress }}
           </el-descriptions-item>

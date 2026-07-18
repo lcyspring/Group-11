@@ -74,6 +74,10 @@ public class CrmBusinessRespVO {
     @ExcelProperty("结束时的备注")
     private String endRemark;
 
+    @Schema(description = "实际结单时间")
+    @ExcelProperty("实际结单时间")
+    private LocalDateTime endTime;
+
     @Schema(description = "预计成交日期")
     @ExcelProperty("预计成交日期")
     private LocalDateTime dealTime;

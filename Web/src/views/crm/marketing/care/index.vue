@@ -127,6 +127,12 @@
   <template v-else>
     <ContentWrap>
       <el-form ref="birthdayQueryRef" :inline="true" :model="birthdayQuery" class="-mb-15px">
+        <el-form-item :label="t('crm.marketing.birthdayTargetType')" prop="targetType">
+          <el-select v-model="birthdayQuery.targetType" class="!w-160px" @change="handleBirthdayQuery">
+            <el-option :label="t('crm.marketing.customerBirthday')" :value="1" />
+            <el-option :label="t('crm.marketing.contactBirthday')" :value="2" />
+          </el-select>
+        </el-form-item>
         <el-form-item :label="t('crm.marketing.customerOrContact')" prop="keyword">
           <el-input v-model="birthdayQuery.keyword" clearable :placeholder="t('common.inputText')" @keyup.enter="handleBirthdayQuery" />
         </el-form-item>
@@ -141,6 +147,9 @@
     </ContentWrap>
     <ContentWrap>
       <el-table v-loading="birthdayLoading" :data="birthdays" stripe>
+        <el-table-column min-width="110" :label="t('crm.marketing.birthdayTargetType')">
+          <template #default="{ row }">{{ row.targetType === 1 ? t('crm.marketing.customer') : t('crm.marketing.contact') }}</template>
+        </el-table-column>
         <el-table-column min-width="180" prop="customerName" :label="t('crm.marketing.customer')" />
         <el-table-column min-width="150" prop="contactName" :label="t('crm.marketing.contact')" />
         <el-table-column min-width="110" prop="birthday" :label="t('crm.marketing.birthday')" />
@@ -222,7 +231,7 @@ const dialogVisible = ref(false)
 
 const planQuery = reactive({ pageNo: 1, pageSize: 10, code: undefined as string | undefined, name: undefined as string | undefined, ruleType: undefined as number | undefined, enabled: undefined as boolean | undefined })
 const recordQuery = reactive({ pageNo: 1, pageSize: 10, planId: undefined as number | undefined, status: undefined as number | undefined, eventDate: undefined as string | undefined })
-const birthdayQuery = reactive({ pageNo: 1, pageSize: 10, keyword: undefined as string | undefined, upcomingDays: 30 })
+const birthdayQuery = reactive({ pageNo: 1, pageSize: 10, targetType: 1, keyword: undefined as string | undefined, upcomingDays: 30 })
 
 const emptyForm = (): MarketingApi.CustomerCarePlanVO => ({ code: '', name: '', ruleType: CareRuleType.BIRTHDAY, eventMonthDay: undefined, followUpDays: 7, channel: 1, smsTemplateCode: '', mailTemplateCode: '', enabled: false })
 const formData = reactive<MarketingApi.CustomerCarePlanVO>(emptyForm())
@@ -287,7 +296,7 @@ const resetPlanQuery = () => { planQueryRef.value?.resetFields(); handlePlanQuer
 const handleRecordQuery = () => { recordQuery.pageNo = 1; void getRecords() }
 const resetRecordQuery = () => { recordQueryRef.value?.resetFields(); handleRecordQuery() }
 const handleBirthdayQuery = () => { birthdayQuery.pageNo = 1; void getBirthdays() }
-const resetBirthdayQuery = () => { birthdayQueryRef.value?.resetFields(); birthdayQuery.upcomingDays = 30; handleBirthdayQuery() }
+const resetBirthdayQuery = () => { birthdayQueryRef.value?.resetFields(); birthdayQuery.targetType = 1; birthdayQuery.upcomingDays = 30; handleBirthdayQuery() }
 
 const openForm = async (id?: number) => {
   Object.assign(formData, emptyForm())

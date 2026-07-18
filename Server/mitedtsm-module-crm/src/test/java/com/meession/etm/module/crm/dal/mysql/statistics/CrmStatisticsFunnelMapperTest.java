@@ -26,24 +26,28 @@ class CrmStatisticsFunnelMapperTest {
     }
 
     @Test
-    void salesForecastUsesExpectedDealTimeStageProbabilityAndActiveBusinesses() throws IOException {
+    void salesForecastComparesExpectedDealTimeWithActualWonTime() throws IOException {
         String body = selectBody(loadMapperXml(), "selectBusinessForecastGroupByDate");
 
         assertTrue(body.contains("business.deleted = 0"));
         assertTrue(body.contains("business.end_status IS NULL"));
         assertTrue(body.contains("business.deal_time BETWEEN"));
-        assertTrue(body.contains("status.percent"));
+        assertTrue(body.contains("business.end_status = 1"));
+        assertTrue(body.contains("business.end_time BETWEEN"));
+        assertTrue(body.contains("forecastAmount"));
+        assertTrue(body.contains("actualAmount"));
         assertTrue(body.contains("business.total_price"));
     }
 
     @Test
-    void stageFunnelUsesConfiguredStagesActiveBusinessesAndWinsOnly() throws IOException {
+    void stageFunnelUsesConfiguredStagesAndAllTerminalOutcomes() throws IOException {
         String body = selectBody(loadMapperXml(), "selectBusinessStageSummary");
 
         assertTrue(body.contains("FROM crm_business_status AS status"));
         assertTrue(body.contains("LEFT JOIN crm_business AS business"));
-        assertTrue(body.contains("business.end_status IS NULL"));
-        assertTrue(body.contains("business.end_status = 1"));
+        assertTrue(body.contains("SELECT 1 AS end_status"));
+        assertTrue(body.contains("UNION ALL SELECT 2"));
+        assertTrue(body.contains("UNION ALL SELECT 3"));
         assertTrue(body.contains("business.status_type_id = #{statusTypeId}"));
         assertTrue(body.contains("business.owner_user_id IN"));
         assertTrue(body.contains("business.create_time BETWEEN"));

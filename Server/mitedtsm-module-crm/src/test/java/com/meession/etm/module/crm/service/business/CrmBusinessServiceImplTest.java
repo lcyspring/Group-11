@@ -17,6 +17,7 @@ import static com.meession.etm.module.crm.enums.ErrorCodeConstants.BUSINESS_UPDA
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.BUSINESS_UPDATE_STATUS_BACKWARD;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class CrmBusinessServiceImplTest {
@@ -46,6 +47,7 @@ class CrmBusinessServiceImplTest {
         assertEquals(business.getStatusId(), updateArgs.get()[3]);
         assertEquals(CrmBusinessEndStatusEnum.LOSE.getStatus(), updateArgs.get()[4]);
         assertEquals("客户本年度预算取消无法继续采购", updateArgs.get()[5]);
+        assertNotNull(updateArgs.get()[6]);
     }
 
     @Test
@@ -95,6 +97,7 @@ class CrmBusinessServiceImplTest {
 
         assertEquals(business.getStatusId(), updateArgs.get()[3]);
         assertNull(updateArgs.get()[5]);
+        assertNotNull(updateArgs.get()[6]);
     }
 
     @Test
@@ -140,6 +143,7 @@ class CrmBusinessServiceImplTest {
 
         assertEquals(40L, updateArgs.get()[3]);
         assertNull(updateArgs.get()[4]);
+        assertNull(updateArgs.get()[6]);
     }
 
     private static CrmBusinessDO activeBusiness() {

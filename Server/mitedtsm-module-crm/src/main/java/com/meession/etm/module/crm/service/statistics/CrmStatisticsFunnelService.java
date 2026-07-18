@@ -36,6 +36,9 @@ public interface CrmStatisticsFunnelService {
      */
     PageResult<CrmBusinessDO> getBusinessWonPage(CrmStatisticsBusinessStageReqVO pageVO);
 
+    /** 获得赢单、输单或无效商机明细。 */
+    PageResult<CrmBusinessDO> getBusinessOutcomePage(CrmStatisticsBusinessOutcomePageReqVO pageVO);
+
     /**
      * 获得商机结束状态统计
      *

@@ -128,6 +128,18 @@ public class CrmCustomerCareServiceImpl implements CrmCustomerCareService {
                                                                   Long userId) {
         LocalDate today = today();
         var scope = authorizationService.resolveOwnerReadScope(userId);
+        if (Integer.valueOf(1).equals(request.getTargetType())) {
+            PageResult<CrmCustomerDO> page = customerMapper.selectUpcomingBirthdayPage(request, today,
+                    scope.all(), scope.ownerUserIds());
+            List<CrmCustomerBirthdayRespVO> list = page.getList().stream().map(customer -> {
+                LocalDate next = nextBirthday(customer.getBirthday(), today);
+                return new CrmCustomerBirthdayRespVO().setTargetType(1).setCustomerId(customer.getId())
+                        .setCustomerName(customer.getName()).setBirthday(customer.getBirthday()).setNextBirthday(next)
+                        .setDaysUntil((int) ChronoUnit.DAYS.between(today, next))
+                        .setMobile(customer.getMobile()).setEmail(customer.getEmail());
+            }).toList();
+            return new PageResult<>(list, page.getTotal());
+        }
         PageResult<CrmContactDO> page = contactMapper.selectUpcomingBirthdayPage(request, today,
                 scope.all(), scope.ownerUserIds());
         Set<Long> customerIds = ids(page.getList(), CrmContactDO::getCustomerId);
@@ -135,7 +147,7 @@ public class CrmCustomerCareServiceImpl implements CrmCustomerCareService {
                 CrmCustomerDO::getId, CrmCustomerDO::getName);
         List<CrmCustomerBirthdayRespVO> list = page.getList().stream().map(contact -> {
             LocalDate next = nextBirthday(contact.getBirthday(), today);
-            return new CrmCustomerBirthdayRespVO().setCustomerId(contact.getCustomerId())
+            return new CrmCustomerBirthdayRespVO().setTargetType(2).setCustomerId(contact.getCustomerId())
                     .setCustomerName(customers.get(contact.getCustomerId()))
                     .setContactId(contact.getId()).setContactName(contact.getName())
                     .setBirthday(contact.getBirthday()).setNextBirthday(next)

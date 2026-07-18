@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -79,27 +80,39 @@ public class CrmStatisticsFunnelServiceImpl implements CrmStatisticsFunnelServic
             return Collections.emptyList();
         }
 
-        // SQL 返回各活跃阶段的当前存量以及赢单。由后向前累加，得到“已到达本阶段”的
-        // 单调漏斗；输单、无效不参与，避免流失商机反向放大后续阶段。
+        List<CrmStatisticsBusinessStageSummaryRespVO> stageRows = rows.stream()
+                .filter(row -> row.getEndStatus() == null).toList();
+        List<CrmStatisticsBusinessStageSummaryRespVO> outcomeRows = rows.stream()
+                .filter(row -> row.getEndStatus() != null).toList();
+
+        // SQL 按商机保留的最后阶段返回存量（含活跃和三种终态），由后向前累加得到
+        // “至少到达本阶段”的单调漏斗。终态结果独立计算分布，不伪装成线性后续阶段。
         long cumulativeCount = 0L;
         BigDecimal cumulativePrice = BigDecimal.ZERO;
-        for (int index = rows.size() - 1; index >= 0; index--) {
-            CrmStatisticsBusinessStageSummaryRespVO row = rows.get(index);
+        for (int index = stageRows.size() - 1; index >= 0; index--) {
+            CrmStatisticsBusinessStageSummaryRespVO row = stageRows.get(index);
             cumulativeCount += row.getBusinessCount();
             cumulativePrice = cumulativePrice.add(row.getTotalPrice());
             row.setBusinessCount(cumulativeCount);
             row.setTotalPrice(cumulativePrice.setScale(2, RoundingMode.HALF_UP));
         }
         long previousCount = 0L;
-        for (int index = 0; index < rows.size(); index++) {
-            CrmStatisticsBusinessStageSummaryRespVO row = rows.get(index);
+        for (int index = 0; index < stageRows.size(); index++) {
+            CrmStatisticsBusinessStageSummaryRespVO row = stageRows.get(index);
             row.setConversionRate(index == 0
                     ? (row.getBusinessCount() == 0L ? BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
                     : BigDecimal.valueOf(100).setScale(2, RoundingMode.HALF_UP))
                     : calculatePercentage(row.getBusinessCount(), previousCount));
             previousCount = row.getBusinessCount();
         }
-        return rows;
+        long endedCount = outcomeRows.stream()
+                .mapToLong(CrmStatisticsBusinessStageSummaryRespVO::getBusinessCount).sum();
+        outcomeRows.forEach(row -> row.setTotalPrice(row.getTotalPrice().setScale(2, RoundingMode.HALF_UP))
+                .setConversionRate(calculatePercentage(row.getBusinessCount(), endedCount)));
+        List<CrmStatisticsBusinessStageSummaryRespVO> result = new ArrayList<>(stageRows.size() + outcomeRows.size());
+        result.addAll(stageRows);
+        result.addAll(outcomeRows);
+        return result;
     }
 
     @Override
@@ -121,6 +134,16 @@ public class CrmStatisticsFunnelServiceImpl implements CrmStatisticsFunnelServic
         }
         businessStatusService.validateBusinessStatusType(pageVO.getStatusTypeId());
         return businessMapper.selectWonPage(pageVO);
+    }
+
+    @Override
+    public PageResult<CrmBusinessDO> getBusinessOutcomePage(CrmStatisticsBusinessOutcomePageReqVO pageVO) {
+        pageVO.setUserIds(getUserIds(pageVO));
+        if (CollUtil.isEmpty(pageVO.getUserIds())) {
+            return PageResult.empty();
+        }
+        businessStatusService.validateBusinessStatusType(pageVO.getStatusTypeId());
+        return businessMapper.selectOutcomePage(pageVO);
     }
 
     @Override
@@ -201,19 +224,22 @@ public class CrmStatisticsFunnelServiceImpl implements CrmStatisticsFunnelServic
             List<CrmStatisticsBusinessForecastByDateRespVO> rows = forecastList.stream()
                     .filter(vo -> LocalDateTimeUtils.isBetween(times[0], times[1], vo.getTime()))
                     .toList();
-            long businessCount = rows.stream()
-                    .mapToLong(CrmStatisticsBusinessForecastByDateRespVO::getBusinessCount).sum();
-            BigDecimal expectedAmount = rows.stream()
-                    .map(CrmStatisticsBusinessForecastByDateRespVO::getExpectedAmount)
+            long forecastBusinessCount = rows.stream()
+                    .mapToLong(CrmStatisticsBusinessForecastByDateRespVO::getForecastBusinessCount).sum();
+            long actualBusinessCount = rows.stream()
+                    .mapToLong(CrmStatisticsBusinessForecastByDateRespVO::getActualBusinessCount).sum();
+            BigDecimal forecastAmount = rows.stream()
+                    .map(CrmStatisticsBusinessForecastByDateRespVO::getForecastAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP);
-            BigDecimal weightedAmount = rows.stream()
-                    .map(CrmStatisticsBusinessForecastByDateRespVO::getWeightedAmount)
+            BigDecimal actualAmount = rows.stream()
+                    .map(CrmStatisticsBusinessForecastByDateRespVO::getActualAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP);
             return new CrmStatisticsBusinessForecastByDateRespVO()
                     .setTime(LocalDateTimeUtils.formatDateRange(times[0], times[1], reqVO.getInterval()))
-                    .setBusinessCount(businessCount)
-                    .setExpectedAmount(expectedAmount)
-                    .setWeightedAmount(weightedAmount);
+                    .setForecastBusinessCount(forecastBusinessCount)
+                    .setActualBusinessCount(actualBusinessCount)
+                    .setForecastAmount(forecastAmount)
+                    .setActualAmount(actualAmount);
         });
     }
 
