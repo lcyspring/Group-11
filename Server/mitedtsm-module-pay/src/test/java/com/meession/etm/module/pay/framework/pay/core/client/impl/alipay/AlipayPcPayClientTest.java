@@ -42,7 +42,7 @@ public class AlipayPcPayClientTest extends AbstractAlipayClientTest {
     @DisplayName("支付宝 PC 网站支付：URL Display Mode 下单成功")
     public void testUnifiedOrder_urlSuccess() throws AlipayApiException {
         // mock 方法
-        String notifyUrl = randomURL();
+        String notifyUrl = randomHttpUrl();
         AlipayTradePagePayResponse response = randomPojo(AlipayTradePagePayResponse.class, o -> o.setSubCode(""));
         when(defaultAlipayClient.pageExecute(argThat((ArgumentMatcher<AlipayTradePagePayRequest>) request -> true),
                 eq(Method.GET.name()))).thenReturn(response);
@@ -71,7 +71,7 @@ public class AlipayPcPayClientTest extends AbstractAlipayClientTest {
     @DisplayName("支付宝 PC 网站支付：Form Display Mode 下单成功")
     public void testUnifiedOrder_formSuccess() throws AlipayApiException {
         // mock 方法
-        String notifyUrl = randomURL();
+        String notifyUrl = randomHttpUrl();
         AlipayTradePagePayResponse response = randomPojo(AlipayTradePagePayResponse.class, o -> o.setSubCode(""));
         when(defaultAlipayClient.pageExecute(argThat((ArgumentMatcher<AlipayTradePagePayRequest>) request -> true),
                 eq(Method.POST.name()))).thenReturn(response);
@@ -110,7 +110,7 @@ public class AlipayPcPayClientTest extends AbstractAlipayClientTest {
                 eq(Method.GET.name()))).thenReturn(response);
         // 准备请求参数
         String outTradeNo = randomString();
-        PayOrderUnifiedReqDTO reqDTO = buildOrderUnifiedReqDTO(randomURL(), outTradeNo, randomInteger());
+        PayOrderUnifiedReqDTO reqDTO = buildOrderUnifiedReqDTO(randomHttpUrl(), outTradeNo, randomInteger());
         reqDTO.setDisplayMode(PayOrderDisplayModeEnum.URL.getMode());
 
         // 调用

@@ -6,13 +6,14 @@
 
 更新日期：2026-07-18
 
-- Ubuntu 26.04 容器 CRM 自动化：527/527，失败 0、错误 0、跳过 0。
-- CRM JaCoCo：指令 49.55%、分支 42.53%、行 48.26%、方法 37.56%。
+- Ubuntu 26.04 容器 CRM 自动化：533/533，失败 0、错误 0、跳过 0。
+- CRM JaCoCo：指令 50.00%、分支 42.94%、行 48.69%、方法 37.97%。
 - Web 全仓 `vue-tsc --noEmit`：脚本与模板诊断 0；标准 Ubuntu YAML 入口通过。
 - 运行安全框架专项：Security 3/3、CORS 2/2；真实 HTTP 安全矩阵全部通过。
 - ERP 履约专项：4/4；ERP 模块 JaCoCo 行覆盖率 6.92%。
 - Ubuntu 26.04 Infra 文件专项：28/28；模块行覆盖率 8.16%。
 - Ubuntu 26.04 BPM 自动化：54 个，48 通过、6 跳过、失败 0；行覆盖率 8.58%。
+- Ubuntu 26.04 Pay 自动化：167 个，132 通过、35 个外部集成测试跳过、失败 0、错误 0。
 - Ubuntu 26.04 容器 CRM 前端：统计纯函数与 SFC 契约 11/11，行 95.49%、分支 95.83%、函数 100%；发票 3/3。
 - 原始报告：`Server/mitedtsm-module-crm/target/site/jacoco/`，属于构建产物，不提交。
 
@@ -108,6 +109,7 @@
 | `crm-marketing-provider-provision/` | 短信/邮件渠道、账号与模板的三模式幂等 provision |
 | `crm-work-order-performance-security/` | 工单 50 并发业务链、资源基线、数据清理与安全负向矩阵 |
 | `crm-work-order-uat-handover/` | 工单 16 条 UAT、执行记录、知识转移、覆盖映射和四方签署模板 |
+| `payment-cross-domain-integration-contract/` | 支付与 CRM/OA/营销边界、API、安全、补偿和显式 YAML 契约 |
 | `deterministic-demo-data/` | 固定 seed 演示数据生成、引用/状态校验、cleanup 和部署隔离 |
 
 运行入口统一为：

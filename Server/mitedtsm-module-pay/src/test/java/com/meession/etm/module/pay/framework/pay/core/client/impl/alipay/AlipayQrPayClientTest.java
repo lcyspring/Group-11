@@ -42,7 +42,7 @@ public class AlipayQrPayClientTest extends AbstractAlipayClientTest {
     @DisplayName("支付宝扫描支付：下单成功")
     public void testUnifiedOrder_success() throws AlipayApiException {
         // mock 方法
-        String notifyUrl = randomURL();
+        String notifyUrl = randomHttpUrl();
         String qrCode = randomString();
         Integer price = randomInteger();
         AlipayTradePrecreateResponse response = randomPojo(AlipayTradePrecreateResponse.class, o -> {
@@ -76,7 +76,7 @@ public class AlipayQrPayClientTest extends AbstractAlipayClientTest {
     @DisplayName("支付宝扫描支付：渠道返回失败")
     public void testUnifiedOrder_channelFailed() throws AlipayApiException {
         // mock 方法
-        String notifyUrl = randomURL();
+        String notifyUrl = randomHttpUrl();
         String subCode = randomString();
         String subMsg = randomString();
         Integer price = randomInteger();
@@ -113,7 +113,7 @@ public class AlipayQrPayClientTest extends AbstractAlipayClientTest {
     public void testUnifiedOrder_throwPayException() throws AlipayApiException {
         // mock 方法
         String outTradeNo = randomString();
-        String notifyUrl = randomURL();
+        String notifyUrl = randomHttpUrl();
         Integer price = randomInteger();
         when(defaultAlipayClient.execute(argThat((ArgumentMatcher<AlipayTradePrecreateRequest>) request -> {
             assertEquals(notifyUrl, request.getNotifyUrl());
@@ -131,7 +131,7 @@ public class AlipayQrPayClientTest extends AbstractAlipayClientTest {
     public void testUnifiedOrder_throwServiceException() throws AlipayApiException {
         // mock 方法
         String outTradeNo = randomString();
-        String notifyUrl = randomURL();
+        String notifyUrl = randomHttpUrl();
         Integer price = randomInteger();
         when(defaultAlipayClient.execute(argThat((ArgumentMatcher<AlipayTradePrecreateRequest>) request -> {
             assertEquals(notifyUrl, request.getNotifyUrl());

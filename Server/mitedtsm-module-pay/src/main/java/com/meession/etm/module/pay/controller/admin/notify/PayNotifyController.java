@@ -68,7 +68,7 @@ public class PayNotifyController {
                               @RequestParam(required = false) Map<String, String> params,
                               @RequestBody(required = false) String body,
                               @RequestHeader Map<String, String> headers) {
-        log.info("[notifyOrder][channelId({}) 回调数据({}/{})]", channelId, params, body);
+        log.info("[notifyOrder][channelId({}) 接收支付回调，{}]", channelId, summarizePayload(params, body));
         // 1. 校验支付渠道是否存在
         PayClient payClient = channelService.getPayClient(channelId);
         if (payClient == null) {
@@ -90,7 +90,7 @@ public class PayNotifyController {
                                @RequestParam(required = false) Map<String, String> params,
                                @RequestBody(required = false) String body,
                                @RequestHeader Map<String, String> headers) {
-        log.info("[notifyRefund][channelId({}) 回调数据({}/{})]", channelId, params, body);
+        log.info("[notifyRefund][channelId({}) 接收退款回调，{}]", channelId, summarizePayload(params, body));
         // 1. 校验支付渠道是否存在
         PayClient payClient = channelService.getPayClient(channelId);
         if (payClient == null) {
@@ -112,7 +112,7 @@ public class PayNotifyController {
                                  @RequestParam(required = false) Map<String, String> params,
                                  @RequestBody(required = false) String body,
                                  @RequestHeader Map<String, String> headers) {
-        log.info("[notifyTransfer][channelId({}) 回调数据({}/{})]", channelId, params, body);
+        log.info("[notifyTransfer][channelId({}) 接收转账回调，{}]", channelId, summarizePayload(params, body));
         // 1. 校验支付渠道是否存在
         PayClient payClient = channelService.getPayClient(channelId);
         if (payClient == null) {
@@ -164,6 +164,11 @@ public class PayNotifyController {
                 order.setAppName(app.getName());
             }
         }));
+    }
+
+    static String summarizePayload(Map<String, String> params, String body) {
+        return "paramsCount(" + (params == null ? 0 : params.size()) + "), bodyLength("
+                + (body == null ? 0 : body.length()) + ")";
     }
 
 }

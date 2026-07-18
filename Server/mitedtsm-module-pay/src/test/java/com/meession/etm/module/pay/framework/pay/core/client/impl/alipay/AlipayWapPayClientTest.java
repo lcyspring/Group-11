@@ -51,7 +51,7 @@ public class AlipayWapPayClientTest extends AbstractAlipayClientTest {
             o.setSubCode("");
             o.setBody(h5Body);
         });
-        String notifyUrl = randomURL();
+        String notifyUrl = randomHttpUrl();
         when(defaultAlipayClient.pageExecute(argThat((ArgumentMatcher<AlipayTradeWapPayRequest>) request -> {
             assertInstanceOf(AlipayTradeWapPayModel.class, request.getBizModel());
             AlipayTradeWapPayModel bizModel = (AlipayTradeWapPayModel) request.getBizModel();
@@ -91,7 +91,7 @@ public class AlipayWapPayClientTest extends AbstractAlipayClientTest {
         when(defaultAlipayClient.pageExecute(argThat((ArgumentMatcher<AlipayTradeWapPayRequest>) request -> true),
                 eq(Method.GET.name()))).thenReturn(response);
         String outTradeNo = randomString();
-        PayOrderUnifiedReqDTO reqDTO = buildOrderUnifiedReqDTO(randomURL(), outTradeNo, randomInteger());
+        PayOrderUnifiedReqDTO reqDTO = buildOrderUnifiedReqDTO(randomHttpUrl(), outTradeNo, randomInteger());
 
         // 调用
         PayOrderRespDTO resp = client.unifiedOrder(reqDTO);
