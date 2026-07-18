@@ -18,7 +18,7 @@ MYSQL_CONTAINER="$(kdl_require container.mysql)"
 SOURCE_DATABASE="$(kdl_require mysql.database)"
 MYSQL_PASSWORD="$(kdl_require mysql.root_password)"
 MYSQL_CHARACTER_SET="$(kdl_require mysql.character_set)"
-MYSQL_USER="$(kdl_require health.mysql_user)"
+MYSQL_ADMIN_USERNAME="$(kdl_require mysql.administration_username)"
 
 suffix="$$"
 TEST_DATABASE="mitedtsm_provider_test_${suffix}"
@@ -29,7 +29,7 @@ TEMP_DIR="$(mktemp -d)"
 
 mysql_command() {
     podman exec --env "MYSQL_PWD=${MYSQL_PASSWORD}" "$MYSQL_CONTAINER" \
-        mysql "--default-character-set=${MYSQL_CHARACTER_SET}" --user="$MYSQL_USER" "$@"
+        mysql "--default-character-set=${MYSQL_CHARACTER_SET}" --user="$MYSQL_ADMIN_USERNAME" "$@"
 }
 
 cleanup() {

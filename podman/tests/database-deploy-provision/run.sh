@@ -19,7 +19,8 @@ MYSQL_PASSWORD="$(kdl_require mysql.root_password)"
 MYSQL_CHARACTER_SET="$(kdl_require mysql.character_set)"
 MYSQL_COLLATION="$(kdl_require mysql.collation)"
 MYSQL_AUTHENTICATION_PLUGIN="$(kdl_require mysql.authentication_plugin)"
-MYSQL_USER="$(kdl_require health.mysql_user)"
+MYSQL_ADMIN_USERNAME="$(kdl_require mysql.administration_username)"
+MYSQL_SQL_ROOT="$(kdl_path mysql.sql_root)"
 BOOTSTRAP_MANIFEST="$(kdl_path mysql.bootstrap_manifest)"
 COMPATIBILITY_MANIFEST="$(kdl_path mysql.compatibility_migration_manifest)"
 
@@ -50,7 +51,7 @@ podman run -d --replace --name "$MYSQL_CONTAINER" --network none --pull=never \
 
 for ((attempt=1; attempt<=120; attempt++)); do
     if podman exec --env "MYSQL_PWD=${MYSQL_PASSWORD}" "$MYSQL_CONTAINER" \
-        mysql --user "$MYSQL_USER" --batch --skip-column-names \
+        mysql --user "$MYSQL_ADMIN_USERNAME" --batch --skip-column-names \
         --execute 'SELECT 1' >/dev/null 2>&1; then
         break
     fi
@@ -64,7 +65,7 @@ done
 
 mysql_command() {
     podman exec --env "MYSQL_PWD=${MYSQL_PASSWORD}" "$MYSQL_CONTAINER" \
-        mysql "--default-character-set=${MYSQL_CHARACTER_SET}" --user="$MYSQL_USER" "$@"
+        mysql "--default-character-set=${MYSQL_CHARACTER_SET}" --user="$MYSQL_ADMIN_USERNAME" "$@"
 }
 
 write_config() {
@@ -73,6 +74,7 @@ write_config() {
     cp "$SOURCE_CONFIG" "$output"
     kdl_set_file "$output" operation.startup_mode string replace-server
     kdl_set_file "$output" container.mysql string "$MYSQL_CONTAINER"
+    kdl_set_file "$output" mysql.sql_root string "$MYSQL_SQL_ROOT"
     kdl_set_file "$output" mysql.database string "$database"
     kdl_set_file "$output" mysql.dataset string "$dataset"
     kdl_set_file "$output" mysql.dataset_manifest string "$dataset_manifest"

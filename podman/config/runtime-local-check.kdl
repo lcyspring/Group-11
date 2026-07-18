@@ -90,7 +90,14 @@ volume {
 }
 
 mysql {
+  sql_root "../../database"
+  host "127.0.0.1"
+  port 3306
   database "mitedtsm_database"
+  administration_username "root"
+  application_username "root"
+  application_password 1234
+  jdbc_parameters "useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true&useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci"
   dataset "legacy-demo-v1"
   dataset_manifest "../../database/datasets/legacy-demo-v1.manifest"
   dataset_mode "preserve"
@@ -238,8 +245,6 @@ health {
   http_host "127.0.0.1"
   interval_seconds 2
   mysql_attempts 90
-  mysql_host "127.0.0.1"
-  mysql_user "root"
   mysql_schema_attempts 180
   mysql_schema_query "SELECT 1 FROM system_users LIMIT 1"
   redis_attempts 60

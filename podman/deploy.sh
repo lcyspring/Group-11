@@ -80,8 +80,22 @@ REDIS_VOLUME="$(kdl_require volume.redis)"
 RABBITMQ_VOLUME="$(kdl_require volume.rabbitmq)"
 TDENGINE_VOLUME="$(kdl_require volume.tdengine)"
 
+MYSQL_HOST="$(kdl_require mysql.host)"
+MYSQL_PORT="$(kdl_port mysql.port)"
 MYSQL_DATABASE="$(kdl_require mysql.database)"
+MYSQL_ADMIN_USERNAME="$(kdl_require mysql.administration_username)"
 MYSQL_ROOT_PASSWORD="$(kdl_require mysql.root_password)"
+MYSQL_APPLICATION_USERNAME="$(kdl_require mysql.application_username)"
+MYSQL_APPLICATION_PASSWORD="$(kdl_require mysql.application_password)"
+MYSQL_JDBC_PARAMETERS="$(kdl_require mysql.jdbc_parameters)"
+MYSQL_JDBC_URL="jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}?${MYSQL_JDBC_PARAMETERS}"
+MYSQL_APPLICATION_INIT_ENV=()
+if [[ "$MYSQL_APPLICATION_USERNAME" != root ]]; then
+    MYSQL_APPLICATION_INIT_ENV+=(
+        --env "MYSQL_USER=${MYSQL_APPLICATION_USERNAME}"
+        --env "MYSQL_PASSWORD=${MYSQL_APPLICATION_PASSWORD}"
+    )
+fi
 MYSQL_CHARACTER_SET="$(kdl_require mysql.character_set)"
 MYSQL_COLLATION="$(kdl_require mysql.collation)"
 MYSQL_AUTHENTICATION_PLUGIN="$(kdl_require mysql.authentication_plugin)"
@@ -163,8 +177,6 @@ CRM_EXPORT_TASK_LOCK_LEASE_SECONDS="$(kdl_positive_integer crm_export_task.lock_
 HEALTH_INTERVAL="$(kdl_positive_integer health.interval_seconds)"
 HEALTH_HTTP_HOST="$(kdl_require health.http_host)"
 MYSQL_ATTEMPTS="$(kdl_positive_integer health.mysql_attempts)"
-MYSQL_HEALTH_HOST="$(kdl_require health.mysql_host)"
-MYSQL_USER="$(kdl_require health.mysql_user)"
 MYSQL_SCHEMA_ATTEMPTS="$(kdl_positive_integer health.mysql_schema_attempts)"
 MYSQL_SCHEMA_QUERY="$(kdl_require health.mysql_schema_query)"
 REDIS_ATTEMPTS="$(kdl_positive_integer health.redis_attempts)"
@@ -340,8 +352,12 @@ start_server() {
     podman_cmd run -d --replace --name "$SERVER_CONTAINER" --pod "$POD_NAME" --pull=never \
         "${PROXY_ENV[@]}" \
         --env "SPRING_PROFILES_ACTIVE=${SPRING_PROFILE}" \
-        --env "SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_USERNAME=${MYSQL_USER}" \
-        --env "SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_PASSWORD=${MYSQL_ROOT_PASSWORD}" \
+        --env "MYSQL_JDBC_URL=${MYSQL_JDBC_URL}" \
+        --env "MYSQL_USERNAME=${MYSQL_APPLICATION_USERNAME}" \
+        --env "MYSQL_PASSWORD=${MYSQL_APPLICATION_PASSWORD}" \
+        --env "SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_URL=${MYSQL_JDBC_URL}" \
+        --env "SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_USERNAME=${MYSQL_APPLICATION_USERNAME}" \
+        --env "SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_PASSWORD=${MYSQL_APPLICATION_PASSWORD}" \
         --env "SPRING_RABBITMQ_USERNAME=${RABBITMQ_USERNAME}" \
         --env "SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}" \
         --env "MITEDTSM_SECURITY_MOCK_ENABLE=${SECURITY_MOCK_LOGIN_ENABLED}" \
@@ -561,6 +577,28 @@ validate_configuration() {
         printf 'crm_marketing.click_allowed_hosts must be an explicit comma-separated host list.\n' >&2
         exit 2
     }
+    [[ "$MYSQL_HOST" =~ ^[A-Za-z0-9._-]+$ ]] || {
+        printf 'mysql.host must be an explicit hostname or IPv4 address.\n' >&2
+        exit 2
+    }
+    [[ "$MYSQL_ADMIN_USERNAME" == root ]] || {
+        printf 'mysql.administration_username must be root for the official MySQL image.\n' >&2
+        exit 2
+    }
+    [[ "$MYSQL_APPLICATION_USERNAME" =~ ^[A-Za-z0-9_]+$ ]] || {
+        printf 'mysql.application_username contains unsupported characters.\n' >&2
+        exit 2
+    }
+    if [[ "$MYSQL_APPLICATION_USERNAME" == root &&
+          "$MYSQL_APPLICATION_PASSWORD" != "$MYSQL_ROOT_PASSWORD" ]]; then
+        printf 'mysql.application_password must equal mysql.root_password when the application user is root.\n' >&2
+        exit 2
+    fi
+    [[ "$MYSQL_JDBC_PARAMETERS" != *$'\n'* && "$MYSQL_JDBC_PARAMETERS" != *$'\r'* &&
+       "$MYSQL_JDBC_PARAMETERS" != *'#'* ]] || {
+        printf 'mysql.jdbc_parameters must be a single URL query string without a fragment.\n' >&2
+        exit 2
+    }
 
     if [[ "$USE_HOST_PROXY" == "true" ]]; then
         PODMAN_PROXY_ARGS=()
@@ -628,7 +666,7 @@ apply_runtime_file_storage() {
     }
     printf 'Selecting explicit runtime file client %s (%s storage).\n' "$FILE_CLIENT_ID" "$FILE_STORAGE_MODE"
     podman_cmd exec "$MYSQL_CONTAINER" mysql "--default-character-set=${MYSQL_CHARACTER_SET}" \
-        "-u${MYSQL_USER}" "-p${MYSQL_ROOT_PASSWORD}" \
+        "-u${MYSQL_ADMIN_USERNAME}" "-p${MYSQL_ROOT_PASSWORD}" \
         "--database=${MYSQL_DATABASE}" -e \
         "UPDATE infra_file_config SET master=(id=${FILE_CLIENT_ID}), config=CASE WHEN id=${FILE_CLIENT_ID} THEN JSON_SET(config, '$.domain', '${FILE_PUBLIC_BASE_URL}') ELSE config END WHERE deleted=b'0';"
 }
@@ -827,10 +865,12 @@ podman_cmd run -d --replace --name "$MYSQL_CONTAINER" --pod "$POD_NAME" --pull=n
     --volume "${MYSQL_VOLUME}:/var/lib/mysql" \
     --env "MYSQL_DATABASE=${MYSQL_DATABASE}" \
     --env "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}" \
+    "${MYSQL_APPLICATION_INIT_ENV[@]}" \
     --env "TZ=${MYSQL_TIMEZONE}" \
     "$MYSQL_BASE_IMAGE" \
     "--character-set-server=${MYSQL_CHARACTER_SET}" \
     "--collation-server=${MYSQL_COLLATION}" \
+    "--port=${MYSQL_PORT}" \
     "--default-authentication-plugin=${MYSQL_AUTHENTICATION_PLUGIN}"
 
 podman_cmd run -d --replace --name "$REDIS_CONTAINER" --pod "$POD_NAME" --pull=never \
@@ -849,7 +889,7 @@ podman_cmd run -d --replace --name "$TDENGINE_CONTAINER" --pod "$POD_NAME" --pul
     "$TDENGINE_BASE_IMAGE"
 
 wait_for 'MySQL' "$MYSQL_ATTEMPTS" podman_cmd exec --env "MYSQL_PWD=${MYSQL_ROOT_PASSWORD}" \
-    "$MYSQL_CONTAINER" mysql --user "$MYSQL_USER" --host "$MYSQL_HEALTH_HOST" \
+    "$MYSQL_CONTAINER" mysql --user "$MYSQL_ADMIN_USERNAME" --host "127.0.0.1" --port "$MYSQL_PORT" \
     --batch --skip-column-names --execute 'SELECT 1' &
 mysql_ready_pid=$!
 wait_for 'Redis' "$REDIS_ATTEMPTS" podman_cmd exec "$REDIS_CONTAINER" redis-cli ping &
@@ -872,7 +912,7 @@ wait "$mysql_ready_pid"
 bash "${SCRIPT_DIR}/internal/provision-database.sh" "$KDL_CONFIG_PATH"
 wait_for 'MySQL schema initialization' "$MYSQL_SCHEMA_ATTEMPTS" podman_cmd exec "$MYSQL_CONTAINER" \
     mysql "--default-character-set=${MYSQL_CHARACTER_SET}" \
-    "-u${MYSQL_USER}" "-p${MYSQL_ROOT_PASSWORD}" "--database=${MYSQL_DATABASE}" -Nse "$MYSQL_SCHEMA_QUERY"
+    "-u${MYSQL_ADMIN_USERNAME}" "-p${MYSQL_ROOT_PASSWORD}" "--database=${MYSQL_DATABASE}" -Nse "$MYSQL_SCHEMA_QUERY"
 bash "${SCRIPT_DIR}/internal/provision-marketing-provider.sh" "$KDL_CONFIG_PATH"
 bash "${SCRIPT_DIR}/internal/provision-bpm-notifications.sh" "$KDL_CONFIG_PATH"
 apply_runtime_file_storage

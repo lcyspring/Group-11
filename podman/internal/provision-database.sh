@@ -8,8 +8,6 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PODMAN_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
-PROJECT_ROOT="$(cd -- "${PODMAN_DIR}/.." && pwd)"
-DATABASE_ROOT="${PROJECT_ROOT}/database"
 
 [[ $# -eq 1 ]] || {
     printf 'Usage: bash ./internal/provision-database.sh <runtime-config.kdl>\n' >&2
@@ -22,6 +20,7 @@ kdl_config_init "$1"
 
 [[ "$(kdl_require schema_version)" == "1" ]] || exit 2
 
+DATABASE_ROOT="$(realpath -m -- "$(kdl_path mysql.sql_root)")"
 START_MODE="$(kdl_require operation.startup_mode)"
 MYSQL_CONTAINER="$(kdl_require container.mysql)"
 MYSQL_DATABASE="$(kdl_require mysql.database)"
@@ -33,7 +32,7 @@ MYSQL_BOOTSTRAP_MANIFEST="$(kdl_path mysql.bootstrap_manifest)"
 MYSQL_COMPATIBILITY_MANIFEST="$(kdl_path mysql.compatibility_migration_manifest)"
 MYSQL_ROOT_PASSWORD="$(kdl_require mysql.root_password)"
 MYSQL_CHARACTER_SET="$(kdl_require mysql.character_set)"
-MYSQL_USER="$(kdl_require health.mysql_user)"
+MYSQL_ADMIN_USERNAME="$(kdl_require mysql.administration_username)"
 DATASET_MANIFEST="$MYSQL_DATASET_MANIFEST"
 
 case "$MYSQL_BOOTSTRAP_POLICY" in
@@ -64,8 +63,12 @@ esac
     printf 'mysql.character_set contains unsupported characters.\n' >&2
     exit 2
 }
-[[ "$MYSQL_USER" =~ ^[A-Za-z0-9_]+$ ]] || {
-    printf 'health.mysql_user contains unsupported characters.\n' >&2
+[[ -d "$DATABASE_ROOT" ]] || {
+    printf 'mysql.sql_root is not a directory: %s\n' "$DATABASE_ROOT" >&2
+    exit 2
+}
+[[ "$MYSQL_ADMIN_USERNAME" == root ]] || {
+    printf 'mysql.administration_username must be root for database provision.\n' >&2
     exit 2
 }
 
@@ -95,6 +98,11 @@ DATASET_HAS_CLEANUP=false
 DATASET_FIRST_ENTRY_IS_CLEANUP=false
 validate_manifest() {
     local manifest="$1" purpose="$2" entry sql_file entries=0
+    manifest="$(realpath -m -- "$manifest")"
+    [[ "$manifest" == "${DATABASE_ROOT}/"* ]] || {
+        printf '%s manifest must be located under mysql.sql_root: %s\n' "$purpose" "$manifest" >&2
+        exit 2
+    }
     require_file "$manifest"
     while IFS= read -r entry || [[ -n "$entry" ]]; do
         [[ -n "$entry" && "$entry" != \#* ]] || continue
@@ -164,7 +172,7 @@ command -v podman >/dev/null 2>&1 || {
 mysql_command() {
     podman exec --env "MYSQL_PWD=${MYSQL_ROOT_PASSWORD}" "$MYSQL_CONTAINER" \
         mysql "--default-character-set=${MYSQL_CHARACTER_SET}" \
-        "--user=${MYSQL_USER}" "--database=${MYSQL_DATABASE}" "$@"
+        "--user=${MYSQL_ADMIN_USERNAME}" "--database=${MYSQL_DATABASE}" "$@"
 }
 
 mysql_scalar() {
@@ -179,7 +187,7 @@ execute_manifest() {
         printf 'Applying %s SQL: %s\n' "$label" "${sql_file#${DATABASE_ROOT}/}"
         podman exec --env "MYSQL_PWD=${MYSQL_ROOT_PASSWORD}" -i "$MYSQL_CONTAINER" \
             mysql "--default-character-set=${MYSQL_CHARACTER_SET}" \
-            "--user=${MYSQL_USER}" "--database=${MYSQL_DATABASE}" < "$sql_file"
+            "--user=${MYSQL_ADMIN_USERNAME}" "--database=${MYSQL_DATABASE}" < "$sql_file"
     done < "$manifest"
 }
 

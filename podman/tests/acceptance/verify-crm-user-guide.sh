@@ -16,8 +16,8 @@ kdl_config_init "$1"
 
 MYSQL_CONTAINER="$(kdl_require container.mysql)"
 MYSQL_DATABASE="$(kdl_require mysql.database)"
-MYSQL_USER="$(kdl_require health.mysql_user)"
-MYSQL_PASSWORD="$(kdl_require mysql.root_password)"
+MYSQL_USER="$(kdl_require mysql.application_username)"
+MYSQL_PASSWORD="$(kdl_require mysql.application_password)"
 MANIFEST="${PROJECT_ROOT}/docs/20-CRM-Delivery/user-guide/routes.manifest"
 VIEWS_ROOT="${PROJECT_ROOT}/Web/src/views"
 

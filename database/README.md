@@ -1,8 +1,9 @@
 # 数据库脚本目录
 
-数据库脚本按生命周期分层。`deploy.sh` 通过 `internal/provision-database.sh` 读取
-`manifests/mysql-bootstrap.manifest` 和运行 KDL 指定的兼容迁移清单，不再扫描目录猜测顺序，也不把
-SQL 烘焙进 MySQL 镜像。
+数据库脚本按生命周期分层。运行 KDL 通过 `mysql.sql_root` 显式指定本目录；`deploy.sh` 再由
+`internal/provision-database.sh` 读取 KDL 指定的 bootstrap、compatibility 和 dataset manifest。
+脚本不扫描目录猜测顺序、不挂载整个目录，也不把 SQL 烘焙进 MySQL 镜像。每个 manifest 条目先确认
+仍位于 `mysql.sql_root` 内，再通过 `podman exec -i ... mysql` 的 stdin 顺序发送给 MySQL 容器。
 
 | 目录 | 用途 | 自动执行 |
 |---|---|---|

@@ -47,27 +47,14 @@ spring:
       primary: master
       datasource:
         master:
-          url: jdbc:mysql://127.0.0.1:3306/mitedtsm_database?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true&useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci # MySQL Connector/J 8.X 连接的示例
-          #          url: jdbc:mysql://127.0.0.1:3306/mitedtsm_database?useSSL=true&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&rewriteBatchedStatements=true # MySQL Connector/J 5.X 连接的示例
-          #          url: jdbc:postgresql://127.0.0.1:5432/mitedtsm_database # PostgreSQL 连接的示例
-          #          url: jdbc:oracle:thin:@127.0.0.1:1521:xe # Oracle 连接的示例
-          #          url: jdbc:sqlserver://127.0.0.1:1433;DatabaseName=mitedtsm_database;SelectMethod=cursor;encrypt=false;rewriteBatchedStatements=true;useUnicode=true;characterEncoding=utf-8 # SQLServer 连接的示例
-          #          url: jdbc:dm://127.0.0.1:5236?schema=MITEDTSM_DATABASE # DM 连接的示例
-          #          url: jdbc:kingbase8://127.0.0.1:54321/test  # 人大金仓 KingbaseES 连接的示例
-          #          url: jdbc:postgresql://127.0.0.1:5432/postgres # OpenGauss 连接的示例
-          username: ${MYSQL_USER:root}
-          password: ${MYSQL_ROOT_PASSWORD:}
-          #          username: sa # SQL Server 连接的示例
-          #          password: Mitedtsm@2024 # SQL Server 连接的示例
-          #          username: SYSDBA # DM 连接的示例
-          #          password: SYSDBA001 # DM 连接的示例
-          #          username: root # OpenGauss 连接的示例
-          #          password: Mitedtsm@2024 # OpenGauss 连接的示例
+          url: ${MYSQL_JDBC_URL}
+          username: ${MYSQL_USERNAME}
+          password: ${MYSQL_PASSWORD}
         slave: # 模拟从库，可根据自己需要修改
           lazy: true # 开启懒加载，保证启动速度
-          url: jdbc:mysql://127.0.0.1:3306/mitedtsm_database?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true&nullCatalogMeansCurrent=true
-          username: ${MYSQL_SLAVE_USER:root}
-          password: ${MYSQL_SLAVE_PASSWORD:}
+          url: ${MYSQL_SLAVE_JDBC_URL:${MYSQL_JDBC_URL}}
+          username: ${MYSQL_SLAVE_USERNAME:${MYSQL_USERNAME}}
+          password: ${MYSQL_SLAVE_PASSWORD:${MYSQL_PASSWORD}}
         tdengine: # IoT 数据库（需要 IoT 物联网再开启噢！）
           lazy: true # 开启懒加载，保证启动速度
           url: jdbc:TAOS-WS://localhost:6041/mitedtsm_database?varcharAsString=true

@@ -149,8 +149,9 @@ bash ./deploy.sh ./config/runtime-local.kdl
 `deploy.sh` 不检查 Host 源码产物，也不执行 `podman build`。后端、管理端或商城端变化时，必须先用
 阶段一生成产物、阶段二封装相应镜像，再分别选择 `replace-server`、`replace-web` 或 `replace-mall`。
 
-`replace` 和 `replace-server` 会调用部署期数据库 provision：SQL 始终留在仓库 `database/`，通过
-stdin 发送给官方 MySQL 容器，不复制进镜像，也不挂载到长期运行容器。`mysql.bootstrap_policy` 为
+`replace` 和 `replace-server` 会调用部署期数据库 provision：`mysql.sql_root` 显式定位仓库
+`database/`，三个 manifest 只允许引用该根目录内的 SQL；文件通过 stdin 发送给官方 MySQL 容器，
+不复制进镜像，也不挂载到长期运行容器。`mysql.bootstrap_policy` 为
 `initialize-empty` 时只初始化已确认的空库；已有 `system_users` 标记的库默认保留数据并仅重放幂等
 兼容清单；非空但无法识别的库直接拒绝。`require-existing` 则拒绝初始化空库。
 

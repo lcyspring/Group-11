@@ -89,13 +89,17 @@
 |---|---|
 | `container.*` | 八个容器的稳定名称，供启动、探针和验收脚本引用 |
 | `volume.mysql/redis/rabbitmq/tdengine` | 四个持久数据卷名称 |
+| `mysql.sql_root` | SQL 生命周期根目录；相对 KDL 文件解析，manifest 及其条目必须位于该目录内 |
+| `mysql.host/port` | Server 访问 MySQL 的 Pod 内地址与端口；同时进入显式 JDBC URL |
 | `mysql.database` | 主业务库名 |
+| `mysql.administration_username/root_password` | 建库、迁移和 provision 管理凭据；官方 MySQL 镜像当前要求管理员为 `root` |
+| `mysql.application_username/application_password` | Server 运行时凭据；非 root 账号在全新数据卷初始化时由官方镜像创建 |
+| `mysql.jdbc_parameters` | JDBC URL 的显式查询参数，不从 Spring profile 读取固定连接串 |
 | `mysql.dataset` | 仅空数据卷初始化时选择的数据集；切换它不会修改已有持久卷 |
 | `mysql.dataset_manifest` | 已生成数据集的显式 manifest 路径，可位于 `database/datasets` 或 ignored `database/generated` |
 | `mysql.dataset_mode` | 集中声明已有库的数据集行为：`preserve` 不改数据、`insert` 只插入、`replace` 先完整清理旧数据集再插入新数据集 |
 | `mysql.bootstrap_policy` | `initialize-empty` 只初始化确认空库；`require-existing` 拒绝空库 |
 | `mysql.bootstrap_manifest` | 空库建表、必要基础数据和显式种子的执行清单；SQL 在部署期通过 stdin 发送 |
-| `mysql.root_password` | 本地 MySQL root 密码；真实值只能在忽略的本机 KDL |
 | `mysql.character_set/collation` | 建库、客户端和迁移字符集/排序规则 |
 | `mysql.authentication_plugin` | MySQL 认证插件 |
 | `mysql.timezone` | MySQL 容器时区 |
@@ -181,7 +185,7 @@
 | `health.http_host` | 宿主健康探针地址 |
 | `health.interval_seconds` | 重试间隔 |
 | `health.*_attempts` | 各服务最大探测次数 |
-| `health.mysql_host/mysql_user` | MySQL 探针连接信息 |
+| `health.mysql_attempts` | MySQL 探针最大次数；探针复用 `mysql.port` 和管理凭据 |
 | `health.mysql_schema_query` | 判断基础 schema 就绪的只读 SQL |
 | `health.rabbitmq_os_user` | 执行 RabbitMQ 诊断命令的容器用户 |
 | `health.tdengine_query` | TDengine 就绪 SQL |

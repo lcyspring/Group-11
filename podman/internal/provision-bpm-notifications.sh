@@ -25,7 +25,7 @@ MYSQL_CONTAINER="$(kdl_require container.mysql)"
 MYSQL_DATABASE="$(kdl_require mysql.database)"
 MYSQL_ROOT_PASSWORD="$(kdl_require mysql.root_password)"
 MYSQL_CHARACTER_SET="$(kdl_require mysql.character_set)"
-MYSQL_USER="$(kdl_require health.mysql_user)"
+MYSQL_ADMIN_USERNAME="$(kdl_require mysql.administration_username)"
 
 kdl_config_init "$TEMPLATE_CONFIG"
 [[ "$(kdl_require schema_version)" == 1 ]] || exit 2
@@ -101,7 +101,7 @@ sql_text() { printf "CONVERT(FROM_BASE64('%s') USING utf8mb4) COLLATE utf8mb4_un
 mysql_command() {
     podman exec --env "MYSQL_PWD=${MYSQL_ROOT_PASSWORD}" -i "$MYSQL_CONTAINER" \
         mysql "--default-character-set=${MYSQL_CHARACTER_SET}" \
-        "--user=${MYSQL_USER}" "--database=${MYSQL_DATABASE}" "$@"
+        "--user=${MYSQL_ADMIN_USERNAME}" "--database=${MYSQL_DATABASE}" "$@"
 }
 mysql_scalar() { mysql_command --batch --skip-column-names --execute "$1"; }
 

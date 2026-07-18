@@ -24,7 +24,7 @@ MYSQL_CONTAINER="$(kdl_require container.mysql)"
 MYSQL_DATABASE="$(kdl_require mysql.database)"
 MYSQL_ROOT_PASSWORD="$(kdl_require mysql.root_password)"
 MYSQL_CHARACTER_SET="$(kdl_require mysql.character_set)"
-MYSQL_USER="$(kdl_require health.mysql_user)"
+MYSQL_ADMIN_USERNAME="$(kdl_require mysql.administration_username)"
 CRM_PROVIDER_MODE="$(kdl_require crm_marketing.provider_mode)"
 PROVISION_MODE="$(kdl_require marketing_provider.provision_mode)"
 
@@ -66,7 +66,7 @@ esac
 [[ "$MYSQL_CONTAINER" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]] || exit 2
 [[ "$MYSQL_DATABASE" =~ ^[A-Za-z0-9_]+$ ]] || exit 2
 [[ "$MYSQL_CHARACTER_SET" =~ ^[A-Za-z0-9_]+$ ]] || exit 2
-[[ "$MYSQL_USER" =~ ^[A-Za-z0-9_]+$ ]] || exit 2
+[[ "$MYSQL_ADMIN_USERNAME" == root ]] || exit 2
 
 command -v jq >/dev/null 2>&1 || {
     printf 'jq is required to validate Provider template parameter arrays.\n' >&2
@@ -215,7 +215,7 @@ b64() {
 mysql_command() {
     podman exec --env "MYSQL_PWD=${MYSQL_ROOT_PASSWORD}" "$MYSQL_CONTAINER" \
         mysql "--default-character-set=${MYSQL_CHARACTER_SET}" \
-        "--user=${MYSQL_USER}" "--database=${MYSQL_DATABASE}" "$@"
+        "--user=${MYSQL_ADMIN_USERNAME}" "--database=${MYSQL_DATABASE}" "$@"
 }
 
 mysql_scalar() {
@@ -259,7 +259,7 @@ mail_starttls=0
 
 podman exec --env "MYSQL_PWD=${MYSQL_ROOT_PASSWORD}" -i "$MYSQL_CONTAINER" \
     mysql "--default-character-set=${MYSQL_CHARACTER_SET}" \
-    "--user=${MYSQL_USER}" "--database=${MYSQL_DATABASE}" <<SQL
+    "--user=${MYSQL_ADMIN_USERNAME}" "--database=${MYSQL_DATABASE}" <<SQL
 SET @managed=${managed}, @sms_enabled=${sms_enabled}, @mail_enabled=${mail_enabled};
 SET @sms_channel_code=$(sql_text "$SMS_CHANNEL_CODE"), @sms_signature=$(sql_text "$SMS_SIGNATURE"),
     @sms_api_key=$(sql_text "$SMS_API_KEY"), @sms_api_secret=$(sql_text "$SMS_API_SECRET"),

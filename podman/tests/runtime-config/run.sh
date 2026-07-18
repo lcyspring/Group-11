@@ -25,6 +25,12 @@ fi
 # shellcheck source=../../lib/kdl-config.sh
 source "${PODMAN_DIR}/lib/kdl-config.sh"
 
+TEMP_CONFIGS=()
+cleanup() {
+    ((${#TEMP_CONFIGS[@]} == 0)) || rm -f -- "${TEMP_CONFIGS[@]}"
+}
+trap cleanup EXIT
+
 fail() {
     printf 'FAIL: %s\n' "$1" >&2
     exit 1
@@ -281,6 +287,11 @@ expect_exit_2 bash "${PODMAN_DIR}/compile.sh" \
     "${SCRIPT_DIR}/fixtures/compile-pay-coverage-without-tests.kdl"
 expect_exit_2 bash "${PODMAN_DIR}/internal/provision-marketing-provider.sh" \
     "${SCRIPT_DIR}/fixtures/provider-placeholder-secret.kdl"
+invalid_sql_root_config="$(mktemp "${PODMAN_DIR}/config/.invalid-sql-root.XXXXXX.kdl")"
+TEMP_CONFIGS+=("$invalid_sql_root_config")
+cp "$CONFIG_PATH" "$invalid_sql_root_config"
+kdl_set_file "$invalid_sql_root_config" mysql.sql_root string ../../Server
+expect_exit_2 bash "${PODMAN_DIR}/deploy.sh" "$invalid_sql_root_config"
 expect_exit_2 bash "${PODMAN_DIR}/build-images.sh"
 expect_exit_2 bash "${PODMAN_DIR}/build-images.sh" \
     "${PODMAN_DIR}/config/runtime-images-check.kdl" extra
@@ -297,6 +308,21 @@ kdl_config_init "$CONFIG_PATH"
 dataset_name="$(kdl_require mysql.dataset)"
 [[ "$dataset_name" =~ ^[a-z0-9][a-z0-9._-]*$ ]] || fail 'mysql.dataset has invalid characters'
 [[ -s "${DATABASE_DIR}/datasets/${dataset_name}.manifest" ]] || fail 'selected dataset manifest is missing'
+[[ "$(realpath -m -- "$(kdl_path mysql.sql_root)")" == "$DATABASE_DIR" ]] || \
+    fail 'mysql.sql_root must explicitly resolve to the database lifecycle root'
+[[ "$(kdl_require mysql.host)" == "127.0.0.1" ]] || fail 'Pod-local MySQL host must be explicit'
+[[ "$(kdl_port mysql.port)" == "3306" ]] || fail 'MySQL port must be explicit'
+[[ "$(kdl_require mysql.administration_username)" == "root" ]] || fail 'MySQL administrator must be explicit'
+[[ -n "$(kdl_require mysql.application_username)" ]] || fail 'MySQL application user must be explicit'
+[[ -n "$(kdl_require mysql.jdbc_parameters)" ]] || fail 'MySQL JDBC parameters must be explicit'
+rg -q 'SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_URL' "${PODMAN_DIR}/deploy.sh" || \
+    fail 'deploy.sh must inject the explicit JDBC URL'
+rg -q 'DATABASE_ROOT=.*kdl_path mysql.sql_root' "${PODMAN_DIR}/internal/provision-database.sh" || \
+    fail 'database provision must load its SQL root from KDL'
+if rg -q 'url:[[:space:]]+jdbc:mysql://127\.0\.0\.1:3306/mitedtsm_database' \
+    "${PODMAN_DIR}/../Server/mitedtsm-server/src/main/resources/application-local.yaml"; then
+    fail 'Podman local profile must not retain a hardcoded master JDBC URL'
+fi
 [[ "$(kdl_bool security.mock_login_enabled)" == "false" ]] || fail 'mock login must be explicitly disabled'
 [[ "$(kdl_positive_integer security.password_encoder_length)" -ge 10 ]] || fail 'BCrypt strength must be explicit'
 [[ "$(kdl_bool security.xss_enabled)" == "true" ]] || fail 'XSS filtering must be explicitly enabled'
