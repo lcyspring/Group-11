@@ -8,7 +8,7 @@
       :rules="formRules"
       label-width="auto"
     >
-      <el-form-item :label="t('permission.newOwner')" prop="newOwnerUserId">
+      <el-form-item :label="t('crm.permission.newOwner')" prop="newOwnerUserId">
         <el-select v-model="formData.newOwnerUserId">
           <el-option
             v-for="item in userOptions"
@@ -18,13 +18,13 @@
           />
         </el-select>
       </el-form-item>
-      <el-form-item :label="t('permission.oldOwner')">
+      <el-form-item :label="t('crm.permission.oldOwner')">
         <el-radio-group v-model="oldOwnerHandler" @change="handleOwnerChange">
-          <el-radio :value="false" size="large">{{ t('permission.remove') }}</el-radio>
-          <el-radio :value="true" size="large">{{ t('permission.addToTeam') }}</el-radio>
+          <el-radio :value="false" size="large">{{ t('crm.permission.remove') }}</el-radio>
+          <el-radio :value="true" size="large">{{ t('crm.permission.addToTeam') }}</el-radio>
         </el-radio-group>
       </el-form-item>
-      <el-form-item v-if="oldOwnerHandler" :label="t('permission.oldOwnerLevel')" prop="oldOwnerPermissionLevel">
+      <el-form-item v-if="oldOwnerHandler" :label="t('crm.permission.oldOwnerLevel')" prop="oldOwnerPermissionLevel">
         <el-radio-group v-model="formData.oldOwnerPermissionLevel">
           <template
             v-for="dict in getIntDictOptions(DICT_TYPE.CRM_PERMISSION_LEVEL)"
@@ -36,7 +36,7 @@
           </template>
         </el-radio-group>
       </el-form-item>
-      <el-form-item v-if="bizType === BizTypeEnum.CRM_CUSTOMER" :label="t('permission.transferTogether')">
+      <el-form-item v-if="bizType === BizTypeEnum.CRM_CUSTOMER" :label="t('crm.permission.transferTogether')">
         <el-checkbox-group v-model="formData.toBizTypes">
           <el-checkbox :value="BizTypeEnum.CRM_CONTACT">{{ t('contact.title') }}</el-checkbox>
           <el-checkbox :value="BizTypeEnum.CRM_BUSINESS">{{ t('business.title') }}</el-checkbox>
@@ -75,9 +75,9 @@ const userOptions = ref<UserApi.UserVO[]>([]) // 用户列表
 const oldOwnerHandler = ref(false) // 老负责人的处理方式
 const formData = ref<TransferReqVO>({} as TransferReqVO)
 const formRules = reactive({
-  newOwnerUserId: [{ required: true, message: t('permission.newOwnerRequired'), trigger: 'blur' }],
+  newOwnerUserId: [{ required: true, message: t('crm.permission.newOwnerRequired'), trigger: 'blur' }],
   oldOwnerPermissionLevel: [
-    { required: true, message: t('permission.oldOwnerLevelRequired'), trigger: 'blur' }
+    { required: true, message: t('crm.permission.oldOwnerLevelRequired'), trigger: 'blur' }
   ]
 })
 const formRef = ref() // 表单 Ref
@@ -130,8 +130,8 @@ const transfer = async (data: TransferReqVO) => {
     case BizTypeEnum.CRM_CONTRACT:
       return await ContractApi.transferContract(data)
     default:
-      message.error(t('permission.transferFailed'))
-      throw new Error(t('permission.transferFailed'))
+      message.error(t('crm.permission.transferFailed'))
+      throw new Error(t('crm.permission.transferFailed'))
   }
 }
 const getDialogTitle = () => {

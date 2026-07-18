@@ -3,7 +3,7 @@
   <el-row v-if="showAction" justify="end">
     <el-button v-if="validateOwnerUser" type="primary" @click="openForm">
       <Icon class="mr-5px" icon="ep:plus" />
-      {{ t('permission.addMember') }}
+      {{ t('crm.permission.addMember') }}
     </el-button>
     <el-button v-if="validateOwnerUser" @click="handleUpdate">
       <Icon class="mr-5px" icon="ep:edit" />
@@ -14,7 +14,7 @@
       {{ t('common.remove') }}
     </el-button>
     <el-button v-if="!validateOwnerUser && list.length > 0" type="danger" @click="handleQuit">
-      {{ t('permission.quitTeam') }}
+      {{ t('crm.permission.quitTeam') }}
     </el-button>
   </el-row>
   <!-- 团队成员展示 -->
@@ -28,15 +28,15 @@
     @selection-change="handleSelectionChange"
   >
     <el-table-column type="selection" width="55" />
-    <el-table-column align="center" :label="t('permission.userName')" prop="nickname" />
-    <el-table-column align="center" :label="t('permission.deptName')" prop="deptName" />
+    <el-table-column align="center" :label="t('crm.permission.userName')" prop="nickname" />
+    <el-table-column align="center" :label="t('crm.permission.deptName')" prop="deptName" />
     <el-table-column align="center" :label="t('common.post')" prop="postNames" />
-    <el-table-column align="center" :label="t('permission.level')" prop="level">
+    <el-table-column align="center" :label="t('crm.permission.level')" prop="level">
       <template #default="{ row }">
         <dict-tag :type="DICT_TYPE.CRM_PERMISSION_LEVEL" :value="row.level" />
       </template>
     </el-table-column>
-    <el-table-column :formatter="dateFormatter" align="center" :label="t('permission.createTime')" prop="createTime" />
+    <el-table-column :formatter="dateFormatter" align="center" :label="t('crm.permission.createTime')" prop="createTime" />
   </el-table>
 
   <!-- 表单弹窗：添加/修改 -->
@@ -92,7 +92,7 @@ const multipleSelection = ref<PermissionApi.PermissionVO[]>([]) // 选择的团�
 const elTableRef = ref<InstanceType<typeof ElTable>>()
 const handleSelectionChange = (val: PermissionApi.PermissionVO[]) => {
   if (val.findIndex((item) => item.level === PermissionApi.PermissionLevelEnum.OWNER) !== -1) {
-    message.warning(t('permission.cannotSelectOwner'))
+    message.warning(t('crm.permission.cannotSelectOwner'))
     elTableRef.value?.clearSelection()
     return
   }
@@ -103,11 +103,11 @@ const handleSelectionChange = (val: PermissionApi.PermissionVO[]) => {
 const formRef = ref<InstanceType<typeof CrmPermissionForm>>() // 权限表单 Ref
 const handleUpdate = () => {
   if (multipleSelection.value?.length === 0) {
-    message.warning(t('permission.selectMemberFirst'))
+    message.warning(t('crm.permission.selectMemberFirst'))
     return
   }
   if (multipleSelection.value?.length > 1) {
-    message.warning(t('permission.selectOnlyOne'))
+    message.warning(t('crm.permission.selectOnlyOne'))
     return
   }
   formRef.value?.open0(
@@ -122,13 +122,13 @@ const handleUpdate = () => {
 /** 移除团队成员 */
 const handleDelete = async () => {
   if (multipleSelection.value?.length === 0) {
-    message.warning(t('permission.selectMemberFirst'))
+    message.warning(t('crm.permission.selectMemberFirst'))
     return
   }
   await message.delConfirm()
   const ids = multipleSelection.value?.map((item) => item.id) as unknown as number[]
   await PermissionApi.deletePermissionBatch(ids)
-  message.success(t('permission.removeSuccess'))
+  message.success(t('crm.permission.removeSuccess'))
   await getList()
 }
 
@@ -182,7 +182,7 @@ const handleQuit = async () => {
       item.userId === userStore.getUser.id && item.level === PermissionApi.PermissionLevelEnum.OWNER
   )
   if (permission) {
-    message.warning(t('permission.ownerCannotQuit'))
+    message.warning(t('crm.permission.ownerCannotQuit'))
     return
   }
   const userPermission = list.value.find((item) => item.userId === userStore.getUser.id)
@@ -190,7 +190,7 @@ const handleQuit = async () => {
     return
   }
   await PermissionApi.deleteSelfPermission(userPermission.id!)
-  message.success(t('permission.quitTeamSuccess'))
+  message.success(t('crm.permission.quitTeamSuccess'))
   emits('quitTeam')
 }
 

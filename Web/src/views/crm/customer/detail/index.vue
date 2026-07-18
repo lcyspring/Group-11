@@ -24,7 +24,7 @@
       v-if="!customer.lockStatus && permissionListRef?.validateOwnerUser"
       @click="handleLock"
     >
-      {{ t('lock') }}
+      {{ t('crm.customer.lock') }}
     </el-button>
     <el-button
       v-if="customer.poolStatus === CustomerApi.CustomerPoolStatus.PUBLIC"
