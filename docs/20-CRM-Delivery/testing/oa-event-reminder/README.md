@@ -3,7 +3,7 @@
 ## 编译门禁
 
 ```bash
-bash ./podman/build-in-ubuntu.sh ./podman/config/build-server-ubuntu-26.04.yaml
+bash ./podman/compile.sh ./podman/config/build-server-ubuntu-26.04.yaml
 ```
 
 2026-07-17 在 Ubuntu 26.04 工具链中通过，BPM 与 CRM 模块编译成功，最终 Spring Boot JAR 构建成功。

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Stop the rootless Podman Pod started by up.sh.
+# Stop the rootless Podman Pod started by deploy.sh.
 
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 usage() {
-    printf 'Usage: bash ./down.sh <config.yaml>\n' >&2
+    printf 'Usage: bash ./stop.sh <config.yaml>\n' >&2
 }
 
 [[ $# -eq 1 ]] || {

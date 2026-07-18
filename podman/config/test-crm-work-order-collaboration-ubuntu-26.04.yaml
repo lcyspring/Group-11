@@ -9,6 +9,7 @@ toolchain:
   pnpm_version: 11.3.0
 
 build:
+  engine: standard
   server: false
   init_service: false
   web: true

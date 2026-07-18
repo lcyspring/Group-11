@@ -19,7 +19,7 @@
 运行入口：
 
 ```bash
-bash ./podman/build-in-ubuntu.sh ./podman/config/verify-crm-outreach-ubuntu-26.04.yaml
-bash ./podman/build-in-ubuntu.sh ./podman/config/verify-crm-outreach-web-ubuntu-26.04.yaml
+bash ./podman/compile.sh ./podman/config/verify-crm-outreach-ubuntu-26.04.yaml
+bash ./podman/compile.sh ./podman/config/verify-crm-outreach-web-ubuntu-26.04.yaml
 bash ./podman/verify-crm-outreach.sh ./podman/config/verify-crm-outreach-local.yaml
 ```

@@ -34,9 +34,9 @@ manifest。运行配置位于 `crm_export_task` YAML 节点，字段说明见
 ## 验证入口
 
 ```bash
-bash podman/build-in-ubuntu.sh podman/config/test-crm-ubuntu-26.04.yaml
-bash podman/build-in-ubuntu.sh podman/config/verify-crm-customer-export-ubuntu-26.04.yaml
-bash podman/build-in-ubuntu.sh podman/config/check-web-types-ubuntu-26.04.yaml
+bash podman/compile.sh podman/config/test-crm-ubuntu-26.04.yaml
+bash podman/compile.sh podman/config/verify-crm-customer-export-ubuntu-26.04.yaml
+bash podman/compile.sh podman/config/check-web-types-ubuntu-26.04.yaml
 bash podman/verify-crm-customer-export.sh podman/config/verify-crm-customer-export.example.yaml
 ```
 

@@ -12,7 +12,7 @@
 
 ## 修复
 
-`up.sh` 替换 Pod 和 `down.sh` 正常停机统一调整为：
+`deploy.sh` 替换 Pod 和 `stop.sh` 正常停机统一调整为：
 
 1. 在数据库和消息代理仍运行时先停止 Server；
 2. Server 退出后再停止 Pod 内基础设施和前端；

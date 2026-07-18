@@ -13,5 +13,5 @@ CRM 表单中的 `LocalDateTime` JSON 字段统一接受毫秒时间戳数字，
 构建与专项测试只通过显式 YAML 调用：
 
 ```bash
-bash podman/build-in-ubuntu.sh podman/config/verify-framework-datetime-ubuntu-26.04.yaml
+bash podman/compile.sh podman/config/verify-framework-datetime-ubuntu-26.04.yaml
 ```

@@ -19,4 +19,4 @@
 - `todoRefresh.test.mjs`；
 - `remainingTitle.test.mjs`；
 - `pnpm run verify:crm-finance-approval-ui`；
-- `podman/build-in-ubuntu.sh podman/config/verify-table-actions-ubuntu-26.04.yaml`。
+- `podman/compile.sh podman/config/verify-table-actions-ubuntu-26.04.yaml`。

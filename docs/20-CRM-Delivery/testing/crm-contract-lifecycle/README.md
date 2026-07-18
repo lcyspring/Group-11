@@ -25,10 +25,10 @@
 
 ```bash
 cd podman
-bash ./build-in-ubuntu.sh ./config/test-crm-ubuntu-26.04.yaml
-bash ./build-in-ubuntu.sh ./config/check-crm-contract-lifecycle-web-ubuntu-26.04.yaml
-bash ./build-in-ubuntu.sh ./config/build-server-ubuntu-26.04.yaml
-bash ./build-in-ubuntu.sh ./config/build-web-ubuntu-26.04.yaml
+bash ./compile.sh ./config/test-crm-ubuntu-26.04.yaml
+bash ./compile.sh ./config/check-crm-contract-lifecycle-web-ubuntu-26.04.yaml
+bash ./compile.sh ./config/build-server-ubuntu-26.04.yaml
+bash ./compile.sh ./config/build-web-ubuntu-26.04.yaml
 ```
 
 - CRM 全量：201/201，失败 0、错误 0、跳过 0；

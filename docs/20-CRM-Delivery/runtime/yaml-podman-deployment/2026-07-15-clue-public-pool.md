@@ -5,8 +5,8 @@
 
 ```bash
 cd podman
-bash ./up.sh ./config/runtime-local.yaml
-bash ./up.sh ./config/runtime-local-rebuild-server.yaml
+bash ./deploy.sh ./config/runtime-local.yaml
+bash ./deploy.sh ./config/runtime-local-rebuild-server.yaml
 ```
 
 ## 运行结果

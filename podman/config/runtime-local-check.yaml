@@ -153,6 +153,9 @@ crm_marketing:
   tracking_enabled: true
   public_base_url: http://127.0.0.1:8080
   delivery_sync_batch_size: 200
+  click_tracking_enabled: true
+  click_allowed_hosts: example.com,localhost,127.0.0.1
+  max_links_per_broadcast: 10
 
 health:
   http_host: 127.0.0.1

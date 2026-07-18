@@ -13,7 +13,7 @@ CRM 观察环境使用 `local` profile，Mock Token 登录开启、BCrypt 强度
 ## 修复
 
 - Podman YAML 显式声明 Mock、BCrypt、XSS、CORS、API 文档、Druid、Actuator、API 加密和验证码；
-- `up.sh` 校验 BCrypt 10～16、Actuator 仅 health/info、凭证 CORS 禁止全通配；
+- `deploy.sh` 校验 BCrypt 10～16、Actuator 仅 health/info、凭证 CORS 禁止全通配；
 - Mock 默认关闭，启用时必须提供非空显式密钥；BCrypt 代码默认提高到 10；
 - CORS 从硬编码 `*` 改为配置绑定，默认无可信来源；
 - 运行容器只暴露 health/info，并关闭文档与 Druid 控制台。

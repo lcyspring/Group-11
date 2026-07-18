@@ -51,9 +51,12 @@ pod_snapshot() {
     podman pod inspect --format '{{.Id}}:{{.State}}' "$pod_name" 2>/dev/null || printf 'absent'
 }
 
-bash -n "${PODMAN_DIR}/up.sh"
-bash -n "${PODMAN_DIR}/build-runtime-images.sh"
-bash -n "${PODMAN_DIR}/down.sh"
+bash -n "${PODMAN_DIR}/compile.sh"
+bash -n "${PODMAN_DIR}/internal/compile-standard.sh"
+bash -n "${PODMAN_DIR}/internal/compile-hbuilderx.sh"
+bash -n "${PODMAN_DIR}/deploy.sh"
+bash -n "${PODMAN_DIR}/build-images.sh"
+bash -n "${PODMAN_DIR}/stop.sh"
 bash -n "${PODMAN_DIR}/image-archives.sh"
 bash -n "${PODMAN_DIR}/lib/yaml-config.sh"
 bash -n "${PODMAN_DIR}/init/init-mysql.sh"
@@ -72,6 +75,16 @@ bash -n "${PODMAN_DIR}/verify-crm-performance-target-runtime.sh"
 bash -n "${PODMAN_DIR}/verify-crm-runtime-security.sh"
 bash -n "${PODMAN_DIR}/verify-crm-user-guide.sh"
 bash -n "${PODMAN_DIR}/verify-crm-customer-portrait-runtime.sh"
+bash -n "${PODMAN_DIR}/verify-crm-marketing-link-click.sh"
+
+while IFS= read -r build_config; do
+    yaml_config_init "$build_config"
+    case "$(yaml_require build.engine)" in
+        standard|hbuilderx) ;;
+        *) fail "build.engine is missing or invalid: ${build_config}" ;;
+    esac
+done < <(rg -l '^  name: ghcr.io/elel-code/group-11-(build|hbuilderx)-ubuntu:' \
+    "${PODMAN_DIR}/config" --glob '*.yaml')
 
 bash "${PODMAN_DIR}/database-backup.sh" "${PODMAN_DIR}/config/database-backup-check.yaml"
 bash "${PODMAN_DIR}/database-restore.sh" "${PODMAN_DIR}/config/database-backup-check.yaml"
@@ -81,10 +94,10 @@ expect_exit_2 bash "${PODMAN_DIR}/database-dataset.sh" \
 expect_exit_2 bash "${PODMAN_DIR}/database-dataset.sh" \
     "${SCRIPT_DIR}/fixtures/dataset-cleanup-not-authorized.yaml"
 bash "${PODMAN_DIR}/build-image-archives.sh" "${PODMAN_DIR}/config/build-image-archives-check.yaml"
-bash "${PODMAN_DIR}/build-runtime-images.sh" "${PODMAN_DIR}/config/runtime-images-check.yaml"
+bash "${PODMAN_DIR}/build-images.sh" "${PODMAN_DIR}/config/runtime-images-check.yaml"
 if rg -q 'podman(_cmd)?[[:space:]]+build|Containerfile|target/mitedtsm|dist-prod|unpackage/dist' \
-    "${PODMAN_DIR}/up.sh"; then
-    fail 'up.sh must not build images or read host build artifacts'
+    "${PODMAN_DIR}/deploy.sh"; then
+    fail 'deploy.sh must not build images or read host build artifacts'
 fi
 
 required_examples=(
@@ -92,6 +105,8 @@ required_examples=(
     cleanup-reset.example.yaml
     runtime-images.example.yaml
     runtime-images-server.example.yaml
+    runtime-images-web.example.yaml
+    verify-crm-marketing-link-click.example.yaml
     bpm-provision.example.yaml
     bpm-provision-receivable.example.yaml
     bpm-provision-contract.example.yaml
@@ -194,13 +209,16 @@ if yaml_require sample.nested >/dev/null 2>&1; then
     fail 'mappings deeper than two levels must be rejected'
 fi
 
-expect_exit_2 bash "${PODMAN_DIR}/up.sh"
-expect_exit_2 bash "${PODMAN_DIR}/up.sh" "$CONFIG_PATH" extra
-expect_exit_2 bash "${PODMAN_DIR}/build-runtime-images.sh"
-expect_exit_2 bash "${PODMAN_DIR}/build-runtime-images.sh" \
+expect_exit_2 bash "${PODMAN_DIR}/deploy.sh"
+expect_exit_2 bash "${PODMAN_DIR}/deploy.sh" "$CONFIG_PATH" extra
+expect_exit_2 bash "${PODMAN_DIR}/compile.sh"
+expect_exit_2 bash "${PODMAN_DIR}/compile.sh" \
+    "${PODMAN_DIR}/config/build-ubuntu-26.04.yaml" extra
+expect_exit_2 bash "${PODMAN_DIR}/build-images.sh"
+expect_exit_2 bash "${PODMAN_DIR}/build-images.sh" \
     "${PODMAN_DIR}/config/runtime-images-check.yaml" extra
-expect_exit_2 bash "${PODMAN_DIR}/down.sh"
-expect_exit_2 bash "${PODMAN_DIR}/down.sh" "$CONFIG_PATH" extra
+expect_exit_2 bash "${PODMAN_DIR}/stop.sh"
+expect_exit_2 bash "${PODMAN_DIR}/stop.sh" "$CONFIG_PATH" extra
 expect_exit_2 bash "${PODMAN_DIR}/image-archives.sh"
 expect_exit_2 bash "${PODMAN_DIR}/image-archives.sh" "$CONFIG_PATH" extra
 expect_exit_1 bash "${PODMAN_DIR}/image-archives.sh" \
@@ -218,12 +236,12 @@ dataset_name="$(yaml_require mysql.dataset)"
 [[ "$(yaml_bool integration.justauth_enabled)" == "false" ]] || fail 'JustAuth startup must be explicit'
 pod_name="$(yaml_require deployment.pod_name)"
 before="$(pod_snapshot "$pod_name")"
-bash "${PODMAN_DIR}/up.sh" "$CONFIG_PATH"
-bash "${PODMAN_DIR}/down.sh" "$CONFIG_PATH"
+bash "${PODMAN_DIR}/deploy.sh" "$CONFIG_PATH"
+bash "${PODMAN_DIR}/stop.sh" "$CONFIG_PATH"
 env POD_NAME=ignored SERVER_PORT=invalid IMAGE_SOURCE=invalid USE_HOST_PROXY=invalid \
-    bash "${PODMAN_DIR}/up.sh" "$CONFIG_PATH"
+    bash "${PODMAN_DIR}/deploy.sh" "$CONFIG_PATH"
 env POD_NAME=ignored STOP_TIMEOUT=invalid \
-    bash "${PODMAN_DIR}/down.sh" "$CONFIG_PATH"
+    bash "${PODMAN_DIR}/stop.sh" "$CONFIG_PATH"
 after="$(pod_snapshot "$pod_name")"
 [[ "$after" == "$before" ]] || fail "check modes changed Pod state: before=$before after=$after"
 

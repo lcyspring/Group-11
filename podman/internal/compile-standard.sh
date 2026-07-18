@@ -2,11 +2,11 @@
 
 set -Eeuo pipefail
 
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 
 usage() {
-    printf 'Usage: bash ./build-in-ubuntu.sh <config.yaml>\n' >&2
+    printf 'Usage: bash ./compile.sh <config.yaml>\n' >&2
 }
 
 if [[ $# -ne 1 ]]; then

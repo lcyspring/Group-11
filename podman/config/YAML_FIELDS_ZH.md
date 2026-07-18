@@ -5,6 +5,23 @@
 所有入口命令行只接收一个 YAML 路径。解析器只支持“顶层分组 + 一层标量”，不支持数组、锚点、
 多行值或第三层映射；逗号分隔值仍是一个标量。
 
+## 编译配置
+
+`compile.sh` 是唯一公开编译入口。它只根据 YAML 的 `build.engine` 分派工具链，不根据文件名、
+Host 已安装程序或环境变量猜测。
+
+| 字段 | 作用 |
+|---|---|
+| `build.engine` | `standard` 使用公开 Server/Web Ubuntu 26.04 镜像；`hbuilderx` 使用公开无图形 HBuilderX 镜像 |
+| `image.name` | 对应工具链镜像，日常配置固定为 `ghcr.io/elel-code` 下公开镜像 |
+| `image.rebuild` | 日常固定 `false`；仅工具链维护者发布新镜像时显式开启 |
+| `cache.*` | Maven、pnpm store 和 node_modules 的 Podman 命名卷；依赖不落到 Host |
+| `network.use_host_proxy` | 是否将显式 Host 代理传给依赖下载容器；默认不继承 Host 代理 |
+
+标准工具链的 `build.server/init_service/web/*_tests/*_coverage` 精确控制产物和门禁；HBuilderX
+工具链的 `build.platform` 当前固定为 `h5`。两种引擎都在容器运行时准备项目依赖，工具链镜像
+构建阶段不内置项目 `node_modules`。
+
 ## 运行配置
 
 ### 根与操作
@@ -43,7 +60,7 @@
 
 ### 运行镜像封装配置
 
-`build-runtime-images.sh` 只接收一个 YAML 路径，不调用编译脚本或 `up.sh`。
+`build-images.sh` 只接收一个 YAML 路径，不调用编译脚本或 `deploy.sh`。
 
 | 字段 | 作用 |
 |---|---|
@@ -75,7 +92,7 @@
 
 ### 已有数据库的数据集替换配置
 
-`database-dataset.sh` 只接收一个 YAML 路径，不由 `up.sh` 自动调用。
+`database-dataset.sh` 只接收一个 YAML 路径，不由 `deploy.sh` 自动调用。
 
 | 字段 | 作用 |
 |---|---|
@@ -127,6 +144,9 @@
 | `crm_marketing.tracking_enabled` | 是否为系统邮件追加不可猜测的打开追踪像素 |
 | `crm_marketing.public_base_url` | 邮件像素公开基地址；真实邮件必须使用外部可访问的 HTTPS 地址 |
 | `crm_marketing.delivery_sync_batch_size` | 每轮调度最多回收的短信/邮件提供商结果数 |
+| `crm_marketing.click_tracking_enabled` | 是否生成逐收件人营销跳转令牌并记录点击；关闭时禁止保存带跟踪链接的群发 |
+| `crm_marketing.click_allowed_hosts` | 营销目标域名白名单，逗号分隔；支持 `*.example.com`，不允许把目标 URL 作为匿名接口参数 |
+| `crm_marketing.max_links_per_broadcast` | 单个群发允许配置的营销跟踪链接上限 |
 | `crm_customer_import.max_rows` | 单次客户导入预检允许的数据行上限，防止超大文件占满内存 |
 | `crm_customer_import.preview_ttl_minutes` | 预检快照允许确认的分钟数，过期后必须重新预检 |
 | `crm_export_task.enabled` | 是否启用 CRM 异步导出后台任务 |
@@ -184,7 +204,7 @@
 | `cleanup-stop.example.yaml` | 删除运行 Pod，四个 named volume 全部保留 |
 | `cleanup-reset.example.yaml` | 删除运行 Pod，并永久删除四个 named volume |
 
-`down.sh` 只读取 `schema_version`、`operation.shutdown_mode`、
+`stop.sh` 只读取 `schema_version`、`operation.shutdown_mode`、
 `operation.remove_volumes_on_down`、`deployment.*`、`container.server` 和 `volume.*`。
 `remove_volumes_on_down` 必须显式填写；日常值为 `false`。只有已备份且确实需要空数据库、空缓存、
 空消息队列和空时序库时才复制 reset 示例到 ignored 本机配置并改为 `true`。
@@ -215,7 +235,7 @@
 
 ## Mall H5 构建配置
 
-`build-mall-h5-in-ubuntu.sh` 同样只接受一个 YAML 路径。项目依赖不在 Host
+`compile.sh` 同样只接受一个 YAML 路径。项目依赖不在 Host
 执行安装，也不写入工具链 image：先由 `image.dependency` 指定的 Ubuntu 26.04
 工具容器在运行时执行 pnpm，写入 `cache.node_modules_volume` 与
 `cache.pnpm_store_volume`；之后 HBuilderX 容器挂载同一 `node_modules` 卷并以

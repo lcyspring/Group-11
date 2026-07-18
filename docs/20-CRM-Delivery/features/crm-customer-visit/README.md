@@ -28,13 +28,13 @@ cp podman/config/bpm-provision-customer-visit.example.yaml \
 bash podman/provision-bpm-model.sh podman/config/bpm-provision-customer-visit-local.yaml
 ```
 
-真实账号只写入 ignored local YAML。全模型清单同时包含客户拜访，空数据卷重建后由 `up.sh full`
+真实账号只写入 ignored local YAML。全模型清单同时包含客户拜访，空数据卷重建后由 `deploy.sh full`
 恢复流程定义。
 
 ## 测试
 
 ```bash
-bash podman/build-in-ubuntu.sh podman/config/verify-crm-customer-visit-ubuntu-26.04.yaml
+bash podman/compile.sh podman/config/verify-crm-customer-visit-ubuntu-26.04.yaml
 ```
 
 - CRM 全量测试：490/490，失败 0、错误 0、跳过 0。

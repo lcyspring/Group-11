@@ -6,7 +6,7 @@
 
 ```bash
 cd podman
-bash ./build-in-ubuntu.sh ./config/test-crm-ubuntu-26.04.yaml
+bash ./compile.sh ./config/test-crm-ubuntu-26.04.yaml
 ```
 
 - `CrmStatisticsPortraitServiceImplTest`：4/4；
@@ -24,7 +24,7 @@ bash ./build-in-ubuntu.sh ./config/test-crm-ubuntu-26.04.yaml
 
 ```bash
 cd podman
-bash ./build-in-ubuntu.sh ./config/build-web-ubuntu-26.04.yaml
+bash ./compile.sh ./config/build-web-ubuntu-26.04.yaml
 ```
 
 - Ubuntu 26.04；

@@ -35,7 +35,7 @@ cd podman
 bash ./provision-bpm-model.sh ./config/bpm-provision-loan-local.yaml
 ```
 
-模型 key 固定为 `oa_loan`。全新数据卷由 `up.sh full` 通过
+模型 key 固定为 `oa_loan`。全新数据卷由 `deploy.sh full` 通过
 `bpm-provision-all-local.yaml` 自动恢复，不允许依靠数据库中偶然残留的 Flowable 定义。
 
 ## 测试与覆盖率
@@ -43,7 +43,7 @@ bash ./provision-bpm-model.sh ./config/bpm-provision-loan-local.yaml
 统一使用公共 Ubuntu 26.04 工具链：
 
 ```bash
-bash podman/build-in-ubuntu.sh podman/config/verify-oa-loan-ubuntu-26.04.yaml
+bash podman/compile.sh podman/config/verify-oa-loan-ubuntu-26.04.yaml
 ```
 
 当前证据：

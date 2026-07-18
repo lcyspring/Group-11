@@ -30,20 +30,20 @@ pnpm、HBuilderX，也不能改用项目原有 Docker/Compose 构建链。
 cd /path/to/Group-11
 
 # Server、InitService、管理端、CRM 测试和 JaCoCo
-bash ./podman/build-in-ubuntu.sh ./podman/config/build-ubuntu-26.04.yaml
+bash ./podman/compile.sh ./podman/config/build-ubuntu-26.04.yaml
 
 # Mall H5 无图形构建
-bash ./podman/build-mall-h5-in-ubuntu.sh ./podman/config/build-mall-h5-ubuntu-26.04.yaml
+bash ./podman/compile.sh ./podman/config/build-mall-h5-ubuntu-26.04.yaml
 
 # 阶段二：检查并封装已有产物为运行镜像
-bash ./podman/build-runtime-images.sh ./podman/config/runtime-images-check.yaml
-bash ./podman/build-runtime-images.sh ./podman/config/runtime-images.example.yaml
+bash ./podman/build-images.sh ./podman/config/runtime-images-check.yaml
+bash ./podman/build-images.sh ./podman/config/runtime-images.example.yaml
 
 # 阶段三：部署配置无状态预检
 bash ./podman/tests/runtime-config/run.sh ./podman/config/runtime-local-check.yaml
 
 # 部署；具体模式只在 YAML 中修改
-bash ./podman/up.sh ./podman/config/runtime-local.yaml
+bash ./podman/deploy.sh ./podman/config/runtime-local.yaml
 ```
 
 ## 产物与镜像
@@ -56,7 +56,7 @@ bash ./podman/up.sh ./podman/config/runtime-local.yaml
 - 前端不会打进后端 JAR/WAR；
 - Ubuntu Server/Web 与 HBuilderX 编译工具链镜像必须使用上文指定的 `ghcr.io/elel-code` 公共镜像；
 - `ghcr.io/elel-code` 下两个编译工具链镜像当前为 public，pull 无需登录，push 仍需维护者登录；
-- Server/Web/Mall 项目运行镜像只能在编译成功后由 `build-runtime-images.sh` 独立封装；`up.sh`
+- Server/Web/Mall 项目运行镜像只能在编译成功后由 `build-images.sh` 独立封装；`deploy.sh`
   不读取源码产物，也不执行镜像构建。
 
 ## 配置分类

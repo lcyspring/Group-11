@@ -15,10 +15,10 @@ Docker socket。Server、InitService、CRM 测试/JaCoCo 和管理端 Web 均在
 
 ```bash
 cd /path/to/Group-11/podman
-bash ./build-in-ubuntu.sh ./config/build-ubuntu-26.04.yaml
-bash ./build-runtime-images.sh ./config/runtime-images-check.yaml
-bash ./up.sh ./config/runtime-local-check.yaml
-bash ./down.sh ./config/runtime-local-check.yaml
+bash ./compile.sh ./config/build-ubuntu-26.04.yaml
+bash ./build-images.sh ./config/runtime-images-check.yaml
+bash ./deploy.sh ./config/runtime-local-check.yaml
+bash ./stop.sh ./config/runtime-local-check.yaml
 bash ./image-archives.sh ./config/runtime-local-check.yaml
 ```
 
@@ -33,10 +33,9 @@ bash ./image-archives.sh ./config/runtime-local-check.yaml
 podman info --format '{{.Host.Security.Rootless}}'
 ```
 
-输出必须为 `true`。CachyOS/Arch 可使用现有
-`install-build-deps-cachyos.sh` 安装 Podman/Pasta；Ubuntu 可使用
-`install-build-deps-ubuntu.sh`。这些安装辅助脚本不是运行入口，不受运行期
-YAML 接口约束。
+输出必须为 `true`。Podman、Pasta、`uidmap` 和 rootless 存储组件应通过宿主发行版的软件包
+管理器安装；仓库不再提供会向 Host 安装 JDK、Maven、Node.js 或 pnpm 的旧脚本。项目编译工具链
+全部来自公开 Ubuntu 26.04 镜像。
 
 项目目录必须支持软链接。pnpm 直接在 `Web/` 工作，旧的不支持软链接目录
 的暂存、复制和回写兼容路径已不再使用。
@@ -47,7 +46,7 @@ YAML 接口约束。
 
 ```bash
 cd podman
-bash ./build-in-ubuntu.sh ./config/build-ubuntu-26.04.yaml
+bash ./compile.sh ./config/build-ubuntu-26.04.yaml
 ```
 
 YAML 显式声明基础镜像、工具链、构建模块、测试/覆盖率开关、并发度、网络
@@ -74,8 +73,8 @@ Podman named volume。不要在 Host 执行 Mall 的依赖安装；HBuilderX 编
 也不会启动或替换容器：
 
 ```bash
-bash ./build-runtime-images.sh ./config/runtime-images-check.yaml
-bash ./build-runtime-images.sh ./config/runtime-images.example.yaml
+bash ./build-images.sh ./config/runtime-images-check.yaml
+bash ./build-images.sh ./config/runtime-images.example.yaml
 ```
 
 `operation.mode` 为 `check` 或 `package`，`build.targets` 为 `all`，或
@@ -118,8 +117,8 @@ cp ./config/runtime-local-check.yaml ./config/runtime-local.yaml
 保持两个模式为 `check`，依次运行：
 
 ```bash
-bash ./up.sh ./config/runtime-local-check.yaml
-bash ./down.sh ./config/runtime-local-check.yaml
+bash ./deploy.sh ./config/runtime-local-check.yaml
+bash ./stop.sh ./config/runtime-local-check.yaml
 bash ./tests/runtime-config/run.sh ./config/runtime-local-check.yaml
 ```
 
@@ -133,7 +132,7 @@ bash ./tests/runtime-config/run.sh ./config/runtime-local-check.yaml
 在本机配置中设置 `operation.startup_mode`，再始终执行同一命令：
 
 ```bash
-bash ./up.sh ./config/runtime-local.yaml
+bash ./deploy.sh ./config/runtime-local.yaml
 ```
 
 模式说明：
@@ -146,7 +145,7 @@ bash ./up.sh ./config/runtime-local.yaml
 - `replace-mall`：只替换预先封装的 Mall 镜像；
 - `check`：只预检。
 
-`up.sh` 不检查 Host 源码产物，也不执行 `podman build`。后端、管理端或商城端变化时，必须先用
+`deploy.sh` 不检查 Host 源码产物，也不执行 `podman build`。后端、管理端或商城端变化时，必须先用
 阶段一生成产物、阶段二封装相应镜像，再分别选择 `replace-server`、`replace-web` 或 `replace-mall`。
 
 ## 8. 停止与数据删除
@@ -154,7 +153,7 @@ bash ./up.sh ./config/runtime-local.yaml
 仓库提供两份不含凭据、不可忽略的显式示例。日常停服直接使用保留数据的示例：
 
 ```bash
-bash ./down.sh ./config/cleanup-stop.example.yaml
+bash ./stop.sh ./config/cleanup-stop.example.yaml
 ```
 
 它会删除运行 Pod，但保留 MySQL、Redis、RabbitMQ、TDengine 四个 named volume。构建产物也不会被
@@ -165,13 +164,13 @@ bash ./down.sh ./config/cleanup-stop.example.yaml
 ```bash
 cp ./config/cleanup-reset.example.yaml ./config/runtime-reset-local.yaml
 bash ./database-backup.sh ./config/database-backup-local.yaml
-bash ./down.sh ./config/runtime-reset-local.yaml
+bash ./stop.sh ./config/runtime-reset-local.yaml
 ```
 
 `cleanup-reset.example.yaml` 显式设置 `remove_volumes_on_down: true`，会永久删除四个数据卷；
 `runtime-reset-local.yaml` 被 Git 忽略，用于记录操作者核对后的本机卷名。该操作没有命令行快捷开关。
-重建后先用阶段二封装全量运行镜像，再使用 `up.sh replace`，并确保 `bpm.provision_after_start: true`，否则空数据库中不存在 Flowable
-流程定义，请假、回款、报销、合同、退款、出差、借款和客户拜访提交审批都会失败。标准聚合清单必须包含
+重建后先用阶段二封装全量运行镜像，再使用 `deploy.sh replace`，并确保 `bpm.provision_after_start: true`，否则空数据库中不存在 Flowable
+流程定义，请假、回款、报销、合同、退款、出差、借款、客户拜访和请示提交审批都会失败。标准聚合清单必须包含
 `bpm-provision-leave-local.yaml`；已有环境若仅缺少请假模型，执行
 `bash ./provision-bpm-model.sh ./config/bpm-provision-leave-local.yaml` 幂等补配，不需要重建数据库卷。
 

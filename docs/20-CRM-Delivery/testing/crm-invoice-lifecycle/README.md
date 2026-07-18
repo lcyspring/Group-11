@@ -29,28 +29,28 @@
 
 ```bash
 cd podman
-bash ./build-in-ubuntu.sh ./config/test-crm-ubuntu-26.04.yaml
+bash ./compile.sh ./config/test-crm-ubuntu-26.04.yaml
 ```
 
 前端专项：
 
 ```bash
 cd podman
-bash ./build-in-ubuntu.sh ./config/test-crm-invoice-web-ubuntu-26.04.yaml
+bash ./compile.sh ./config/test-crm-invoice-web-ubuntu-26.04.yaml
 ```
 
 发票目录专项静态检查：
 
 ```bash
 cd podman
-bash ./build-in-ubuntu.sh ./config/check-crm-invoice-web-ubuntu-26.04.yaml
+bash ./compile.sh ./config/check-crm-invoice-web-ubuntu-26.04.yaml
 ```
 
 生产前端构建：
 
 ```bash
 cd podman
-bash ./build-in-ubuntu.sh ./config/build-web-ubuntu-26.04.yaml
+bash ./compile.sh ./config/build-web-ubuntu-26.04.yaml
 ```
 
 ## 执行结果

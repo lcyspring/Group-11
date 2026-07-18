@@ -13,7 +13,7 @@
 ## 实现文件
 
 - `podman/Containerfile.build-ubuntu`：Ubuntu 26.04、JDK 17、Maven、Node.js 与固定版本 pnpm 工具链。
-- `podman/build-in-ubuntu.sh`：校验 YAML、构建镜像、建立缓存卷并启动 rootless Podman。
+- `podman/compile.sh`：校验 YAML、构建镜像、建立缓存卷并启动 rootless Podman。
 - `podman/ubuntu-build-entrypoint.sh`：在容器内执行 CRM 测试及 JaCoCo、Server、InitService 和 Web 构建，并验证产物。
 - `podman/config/build-ubuntu-26.04.yaml`：唯一显式构建配置入口。
 - `podman/config/test-crm-ubuntu-26.04.yaml`：复用相同镜像和缓存、只运行 CRM 测试与覆盖率的快速反馈配置。
@@ -23,7 +23,7 @@
 
 ```bash
 cd podman
-bash ./build-in-ubuntu.sh ./config/build-ubuntu-26.04.yaml
+bash ./compile.sh ./config/build-ubuntu-26.04.yaml
 ```
 
 脚本拒绝零参数或多个参数；具体构建行为不通过额外命令行开关控制，应修改 YAML 后再运行。
@@ -32,7 +32,7 @@ CRM 开发阶段的快速回归同样只传配置路径：
 
 ```bash
 cd podman
-bash ./build-in-ubuntu.sh ./config/test-crm-ubuntu-26.04.yaml
+bash ./compile.sh ./config/test-crm-ubuntu-26.04.yaml
 ```
 
 ## 工具链基线

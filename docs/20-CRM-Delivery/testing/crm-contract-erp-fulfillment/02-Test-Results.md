@@ -17,6 +17,6 @@
 
 ```bash
 cd podman
-bash ./build-in-ubuntu.sh ./config/test-crm-erp-fulfillment-ubuntu-26.04.yaml
+bash ./compile.sh ./config/test-crm-erp-fulfillment-ubuntu-26.04.yaml
 bash ./verify-crm-erp-fulfillment.sh ./config/verify-crm-erp-fulfillment-local.yaml
 ```

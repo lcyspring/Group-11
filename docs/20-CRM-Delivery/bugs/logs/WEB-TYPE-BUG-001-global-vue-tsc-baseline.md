@@ -27,7 +27,7 @@
 2026-07-18 使用标准 Ubuntu 26.04 YAML 入口执行：
 
 ```bash
-bash podman/build-in-ubuntu.sh podman/config/check-web-types-ubuntu-26.04.yaml
+bash podman/compile.sh podman/config/check-web-types-ubuntu-26.04.yaml
 ```
 
 `vue-tsc --noEmit` 退出码为 0，脚本与模板诊断均为 0；同一工具链的 CRM 导出专项 Vite production

@@ -2,7 +2,7 @@
 
 ## 发现
 
-旧 `up.sh` / `down.sh` / `image-archives.sh` 使用命令行选项、环境变量默认值及正文硬编码共同决定
+旧 `deploy.sh` / `stop.sh` / `image-archives.sh` 使用命令行选项、环境变量默认值及正文硬编码共同决定
 模式、端口、镜像、卷、凭据、profile 和删除数据行为。
 
 ## 影响

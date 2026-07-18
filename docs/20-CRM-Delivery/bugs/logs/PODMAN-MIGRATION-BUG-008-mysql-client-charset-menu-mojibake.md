@@ -19,7 +19,7 @@ CRM 侧栏新增菜单显示为 `å‘ç¥¨ç®¡ç†`、`å®¢æœå·
 
 ## 修复关键
 
-- `podman/up.sh` 的迁移、运行配置更新和 schema 探针统一使用 YAML 中的 `mysql.character_set`；
+- `podman/deploy.sh` 的迁移、运行配置更新和 schema 探针统一使用 YAML 中的 `mysql.character_set`；
 - `podman/init/init-mysql.sh` 通过单一 `mysql_utf8` 入口执行所有初始化 SQL；
 - 新增幂等 `repair-crm-menu-utf8.sql`，按稳定 component、permission、dict type/value 和通知 code 修复，
   不依赖乱码文本匹配；

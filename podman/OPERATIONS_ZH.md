@@ -19,11 +19,11 @@ Mall H5：                         ghcr.io/elel-code/group-11-hbuilderx-ubuntu:2
 
 | 阶段 | 命令 | 输出/作用 |
 |---|---|---|
-| Server/Web/测试编译 | `build-in-ubuntu.sh <yaml>` | JAR、Web `dist-prod`、测试与 JaCoCo |
-| Mall H5 编译 | `build-mall-h5-in-ubuntu.sh <yaml>` | 本地 ignored 的 H5 构建目录 |
-| 运行镜像封装 | `build-runtime-images.sh <yaml>` | 只把已有产物封装为 MySQL/Init/Server/Web/Mall 镜像 |
-| 启动/替换容器 | `up.sh <yaml>` | 只消费运行镜像，启动或替换 rootless Pod/容器 |
-| 停止 | `down.sh <yaml>` | 停止 Pod；是否删卷只看 YAML |
+| Server/Web/测试编译 | `compile.sh <yaml>` | JAR、Web `dist-prod`、测试与 JaCoCo |
+| Mall H5 编译 | `compile.sh <yaml>` | 本地 ignored 的 H5 构建目录 |
+| 运行镜像封装 | `build-images.sh <yaml>` | 只把已有产物封装为 MySQL/Init/Server/Web/Mall 镜像 |
+| 启动/替换容器 | `deploy.sh <yaml>` | 只消费运行镜像，启动或替换 rootless Pod/容器 |
+| 停止 | `stop.sh <yaml>` | 停止 Pod；是否删卷只看 YAML |
 | 离线镜像 | `image-archives.sh <yaml>` | 保存/拉取并保存基础镜像 tar |
 | 编译镜像归档/上传 | `build-image-archives.sh <yaml>` | 两个工具链镜像 check/save/load/push |
 | CRM 数据备份 | `database-backup.sh <yaml>` | MySQL 一致性压缩备份和 SHA-256 |
@@ -32,23 +32,23 @@ Mall H5：                         ghcr.io/elel-code/group-11-hbuilderx-ubuntu:2
 | CRM 诊断包 | `collect-crm-diagnostics.sh <yaml>` | 健康、容器、日志、数据库与宿主 SLI 诊断 |
 | 配置门禁 | `tests/runtime-config/run.sh <yaml>` | 无状态检查 YAML、manifest、脚本和 Pod 不变性 |
 
-宿主 JDK/Node/pnpm 构建入口已删除，所有成员统一通过 `build-in-ubuntu.sh` 使用上述 `elel-code`
+宿主 JDK/Node/pnpm 构建入口已删除，所有成员统一通过 `compile.sh` 使用上述 `elel-code`
 公共镜像。项目原 Docker/Compose 不进入本流程。
 
 ## 标准流程
 
 ```bash
 cd /path/to/Group-11
-bash ./podman/build-in-ubuntu.sh ./podman/config/build-ubuntu-26.04.yaml
-bash ./podman/build-mall-h5-in-ubuntu.sh ./podman/config/build-mall-h5-ubuntu-26.04.yaml
-bash ./podman/build-runtime-images.sh ./podman/config/runtime-images.example.yaml
+bash ./podman/compile.sh ./podman/config/build-ubuntu-26.04.yaml
+bash ./podman/compile.sh ./podman/config/build-mall-h5-ubuntu-26.04.yaml
+bash ./podman/build-images.sh ./podman/config/runtime-images.example.yaml
 bash ./podman/tests/runtime-config/run.sh ./podman/config/runtime-local-check.yaml
-bash ./podman/up.sh ./podman/config/runtime-local.yaml
+bash ./podman/deploy.sh ./podman/config/runtime-local.yaml
 ```
 
 全新数据库卷会同时清空 Flowable 已部署定义。`runtime-local.yaml` 应显式设置
-`bpm.provision_after_start: true` 和 `bpm.provision_manifest: bpm-provision-all-local.yaml`；`up.sh replace`
-在 Server 健康后、暴露前端前自动恢复请假、回款、报销、合同、退款、出差、借款和客户拜访流程。若任一模型失败，部署
+`bpm.provision_after_start: true` 和 `bpm.provision_manifest: bpm-provision-all-local.yaml`；`deploy.sh replace`
+在 Server 健康后、暴露前端前自动恢复请假、回款、报销、合同、退款、出差、借款、客户拜访和请示流程。若任一模型失败，部署
 立即失败，不会继续显示一个看似可用但提交审批必然报错的前端。
 
 ## 停服、清产物与数据重置
@@ -57,12 +57,12 @@ bash ./podman/up.sh ./podman/config/runtime-local.yaml
 
 | 目标 | 配置/入口 | 结果 |
 |---|---|---|
-| 日常停服 | `down.sh config/cleanup-stop.example.yaml` | 删除 Pod，保留四个持久卷和全部构建产物 |
+| 日常停服 | `stop.sh config/cleanup-stop.example.yaml` | 删除 Pod，保留四个持久卷和全部构建产物 |
 | 重新编译 | 对应 Ubuntu 26.04 构建 YAML 的 `build.clean: true` | 清理并重建所选源码产物，不触碰业务数据 |
-| 全新数据环境 | 复制 `cleanup-reset.example.yaml` 为 ignored `runtime-reset-local.yaml` 后执行 `down.sh` | 永久删除 MySQL、Redis、RabbitMQ、TDengine 卷 |
+| 全新数据环境 | 复制 `cleanup-reset.example.yaml` 为 ignored `runtime-reset-local.yaml` 后执行 `stop.sh` | 永久删除 MySQL、Redis、RabbitMQ、TDengine 卷 |
 
-执行全新数据环境前必须先备份并核对 YAML 中的四个卷名。之后先封装运行镜像，再使用 `up.sh replace` 重建；运行 YAML
-必须开启 BPM 自动恢复。`down.sh` 会逐个打印被保留或被删除的卷，不再静默完成数据销毁。
+执行全新数据环境前必须先备份并核对 YAML 中的四个卷名。之后先封装运行镜像，再使用 `deploy.sh replace` 重建；运行 YAML
+必须开启 BPM 自动恢复。`stop.sh` 会逐个打印被保留或被删除的卷，不再静默完成数据销毁。
 
 所有 `.example.yaml` 都属于仓库交付内容，不得加入 `.gitignore`；真实账号、密码和环境地址写入
 对应 ignored `*-local.yaml`。BPM 各单模型示例、聚合清单和字段含义见
@@ -110,7 +110,7 @@ bash ./podman/verify-crm-performance-baseline.sh ./podman/config/verify-crm-perf
 
 ## 日常入口与验收资产
 
-- 日常入口：`build-in-ubuntu.sh`、`build-mall-h5-in-ubuntu.sh`、`build-runtime-images.sh`、`up.sh`、`down.sh`、
+- 日常入口：`compile.sh`、`build-images.sh`、`deploy.sh`、`stop.sh`、
   `image-archives.sh`、`database-backup.sh`、`database-restore.sh`；
 - `verify-*.sh` 与 `config/verify-*`、`test-*`、`check-*` 是结构化测试资产，不用于普通启动；
 - 编译工具链镜像推荐 save，并可在登录 GHCR 后使用 `operation.mode: push` 上传；项目运行镜像仍由

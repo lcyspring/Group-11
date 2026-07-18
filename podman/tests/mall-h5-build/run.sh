@@ -5,7 +5,8 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PODMAN_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
 PROJECT_ROOT="$(cd -- "${PODMAN_DIR}/.." && pwd)"
-BUILD_SCRIPT="${PODMAN_DIR}/build-mall-h5-in-ubuntu.sh"
+BUILD_SCRIPT="${PODMAN_DIR}/compile.sh"
+HBUILDERX_ENGINE="${PODMAN_DIR}/internal/compile-hbuilderx.sh"
 
 if [[ $# -ne 1 ]]; then
     printf 'Usage: bash ./run.sh <config.yaml>\n' >&2
@@ -40,7 +41,7 @@ expect_status() {
     }
 }
 
-bash -n "$BUILD_SCRIPT" "${PODMAN_DIR}/hbuilderx-build-entrypoint.sh"
+bash -n "$BUILD_SCRIPT" "$HBUILDERX_ENGINE" "${PODMAN_DIR}/hbuilderx-build-entrypoint.sh"
 pass 'build scripts pass bash syntax validation'
 
 expect_status 2 "$BUILD_SCRIPT"
@@ -49,10 +50,10 @@ pass 'build command accepts exactly one YAML path'
 
 rg -q --fixed-strings -- \
     '--volume "$NODE_MODULES_VOLUME:/workspace/MallFrontend/node_modules:rw"' \
-    "$BUILD_SCRIPT"
+    "$HBUILDERX_ENGINE"
 rg -q --fixed-strings -- \
     '--entrypoint /workspace/podman/mall-dependencies-entrypoint.sh' \
-    "$BUILD_SCRIPT"
+    "$HBUILDERX_ENGINE"
 pass 'dependency install and H5 compile both use the Podman node_modules volume'
 
 build_log="$(mktemp)"

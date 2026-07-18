@@ -11,7 +11,7 @@ PODMAN_PROXY_ARGS=(--http-proxy=false)
 PROXY_ENV=()
 
 usage() {
-    printf 'Usage: bash ./up.sh <config.yaml>\n' >&2
+    printf 'Usage: bash ./deploy.sh <config.yaml>\n' >&2
 }
 
 [[ $# -eq 1 ]] || {
@@ -151,6 +151,9 @@ CRM_MARKETING_PROVIDER_MODE="$(yaml_require crm_marketing.provider_mode)"
 CRM_MARKETING_TRACKING_ENABLED="$(yaml_bool crm_marketing.tracking_enabled)"
 CRM_MARKETING_PUBLIC_BASE_URL="$(yaml_require crm_marketing.public_base_url)"
 CRM_MARKETING_DELIVERY_SYNC_BATCH_SIZE="$(yaml_positive_integer crm_marketing.delivery_sync_batch_size)"
+CRM_MARKETING_CLICK_TRACKING_ENABLED="$(yaml_bool crm_marketing.click_tracking_enabled)"
+CRM_MARKETING_CLICK_ALLOWED_HOSTS="$(yaml_require crm_marketing.click_allowed_hosts)"
+CRM_MARKETING_MAX_LINKS_PER_BROADCAST="$(yaml_positive_integer crm_marketing.max_links_per_broadcast)"
 CRM_CUSTOMER_IMPORT_MAX_ROWS="$(yaml_positive_integer crm_customer_import.max_rows)"
 CRM_CUSTOMER_IMPORT_PREVIEW_TTL_MINUTES="$(yaml_positive_integer crm_customer_import.preview_ttl_minutes)"
 CRM_EXPORT_TASK_ENABLED="$(yaml_bool crm_export_task.enabled)"
@@ -388,6 +391,9 @@ start_server() {
         --env "MITEDTSM_CRM_MARKETING_TRACKING_ENABLED=${CRM_MARKETING_TRACKING_ENABLED}" \
         --env "MITEDTSM_CRM_MARKETING_PUBLIC_BASE_URL=${CRM_MARKETING_PUBLIC_BASE_URL}" \
         --env "MITEDTSM_CRM_MARKETING_DELIVERY_SYNC_BATCH_SIZE=${CRM_MARKETING_DELIVERY_SYNC_BATCH_SIZE}" \
+        --env "MITEDTSM_CRM_MARKETING_CLICK_TRACKING_ENABLED=${CRM_MARKETING_CLICK_TRACKING_ENABLED}" \
+        --env "MITEDTSM_CRM_MARKETING_CLICK_ALLOWED_HOSTS=${CRM_MARKETING_CLICK_ALLOWED_HOSTS}" \
+        --env "MITEDTSM_CRM_MARKETING_MAX_LINKS_PER_BROADCAST=${CRM_MARKETING_MAX_LINKS_PER_BROADCAST}" \
         --env "MITEDTSM_CRM_CUSTOMER_IMPORT_MAX_ROWS=${CRM_CUSTOMER_IMPORT_MAX_ROWS}" \
         --env "MITEDTSM_CRM_CUSTOMER_IMPORT_PREVIEW_TTL_MINUTES=${CRM_CUSTOMER_IMPORT_PREVIEW_TTL_MINUTES}" \
         --env "MITEDTSM_CRM_EXPORT_TASK_ENABLED=${CRM_EXPORT_TASK_ENABLED}" \
@@ -428,7 +434,7 @@ container_is_running() {
 
 fast_start_existing_pod() {
     podman_cmd pod inspect "$POD_NAME" >/dev/null 2>&1 || {
-        printf 'Pod does not exist: %s. Run up.sh with operation.startup_mode=replace first.\n' "$POD_NAME" >&2
+        printf 'Pod does not exist: %s. Run deploy.sh with operation.startup_mode=replace first.\n' "$POD_NAME" >&2
         return 1
     }
 
@@ -554,6 +560,10 @@ validate_configuration() {
        "$INTEGRATION_PAY_REFUND_NOTIFY_URL" =~ ^https?://[^[:space:]]+$ &&
        "$INTEGRATION_PAY_TRANSFER_NOTIFY_URL" =~ ^https?://[^[:space:]]+$ ]] || {
         printf 'Integration callback URLs must be explicit HTTP(S) URLs.\n' >&2
+        exit 2
+    }
+    [[ "$CRM_MARKETING_CLICK_ALLOWED_HOSTS" =~ ^(\*\.)?[A-Za-z0-9.-]+(,(\*\.)?[A-Za-z0-9.-]+)*$ ]] || {
+        printf 'crm_marketing.click_allowed_hosts must be an explicit comma-separated host list.\n' >&2
         exit 2
     }
 

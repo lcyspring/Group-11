@@ -15,7 +15,7 @@ rootless MySQL 容器未显式配置时区，Java 运行镜像已使用 Asia/Sha
 
 - `runtime-local-check.yaml` 和本机 `runtime-local.yaml` 新增
   `mysql.timezone: Asia/Shanghai`；
-- `up.sh` 只从 YAML 读取该值，并以容器 `TZ` 传入 MySQL；
+- `deploy.sh` 只从 YAML 读取该值，并以容器 `TZ` 传入 MySQL；
 - 没有在脚本逻辑中硬编码具体时区。
 
 ## 验证

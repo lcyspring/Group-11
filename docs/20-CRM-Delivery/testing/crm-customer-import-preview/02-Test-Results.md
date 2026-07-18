@@ -19,7 +19,7 @@
 专项入口：
 
 ```bash
-bash podman/build-in-ubuntu.sh podman/config/verify-crm-customer-import-ubuntu-26.04.yaml
+bash podman/compile.sh podman/config/verify-crm-customer-import-ubuntu-26.04.yaml
 bash podman/verify-crm-customer-import.sh podman/config/verify-crm-customer-import.example.yaml
 ```
 

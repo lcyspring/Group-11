@@ -2,7 +2,7 @@
 
 ## 背景
 
-旧 `podman/up.sh` 和 `down.sh` 同时使用命令行选项、环境变量默认值及脚本正文
+旧 `podman/deploy.sh` 和 `stop.sh` 同时使用命令行选项、环境变量默认值及脚本正文
 常量控制部署。相同命令可能因宿主环境不同产生不同结果，也无法从单一文件审计
 端口、镜像、凭据和数据删除意图。
 
@@ -10,7 +10,7 @@
 
 - 新增 `podman/config/runtime-local-check.yaml`，完整声明运行期行为；
 - 新增不使用 `eval` 的两层 YAML 标量读取库；
-- `up.sh`、`down.sh`、`image-archives.sh` 均只接受一个 YAML 路径；
+- `deploy.sh`、`stop.sh`、`image-archives.sh` 均只接受一个 YAML 路径；
 - 启动/停止模式、删除卷意图均迁移到 YAML；
 - Pod、容器、卷、镜像、归档、端口、服务凭据、Spring profile、代理和健康
   检查参数均显式化；

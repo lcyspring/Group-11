@@ -7,6 +7,8 @@
 | Server/Web 构建 | `build-ubuntu-26.04.yaml` | Ubuntu 26.04 全量构建 |
 | Mall H5 构建 | `build-mall-h5-ubuntu-26.04.yaml` | 无图形 HBuilderX 构建 |
 | 运行镜像封装 | `runtime-images.example.yaml` | 将已有产物封装为五个运行镜像，不启动容器 |
+| Server 单项封装 | `runtime-images-server.example.yaml` | 只重新封装已编译 Server JAR |
+| Web 单项封装 | `runtime-images-web.example.yaml` | 只重新封装已编译管理端产物 |
 | 镜像封装预检 | `runtime-images-check.yaml` | 校验产物与封装配置，不改变镜像 |
 | 运行预检 | `runtime-local-check.yaml` | 不改变 Pod、镜像和卷 |
 | 本机运行 | `runtime-local.yaml` | ignored，保存真实本地凭据和 replace 模式 |
@@ -17,6 +19,7 @@
 | 编译镜像 | `build-image-archives-check.yaml` | 工具链镜像 check/save/load/push 模板 |
 | CRM 性能基线 | `verify-crm-performance-baseline.example.yaml` | 只读并发负载与阈值共享模板 |
 | CRM 诊断包 | `crm-diagnostics.example.yaml` | SLI 阈值、日志窗口和本机诊断输出模板 |
+| 营销点击验收 | `verify-crm-marketing-link-click.example.yaml` | 白名单跳转、令牌、原子累计和独立点击统计 |
 
 共享运行模板默认使用 `network.host_address: 0.0.0.0`，因此 Server、Web 和 Mall 会监听全部主机网络接口；
 `security.cors_allowed_origins: "*"` 允许任意浏览器来源携带显式 `Authorization`、`tenant-id` 等请求头，
@@ -42,7 +45,7 @@ cp ./config/bpm-provision-customer-visit.example.yaml ./config/bpm-provision-cus
 
 | 示例 | 受管流程 |
 |---|---|
-| `bpm-provision-all.example.yaml` | 聚合清单；一次恢复请假、回款、报销、合同、退款、出差、借款和客户拜访 |
+| `bpm-provision-all.example.yaml` | 聚合清单；一次恢复请假、回款、报销、合同、退款、出差、借款、客户拜访和请示 |
 | `bpm-provision-receivable.example.yaml` | CRM 回款审批 `crm-receivable-audit` |
 | `bpm-provision.example.yaml` | CRM 报销审批 `crm-reimbursement-audit` |
 | `bpm-provision-contract.example.yaml` | CRM 合同审批 `crm-contract-audit` |
@@ -55,7 +58,7 @@ cp ./config/bpm-provision-customer-visit.example.yaml ./config/bpm-provision-cus
 
 聚合清单中的相对路径以清单所在目录解析。正式部署应让 ignored 的
 `bpm-provision-all-local.yaml` 引用各 ignored 单模型配置；全新数据卷启动时，运行配置设置
-`bpm.provision_after_start: true`，`up.sh replace` 会在 Server 健康后恢复全部流程定义。
+`bpm.provision_after_start: true`，`deploy.sh replace` 会在 Server 健康后恢复全部流程定义。
 
 若现有环境只缺少请假模型，可在填写 ignored 本机配置后单独幂等补配：
 
@@ -71,16 +74,16 @@ bash ./provision-bpm-model.sh ./config/bpm-provision-leave-local.yaml
 
 ```bash
 # 日常停服：保留全部持久数据
-bash ./down.sh ./config/cleanup-stop.example.yaml
+bash ./stop.sh ./config/cleanup-stop.example.yaml
 
 # 灾难恢复演练或明确要求全新数据库时：永久删除四个数据卷
 cp ./config/cleanup-reset.example.yaml ./config/runtime-reset-local.yaml
-bash ./down.sh ./config/runtime-reset-local.yaml
+bash ./stop.sh ./config/runtime-reset-local.yaml
 ```
 
 第二条命令不可恢复地清除 MySQL、Redis、RabbitMQ、TDengine 数据。执行前应先使用
-`database-backup.sh` 完成备份，并确认下一次 `up.sh replace` 开启 BPM 自动恢复。构建产物不由
-`down.sh` 删除；Maven `target`、`Web/dist-prod`、Mall `unpackage/dist` 应通过对应构建配置的
+`database-backup.sh` 完成备份，并确认下一次 `deploy.sh replace` 开启 BPM 自动恢复。构建产物不由
+`stop.sh` 删除；Maven `target`、`Web/dist-prod`、Mall `unpackage/dist` 应通过对应构建配置的
 clean 字段重建，避免把“清产物”和“销毁业务数据”混为一个操作。
 
 ## 测试配置

@@ -15,7 +15,7 @@
 ## 修复
 
 1. 对当前运行库执行既有幂等迁移；
-2. `up.sh` 在启动 Server 前执行 YAML 指定的
+2. `deploy.sh` 在启动 Server 前执行 YAML 指定的
    `mysql.compatibility_migration_file`；
 3. 配置指向商机转合同的幂等迁移文件，重复执行不会重复创建字段或索引。
 
@@ -25,7 +25,7 @@
 - 唯一索引与查询索引均存在；
 - `/crm/receivable/page?...auditStatus=10` 返回 `code=0`、1 条数据；
 - `/crm/receivable-plan/page?...remindType=1` 返回 `code=0`、3 条数据；
-- `up.sh` check 模式通过。
+- `deploy.sh` check 模式通过。
 
 ## 影响范围
 

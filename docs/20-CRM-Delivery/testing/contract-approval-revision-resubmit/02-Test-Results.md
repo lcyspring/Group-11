@@ -6,7 +6,7 @@
 
 ```bash
 cd podman
-bash ./build-in-ubuntu.sh ./config/test-crm-ubuntu-26.04.yaml
+bash ./compile.sh ./config/test-crm-ubuntu-26.04.yaml
 ```
 
 - `CrmContractServiceImplTest`：15/15；

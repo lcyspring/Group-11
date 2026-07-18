@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Package already compiled artifacts into project runtime images. This stage
-# never invokes Maven, pnpm, HBuilderX, or up.sh.
+# never invokes Maven, pnpm, HBuilderX, or deploy.sh.
 
 set -Eeuo pipefail
 
@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 
 [[ $# -eq 1 ]] || {
-    printf 'Usage: bash ./build-runtime-images.sh <config.yaml>\n' >&2
+    printf 'Usage: bash ./build-images.sh <config.yaml>\n' >&2
     exit 2
 }
 
@@ -184,4 +184,4 @@ for target in "${TARGETS[@]}"; do
     podman build "${build_args[@]}" --target "$target" --tag "$image" "$PROJECT_ROOT"
 done
 
-printf 'Runtime image packaging completed. up.sh was not invoked and no container was replaced.\n'
+printf 'Runtime image packaging completed. deploy.sh was not invoked and no container was replaced.\n'

@@ -11,7 +11,7 @@
 
 ```bash
 cd podman
-bash ./up.sh ./config/runtime-local.yaml
+bash ./deploy.sh ./config/runtime-local.yaml
 ```
 
 运行配置由 YAML 显式提供，命令行参数只指定配置文件路径。运行环境使用
@@ -56,7 +56,7 @@ rootless Podman，应用产物由 Ubuntu 26.04 构建容器生成。
 
 ```bash
 cd podman
-bash ./down.sh ./config/runtime-local.yaml
+bash ./stop.sh ./config/runtime-local.yaml
 ```
 
 当前环境暂不停止，保留给人工观察。
@@ -69,7 +69,7 @@ bash ./down.sh ./config/runtime-local.yaml
 - Pod 重建先停止 Server 再停止基础设施，顺序停机复验未触发强杀。
 - 已补执行合同来源字段幂等迁移，待审核回款与回款提醒恢复；
 - Web 已用 Ubuntu 26.04 重建并热替换，默认不再访问百度统计域名；
-- `up.sh` 后续会在 Server 启动前执行 YAML 指定的兼容迁移，避免持久卷结构再次漏更。
+- `deploy.sh` 后续会在 Server 启动前执行 YAML 指定的兼容迁移，避免持久卷结构再次漏更。
 - Web 最终产物已通过 Ubuntu 26.04 构建并使用 `rebuild-web` 热替换；
 - 热替换后 Server 健康为 `UP`，Web/Mall 均为 `200 OK`，工单统计和客户筛选接口无持续 502；
 - CRM 当前回归 170/170，通过率 100%，JaCoCo 行覆盖率 32.64%。

@@ -6,7 +6,7 @@
 
 ```bash
 cd podman
-bash ./build-in-ubuntu.sh ./config/test-crm-ubuntu-26.04.yaml
+bash ./compile.sh ./config/test-crm-ubuntu-26.04.yaml
 ```
 
 - `CrmStatisticsFunnelServiceImplTest`：3/3；
@@ -22,7 +22,7 @@ bash ./build-in-ubuntu.sh ./config/test-crm-ubuntu-26.04.yaml
 
 ```bash
 cd podman
-bash ./build-in-ubuntu.sh ./config/build-web-ubuntu-26.04.yaml
+bash ./compile.sh ./config/build-web-ubuntu-26.04.yaml
 ```
 
 - Node 22.22.1、pnpm 11.3.0；

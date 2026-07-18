@@ -15,8 +15,8 @@ variable overrides.
 
 ```bash
 cd podman
-bash ./up.sh ./config/runtime-local-check.yaml
-bash ./down.sh ./config/runtime-local-check.yaml
+bash ./deploy.sh ./config/runtime-local-check.yaml
+bash ./stop.sh ./config/runtime-local-check.yaml
 bash ./image-archives.sh ./config/runtime-local-check.yaml
 ```
 
@@ -38,7 +38,7 @@ booleans, ports, or modes fail before any deployment action.
 Configuration includes Pod/container/volume names, host and container ports,
 image and archive names, MySQL/RabbitMQ settings, the Spring profile, proxy
 URLs, and all health-check paths and retry limits. Proxy URLs must be written
-in YAML; host proxy environment variables are not consumed by `up.sh`.
+in YAML; host proxy environment variables are not consumed by `deploy.sh`.
 
 ## Ubuntu 26.04 build
 
@@ -47,7 +47,7 @@ dedicated Ubuntu 26.04 image:
 
 ```bash
 cd podman
-bash ./build-in-ubuntu.sh ./config/build-ubuntu-26.04.yaml
+bash ./compile.sh ./config/build-ubuntu-26.04.yaml
 ```
 
 The build entry point also accepts exactly one YAML path. Named Podman volumes
@@ -60,22 +60,22 @@ Mall H5 uses HBuilderX's non-graphical uni-app compiler in a separate Ubuntu
 
 ```bash
 cd podman
-bash ./build-mall-h5-in-ubuntu.sh ./config/build-mall-h5-ubuntu-26.04.yaml
+bash ./compile.sh ./config/build-mall-h5-ubuntu-26.04.yaml
 ```
 
-This entry point likewise accepts only its YAML path. It does not start the
-HBuilderX IDE, Qt, X11, or Xvfb. When the configured image does not exist (or
-`image.rebuild` is `true`), it copies only HBuilderX's bundled Node, Vue 3/Vite
-uni-app compiler, and Dart Sass runtime from `hbuilderx.source_dir`. Normal
-builds prefer the published `ghcr.io/elel-code/group-11-hbuilderx-ubuntu:26.04-5.05`
-image and never read or mount the host HBuilderX installation. Mall project
+The unified entry point accepts only its YAML path. It does not start the
+HBuilderX IDE, Qt, X11, or Xvfb. Normal builds pull or reuse the published
+`ghcr.io/elel-code/group-11-hbuilderx-ubuntu:26.04-5.05` image and never read or
+mount the host HBuilderX installation. Only a maintainer configuration with
+`image.rebuild: true` copies HBuilderX's bundled Node, Vue 3/Vite uni-app compiler,
+and Dart Sass runtime from `hbuilderx.source_dir`. Mall project
 dependencies are installed at container runtime into Podman named volumes by
 `ghcr.io/elel-code/group-11-build-ubuntu:26.04`; the offline compiler mounts
 that volume instead of host `node_modules`. `MallFrontend/unpackage/` is generated locally
 and ignored by Git; build it before packaging a deployment image.
 
 Host JDK/Node/pnpm build helpers have been removed. Every project member uses
-the two Ubuntu 26.04 container entry points above.
+the unified Ubuntu 26.04 container entry point above.
 
 Required runtime artifacts are:
 
@@ -88,10 +88,10 @@ Required runtime artifacts are:
 images. Packaging is a separate YAML-only stage:
 
 ```bash
-bash ./build-runtime-images.sh ./config/runtime-images.example.yaml
+bash ./build-images.sh ./config/runtime-images.example.yaml
 ```
 
-`up.sh` never reads build artifacts or runs `podman build`. Running containers
+`deploy.sh` never reads build artifacts or runs `podman build`. Running containers
 do not bind-mount project files; persistent service data lives in named volumes.
 
 ## Startup modes
@@ -99,7 +99,7 @@ do not bind-mount project files; persistent service data lives in named volumes.
 Set `operation.startup_mode` in the selected YAML and run the same command:
 
 ```bash
-bash ./up.sh ./config/my-runtime.yaml
+bash ./deploy.sh ./config/my-runtime.yaml
 ```
 
 - `replace` loads or pulls configured pre-packaged runtime images and replaces
@@ -142,11 +142,12 @@ proxy hostnames are translated to the configured `network.host_proxy_name`.
 - `config/`: explicit build and runtime YAML files.
 - `lib/yaml-config.sh`: non-evaluating, two-level YAML scalar reader.
 - `tests/runtime-config/`: parser, CLI contract, preflight, and Pod-state tests.
-- `build-runtime-images.sh`: YAML-only runtime image packaging entry point.
-- `up.sh` / `down.sh`: YAML-only container lifecycle entry points.
+- `build-images.sh`: YAML-only runtime image packaging entry point.
+- `deploy.sh` / `stop.sh`: YAML-only container lifecycle entry points.
 - `Containerfile.build-ubuntu`: Ubuntu 26.04 build toolchain image.
 - `Containerfile.hbuilderx-ubuntu`: headless Mall H5 compiler image.
-- `build-mall-h5-in-ubuntu.sh`: YAML-only Mall H5 container build entry point.
+- `compile.sh`: unified YAML-only compiler; `build.engine` selects standard or HBuilderX.
+- `internal/compile-*.sh`: internal engines, not member-facing commands.
 - `Containerfile`: multi-target runtime packaging.
 - `image-archives.sh` / `images/`: portable Podman base-image archives.
 

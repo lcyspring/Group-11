@@ -2,11 +2,11 @@
 
 set -Eeuo pipefail
 
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 
 if [[ $# -ne 1 ]]; then
-    printf 'Usage: bash ./build-mall-h5-in-ubuntu.sh <config.yaml>\n' >&2
+    printf 'Usage: bash ./compile.sh <config.yaml>\n' >&2
     exit 2
 fi
 
