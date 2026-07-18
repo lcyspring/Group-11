@@ -6,6 +6,10 @@
 - `marketing-provider-provision/`：隔离库验证短信/邮件 Provider 的 create-only、managed、disabled 和关联完整性；
 - `acceptance/`：真实 API/MySQL 业务验收脚本，只在对应服务和 ignored 本机 YAML 就绪后运行。
 
+工单专项入口为 `acceptance/verify-crm-work-order-performance.sh`，共享示例
+`config/verify-crm-work-order-performance.example.yaml` 固定要求至少 50 个工单和 50 并发；正式结果写入
+CRM evidence 目录，所有临时业务行必须清理为 0。
+
 这些脚本不用于普通编译、镜像封装或服务启动。命令行仍只接受一个 YAML 路径。
 
 两个 provision 集成测试需要一个可用的本机运行 YAML。数据库测试自己创建并清理官方 MySQL 容器与

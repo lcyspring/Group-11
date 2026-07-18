@@ -19,6 +19,7 @@
 | 数据保护 | `database-backup-check.yaml` | 备份/恢复安全模板 |
 | 编译镜像 | `build-image-archives-check.yaml` | 工具链镜像 check/save/load/push 模板 |
 | CRM 性能基线 | `verify-crm-performance-baseline.example.yaml` | 只读并发负载与阈值共享模板 |
+| 工单 50 并发专项 | `verify-crm-work-order-performance.example.yaml` | 创建、SLA、流转、统计、完结与退出清理 |
 | CRM 诊断包 | `crm-diagnostics.example.yaml` | SLI 阈值、日志窗口和本机诊断输出模板 |
 | 营销点击验收 | `verify-crm-marketing-link-click.example.yaml` | 白名单跳转、令牌、原子累计和独立点击统计 |
 
