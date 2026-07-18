@@ -1,27 +1,27 @@
 #!/usr/bin/env bash
-# Real two-user API acceptance for CRM marketing broadcast object scope. Only argument: YAML path.
+# Real two-user API acceptance for CRM marketing broadcast object scope. Only argument: KDL path.
 
 set -Eeuo pipefail
 
 PODMAN_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
-source "${PODMAN_DIR}/lib/yaml-config.sh"
+source "${PODMAN_DIR}/lib/kdl-config.sh"
 
-[[ $# -eq 1 ]] || { printf 'Usage: bash ./tests/acceptance/verify-crm-marketing-object-scope.sh <config.yaml>\n' >&2; exit 2; }
-yaml_config_init "$1"
-[[ "$(yaml_require schema_version)" == "1" ]] || exit 2
+[[ $# -eq 1 ]] || { printf 'Usage: bash ./tests/acceptance/verify-crm-marketing-object-scope.sh <config.kdl>\n' >&2; exit 2; }
+kdl_config_init "$1"
+[[ "$(kdl_require schema_version)" == "1" ]] || exit 2
 
-BASE_URL="$(yaml_require endpoint.base_url)"
-TENANT_ID="$(yaml_positive_integer endpoint.tenant_id)"
-ADMIN_USERNAME="$(yaml_require account.admin_username)"
-PASSWORD="$(yaml_require account.password)"
-MYSQL_CONTAINER="$(yaml_require mysql.container)"
-MYSQL_USER="$(yaml_require mysql.user)"
-MYSQL_PASSWORD="$(yaml_require mysql.password)"
-MYSQL_DATABASE="$(yaml_require mysql.database)"
-DEPARTMENT_ID="$(yaml_positive_integer acceptance.department_id)"
-QUERY_PERMISSION="$(yaml_require acceptance.query_permission)"
-REVIEW_PERMISSION="$(yaml_require acceptance.review_permission)"
-DENIED_CODE="$(yaml_positive_integer acceptance.denied_code)"
+BASE_URL="$(kdl_require endpoint.base_url)"
+TENANT_ID="$(kdl_positive_integer endpoint.tenant_id)"
+ADMIN_USERNAME="$(kdl_require account.admin_username)"
+PASSWORD="$(kdl_require account.password)"
+MYSQL_CONTAINER="$(kdl_require mysql.container)"
+MYSQL_USER="$(kdl_require mysql.user)"
+MYSQL_PASSWORD="$(kdl_require mysql.password)"
+MYSQL_DATABASE="$(kdl_require mysql.database)"
+DEPARTMENT_ID="$(kdl_positive_integer acceptance.department_id)"
+QUERY_PERMISSION="$(kdl_require acceptance.query_permission)"
+REVIEW_PERMISSION="$(kdl_require acceptance.review_permission)"
+DENIED_CODE="$(kdl_positive_integer acceptance.denied_code)"
 
 [[ "$BASE_URL" =~ ^https?://[^[:space:]]+$ ]] || exit 2
 for command in curl jq podman date; do command -v "$command" >/dev/null || exit 1; done

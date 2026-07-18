@@ -1,53 +1,50 @@
-# KDL 显式配置迁移 Plan
+# KDL 显式配置迁移实施记录
 
-制定日期：2026-07-18。目标分支：`develop`。
+实施日期：2026-07-18。目标分支：`develop`。
 
-## 决策
+## 决策与当前状态
 
-项目后续配置语言目标调整为 KDL。该决定基于配置结构、类型明确性、可编辑性和领域表达能力；
-TOML 不进入候选，因为本项目包含重复服务节点、分阶段操作、嵌套策略和数据集声明，使用表与数组表表达会
-使结构分散，难以形成清晰的编译、构建、部署领域配置。
+Podman 编译、运行镜像封装、部署、数据库、BPM、诊断和验收入口已统一采用 KDL，命令行继续只接收
+一个 `.kdl` 配置路径。仓库不再维护 YAML/KDL 双份真源，也不再接受 `.yaml` 兼容入口。
 
-命令行契约不改变：每个入口仍只接收一个配置文件路径。操作类型由脚本与配置共同确定，不增加环境变量、
-位置参数或隐式默认值作为第二套配置来源。
+KDL 由项目本地固定版本的 dasel `v3.11.2` 原生解析，源码固定为上游 commit
+`008b0ed9cae7d5d5b0c72e23c84836c5b2f0338b`。`podman/tools/build-dasel.sh` 负责复现静态二进制，
+运行脚本固定使用 `podman/tools/bin/dasel`，不会因 Host PATH 中存在其他版本而漂移。
 
-## 目标形式
+## 配置契约
 
 ```kdl
-schema-version 1
+schema_version 1
 
-operation startup-mode="replace-server"
-
-mysql database="mitedtsm" dataset="crm-demo-v2" dataset-mode="preserve" {
-    dataset-manifest "../../database/generated/crm-demo-v2/crm-demo-v2.manifest"
+operation {
+  startup_mode "replace-server"
 }
 
-dataset-generation name="crm-demo-v2" seed=20260718 tenant-id=1 owner-user-id=1 {
-    demo-user-count 8
-    demo-user-password-source "owner"
-    time start="2025-07-01" end="2026-07-18"
-    count customers=120 businesses=180 stages=5 contracts=72 plans=144 receivables=90
+mysql {
+  database "mitedtsm_database"
+  dataset "crm-demo-v2"
+  dataset_mode "preserve"
+  dataset_manifest "../../database/generated/crm-demo-v2/crm-demo-v2.manifest"
 }
 ```
 
-## 迁移约束
+- 只允许根标量与一层分组标量；
+- 重复节点、数组、空值和第三层结构在任何业务动作前统一失败；
+- 布尔使用 `#true/#false`，字符串显式加引号；
+- 相对路径始终以配置文件目录为基准；
+- 示例配置提交 Git，真实账号、密码和部署地址只写 ignored 本机 KDL；
+- 业务入口只调用 `kdl_get/kdl_require/kdl_bool/kdl_path`，不自行解析配置文本；
+- 测试需要临时改写 KDL 时调用 dasel 驱动的 `kdl_set_file`，不再使用 YAML `sed/awk` 替换。
 
-- KDL 最终成为唯一真源，不长期维护 YAML/KDL 两份等价配置；
-- 迁移期由同一读取层按扩展名选择解析器，业务脚本只调用统一的 `config_get/config_require` 接口；
-- 重复节点、未知节点、未知属性、缺失必填项、类型错误和越界值全部快速失败；
-- 示例配置必须完整提交，真实账号和秘密只进入本机私有配置；
-- 路径继续相对配置文件解析，不相对当前工作目录解析；
-- 先迁移生成、编译、镜像构建三个无状态入口，再迁移部署和数据库替换等有状态入口；
-- 有状态入口迁移前必须建立 YAML 与 KDL 解析结果等价测试，完成后删除对应 YAML 读取分支和过时文档。
+## 已实施
 
-## 阶段
+1. 159 份 Podman 配置和测试 fixture 已从 `.yaml` 转换为 `.kdl`；
+2. 运行读取层已删除手写 YAML/KDL AWK 解析，改为 dasel 解析一次并执行严格结构校验；
+3. 47 个编译、部署、运维和验收脚本已切换到 KDL API；
+4. 数据库 provision、营销 Provider 和演示数据生成测试已改用 dasel 修改临时配置；
+5. 当前 README、操作指南、字段参考和配置目录说明已切换到 KDL；
+6. 全部 157 份正常 KDL 已通过 dasel/结构契约校验，重复节点与非法深度 fixture 均被拒绝；
+7. 部署、停服、运行镜像封装和工具链镜像归档的无状态 `check` 已通过。
 
-1. 定义 KDL 配置读取器、严格 Schema、错误格式和路径规则；
-2. 迁移演示数据生成器并验证生成 SQL、manifest、checksum 与既有契约等价；
-3. 迁移 `compile.sh` 和镜像构建入口；
-4. 迁移 `deploy.sh`、清理、备份恢复和 BPM provision；
-5. 将示例、中文字段说明和 README 切换到 KDL；
-6. 删除 YAML 兼容层，执行完整编译、构建、全新卷部署与 replace/preserve 回归。
-
-本轮只确立迁移目标与边界，运行中的数据集替换仍使用现有 YAML 入口，避免在同一次有状态操作中同时更换
-配置解析协议和业务数据。
+完整 Ubuntu 26.04 编译、运行镜像重建和有状态替换仍按三阶段门禁单独执行，不能与配置解析验证混为一次
+破坏性操作。

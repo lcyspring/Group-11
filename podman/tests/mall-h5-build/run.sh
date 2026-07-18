@@ -8,16 +8,16 @@ PROJECT_ROOT="$(cd -- "${PODMAN_DIR}/.." && pwd)"
 BUILD_SCRIPT="${PODMAN_DIR}/compile.sh"
 
 if [[ $# -ne 1 ]]; then
-    printf 'Usage: bash ./run.sh <config.yaml>\n' >&2
+    printf 'Usage: bash ./run.sh <config.kdl>\n' >&2
     exit 2
 fi
 
-# shellcheck source=../../lib/yaml-config.sh
-source "${PODMAN_DIR}/lib/yaml-config.sh"
-yaml_config_init "$1"
-BUILD_IMAGE="$(yaml_require image.hbuilderx)"
-DEPENDENCY_IMAGE="$(yaml_require image.dependency)"
-NODE_MODULES_VOLUME="$(yaml_require cache.mall_node_modules_volume)"
+# shellcheck source=../../lib/kdl-config.sh
+source "${PODMAN_DIR}/lib/kdl-config.sh"
+kdl_config_init "$1"
+BUILD_IMAGE="$(kdl_require image.hbuilderx)"
+DEPENDENCY_IMAGE="$(kdl_require image.dependency)"
+NODE_MODULES_VOLUME="$(kdl_require cache.mall_node_modules_volume)"
 OUTPUT_DIR="${PROJECT_ROOT}/MallFrontend/unpackage/dist/build/web"
 
 pass_count=0
@@ -47,7 +47,7 @@ pass 'build scripts pass bash syntax validation'
 
 expect_status 2 "$BUILD_SCRIPT"
 expect_status 2 "$BUILD_SCRIPT" "$1" unexpected-extra-argument
-pass 'build command accepts exactly one YAML path'
+pass 'build command accepts exactly one KDL path'
 
 rg -q --fixed-strings -- \
     '--volume "$node_modules_volume:/workspace/MallFrontend/node_modules:rw"' \

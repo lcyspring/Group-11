@@ -1,0 +1,31 @@
+schema_version 1
+
+
+endpoint {
+  base_url "http://127.0.0.1:8080/admin-api"
+  tenant_id 1
+
+}
+
+account {
+  username "replace-me"
+  password "replace-me"
+
+}
+
+mysql {
+  container "mitedtsm-rootless-mysql"
+  user "root"
+  password "replace-me"
+  database "mitedtsm_database"
+
+}
+
+acceptance {
+  dept_id 103
+  owner_user_id 1
+  area_id 130304
+  name_prefix "CRM_PORTRAIT_ACCEPTANCE"
+  start_time "2099-07-17 00:00:00"
+  end_time "2099-07-18 00:00:00"
+}

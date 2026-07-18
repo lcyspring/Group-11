@@ -4,26 +4,26 @@ set -Eeuo pipefail
 trap 'cleanup' EXIT
 
 PODMAN_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
-source "${PODMAN_DIR}/lib/yaml-config.sh"
+source "${PODMAN_DIR}/lib/kdl-config.sh"
 
-[[ $# -eq 1 ]] || { printf 'Usage: bash ./tests/acceptance/verify-crm-customer-portrait-runtime.sh <config.yaml>\n' >&2; exit 2; }
-yaml_config_init "$1"
-[[ "$(yaml_require schema_version)" == 1 ]] || exit 2
+[[ $# -eq 1 ]] || { printf 'Usage: bash ./tests/acceptance/verify-crm-customer-portrait-runtime.sh <config.kdl>\n' >&2; exit 2; }
+kdl_config_init "$1"
+[[ "$(kdl_require schema_version)" == 1 ]] || exit 2
 
-BASE_URL="$(yaml_require endpoint.base_url)"
-TENANT_ID="$(yaml_positive_integer endpoint.tenant_id)"
-USERNAME="$(yaml_require account.username)"
-PASSWORD="$(yaml_require account.password)"
-MYSQL_CONTAINER="$(yaml_require mysql.container)"
-MYSQL_USER="$(yaml_require mysql.user)"
-MYSQL_PASSWORD="$(yaml_require mysql.password)"
-MYSQL_DATABASE="$(yaml_require mysql.database)"
-DEPT_ID="$(yaml_positive_integer acceptance.dept_id)"
-OWNER_USER_ID="$(yaml_positive_integer acceptance.owner_user_id)"
-AREA_ID="$(yaml_positive_integer acceptance.area_id)"
-PREFIX="$(yaml_require acceptance.name_prefix)"
-START_TIME="$(yaml_require acceptance.start_time)"
-END_TIME="$(yaml_require acceptance.end_time)"
+BASE_URL="$(kdl_require endpoint.base_url)"
+TENANT_ID="$(kdl_positive_integer endpoint.tenant_id)"
+USERNAME="$(kdl_require account.username)"
+PASSWORD="$(kdl_require account.password)"
+MYSQL_CONTAINER="$(kdl_require mysql.container)"
+MYSQL_USER="$(kdl_require mysql.user)"
+MYSQL_PASSWORD="$(kdl_require mysql.password)"
+MYSQL_DATABASE="$(kdl_require mysql.database)"
+DEPT_ID="$(kdl_positive_integer acceptance.dept_id)"
+OWNER_USER_ID="$(kdl_positive_integer acceptance.owner_user_id)"
+AREA_ID="$(kdl_positive_integer acceptance.area_id)"
+PREFIX="$(kdl_require acceptance.name_prefix)"
+START_TIME="$(kdl_require acceptance.start_time)"
+END_TIME="$(kdl_require acceptance.end_time)"
 
 [[ "$PREFIX" =~ ^[A-Za-z0-9_-]+$ && "$MYSQL_DATABASE" =~ ^[A-Za-z0-9_]+$ ]] || exit 2
 

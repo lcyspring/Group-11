@@ -4,5 +4,5 @@
 不应直接调用这里的文件；公开编译命令始终是：
 
 ```bash
-bash podman/compile.sh <config.yaml>
+bash podman/compile.sh <config.kdl>
 ```

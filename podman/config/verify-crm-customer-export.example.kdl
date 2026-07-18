@@ -1,0 +1,39 @@
+schema_version 1
+
+
+endpoint {
+  base_url "http://127.0.0.1:8080/admin-api"
+  tenant_id 1
+
+}
+
+account {
+  owner_username "yudao"
+  owner_password "admin123"
+  other_username "admin"
+  other_password "admin123"
+
+}
+
+mysql {
+  container "mitedtsm-rootless-mysql"
+  user "root"
+  password 1234
+  database "mitedtsm_database"
+
+}
+
+redis {
+  container "mitedtsm-rootless-redis"
+
+}
+
+test {
+  owner_user_id 100
+  owner_role_id 2
+  privileged_role_id 1
+  customer_export_menu_id 2396
+  customer_id 12
+  poll_attempts 30
+  poll_interval_seconds 1
+}

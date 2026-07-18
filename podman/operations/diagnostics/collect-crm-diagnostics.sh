@@ -1,41 +1,41 @@
 #!/usr/bin/env bash
-# Collect a sanitized-indexed local CRM diagnostic bundle. The only CLI argument is a YAML path.
+# Collect a sanitized-indexed local CRM diagnostic bundle. The only CLI argument is a KDL path.
 
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PODMAN_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
-source "${PODMAN_DIR}/lib/yaml-config.sh"
+source "${PODMAN_DIR}/lib/kdl-config.sh"
 
-[[ $# -eq 1 ]] || { printf 'Usage: bash ./operations/diagnostics/collect-crm-diagnostics.sh <config.yaml>\n' >&2; exit 2; }
-yaml_config_init "$1"
-[[ "$(yaml_require schema_version)" == "1" ]] || { printf 'Unsupported schema_version.\n' >&2; exit 2; }
+[[ $# -eq 1 ]] || { printf 'Usage: bash ./operations/diagnostics/collect-crm-diagnostics.sh <config.kdl>\n' >&2; exit 2; }
+kdl_config_init "$1"
+[[ "$(kdl_require schema_version)" == "1" ]] || { printf 'Unsupported schema_version.\n' >&2; exit 2; }
 
-POD_NAME="$(yaml_require deployment.pod_name)"
-SERVER_URL="$(yaml_require endpoint.server_health_url)"
-WEB_URL="$(yaml_require endpoint.web_url)"
-MALL_URL="$(yaml_require endpoint.mall_url)"
-TIMEOUT_SECONDS="$(yaml_positive_integer endpoint.timeout_seconds)"
-EXPECTED_HEALTH="$(yaml_require endpoint.expected_health_status)"
-LOG_SINCE="$(yaml_require collection.log_since)"
-OUTPUT_DIR="$(yaml_path collection.output_dir)"
-MYSQL_USER="$(yaml_require mysql.user)"
-MYSQL_PASSWORD="$(yaml_require mysql.password)"
-MYSQL_DATABASE="$(yaml_require mysql.database)"
-MIN_DISK_FREE="$(yaml_positive_integer thresholds.min_disk_free_percent)"
-MAX_MEMORY_USED="$(yaml_positive_integer thresholds.max_host_memory_used_percent)"
-MAX_CONNECTION_USED="$(yaml_positive_integer thresholds.max_mysql_connection_used_percent)"
-MAX_ERROR_LINES="$(yaml_positive_integer thresholds.max_recent_error_lines)"
-MAX_RESTARTS="$(yaml_require thresholds.max_container_restarts)"
+POD_NAME="$(kdl_require deployment.pod_name)"
+SERVER_URL="$(kdl_require endpoint.server_health_url)"
+WEB_URL="$(kdl_require endpoint.web_url)"
+MALL_URL="$(kdl_require endpoint.mall_url)"
+TIMEOUT_SECONDS="$(kdl_positive_integer endpoint.timeout_seconds)"
+EXPECTED_HEALTH="$(kdl_require endpoint.expected_health_status)"
+LOG_SINCE="$(kdl_require collection.log_since)"
+OUTPUT_DIR="$(kdl_path collection.output_dir)"
+MYSQL_USER="$(kdl_require mysql.user)"
+MYSQL_PASSWORD="$(kdl_require mysql.password)"
+MYSQL_DATABASE="$(kdl_require mysql.database)"
+MIN_DISK_FREE="$(kdl_positive_integer thresholds.min_disk_free_percent)"
+MAX_MEMORY_USED="$(kdl_positive_integer thresholds.max_host_memory_used_percent)"
+MAX_CONNECTION_USED="$(kdl_positive_integer thresholds.max_mysql_connection_used_percent)"
+MAX_ERROR_LINES="$(kdl_positive_integer thresholds.max_recent_error_lines)"
+MAX_RESTARTS="$(kdl_require thresholds.max_container_restarts)"
 
 declare -a CONTAINERS=(
-    "$(yaml_require containers.mysql)"
-    "$(yaml_require containers.redis)"
-    "$(yaml_require containers.rabbitmq)"
-    "$(yaml_require containers.tdengine)"
-    "$(yaml_require containers.server)"
-    "$(yaml_require containers.web)"
-    "$(yaml_require containers.mall)"
+    "$(kdl_require containers.mysql)"
+    "$(kdl_require containers.redis)"
+    "$(kdl_require containers.rabbitmq)"
+    "$(kdl_require containers.tdengine)"
+    "$(kdl_require containers.server)"
+    "$(kdl_require containers.web)"
+    "$(kdl_require containers.mall)"
 )
 MYSQL_CONTAINER="${CONTAINERS[0]}"
 

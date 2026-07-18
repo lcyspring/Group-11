@@ -4,19 +4,19 @@ set -Eeuo pipefail
 trap 'printf "CRM campaign acceptance failed at line %s.\n" "$LINENO" >&2' ERR
 
 PODMAN_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
-source "${PODMAN_DIR}/lib/yaml-config.sh"
+source "${PODMAN_DIR}/lib/kdl-config.sh"
 
 [[ $# -eq 1 ]] || {
-    printf 'Usage: bash ./tests/acceptance/verify-crm-campaign.sh <config.yaml>\n' >&2
+    printf 'Usage: bash ./tests/acceptance/verify-crm-campaign.sh <config.kdl>\n' >&2
     exit 2
 }
-yaml_config_init "$1"
-[[ "$(yaml_require schema_version)" == "1" ]] || exit 2
+kdl_config_init "$1"
+[[ "$(kdl_require schema_version)" == "1" ]] || exit 2
 
-BASE_URL="$(yaml_require endpoint.base_url)"
-TENANT_ID="$(yaml_positive_integer endpoint.tenant_id)"
-USERNAME="$(yaml_require account.username)"
-PASSWORD="$(yaml_require account.password)"
+BASE_URL="$(kdl_require endpoint.base_url)"
+TENANT_ID="$(kdl_positive_integer endpoint.tenant_id)"
+USERNAME="$(kdl_require account.username)"
+PASSWORD="$(kdl_require account.password)"
 [[ "$BASE_URL" =~ ^https?://[^[:space:]]+$ ]] || exit 2
 for command in curl jq; do command -v "$command" >/dev/null; done
 

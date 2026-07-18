@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 
 # End-to-end acceptance for the signed-contract amendment workflow.
-# The only command-line argument is an explicit YAML configuration path.
+# The only command-line argument is an explicit KDL configuration path.
 
 set -Eeuo pipefail
 
 PODMAN_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 usage() {
-    printf 'Usage: bash ./tests/acceptance/verify-crm-contract-amendment.sh <config.yaml>\n' >&2
+    printf 'Usage: bash ./tests/acceptance/verify-crm-contract-amendment.sh <config.kdl>\n' >&2
 }
 
 [[ $# -eq 1 ]] || {
@@ -16,28 +16,28 @@ usage() {
     exit 2
 }
 
-# shellcheck source=../../lib/yaml-config.sh
-source "${PODMAN_DIR}/lib/yaml-config.sh"
-yaml_config_init "$1"
+# shellcheck source=../../lib/kdl-config.sh
+source "${PODMAN_DIR}/lib/kdl-config.sh"
+kdl_config_init "$1"
 
-[[ "$(yaml_require schema_version)" == "1" ]] || {
+[[ "$(kdl_require schema_version)" == "1" ]] || {
     printf 'Unsupported schema_version; expected 1.\n' >&2
     exit 2
 }
 
-BASE_URL="$(yaml_require endpoint.base_url)"
-TENANT_ID="$(yaml_positive_integer endpoint.tenant_id)"
-NEGATIVE_TENANT_ID="$(yaml_positive_integer endpoint.negative_tenant_id)"
-USERNAME="$(yaml_require account.username)"
-PASSWORD="$(yaml_require account.password)"
-CONTRACT_ID="$(yaml_positive_integer acceptance.contract_id)"
-OTHER_CONTRACT_ID="$(yaml_positive_integer acceptance.other_contract_id)"
-HANDLER_USER_ID="$(yaml_positive_integer acceptance.handler_user_id)"
-EVIDENCE_FILE="$(yaml_path acceptance.evidence_file)"
-TITLE="$(yaml_require acceptance.title)"
-REASON="$(yaml_require acceptance.reason)"
-POLL_ATTEMPTS="$(yaml_positive_integer acceptance.poll_attempts)"
-POLL_INTERVAL="$(yaml_positive_integer acceptance.poll_interval_seconds)"
+BASE_URL="$(kdl_require endpoint.base_url)"
+TENANT_ID="$(kdl_positive_integer endpoint.tenant_id)"
+NEGATIVE_TENANT_ID="$(kdl_positive_integer endpoint.negative_tenant_id)"
+USERNAME="$(kdl_require account.username)"
+PASSWORD="$(kdl_require account.password)"
+CONTRACT_ID="$(kdl_positive_integer acceptance.contract_id)"
+OTHER_CONTRACT_ID="$(kdl_positive_integer acceptance.other_contract_id)"
+HANDLER_USER_ID="$(kdl_positive_integer acceptance.handler_user_id)"
+EVIDENCE_FILE="$(kdl_path acceptance.evidence_file)"
+TITLE="$(kdl_require acceptance.title)"
+REASON="$(kdl_require acceptance.reason)"
+POLL_ATTEMPTS="$(kdl_positive_integer acceptance.poll_attempts)"
+POLL_INTERVAL="$(kdl_positive_integer acceptance.poll_interval_seconds)"
 
 [[ "$BASE_URL" =~ ^https?://[^[:space:]]+$ ]] || {
     printf 'endpoint.base_url must be an HTTP(S) URL.\n' >&2

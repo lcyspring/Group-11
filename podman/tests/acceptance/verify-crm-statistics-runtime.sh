@@ -1,30 +1,30 @@
 #!/usr/bin/env bash
-# Real API and MySQL reconciliation for CRM statistics authorization. The only CLI argument is a YAML path.
+# Real API and MySQL reconciliation for CRM statistics authorization. The only CLI argument is a KDL path.
 
 set -Eeuo pipefail
 
 PODMAN_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
-source "${PODMAN_DIR}/lib/yaml-config.sh"
+source "${PODMAN_DIR}/lib/kdl-config.sh"
 
-[[ $# -eq 1 ]] || { printf 'Usage: bash ./tests/acceptance/verify-crm-statistics-runtime.sh <config.yaml>\n' >&2; exit 2; }
-yaml_config_init "$1"
-[[ "$(yaml_require schema_version)" == "1" ]] || { printf 'Unsupported schema_version.\n' >&2; exit 2; }
+[[ $# -eq 1 ]] || { printf 'Usage: bash ./tests/acceptance/verify-crm-statistics-runtime.sh <config.kdl>\n' >&2; exit 2; }
+kdl_config_init "$1"
+[[ "$(kdl_require schema_version)" == "1" ]] || { printf 'Unsupported schema_version.\n' >&2; exit 2; }
 
-BASE_URL="$(yaml_require endpoint.base_url)"
-TENANT_ID="$(yaml_positive_integer endpoint.tenant_id)"
-NEGATIVE_TENANT_ID="$(yaml_positive_integer endpoint.negative_tenant_id)"
-TEMPLATE_USERNAME="$(yaml_require account.template_username)"
-TEMPLATE_PASSWORD="$(yaml_require account.template_password)"
-MYSQL_CONTAINER="$(yaml_require mysql.container)"
-MYSQL_USER="$(yaml_require mysql.user)"
-MYSQL_PASSWORD="$(yaml_require mysql.password)"
-MYSQL_DATABASE="$(yaml_require mysql.database)"
-DEPARTMENT_ID="$(yaml_positive_integer acceptance.department_id)"
-PEER_USER_ID="$(yaml_positive_integer acceptance.peer_user_id)"
-CUSTOMER_PERMISSION="$(yaml_require acceptance.customer_permission)"
-DENIED_SCOPE="$(yaml_require acceptance.denied_scope)"
-START_TIME="$(yaml_require acceptance.start_time)"
-END_TIME="$(yaml_require acceptance.end_time)"
+BASE_URL="$(kdl_require endpoint.base_url)"
+TENANT_ID="$(kdl_positive_integer endpoint.tenant_id)"
+NEGATIVE_TENANT_ID="$(kdl_positive_integer endpoint.negative_tenant_id)"
+TEMPLATE_USERNAME="$(kdl_require account.template_username)"
+TEMPLATE_PASSWORD="$(kdl_require account.template_password)"
+MYSQL_CONTAINER="$(kdl_require mysql.container)"
+MYSQL_USER="$(kdl_require mysql.user)"
+MYSQL_PASSWORD="$(kdl_require mysql.password)"
+MYSQL_DATABASE="$(kdl_require mysql.database)"
+DEPARTMENT_ID="$(kdl_positive_integer acceptance.department_id)"
+PEER_USER_ID="$(kdl_positive_integer acceptance.peer_user_id)"
+CUSTOMER_PERMISSION="$(kdl_require acceptance.customer_permission)"
+DENIED_SCOPE="$(kdl_require acceptance.denied_scope)"
+START_TIME="$(kdl_require acceptance.start_time)"
+END_TIME="$(kdl_require acceptance.end_time)"
 
 [[ "$BASE_URL" =~ ^https?://[^[:space:]]+$ ]] || { printf 'Invalid endpoint.base_url.\n' >&2; exit 2; }
 [[ "$MYSQL_CONTAINER" =~ ^[a-zA-Z0-9_.-]+$ && "$MYSQL_USER" =~ ^[a-zA-Z0-9_.-]+$ \

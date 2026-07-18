@@ -9,7 +9,7 @@ WEB_DIR="$(cd -- "${PODMAN_DIR}/../Web" && pwd)"
 MALL_DIR="$(cd -- "${PODMAN_DIR}/../MallFrontend" && pwd)"
 
 usage() {
-    printf 'Usage: bash ./tests/runtime-config/run.sh <runtime-config.yaml>\n' >&2
+    printf 'Usage: bash ./tests/runtime-config/run.sh <runtime-config.kdl>\n' >&2
 }
 
 [[ $# -eq 1 ]] || {
@@ -22,8 +22,8 @@ if [[ "$CONFIG_PATH" != /* ]]; then
     CONFIG_PATH="$(cd -- "$(dirname -- "$CONFIG_PATH")" && pwd)/$(basename -- "$CONFIG_PATH")"
 fi
 
-# shellcheck source=../../lib/yaml-config.sh
-source "${PODMAN_DIR}/lib/yaml-config.sh"
+# shellcheck source=../../lib/kdl-config.sh
+source "${PODMAN_DIR}/lib/kdl-config.sh"
 
 fail() {
     printf 'FAIL: %s\n' "$1" >&2
@@ -82,7 +82,7 @@ bash -n "${PODMAN_DIR}/deploy.sh"
 bash -n "${PODMAN_DIR}/build-images.sh"
 bash -n "${PODMAN_DIR}/stop.sh"
 bash -n "${PODMAN_DIR}/operations/images/image-archives.sh"
-bash -n "${PODMAN_DIR}/lib/yaml-config.sh"
+bash -n "${PODMAN_DIR}/lib/kdl-config.sh"
 bash -n "${PODMAN_DIR}/operations/database/database-backup.sh"
 bash -n "${PODMAN_DIR}/operations/database/database-restore.sh"
 bash -n "${PODMAN_DIR}/operations/database/database-dataset.sh"
@@ -112,7 +112,7 @@ if rg -q 'COPY[[:space:]]+(database/|podman/init/init-mysql\.sh)' "${PODMAN_DIR}
     fail 'database SQL or initialization scripts must not be packaged into runtime images'
 fi
 if rg -q 'mysql,init-service|target_selected mysql|mysql_runtime' \
-    "${PODMAN_DIR}/build-images.sh" "${PODMAN_DIR}/config/runtime-images"*.yaml; then
+    "${PODMAN_DIR}/build-images.sh" "${PODMAN_DIR}/config/runtime-images"*.kdl; then
     fail 'runtime image packaging must not build a project-specific MySQL image'
 fi
 rg -q 'internal/provision-database\.sh' "${PODMAN_DIR}/deploy.sh" || \
@@ -121,38 +121,38 @@ rg -q 'internal/provision-marketing-provider\.sh' "${PODMAN_DIR}/deploy.sh" || \
     fail 'deploy.sh must run the explicit marketing Provider provisioner'
 
 while IFS= read -r build_config; do
-    yaml_config_init "$build_config"
-    include_targets="$(yaml_require build.include_targets)"
-    exclude_targets="$(yaml_require build.exclude_targets)"
+    kdl_config_init "$build_config"
+    include_targets="$(kdl_require build.include_targets)"
+    exclude_targets="$(kdl_require build.exclude_targets)"
     [[ "$include_targets" =~ ^(all|none|(server|init-service|web|mall-h5)(,(server|init-service|web|mall-h5))*)$ ]] || \
         fail "invalid build.include_targets: ${build_config}"
     [[ "$exclude_targets" =~ ^(all|none|(server|init-service|web|mall-h5)(,(server|init-service|web|mall-h5))*)$ ]] || \
         fail "invalid build.exclude_targets: ${build_config}"
-done < <(rg -l '^  (standard|hbuilderx): ghcr.io/elel-code/group-11-(build|hbuilderx)-ubuntu:' \
-    "${PODMAN_DIR}/config" --glob '*.yaml')
-if rg -q '^  (engine|server|init_service|web): (standard|hbuilderx|true|false)$' \
-    "${PODMAN_DIR}/config" --glob '*.yaml'; then
+done < <(rg -l '^  (standard|hbuilderx) "ghcr.io/elel-code/group-11-(build|hbuilderx)-ubuntu:' \
+    "${PODMAN_DIR}/config" --glob '*.kdl')
+if rg -q '^  (engine|server|init_service|web) ("(standard|hbuilderx)"|#true|#false)$' \
+    "${PODMAN_DIR}/config" --glob '*.kdl'; then
     fail 'legacy engine or per-artifact build whitelist remains in a compile configuration'
 fi
-if rg --pcre2 -n '^(ARG (RUNTIME|NGINX)_BASE_IMAGE=docker\.io/|  (runtime|nginx|redis|rabbitmq|tdengine|mysql)_base: docker\.io/)(?!.*@sha256:[0-9a-f]{64}$)' \
+if rg --pcre2 -n '^(ARG (RUNTIME|NGINX)_BASE_IMAGE=docker\.io/|  (runtime|nginx|redis|rabbitmq|tdengine|mysql)_base "docker\.io/)(?!.*@sha256:[0-9a-f]{64}"?$)' \
     "${PODMAN_DIR}/Containerfile" \
-    "${PODMAN_DIR}/config/runtime-local-check.yaml" \
-    "${PODMAN_DIR}/config/runtime-images-check.yaml" \
-    "${PODMAN_DIR}/config/runtime-images.example.yaml" \
-    "${PODMAN_DIR}/config/runtime-images-server.example.yaml" \
-    "${PODMAN_DIR}/config/runtime-images-web.example.yaml"; then
+    "${PODMAN_DIR}/config/runtime-local-check.kdl" \
+    "${PODMAN_DIR}/config/runtime-images-check.kdl" \
+    "${PODMAN_DIR}/config/runtime-images.example.kdl" \
+    "${PODMAN_DIR}/config/runtime-images-server.example.kdl" \
+    "${PODMAN_DIR}/config/runtime-images-web.example.kdl"; then
     fail 'tracked runtime base images must use an exact version plus sha256 digest'
 fi
 
-bash "${PODMAN_DIR}/operations/database/database-backup.sh" "${PODMAN_DIR}/config/database-backup-check.yaml"
-bash "${PODMAN_DIR}/operations/database/database-restore.sh" "${PODMAN_DIR}/config/database-backup-check.yaml"
-bash "${PODMAN_DIR}/operations/database/database-dataset.sh" "${PODMAN_DIR}/config/database-dataset-check.yaml"
+bash "${PODMAN_DIR}/operations/database/database-backup.sh" "${PODMAN_DIR}/config/database-backup-check.kdl"
+bash "${PODMAN_DIR}/operations/database/database-restore.sh" "${PODMAN_DIR}/config/database-backup-check.kdl"
+bash "${PODMAN_DIR}/operations/database/database-dataset.sh" "${PODMAN_DIR}/config/database-dataset-check.kdl"
 expect_exit_2 bash "${PODMAN_DIR}/operations/database/database-dataset.sh" \
-    "${SCRIPT_DIR}/fixtures/dataset-replace-without-cleanup.yaml"
+    "${SCRIPT_DIR}/fixtures/dataset-replace-without-cleanup.kdl"
 expect_exit_2 bash "${PODMAN_DIR}/operations/database/database-dataset.sh" \
-    "${SCRIPT_DIR}/fixtures/dataset-insert-with-cleanup.yaml"
-bash "${PODMAN_DIR}/operations/images/build-image-archives.sh" "${PODMAN_DIR}/config/build-image-archives-check.yaml"
-bash "${PODMAN_DIR}/build-images.sh" "${PODMAN_DIR}/config/runtime-images-check.yaml"
+    "${SCRIPT_DIR}/fixtures/dataset-insert-with-cleanup.kdl"
+bash "${PODMAN_DIR}/operations/images/build-image-archives.sh" "${PODMAN_DIR}/config/build-image-archives-check.kdl"
+bash "${PODMAN_DIR}/build-images.sh" "${PODMAN_DIR}/config/runtime-images-check.kdl"
 if rg -q 'podman(_cmd)?[[:space:]]+build|Containerfile|target/mitedtsm|dist-prod|unpackage/dist' \
     "${PODMAN_DIR}/deploy.sh"; then
     fail 'deploy.sh must not build images or read host build artifacts'
@@ -162,27 +162,27 @@ if rg -q 'generate-demo-dataset' "${PODMAN_DIR}/deploy.sh"; then
 fi
 
 required_examples=(
-    cleanup-stop.example.yaml
-    cleanup-reset.example.yaml
-    runtime-images.example.yaml
-    runtime-images-server.example.yaml
-    runtime-images-web.example.yaml
-    compile-all-ubuntu-26.04.example.yaml
-    test-pay-ubuntu-26.04.yaml
-    verify-crm-marketing-link-click.example.yaml
-    verify-crm-work-order-performance.example.yaml
-    verify-crm-work-order-security.example.yaml
-    generate-demo-dataset.example.yaml
-    bpm-provision.example.yaml
-    bpm-provision-receivable.example.yaml
-    bpm-provision-contract.example.yaml
-    bpm-provision-amendment.example.yaml
-    bpm-provision-refund.example.yaml
-    bpm-provision-trip.example.yaml
-    bpm-provision-loan.example.yaml
-    bpm-provision-leave.example.yaml
-    bpm-provision-customer-visit.example.yaml
-    bpm-provision-all.example.yaml
+    cleanup-stop.example.kdl
+    cleanup-reset.example.kdl
+    runtime-images.example.kdl
+    runtime-images-server.example.kdl
+    runtime-images-web.example.kdl
+    compile-all-ubuntu-26.04.example.kdl
+    test-pay-ubuntu-26.04.kdl
+    verify-crm-marketing-link-click.example.kdl
+    verify-crm-work-order-performance.example.kdl
+    verify-crm-work-order-security.example.kdl
+    generate-demo-dataset.example.kdl
+    bpm-provision.example.kdl
+    bpm-provision-receivable.example.kdl
+    bpm-provision-contract.example.kdl
+    bpm-provision-amendment.example.kdl
+    bpm-provision-refund.example.kdl
+    bpm-provision-trip.example.kdl
+    bpm-provision-loan.example.kdl
+    bpm-provision-leave.example.kdl
+    bpm-provision-customer-visit.example.kdl
+    bpm-provision-all.example.kdl
 )
 for example in "${required_examples[@]}"; do
     example_path="${PODMAN_DIR}/config/${example}"
@@ -259,58 +259,51 @@ missing_crm_migrations="$(comm -23 \
 [[ -z "$missing_crm_migrations" ]] || fail \
     "CRM compatibility migrations missing from manifest: ${missing_crm_migrations//$'\n'/, }"
 
-yaml_config_init "${SCRIPT_DIR}/fixtures/parser-valid.yaml"
-[[ "$(yaml_require sample.plain)" == "value" ]] || fail 'plain scalar parsing'
-[[ "$(yaml_require sample.quoted)" == "value # kept" ]] || fail 'quoted comment parsing'
-[[ "$(yaml_bool sample.enabled)" == "true" ]] || fail 'boolean parsing'
-[[ "$(yaml_port sample.port)" == "18080" ]] || fail 'port parsing'
+kdl_config_init "${SCRIPT_DIR}/fixtures/parser-valid.kdl"
+[[ "$(kdl_require sample.plain)" == "value" ]] || fail 'plain scalar parsing'
+[[ "$(kdl_require sample.quoted)" == "value # kept" ]] || fail 'quoted comment parsing'
+[[ "$(kdl_bool sample.enabled)" == "true" ]] || fail 'boolean parsing'
+[[ "$(kdl_port sample.port)" == "18080" ]] || fail 'port parsing'
 
-yaml_config_init "${SCRIPT_DIR}/fixtures/parser-duplicate.yaml"
-if yaml_require sample.value >/dev/null 2>&1; then
-    fail 'duplicate keys must be rejected'
-fi
-
-yaml_config_init "${SCRIPT_DIR}/fixtures/parser-invalid-depth.yaml"
-if yaml_require sample.nested >/dev/null 2>&1; then
-    fail 'mappings deeper than two levels must be rejected'
-fi
+expect_exit_2 kdl_config_init "${SCRIPT_DIR}/fixtures/parser-duplicate.kdl"
+expect_exit_2 kdl_config_init "${SCRIPT_DIR}/fixtures/parser-invalid-depth.kdl"
 
 expect_exit_2 bash "${PODMAN_DIR}/deploy.sh"
 expect_exit_2 bash "${PODMAN_DIR}/deploy.sh" "$CONFIG_PATH" extra
 expect_exit_2 bash "${PODMAN_DIR}/compile.sh"
 expect_exit_2 bash "${PODMAN_DIR}/compile.sh" \
-    "${PODMAN_DIR}/config/build-ubuntu-26.04.yaml" extra
+    "${PODMAN_DIR}/config/build-ubuntu-26.04.kdl" extra
 expect_exit_2 bash "${PODMAN_DIR}/compile.sh" \
-    "${SCRIPT_DIR}/fixtures/compile-invalid-selector.yaml"
+    "${SCRIPT_DIR}/fixtures/compile-invalid-selector.kdl"
 expect_exit_2 bash "${PODMAN_DIR}/compile.sh" \
-    "${SCRIPT_DIR}/fixtures/compile-empty-selection.yaml"
+    "${SCRIPT_DIR}/fixtures/compile-empty-selection.kdl"
 expect_exit_2 bash "${PODMAN_DIR}/compile.sh" \
-    "${SCRIPT_DIR}/fixtures/compile-pay-coverage-without-tests.yaml"
+    "${SCRIPT_DIR}/fixtures/compile-pay-coverage-without-tests.kdl"
 expect_exit_2 bash "${PODMAN_DIR}/internal/provision-marketing-provider.sh" \
-    "${SCRIPT_DIR}/fixtures/provider-placeholder-secret.yaml"
+    "${SCRIPT_DIR}/fixtures/provider-placeholder-secret.kdl"
 expect_exit_2 bash "${PODMAN_DIR}/build-images.sh"
 expect_exit_2 bash "${PODMAN_DIR}/build-images.sh" \
-    "${PODMAN_DIR}/config/runtime-images-check.yaml" extra
+    "${PODMAN_DIR}/config/runtime-images-check.kdl" extra
 expect_exit_2 bash "${PODMAN_DIR}/stop.sh"
 expect_exit_2 bash "${PODMAN_DIR}/stop.sh" "$CONFIG_PATH" extra
 expect_exit_2 bash "${PODMAN_DIR}/stop.sh" \
-    "${SCRIPT_DIR}/fixtures/cleanup-reset-unconfirmed.yaml"
+    "${SCRIPT_DIR}/fixtures/cleanup-reset-unconfirmed.kdl"
 expect_exit_2 bash "${PODMAN_DIR}/operations/images/image-archives.sh"
 expect_exit_2 bash "${PODMAN_DIR}/operations/images/image-archives.sh" "$CONFIG_PATH" extra
 expect_exit_1 bash "${PODMAN_DIR}/operations/images/image-archives.sh" \
-    "${SCRIPT_DIR}/fixtures/archive-check-missing.yaml"
+    "${SCRIPT_DIR}/fixtures/archive-check-missing.kdl"
 
-yaml_config_init "$CONFIG_PATH"
-dataset_name="$(yaml_require mysql.dataset)"
+kdl_config_init "$CONFIG_PATH"
+dataset_name="$(kdl_require mysql.dataset)"
 [[ "$dataset_name" =~ ^[a-z0-9][a-z0-9._-]*$ ]] || fail 'mysql.dataset has invalid characters'
 [[ -s "${DATABASE_DIR}/datasets/${dataset_name}.manifest" ]] || fail 'selected dataset manifest is missing'
-[[ "$(yaml_bool security.mock_login_enabled)" == "false" ]] || fail 'mock login must be explicitly disabled'
-[[ "$(yaml_positive_integer security.password_encoder_length)" -ge 10 ]] || fail 'BCrypt strength must be explicit'
-[[ "$(yaml_bool security.xss_enabled)" == "true" ]] || fail 'XSS filtering must be explicitly enabled'
-[[ "$(yaml_require security.actuator_exposure)" == "health,info" ]] || fail 'Actuator exposure must be explicit'
-[[ "$(yaml_bool security.api_docs_enabled)" == "false" ]] || fail 'API documentation must be explicitly disabled'
-[[ "$(yaml_bool integration.justauth_enabled)" == "false" ]] || fail 'JustAuth startup must be explicit'
-pod_name="$(yaml_require deployment.pod_name)"
+[[ "$(kdl_bool security.mock_login_enabled)" == "false" ]] || fail 'mock login must be explicitly disabled'
+[[ "$(kdl_positive_integer security.password_encoder_length)" -ge 10 ]] || fail 'BCrypt strength must be explicit'
+[[ "$(kdl_bool security.xss_enabled)" == "true" ]] || fail 'XSS filtering must be explicitly enabled'
+[[ "$(kdl_require security.actuator_exposure)" == "health,info" ]] || fail 'Actuator exposure must be explicit'
+[[ "$(kdl_bool security.api_docs_enabled)" == "false" ]] || fail 'API documentation must be explicitly disabled'
+[[ "$(kdl_bool integration.justauth_enabled)" == "false" ]] || fail 'JustAuth startup must be explicit'
+pod_name="$(kdl_require deployment.pod_name)"
 before="$(pod_snapshot "$pod_name")"
 bash "${PODMAN_DIR}/deploy.sh" "$CONFIG_PATH"
 bash "${PODMAN_DIR}/stop.sh" "$CONFIG_PATH"
@@ -321,4 +314,4 @@ env POD_NAME=ignored STOP_TIMEOUT=invalid \
 after="$(pod_snapshot "$pod_name")"
 [[ "$after" == "$before" ]] || fail "check modes changed Pod state: before=$before after=$after"
 
-printf 'Runtime YAML configuration tests passed. Pod state remained %s.\n' "$after"
+printf 'Runtime KDL configuration tests passed. Pod state remained %s.\n' "$after"

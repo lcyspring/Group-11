@@ -1,0 +1,53 @@
+schema_version 1
+
+
+image {
+  base "docker.io/library/ubuntu:26.04"
+  hbuilderx "ghcr.io/elel-code/group-11-hbuilderx-ubuntu:26.04-5.05"
+  dependency "ghcr.io/elel-code/group-11-build-ubuntu:26.04"
+  rebuild #false
+
+}
+
+hbuilderx {
+  source_dir "/opt/HBuilderX"
+
+}
+
+build {
+  include_targets "mall-h5"
+  exclude_targets "server,init-service,web"
+  platform "h5"
+  clean_output #true
+
+}
+
+dependency {
+  mall_frozen_lockfile #true
+
+}
+
+cache {
+  mall_pnpm_store_volume "mitedtsm-mall-h5-pnpm-store"
+  mall_pnpm_store_path "/pnpm-store"
+  mall_node_modules_volume "mitedtsm-mall-h5-node-modules"
+
+}
+
+media {
+  legacy_origins "http://test.yudao.iocoder.cn"
+  legacy_fallback "/static/goods-empty.png"
+
+}
+
+network {
+  mall_mode "none"
+  mall_dependency_mode "pasta"
+  use_host_proxy #false
+
+}
+
+runtime {
+  mall_memory "4g"
+  mall_cpus 4
+}

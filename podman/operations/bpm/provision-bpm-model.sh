@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Provision one governed CRM approval model through the managed BPM APIs.
-# The only command-line argument is an explicit YAML configuration path.
+# The only command-line argument is an explicit KDL configuration path.
 
 set -Eeuo pipefail
 
@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PODMAN_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
 
 usage() {
-    printf 'Usage: bash ./operations/bpm/provision-bpm-model.sh <config.yaml>\n' >&2
+    printf 'Usage: bash ./operations/bpm/provision-bpm-model.sh <config.kdl>\n' >&2
 }
 
 [[ $# -eq 1 ]] || {
@@ -16,33 +16,33 @@ usage() {
     exit 2
 }
 
-# shellcheck source=../../lib/yaml-config.sh
-source "${PODMAN_DIR}/lib/yaml-config.sh"
-yaml_config_init "$1"
+# shellcheck source=../../lib/kdl-config.sh
+source "${PODMAN_DIR}/lib/kdl-config.sh"
+kdl_config_init "$1"
 
-[[ "$(yaml_require schema_version)" == "1" ]] || {
+[[ "$(kdl_require schema_version)" == "1" ]] || {
     printf 'Unsupported schema_version; expected 1.\n' >&2
     exit 2
 }
 
-BASE_URL="$(yaml_require endpoint.base_url)"
-TENANT_ID="$(yaml_positive_integer endpoint.tenant_id)"
-USERNAME="$(yaml_require account.username)"
-PASSWORD="$(yaml_require account.password)"
-ROLE_CODE="$(yaml_require approval.role_code)"
-ROLE_NAME="$(yaml_require approval.role_name)"
-ROLE_SORT="$(yaml_positive_integer approval.role_sort)"
-APPROVER_USERNAME="$(yaml_require approval.approver_username)"
-PERMISSION_CODES="$(yaml_require approval.permission_codes)"
-CATEGORY_CODE="$(yaml_require category.code)"
-CATEGORY_NAME="$(yaml_require category.name)"
-CATEGORY_SORT="$(yaml_positive_integer category.sort)"
-MODEL_KEY="$(yaml_require model.key)"
-MODEL_NAME="$(yaml_require model.name)"
-MODEL_DESCRIPTION="$(yaml_require model.description)"
-FORM_CREATE_PATH="$(yaml_require model.form_create_path)"
-FORM_VIEW_PATH="$(yaml_require model.form_view_path)"
-APPROVAL_NODE_NAME="$(yaml_require model.approval_node_name)"
+BASE_URL="$(kdl_require endpoint.base_url)"
+TENANT_ID="$(kdl_positive_integer endpoint.tenant_id)"
+USERNAME="$(kdl_require account.username)"
+PASSWORD="$(kdl_require account.password)"
+ROLE_CODE="$(kdl_require approval.role_code)"
+ROLE_NAME="$(kdl_require approval.role_name)"
+ROLE_SORT="$(kdl_positive_integer approval.role_sort)"
+APPROVER_USERNAME="$(kdl_require approval.approver_username)"
+PERMISSION_CODES="$(kdl_require approval.permission_codes)"
+CATEGORY_CODE="$(kdl_require category.code)"
+CATEGORY_NAME="$(kdl_require category.name)"
+CATEGORY_SORT="$(kdl_positive_integer category.sort)"
+MODEL_KEY="$(kdl_require model.key)"
+MODEL_NAME="$(kdl_require model.name)"
+MODEL_DESCRIPTION="$(kdl_require model.description)"
+FORM_CREATE_PATH="$(kdl_require model.form_create_path)"
+FORM_VIEW_PATH="$(kdl_require model.form_view_path)"
+APPROVAL_NODE_NAME="$(kdl_require model.approval_node_name)"
 
 [[ "$BASE_URL" =~ ^https?://[^[:space:]]+$ ]] || {
     printf 'endpoint.base_url must be an HTTP(S) URL.\n' >&2

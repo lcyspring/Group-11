@@ -9,33 +9,33 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 
 [[ $# -eq 1 ]] || {
-    printf 'Usage: bash ./build-images.sh <config.yaml>\n' >&2
+    printf 'Usage: bash ./build-images.sh <config.kdl>\n' >&2
     exit 2
 }
 
-# shellcheck source=lib/yaml-config.sh
-source "${SCRIPT_DIR}/lib/yaml-config.sh"
-yaml_config_init "$1"
-[[ "$(yaml_require schema_version)" == "1" ]] || exit 2
+# shellcheck source=lib/kdl-config.sh
+source "${SCRIPT_DIR}/lib/kdl-config.sh"
+kdl_config_init "$1"
+[[ "$(kdl_require schema_version)" == "1" ]] || exit 2
 
-MODE="$(yaml_require operation.mode)"
-TARGETS_VALUE="$(yaml_require build.targets)"
-CONTAINERFILE="$(yaml_path build.containerfile)"
-USE_HOST_PROXY="$(yaml_bool network.use_host_proxy)"
-HTTP_PROXY_URL="$(yaml_require network.http_proxy)"
-HTTPS_PROXY_URL="$(yaml_require network.https_proxy)"
-ALL_PROXY_URL="$(yaml_require network.all_proxy)"
-NO_PROXY_VALUE="$(yaml_require network.no_proxy)"
-IMAGE_SOURCE="$(yaml_require image.source)"
-IMAGE_ARCHIVE_DIR="$(yaml_path image.archive_dir)"
-RUNTIME_BASE_IMAGE="$(yaml_require image.runtime_base)"
-NGINX_BASE_IMAGE="$(yaml_require image.nginx_base)"
-INIT_IMAGE="$(yaml_require image.init_runtime)"
-SERVER_IMAGE="$(yaml_require image.server_runtime)"
-WEB_IMAGE="$(yaml_require image.web_runtime)"
-MALL_IMAGE="$(yaml_require image.mall_runtime)"
-RUNTIME_ARCHIVE="$(yaml_require archive.runtime_base)"
-NGINX_ARCHIVE="$(yaml_require archive.nginx_base)"
+MODE="$(kdl_require operation.mode)"
+TARGETS_VALUE="$(kdl_require build.targets)"
+CONTAINERFILE="$(kdl_path build.containerfile)"
+USE_HOST_PROXY="$(kdl_bool network.use_host_proxy)"
+HTTP_PROXY_URL="$(kdl_require network.http_proxy)"
+HTTPS_PROXY_URL="$(kdl_require network.https_proxy)"
+ALL_PROXY_URL="$(kdl_require network.all_proxy)"
+NO_PROXY_VALUE="$(kdl_require network.no_proxy)"
+IMAGE_SOURCE="$(kdl_require image.source)"
+IMAGE_ARCHIVE_DIR="$(kdl_path image.archive_dir)"
+RUNTIME_BASE_IMAGE="$(kdl_require image.runtime_base)"
+NGINX_BASE_IMAGE="$(kdl_require image.nginx_base)"
+INIT_IMAGE="$(kdl_require image.init_runtime)"
+SERVER_IMAGE="$(kdl_require image.server_runtime)"
+WEB_IMAGE="$(kdl_require image.web_runtime)"
+MALL_IMAGE="$(kdl_require image.mall_runtime)"
+RUNTIME_ARCHIVE="$(kdl_require archive.runtime_base)"
+NGINX_ARCHIVE="$(kdl_require archive.nginx_base)"
 
 case "$MODE" in
     check|package) ;;

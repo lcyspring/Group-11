@@ -12,28 +12,28 @@ PROJECT_ROOT="$(cd -- "${PODMAN_DIR}/.." && pwd)"
 DATABASE_ROOT="${PROJECT_ROOT}/database"
 
 [[ $# -eq 1 ]] || {
-    printf 'Usage: bash ./internal/provision-database.sh <runtime-config.yaml>\n' >&2
+    printf 'Usage: bash ./internal/provision-database.sh <runtime-config.kdl>\n' >&2
     exit 2
 }
 
-# shellcheck source=../lib/yaml-config.sh
-source "${PODMAN_DIR}/lib/yaml-config.sh"
-yaml_config_init "$1"
+# shellcheck source=../lib/kdl-config.sh
+source "${PODMAN_DIR}/lib/kdl-config.sh"
+kdl_config_init "$1"
 
-[[ "$(yaml_require schema_version)" == "1" ]] || exit 2
+[[ "$(kdl_require schema_version)" == "1" ]] || exit 2
 
-START_MODE="$(yaml_require operation.startup_mode)"
-MYSQL_CONTAINER="$(yaml_require container.mysql)"
-MYSQL_DATABASE="$(yaml_require mysql.database)"
-MYSQL_DATASET="$(yaml_require mysql.dataset)"
-MYSQL_DATASET_MANIFEST="$(yaml_path mysql.dataset_manifest)"
-MYSQL_DATASET_MODE="$(yaml_require mysql.dataset_mode)"
-MYSQL_BOOTSTRAP_POLICY="$(yaml_require mysql.bootstrap_policy)"
-MYSQL_BOOTSTRAP_MANIFEST="$(yaml_path mysql.bootstrap_manifest)"
-MYSQL_COMPATIBILITY_MANIFEST="$(yaml_path mysql.compatibility_migration_manifest)"
-MYSQL_ROOT_PASSWORD="$(yaml_require mysql.root_password)"
-MYSQL_CHARACTER_SET="$(yaml_require mysql.character_set)"
-MYSQL_USER="$(yaml_require health.mysql_user)"
+START_MODE="$(kdl_require operation.startup_mode)"
+MYSQL_CONTAINER="$(kdl_require container.mysql)"
+MYSQL_DATABASE="$(kdl_require mysql.database)"
+MYSQL_DATASET="$(kdl_require mysql.dataset)"
+MYSQL_DATASET_MANIFEST="$(kdl_path mysql.dataset_manifest)"
+MYSQL_DATASET_MODE="$(kdl_require mysql.dataset_mode)"
+MYSQL_BOOTSTRAP_POLICY="$(kdl_require mysql.bootstrap_policy)"
+MYSQL_BOOTSTRAP_MANIFEST="$(kdl_path mysql.bootstrap_manifest)"
+MYSQL_COMPATIBILITY_MANIFEST="$(kdl_path mysql.compatibility_migration_manifest)"
+MYSQL_ROOT_PASSWORD="$(kdl_require mysql.root_password)"
+MYSQL_CHARACTER_SET="$(kdl_require mysql.character_set)"
+MYSQL_USER="$(kdl_require health.mysql_user)"
 DATASET_MANIFEST="$MYSQL_DATASET_MANIFEST"
 
 case "$MYSQL_BOOTSTRAP_POLICY" in

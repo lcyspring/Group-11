@@ -5,19 +5,28 @@ rootless Podman Pod. Docker Engine, the Docker CLI, Docker sockets, and Compose
 are not used. `docker.io` in an image name is an OCI registry address only.
 
 中文入口请阅读：[中文 README](README_ZH.md)。完整流程另见：[Podman 全流程操作指南](DEPLOY_GUIDE_ZH.md)、
-[编译构建部署手册](OPERATIONS_ZH.md)和[配置字段参考](config/YAML_FIELDS_ZH.md)。
+[编译构建部署手册](OPERATIONS_ZH.md)和[配置字段参考](config/KDL_FIELDS_ZH.md)。
 
 ## Configuration contract
 
-Runtime entry points accept exactly one argument: a YAML configuration path.
+Runtime entry points accept exactly one argument: a KDL configuration path.
 Deployment behavior is never selected with command options or environment
 variable overrides.
 
+The repository pins dasel `v3.11.2` (upstream commit
+`008b0ed9cae7d5d5b0c72e23c84836c5b2f0338b`) as its KDL parser. Build the
+project-local binary once; operational scripts never use a system-wide dasel:
+
+```bash
+bash ./tools/build-dasel.sh
+./tools/bin/dasel version
+```
+
 ```bash
 cd podman
-bash ./deploy.sh ./config/runtime-local-check.yaml
-bash ./stop.sh ./config/runtime-local-check.yaml
-bash ./operations/images/image-archives.sh ./config/runtime-local-check.yaml
+bash ./deploy.sh ./config/runtime-local-check.kdl
+bash ./stop.sh ./config/runtime-local-check.kdl
+bash ./operations/images/image-archives.sh ./config/runtime-local-check.kdl
 ```
 
 The committed configuration uses `operation.startup_mode: check` and
@@ -32,14 +41,14 @@ explicitly select a mode before making a stateful operation:
   `operation.remove_volumes_on_down: true` and
   `operation.confirm_persistent_data_reset: true`.
 
-Relative paths such as `image.archive_dir` are resolved relative to the YAML
+Relative paths such as `image.archive_dir` are resolved relative to the KDL
 file. Missing values, duplicate keys, mappings deeper than two levels, invalid
 booleans, ports, or modes fail before any deployment action.
 
 Configuration includes Pod/container/volume names, host and container ports,
 image and archive names, MySQL/RabbitMQ settings, the Spring profile, proxy
 URLs, and all health-check paths and retry limits. Proxy URLs must be written
-in YAML; host proxy environment variables are not consumed by `deploy.sh`.
+in KDL; host proxy environment variables are not consumed by `deploy.sh`.
 
 ## Ubuntu 26.04 build
 
@@ -48,10 +57,10 @@ dedicated Ubuntu 26.04 image:
 
 ```bash
 cd podman
-bash ./compile.sh ./config/build-ubuntu-26.04.yaml
+bash ./compile.sh ./config/build-ubuntu-26.04.kdl
 ```
 
-The build entry point also accepts exactly one YAML path. Named Podman volumes
+The build entry point also accepts exactly one KDL path. Named Podman volumes
 hold Maven, pnpm-store, and Web `node_modules` caches. The repository must be on
 a filesystem with symbolic-link support; no legacy staging/copy-back path is
 used.
@@ -61,10 +70,10 @@ Mall H5 uses HBuilderX's non-graphical uni-app compiler in a separate Ubuntu
 
 ```bash
 cd podman
-bash ./compile.sh ./config/build-mall-h5-ubuntu-26.04.yaml
+bash ./compile.sh ./config/build-mall-h5-ubuntu-26.04.kdl
 ```
 
-The unified entry point accepts only its YAML path. It does not start the
+The unified entry point accepts only its KDL path. It does not start the
 HBuilderX IDE, Qt, X11, or Xvfb. Normal builds pull or reuse the published
 `ghcr.io/elel-code/group-11-hbuilderx-ubuntu:26.04-5.05` image and never read or
 mount the host HBuilderX installation. Only a maintainer configuration with
@@ -87,10 +96,10 @@ Required runtime artifacts are:
 
 `Containerfile` only packages these four application artifacts into runtime
 images. Database SQL is not copied into an image. Packaging is a separate
-YAML-only stage:
+KDL-only stage:
 
 ```bash
-bash ./build-images.sh ./config/runtime-images.example.yaml
+bash ./build-images.sh ./config/runtime-images.example.kdl
 ```
 
 `deploy.sh` never reads build artifacts or runs `podman build`. Running containers
@@ -108,10 +117,10 @@ rejected instead of being overwritten.
 
 ## Startup modes
 
-Set `operation.startup_mode` in the selected YAML and run the same command:
+Set `operation.startup_mode` in the selected KDL and run the same command:
 
 ```bash
-bash ./deploy.sh ./config/my-runtime.yaml
+bash ./deploy.sh ./config/my-runtime.kdl
 ```
 
 - `replace` loads or pulls configured pre-packaged runtime images and replaces
@@ -139,8 +148,8 @@ cacheable.
 
 Create offline archives by selecting `operation.archive_mode: save` (local
 images only) or `pull-save` (pull first), then call `operations/images/image-archives.sh` with the
-same YAML. Set `image.source` and `image.archive_dir` for deployment. Host
-addresses and all published ports are likewise YAML values.
+same KDL. Set `image.source` and `image.archive_dir` for deployment. Host
+addresses and all published ports are likewise KDL values.
 
 Rootless Podman's default Pasta network is used. When
 `network.use_host_proxy: false`, proxy environment variables are cleared and
@@ -151,14 +160,15 @@ proxy hostnames are translated to the configured `network.host_proxy_name`.
 
 ## Layout and tests
 
-- `config/`: explicit build and runtime YAML files.
-- `lib/yaml-config.sh`: non-evaluating, two-level YAML scalar reader.
+- `config/`: explicit build and runtime KDL files.
+- `lib/kdl-config.sh`: strict two-level KDL contract backed by project-local dasel.
+- `tools/build-dasel.sh`: reproducibly builds the pinned dasel source revision; `tools/bin/` is local and ignored.
 - `tests/runtime-config/`: parser, CLI contract, preflight, and Pod-state tests.
-- `build-images.sh`: YAML-only runtime image packaging entry point.
-- `deploy.sh` / `stop.sh`: YAML-only container lifecycle entry points.
+- `build-images.sh`: KDL-only runtime image packaging entry point.
+- `deploy.sh` / `stop.sh`: KDL-only container lifecycle entry points.
 - `Containerfile.build-ubuntu`: Ubuntu 26.04 build toolchain image.
 - `Containerfile.hbuilderx-ubuntu`: headless Mall H5 compiler image.
-- `compile.sh`: unified YAML-only compiler; include/exclude target sets select all four artifacts.
+- `compile.sh`: unified KDL-only compiler; include/exclude target sets select all four artifacts.
 - `internal/`: standard compiler helper and container-only entry points; not member-facing commands.
 - `tests/acceptance/`: real API/MySQL acceptance scripts; never used for normal startup.
 - `operations/`: database, image, BPM, and diagnostic maintenance commands.
@@ -168,11 +178,11 @@ proxy hostnames are translated to the configured `network.host_proxy_name`.
 Run the structured runtime configuration test with:
 
 ```bash
-bash ./tests/runtime-config/run.sh ./config/runtime-local-check.yaml
+bash ./tests/runtime-config/run.sh ./config/runtime-local-check.kdl
 ```
 
 Run the Mall H5 container integration test with:
 
 ```bash
-bash ./tests/mall-h5-build/run.sh ./config/build-mall-h5-ubuntu-26.04.yaml
+bash ./tests/mall-h5-build/run.sh ./config/build-mall-h5-ubuntu-26.04.kdl
 ```

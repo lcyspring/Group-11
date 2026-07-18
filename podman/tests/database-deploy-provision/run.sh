@@ -6,22 +6,22 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PODMAN_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
 
 [[ $# -eq 1 ]] || {
-    printf 'Usage: bash ./tests/database-deploy-provision/run.sh <runtime-config.yaml>\n' >&2
+    printf 'Usage: bash ./tests/database-deploy-provision/run.sh <runtime-config.kdl>\n' >&2
     exit 2
 }
 
-# shellcheck source=../../lib/yaml-config.sh
-source "${PODMAN_DIR}/lib/yaml-config.sh"
-yaml_config_init "$1"
-SOURCE_CONFIG="$YAML_CONFIG_PATH"
-MYSQL_IMAGE="$(yaml_require image.mysql_base)"
-MYSQL_PASSWORD="$(yaml_require mysql.root_password)"
-MYSQL_CHARACTER_SET="$(yaml_require mysql.character_set)"
-MYSQL_COLLATION="$(yaml_require mysql.collation)"
-MYSQL_AUTHENTICATION_PLUGIN="$(yaml_require mysql.authentication_plugin)"
-MYSQL_USER="$(yaml_require health.mysql_user)"
-BOOTSTRAP_MANIFEST="$(yaml_path mysql.bootstrap_manifest)"
-COMPATIBILITY_MANIFEST="$(yaml_path mysql.compatibility_migration_manifest)"
+# shellcheck source=../../lib/kdl-config.sh
+source "${PODMAN_DIR}/lib/kdl-config.sh"
+kdl_config_init "$1"
+SOURCE_CONFIG="$KDL_CONFIG_PATH"
+MYSQL_IMAGE="$(kdl_require image.mysql_base)"
+MYSQL_PASSWORD="$(kdl_require mysql.root_password)"
+MYSQL_CHARACTER_SET="$(kdl_require mysql.character_set)"
+MYSQL_COLLATION="$(kdl_require mysql.collation)"
+MYSQL_AUTHENTICATION_PLUGIN="$(kdl_require mysql.authentication_plugin)"
+MYSQL_USER="$(kdl_require health.mysql_user)"
+BOOTSTRAP_MANIFEST="$(kdl_path mysql.bootstrap_manifest)"
+COMPATIBILITY_MANIFEST="$(kdl_path mysql.compatibility_migration_manifest)"
 
 suffix="$$"
 MYSQL_CONTAINER="mitedtsm-db-provision-${suffix}"
@@ -70,27 +70,20 @@ mysql_command() {
 write_config() {
     local output="$1" database="$2" policy="$3" dataset="$4" dataset_manifest
     dataset_manifest="$(realpath -m -- "${PODMAN_DIR}/../database/datasets/${dataset}.manifest")"
-    awk -v container="$MYSQL_CONTAINER" -v database="$database" -v policy="$policy" \
-        -v dataset="$dataset" -v bootstrap="$BOOTSTRAP_MANIFEST" -v compatibility="$COMPATIBILITY_MANIFEST" \
-        -v dataset_manifest="$dataset_manifest" '
-        /^[^ ]/ { section=$1; sub(/:$/, "", section) }
-        section=="operation" && /^  startup_mode:/ { print "  startup_mode: replace-server"; next }
-        section=="container" && /^  mysql:/ { print "  mysql: " container; next }
-        section=="mysql" && /^  database:/ { print "  database: " database; next }
-        section=="mysql" && /^  dataset:/ { print "  dataset: " dataset; next }
-        section=="mysql" && /^  dataset_manifest:/ { print "  dataset_manifest: " dataset_manifest; next }
-        section=="mysql" && /^  bootstrap_policy:/ { print "  bootstrap_policy: " policy; next }
-        section=="mysql" && /^  bootstrap_manifest:/ { print "  bootstrap_manifest: " bootstrap; next }
-        section=="mysql" && /^  compatibility_migration_manifest:/ {
-            print "  compatibility_migration_manifest: " compatibility; next
-        }
-        { print }
-    ' "$SOURCE_CONFIG" > "$output"
+    cp "$SOURCE_CONFIG" "$output"
+    kdl_set_file "$output" operation.startup_mode string replace-server
+    kdl_set_file "$output" container.mysql string "$MYSQL_CONTAINER"
+    kdl_set_file "$output" mysql.database string "$database"
+    kdl_set_file "$output" mysql.dataset string "$dataset"
+    kdl_set_file "$output" mysql.dataset_manifest string "$dataset_manifest"
+    kdl_set_file "$output" mysql.bootstrap_policy string "$policy"
+    kdl_set_file "$output" mysql.bootstrap_manifest string "$BOOTSTRAP_MANIFEST"
+    kdl_set_file "$output" mysql.compatibility_migration_manifest string "$COMPATIBILITY_MANIFEST"
 }
 
-empty_config="${TEMP_DIR}/empty.yaml"
-partial_config="${TEMP_DIR}/partial.yaml"
-required_config="${TEMP_DIR}/required.yaml"
+empty_config="${TEMP_DIR}/empty.kdl"
+partial_config="${TEMP_DIR}/partial.kdl"
+required_config="${TEMP_DIR}/required.kdl"
 write_config "$empty_config" "$EMPTY_DATABASE" initialize-empty none
 write_config "$partial_config" "$PARTIAL_DATABASE" initialize-empty none
 write_config "$required_config" "$REQUIRED_DATABASE" require-existing none

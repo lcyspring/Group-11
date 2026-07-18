@@ -59,13 +59,17 @@ docker-images/*.tar
 /uploads/
 
 # Deterministic demo datasets are reproducible local artifacts. Commit the
-# generator/templates and YAML examples, not rendered SQL batches.
+# generator/templates and KDL examples, not rendered SQL batches.
 /database/generated/
 
 # Podman offline OCI image archives
 podman/images/*.tar
 podman/images/*.sha256
-podman/config/build-image-archives-local.yaml
+podman/config/build-image-archives-local.kdl
+
+# Reproducible local CLI tools (build scripts and version pins are tracked).
+podman/tools/bin/
+podman/tools/.cache/
 
 # Local source-analysis documents (kept out of product commits)
 docs/01-Existing-System-Analysis/
@@ -90,19 +94,19 @@ docs/Proj-Docs-v-6
 docs/20-CRM-Delivery/daily/
 
 # Local stateful runtime configuration may contain deployment credentials.
-podman/config/runtime-local.yaml
-podman/config/runtime-local-replace-server.yaml
-podman/config/database-backup-local.yaml
-podman/config/runtime-local-replace-web.yaml
-podman/config/runtime-local-replace-mall.yaml
-podman/config/runtime-reset-local.yaml
-podman/config/bpm-provision-local.yaml
-podman/config/bpm-provision-*-local.yaml
-podman/config/bpm-provision-all-local.yaml
-podman/config/bpm-notification-templates-local.yaml
-podman/config/verify-*-local.yaml
-podman/config/crm-diagnostics-local.yaml
-podman/config/generate-demo-dataset-local.yaml
+podman/config/runtime-local.kdl
+podman/config/runtime-local-replace-server.kdl
+podman/config/database-backup-local.kdl
+podman/config/runtime-local-replace-web.kdl
+podman/config/runtime-local-replace-mall.kdl
+podman/config/runtime-reset-local.kdl
+podman/config/bpm-provision-local.kdl
+podman/config/bpm-provision-*-local.kdl
+podman/config/bpm-provision-all-local.kdl
+podman/config/bpm-notification-templates-local.kdl
+podman/config/verify-*-local.kdl
+podman/config/crm-diagnostics-local.kdl
+podman/config/generate-demo-dataset-local.kdl
 podman/diagnostics/
 
 

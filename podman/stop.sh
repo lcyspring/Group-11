@@ -6,7 +6,7 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 usage() {
-    printf 'Usage: bash ./stop.sh <config.yaml>\n' >&2
+    printf 'Usage: bash ./stop.sh <config.kdl>\n' >&2
 }
 
 [[ $# -eq 1 ]] || {
@@ -14,26 +14,26 @@ usage() {
     exit 2
 }
 
-# shellcheck source=lib/yaml-config.sh
-source "${SCRIPT_DIR}/lib/yaml-config.sh"
-yaml_config_init "$1"
+# shellcheck source=lib/kdl-config.sh
+source "${SCRIPT_DIR}/lib/kdl-config.sh"
+kdl_config_init "$1"
 
-[[ "$(yaml_require schema_version)" == "1" ]] || {
+[[ "$(kdl_require schema_version)" == "1" ]] || {
     printf 'Unsupported schema_version; expected 1.\n' >&2
     exit 2
 }
 
-POD_NAME="$(yaml_require deployment.pod_name)"
-STOP_TIMEOUT="$(yaml_positive_integer deployment.stop_timeout_seconds)"
-SERVER_CONTAINER="$(yaml_require container.server)"
-SHUTDOWN_MODE="$(yaml_require operation.shutdown_mode)"
-REMOVE_VOLUMES="$(yaml_bool operation.remove_volumes_on_down)"
-CONFIRM_DATA_RESET="$(yaml_bool operation.confirm_persistent_data_reset)"
+POD_NAME="$(kdl_require deployment.pod_name)"
+STOP_TIMEOUT="$(kdl_positive_integer deployment.stop_timeout_seconds)"
+SERVER_CONTAINER="$(kdl_require container.server)"
+SHUTDOWN_MODE="$(kdl_require operation.shutdown_mode)"
+REMOVE_VOLUMES="$(kdl_bool operation.remove_volumes_on_down)"
+CONFIRM_DATA_RESET="$(kdl_bool operation.confirm_persistent_data_reset)"
 VOLUMES=(
-    "$(yaml_require volume.mysql)"
-    "$(yaml_require volume.redis)"
-    "$(yaml_require volume.rabbitmq)"
-    "$(yaml_require volume.tdengine)"
+    "$(kdl_require volume.mysql)"
+    "$(kdl_require volume.redis)"
+    "$(kdl_require volume.rabbitmq)"
+    "$(kdl_require volume.tdengine)"
 )
 
 command -v podman >/dev/null 2>&1 || {

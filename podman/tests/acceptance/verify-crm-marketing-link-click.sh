@@ -4,26 +4,26 @@ set -Eeuo pipefail
 trap 'printf "CRM marketing link click acceptance failed at line %s.\n" "$LINENO" >&2' ERR
 
 PODMAN_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
-# shellcheck source=../../lib/yaml-config.sh
-source "${PODMAN_DIR}/lib/yaml-config.sh"
+# shellcheck source=../../lib/kdl-config.sh
+source "${PODMAN_DIR}/lib/kdl-config.sh"
 
 [[ $# -eq 1 ]] || {
-    printf 'Usage: bash ./tests/acceptance/verify-crm-marketing-link-click.sh <config.yaml>\n' >&2
+    printf 'Usage: bash ./tests/acceptance/verify-crm-marketing-link-click.sh <config.kdl>\n' >&2
     exit 2
 }
-yaml_config_init "$1"
-[[ "$(yaml_require schema_version)" == "1" ]] || exit 2
+kdl_config_init "$1"
+[[ "$(kdl_require schema_version)" == "1" ]] || exit 2
 
-ADMIN_BASE_URL="$(yaml_require endpoint.admin_base_url)"
-PUBLIC_BASE_URL="$(yaml_require endpoint.public_base_url)"
-TARGET_URL="$(yaml_require endpoint.allowed_target_url)"
-TENANT_ID="$(yaml_positive_integer endpoint.tenant_id)"
-USERNAME="$(yaml_require account.username)"
-PASSWORD="$(yaml_require account.password)"
-MYSQL_CONTAINER="$(yaml_require mysql.container)"
-MYSQL_USER="$(yaml_require mysql.user)"
-MYSQL_PASSWORD="$(yaml_require mysql.password)"
-MYSQL_DATABASE="$(yaml_require mysql.database)"
+ADMIN_BASE_URL="$(kdl_require endpoint.admin_base_url)"
+PUBLIC_BASE_URL="$(kdl_require endpoint.public_base_url)"
+TARGET_URL="$(kdl_require endpoint.allowed_target_url)"
+TENANT_ID="$(kdl_positive_integer endpoint.tenant_id)"
+USERNAME="$(kdl_require account.username)"
+PASSWORD="$(kdl_require account.password)"
+MYSQL_CONTAINER="$(kdl_require mysql.container)"
+MYSQL_USER="$(kdl_require mysql.user)"
+MYSQL_PASSWORD="$(kdl_require mysql.password)"
+MYSQL_DATABASE="$(kdl_require mysql.database)"
 
 simple_url_pattern='^https?://[A-Za-z0-9._:/-]+$'
 target_url_pattern='^https?://[A-Za-z0-9._:/?#=&%+-]+$'

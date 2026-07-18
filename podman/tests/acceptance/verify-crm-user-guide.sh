@@ -6,18 +6,18 @@ PODMAN_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 PROJECT_ROOT="$(cd -- "${PODMAN_DIR}/.." && pwd)"
 
 [[ $# -eq 1 ]] || {
-    printf 'Usage: bash ./tests/acceptance/verify-crm-user-guide.sh <runtime-config.yaml>\n' >&2
+    printf 'Usage: bash ./tests/acceptance/verify-crm-user-guide.sh <runtime-config.kdl>\n' >&2
     exit 2
 }
 
-# shellcheck source=../../lib/yaml-config.sh
-source "${PODMAN_DIR}/lib/yaml-config.sh"
-yaml_config_init "$1"
+# shellcheck source=../../lib/kdl-config.sh
+source "${PODMAN_DIR}/lib/kdl-config.sh"
+kdl_config_init "$1"
 
-MYSQL_CONTAINER="$(yaml_require container.mysql)"
-MYSQL_DATABASE="$(yaml_require mysql.database)"
-MYSQL_USER="$(yaml_require health.mysql_user)"
-MYSQL_PASSWORD="$(yaml_require mysql.root_password)"
+MYSQL_CONTAINER="$(kdl_require container.mysql)"
+MYSQL_DATABASE="$(kdl_require mysql.database)"
+MYSQL_USER="$(kdl_require health.mysql_user)"
+MYSQL_PASSWORD="$(kdl_require mysql.root_password)"
 MANIFEST="${PROJECT_ROOT}/docs/20-CRM-Delivery/user-guide/routes.manifest"
 VIEWS_ROOT="${PROJECT_ROOT}/Web/src/views"
 

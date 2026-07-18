@@ -3,33 +3,33 @@
 set -Eeuo pipefail
 
 PODMAN_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
-source "${PODMAN_DIR}/lib/yaml-config.sh"
+source "${PODMAN_DIR}/lib/kdl-config.sh"
 
 [[ $# -eq 1 ]] || {
-    printf 'Usage: bash ./tests/acceptance/verify-crm-customer-export.sh <config.yaml>\n' >&2
+    printf 'Usage: bash ./tests/acceptance/verify-crm-customer-export.sh <config.kdl>\n' >&2
     exit 2
 }
-yaml_config_init "$1"
-[[ "$(yaml_require schema_version)" == "1" ]] || exit 2
+kdl_config_init "$1"
+[[ "$(kdl_require schema_version)" == "1" ]] || exit 2
 
-BASE_URL="$(yaml_require endpoint.base_url)"
-TENANT_ID="$(yaml_positive_integer endpoint.tenant_id)"
-OWNER_USERNAME="$(yaml_require account.owner_username)"
-OWNER_PASSWORD="$(yaml_require account.owner_password)"
-OTHER_USERNAME="$(yaml_require account.other_username)"
-OTHER_PASSWORD="$(yaml_require account.other_password)"
-MYSQL_CONTAINER="$(yaml_require mysql.container)"
-MYSQL_USER="$(yaml_require mysql.user)"
-MYSQL_PASSWORD="$(yaml_require mysql.password)"
-MYSQL_DATABASE="$(yaml_require mysql.database)"
-REDIS_CONTAINER="$(yaml_require redis.container)"
-OWNER_USER_ID="$(yaml_positive_integer test.owner_user_id)"
-OWNER_ROLE_ID="$(yaml_positive_integer test.owner_role_id)"
-PRIVILEGED_ROLE_ID="$(yaml_positive_integer test.privileged_role_id)"
-EXPORT_MENU_ID="$(yaml_positive_integer test.customer_export_menu_id)"
-CUSTOMER_ID="$(yaml_positive_integer test.customer_id)"
-POLL_ATTEMPTS="$(yaml_positive_integer test.poll_attempts)"
-POLL_INTERVAL="$(yaml_positive_integer test.poll_interval_seconds)"
+BASE_URL="$(kdl_require endpoint.base_url)"
+TENANT_ID="$(kdl_positive_integer endpoint.tenant_id)"
+OWNER_USERNAME="$(kdl_require account.owner_username)"
+OWNER_PASSWORD="$(kdl_require account.owner_password)"
+OTHER_USERNAME="$(kdl_require account.other_username)"
+OTHER_PASSWORD="$(kdl_require account.other_password)"
+MYSQL_CONTAINER="$(kdl_require mysql.container)"
+MYSQL_USER="$(kdl_require mysql.user)"
+MYSQL_PASSWORD="$(kdl_require mysql.password)"
+MYSQL_DATABASE="$(kdl_require mysql.database)"
+REDIS_CONTAINER="$(kdl_require redis.container)"
+OWNER_USER_ID="$(kdl_positive_integer test.owner_user_id)"
+OWNER_ROLE_ID="$(kdl_positive_integer test.owner_role_id)"
+PRIVILEGED_ROLE_ID="$(kdl_positive_integer test.privileged_role_id)"
+EXPORT_MENU_ID="$(kdl_positive_integer test.customer_export_menu_id)"
+CUSTOMER_ID="$(kdl_positive_integer test.customer_id)"
+POLL_ATTEMPTS="$(kdl_positive_integer test.poll_attempts)"
+POLL_INTERVAL="$(kdl_positive_integer test.poll_interval_seconds)"
 
 [[ "$BASE_URL" =~ ^https?://[^[:space:]]+$ ]] || exit 2
 for command in curl jq podman; do

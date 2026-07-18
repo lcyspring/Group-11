@@ -4,28 +4,28 @@
 set -Eeuo pipefail
 
 PODMAN_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
-source "${PODMAN_DIR}/lib/yaml-config.sh"
+source "${PODMAN_DIR}/lib/kdl-config.sh"
 
-[[ $# -eq 1 ]] || { printf 'Usage: bash ./tests/acceptance/verify-crm-work-order-collaboration.sh <config.yaml>\n' >&2; exit 2; }
-yaml_config_init "$1"
-[[ "$(yaml_require schema_version)" == "1" ]] || { printf 'Unsupported schema_version.\n' >&2; exit 2; }
+[[ $# -eq 1 ]] || { printf 'Usage: bash ./tests/acceptance/verify-crm-work-order-collaboration.sh <config.kdl>\n' >&2; exit 2; }
+kdl_config_init "$1"
+[[ "$(kdl_require schema_version)" == "1" ]] || { printf 'Unsupported schema_version.\n' >&2; exit 2; }
 
-BASE_URL="$(yaml_require endpoint.base_url)"
-TENANT_ID="$(yaml_positive_integer endpoint.tenant_id)"
-USERNAME="$(yaml_require account.username)"
-PASSWORD="$(yaml_require account.password)"
-CUSTOMER_ID="$(yaml_positive_integer acceptance.customer_id)"
-MANAGER_USER_ID="$(yaml_positive_integer acceptance.manager_user_id)"
-MEMBER_USER_ID="$(yaml_positive_integer acceptance.member_user_id)"
-CC_USER_ID="$(yaml_positive_integer acceptance.cc_user_id)"
-MYSQL_CONTAINER="$(yaml_require mysql.container)"
-MYSQL_USER="$(yaml_require mysql.user)"
-MYSQL_PASSWORD="$(yaml_require mysql.password)"
-MYSQL_DATABASE="$(yaml_require mysql.database)"
+BASE_URL="$(kdl_require endpoint.base_url)"
+TENANT_ID="$(kdl_positive_integer endpoint.tenant_id)"
+USERNAME="$(kdl_require account.username)"
+PASSWORD="$(kdl_require account.password)"
+CUSTOMER_ID="$(kdl_positive_integer acceptance.customer_id)"
+MANAGER_USER_ID="$(kdl_positive_integer acceptance.manager_user_id)"
+MEMBER_USER_ID="$(kdl_positive_integer acceptance.member_user_id)"
+CC_USER_ID="$(kdl_positive_integer acceptance.cc_user_id)"
+MYSQL_CONTAINER="$(kdl_require mysql.container)"
+MYSQL_USER="$(kdl_require mysql.user)"
+MYSQL_PASSWORD="$(kdl_require mysql.password)"
+MYSQL_DATABASE="$(kdl_require mysql.database)"
 
 [[ "$BASE_URL" =~ ^https?://[^[:space:]]+$ ]] || { printf 'Invalid endpoint.base_url.\n' >&2; exit 2; }
 [[ "$MYSQL_CONTAINER" =~ ^[a-zA-Z0-9_.-]+$ && "$MYSQL_USER" =~ ^[a-zA-Z0-9_.-]+$ && "$MYSQL_DATABASE" =~ ^[a-zA-Z0-9_]+$ ]] || {
-    printf 'Invalid MySQL identifier in YAML.\n' >&2; exit 2;
+    printf 'Invalid MySQL identifier in KDL.\n' >&2; exit 2;
 }
 for command in curl jq podman date; do
     command -v "$command" >/dev/null || { printf 'Missing command: %s\n' "$command" >&2; exit 1; }

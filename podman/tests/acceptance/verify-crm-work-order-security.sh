@@ -4,25 +4,25 @@
 
 set -Eeuo pipefail
 PODMAN_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
-source "${PODMAN_DIR}/lib/yaml-config.sh"
+source "${PODMAN_DIR}/lib/kdl-config.sh"
 
-[[ $# -eq 1 ]] || { printf 'Usage: bash ./tests/acceptance/verify-crm-work-order-security.sh <config.yaml>\n' >&2; exit 2; }
-yaml_config_init "$1"
-[[ "$(yaml_require schema_version)" == 1 ]] || exit 2
+[[ $# -eq 1 ]] || { printf 'Usage: bash ./tests/acceptance/verify-crm-work-order-security.sh <config.kdl>\n' >&2; exit 2; }
+kdl_config_init "$1"
+[[ "$(kdl_require schema_version)" == 1 ]] || exit 2
 
-BASE_URL="$(yaml_require endpoint.base_url)"
-TENANT_ID="$(yaml_positive_integer endpoint.tenant_id)"
-FOREIGN_TENANT_ID="$(yaml_positive_integer endpoint.foreign_tenant_id)"
-ADMIN_USERNAME="$(yaml_require account.admin_username)"
-PASSWORD="$(yaml_require account.password)"
-DEPARTMENT_ID="$(yaml_positive_integer acceptance.department_id)"
-CUSTOMER_ID="$(yaml_positive_integer acceptance.customer_id)"
-HANDLER_USER_ID="$(yaml_positive_integer acceptance.handler_user_id)"
-QUERY_DENIED_CODE="$(yaml_positive_integer acceptance.query_denied_code)"
-MYSQL_CONTAINER="$(yaml_require mysql.container)"
-MYSQL_USER="$(yaml_require mysql.user)"
-MYSQL_PASSWORD="$(yaml_require mysql.password)"
-MYSQL_DATABASE="$(yaml_require mysql.database)"
+BASE_URL="$(kdl_require endpoint.base_url)"
+TENANT_ID="$(kdl_positive_integer endpoint.tenant_id)"
+FOREIGN_TENANT_ID="$(kdl_positive_integer endpoint.foreign_tenant_id)"
+ADMIN_USERNAME="$(kdl_require account.admin_username)"
+PASSWORD="$(kdl_require account.password)"
+DEPARTMENT_ID="$(kdl_positive_integer acceptance.department_id)"
+CUSTOMER_ID="$(kdl_positive_integer acceptance.customer_id)"
+HANDLER_USER_ID="$(kdl_positive_integer acceptance.handler_user_id)"
+QUERY_DENIED_CODE="$(kdl_positive_integer acceptance.query_denied_code)"
+MYSQL_CONTAINER="$(kdl_require mysql.container)"
+MYSQL_USER="$(kdl_require mysql.user)"
+MYSQL_PASSWORD="$(kdl_require mysql.password)"
+MYSQL_DATABASE="$(kdl_require mysql.database)"
 
 for command in curl jq podman date; do command -v "$command" >/dev/null || exit 1; done
 RUN_ID="$(date +%s%N)"

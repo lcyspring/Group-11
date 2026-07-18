@@ -1,7 +1,7 @@
 # 数据库脚本目录
 
 数据库脚本按生命周期分层。`deploy.sh` 通过 `internal/provision-database.sh` 读取
-`manifests/mysql-bootstrap.manifest` 和运行 YAML 指定的兼容迁移清单，不再扫描目录猜测顺序，也不把
+`manifests/mysql-bootstrap.manifest` 和运行 KDL 指定的兼容迁移清单，不再扫描目录猜测顺序，也不把
 SQL 烘焙进 MySQL 镜像。
 
 | 目录 | 用途 | 自动执行 |
@@ -20,7 +20,7 @@ SQL 烘焙进 MySQL 镜像。
 
 ## 数据集与持久化
 
-运行 YAML 的 `mysql.dataset` 与 `mysql.dataset_manifest` 指定数据集。默认
+运行 KDL 的 `mysql.dataset` 与 `mysql.dataset_manifest` 指定数据集。默认
 `mysql.dataset_mode: preserve`，已有卷不会因切换名称而重新导入、清理或覆盖，因此正常
 重启和部署保持数据持久化。
 
@@ -32,9 +32,9 @@ SQL 烘焙进 MySQL 镜像。
 
 ## 演示数据生成与部署隔离
 
-`podman/operations/database/generate-demo-dataset.sh <yaml>` 是独立的离线生成入口，只把固定 seed 和
+`podman/operations/database/generate-demo-dataset.sh <kdl>` 是独立的离线生成入口，只把固定 seed 和
 规模配置渲染为 `database/generated/` 下的 SQL、manifest 与 checksum，不连接 MySQL。生成产物被
-Git 忽略，可由相同 YAML 重建。`deploy.sh` 不得调用生成器；它只消费运行 YAML 已明确指定的现成
+Git 忽略，可由相同 KDL 重建。`deploy.sh` 不得调用生成器；它只消费运行 KDL 已明确指定的现成
 manifest。默认 `mysql.dataset_mode: preserve`；`insert` 只插入；CRM 演示集的 `replace` 使用
 `replacement_cleanup_scope: tenant-crm-demo` 清空租户 CRM/OA 演示业务事实后插入，管理员账号以及
 客户公海、合同和工单策略配置保持不变。

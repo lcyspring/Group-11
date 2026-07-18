@@ -5,37 +5,37 @@ set -Eeuo pipefail
 trap 'printf "CRM receivable reference-integrity acceptance failed at line %s.\n" "$LINENO" >&2' ERR
 
 PODMAN_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
-source "${PODMAN_DIR}/lib/yaml-config.sh"
+source "${PODMAN_DIR}/lib/kdl-config.sh"
 
 [[ $# -eq 1 ]] || {
-    printf 'Usage: bash ./tests/acceptance/verify-crm-receivable-reference-integrity.sh <config.yaml>\n' >&2
+    printf 'Usage: bash ./tests/acceptance/verify-crm-receivable-reference-integrity.sh <config.kdl>\n' >&2
     exit 2
 }
-yaml_config_init "$1"
-[[ "$(yaml_require schema_version)" == "1" ]] || {
+kdl_config_init "$1"
+[[ "$(kdl_require schema_version)" == "1" ]] || {
     printf 'Unsupported schema_version.\n' >&2
     exit 2
 }
 
-BASE_URL="$(yaml_require endpoint.base_url)"
-TENANT_ID="$(yaml_positive_integer endpoint.tenant_id)"
-USERNAME="$(yaml_require account.username)"
-PASSWORD="$(yaml_require account.password)"
-MYSQL_CONTAINER="$(yaml_require mysql.container)"
-MYSQL_USER="$(yaml_require mysql.user)"
-MYSQL_PASSWORD="$(yaml_require mysql.password)"
-MYSQL_DATABASE="$(yaml_require mysql.database)"
-RECEIVABLE_ID="$(yaml_positive_integer acceptance.receivable_id)"
-RECEIVABLE_NO="$(yaml_require acceptance.receivable_no)"
-CUSTOMER_ID="$(yaml_positive_integer acceptance.customer_id)"
-CONTRACT_ID="$(yaml_positive_integer acceptance.contract_id)"
-OWNER_USER_ID="$(yaml_positive_integer acceptance.owner_user_id)"
-DEPARTMENT_ID="$(yaml_positive_integer acceptance.department_id)"
-EXPECTED_AMOUNT="$(yaml_require acceptance.expected_amount)"
-EXPECTED_AUDIT_STATUS="$(yaml_positive_integer acceptance.expected_audit_status)"
-EXPECTED_ORPHAN_COUNT="$(yaml_positive_integer acceptance.expected_orphan_count)"
-START_TIME="$(yaml_require acceptance.start_time)"
-END_TIME="$(yaml_require acceptance.end_time)"
+BASE_URL="$(kdl_require endpoint.base_url)"
+TENANT_ID="$(kdl_positive_integer endpoint.tenant_id)"
+USERNAME="$(kdl_require account.username)"
+PASSWORD="$(kdl_require account.password)"
+MYSQL_CONTAINER="$(kdl_require mysql.container)"
+MYSQL_USER="$(kdl_require mysql.user)"
+MYSQL_PASSWORD="$(kdl_require mysql.password)"
+MYSQL_DATABASE="$(kdl_require mysql.database)"
+RECEIVABLE_ID="$(kdl_positive_integer acceptance.receivable_id)"
+RECEIVABLE_NO="$(kdl_require acceptance.receivable_no)"
+CUSTOMER_ID="$(kdl_positive_integer acceptance.customer_id)"
+CONTRACT_ID="$(kdl_positive_integer acceptance.contract_id)"
+OWNER_USER_ID="$(kdl_positive_integer acceptance.owner_user_id)"
+DEPARTMENT_ID="$(kdl_positive_integer acceptance.department_id)"
+EXPECTED_AMOUNT="$(kdl_require acceptance.expected_amount)"
+EXPECTED_AUDIT_STATUS="$(kdl_positive_integer acceptance.expected_audit_status)"
+EXPECTED_ORPHAN_COUNT="$(kdl_positive_integer acceptance.expected_orphan_count)"
+START_TIME="$(kdl_require acceptance.start_time)"
+END_TIME="$(kdl_require acceptance.end_time)"
 
 [[ "$BASE_URL" =~ ^https?://[^[:space:]]+$ ]] || {
     printf 'Invalid endpoint.base_url.\n' >&2

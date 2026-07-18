@@ -1,0 +1,20 @@
+schema_version 1
+
+
+operation {
+  action "check"
+
+}
+
+container {
+  mysql "mitedtsm-rootless-mysql"
+
+}
+
+mysql {
+  database "mitedtsm_database"
+  username "root"
+  password "check-only"
+  dataset "none"
+  dataset_mode "replace"
+}

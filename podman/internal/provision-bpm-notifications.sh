@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Validates and idempotently provisions the four System SMS templates used by BPM.
-# The only public input is the runtime YAML; it points to the explicit template YAML.
+# The only public input is the runtime KDL; it points to the explicit template KDL.
 
 set -Eeuo pipefail
 
@@ -9,28 +9,28 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PODMAN_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 
 [[ $# -eq 1 ]] || {
-    printf 'Usage: bash ./internal/provision-bpm-notifications.sh <runtime-config.yaml>\n' >&2
+    printf 'Usage: bash ./internal/provision-bpm-notifications.sh <runtime-config.kdl>\n' >&2
     exit 2
 }
 
-# shellcheck source=../lib/yaml-config.sh
-source "${PODMAN_DIR}/lib/yaml-config.sh"
-yaml_config_init "$1"
-[[ "$(yaml_require schema_version)" == 1 ]] || exit 2
+# shellcheck source=../lib/kdl-config.sh
+source "${PODMAN_DIR}/lib/kdl-config.sh"
+kdl_config_init "$1"
+[[ "$(kdl_require schema_version)" == 1 ]] || exit 2
 
-START_MODE="$(yaml_require operation.startup_mode)"
-SMS_ENABLED="$(yaml_bool bpm.notification_sms_enabled)"
-TEMPLATE_CONFIG="$(yaml_path bpm.notification_template_config)"
-MYSQL_CONTAINER="$(yaml_require container.mysql)"
-MYSQL_DATABASE="$(yaml_require mysql.database)"
-MYSQL_ROOT_PASSWORD="$(yaml_require mysql.root_password)"
-MYSQL_CHARACTER_SET="$(yaml_require mysql.character_set)"
-MYSQL_USER="$(yaml_require health.mysql_user)"
+START_MODE="$(kdl_require operation.startup_mode)"
+SMS_ENABLED="$(kdl_bool bpm.notification_sms_enabled)"
+TEMPLATE_CONFIG="$(kdl_path bpm.notification_template_config)"
+MYSQL_CONTAINER="$(kdl_require container.mysql)"
+MYSQL_DATABASE="$(kdl_require mysql.database)"
+MYSQL_ROOT_PASSWORD="$(kdl_require mysql.root_password)"
+MYSQL_CHARACTER_SET="$(kdl_require mysql.character_set)"
+MYSQL_USER="$(kdl_require health.mysql_user)"
 
-yaml_config_init "$TEMPLATE_CONFIG"
-[[ "$(yaml_require schema_version)" == 1 ]] || exit 2
-PROVISION_MODE="$(yaml_require provision.mode)"
-SMS_CHANNEL_CODE="$(yaml_require provision.sms_channel_code)"
+kdl_config_init "$TEMPLATE_CONFIG"
+[[ "$(kdl_require schema_version)" == 1 ]] || exit 2
+PROVISION_MODE="$(kdl_require provision.mode)"
+SMS_CHANNEL_CODE="$(kdl_require provision.sms_channel_code)"
 
 case "$PROVISION_MODE" in
     disabled|create-only|managed) ;;
@@ -57,11 +57,11 @@ is_placeholder() {
 
 for index in "${!TEMPLATE_SECTIONS[@]}"; do
     section="${TEMPLATE_SECTIONS[$index]}"
-    code="$(yaml_require "${section}.code")"
-    name="$(yaml_require "${section}.name")"
-    content="$(yaml_require "${section}.content")"
-    params="$(yaml_require "${section}.params")"
-    api_id="$(yaml_require "${section}.api_template_id")"
+    code="$(kdl_require "${section}.code")"
+    name="$(kdl_require "${section}.name")"
+    content="$(kdl_require "${section}.content")"
+    params="$(kdl_require "${section}.params")"
+    api_id="$(kdl_require "${section}.api_template_id")"
     [[ "$code" == "${EXPECTED_CODES[$index]}" ]] || {
         printf '%s.code must remain %s because the BPM enum uses this stable key.\n' \
             "$section" "${EXPECTED_CODES[$index]}" >&2
@@ -133,12 +133,12 @@ SET @managed=${managed}, @channel_code=$(sql_text "$SMS_CHANNEL_CODE"),
 SET @channel_id=(SELECT id FROM system_sms_channel WHERE code=@channel_code AND deleted=b'0' LIMIT 1);
 INSERT INTO system_sms_template
     (type,status,code,name,content,params,remark,api_template_id,channel_id,channel_code,creator,updater,deleted)
-SELECT 2,0,@template_code,@template_name,@template_content,@template_params,'managed-by:bpm-template-yaml',
+SELECT 2,0,@template_code,@template_name,@template_content,@template_params,'managed-by:bpm-template-kdl',
        @api_template_id,@channel_id,@channel_code,'1','1',b'0'
 WHERE NOT EXISTS (SELECT 1 FROM system_sms_template WHERE code=@template_code AND deleted=b'0');
 UPDATE system_sms_template
 SET type=2,status=0,name=@template_name,content=@template_content,params=@template_params,
-    remark='managed-by:bpm-template-yaml',api_template_id=@api_template_id,
+    remark='managed-by:bpm-template-kdl',api_template_id=@api_template_id,
     channel_id=@channel_id,channel_code=@channel_code,updater='1'
 WHERE @managed=1 AND code=@template_code AND deleted=b'0';
 SQL

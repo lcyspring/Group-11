@@ -1,36 +1,36 @@
 #!/usr/bin/env bash
 
 # Stateful 50-concurrency work-order benchmark. Test rows are uniquely prefixed
-# and removed on every exit; the only command-line argument is a YAML path.
+# and removed on every exit; the only command-line argument is a KDL path.
 
 set -Eeuo pipefail
 
 PODMAN_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
-source "${PODMAN_DIR}/lib/yaml-config.sh"
+source "${PODMAN_DIR}/lib/kdl-config.sh"
 
-[[ $# -eq 1 ]] || { printf 'Usage: bash ./tests/acceptance/verify-crm-work-order-performance.sh <config.yaml>\n' >&2; exit 2; }
-yaml_config_init "$1"
-[[ "$(yaml_require schema_version)" == 1 ]] || exit 2
+[[ $# -eq 1 ]] || { printf 'Usage: bash ./tests/acceptance/verify-crm-work-order-performance.sh <config.kdl>\n' >&2; exit 2; }
+kdl_config_init "$1"
+[[ "$(kdl_require schema_version)" == 1 ]] || exit 2
 
-BASE_URL="$(yaml_require endpoint.base_url)"
-TENANT_ID="$(yaml_positive_integer endpoint.tenant_id)"
-USERNAME="$(yaml_require account.username)"
-PASSWORD="$(yaml_require account.password)"
-ORDER_COUNT="$(yaml_positive_integer workload.work_orders)"
-CONCURRENCY="$(yaml_positive_integer workload.concurrency)"
-TIMEOUT_SECONDS="$(yaml_positive_integer workload.timeout_seconds)"
-CUSTOMER_ID="$(yaml_positive_integer workload.customer_id)"
-HANDLER_USER_ID="$(yaml_positive_integer workload.handler_user_id)"
-MAX_ERROR_RATE="$(yaml_require thresholds.max_error_rate_percent)"
-MAX_P95_MS="$(yaml_positive_integer thresholds.max_p95_ms)"
-MAX_P99_MS="$(yaml_positive_integer thresholds.max_p99_ms)"
-SERVER_CONTAINER="$(yaml_require containers.server)"
-MYSQL_CONTAINER="$(yaml_require containers.mysql)"
-REDIS_CONTAINER="$(yaml_require containers.redis)"
-MYSQL_USER="$(yaml_require mysql.user)"
-MYSQL_PASSWORD="$(yaml_require mysql.password)"
-MYSQL_DATABASE="$(yaml_require mysql.database)"
-OUTPUT_DIR="$(yaml_path evidence.output_dir)"
+BASE_URL="$(kdl_require endpoint.base_url)"
+TENANT_ID="$(kdl_positive_integer endpoint.tenant_id)"
+USERNAME="$(kdl_require account.username)"
+PASSWORD="$(kdl_require account.password)"
+ORDER_COUNT="$(kdl_positive_integer workload.work_orders)"
+CONCURRENCY="$(kdl_positive_integer workload.concurrency)"
+TIMEOUT_SECONDS="$(kdl_positive_integer workload.timeout_seconds)"
+CUSTOMER_ID="$(kdl_positive_integer workload.customer_id)"
+HANDLER_USER_ID="$(kdl_positive_integer workload.handler_user_id)"
+MAX_ERROR_RATE="$(kdl_require thresholds.max_error_rate_percent)"
+MAX_P95_MS="$(kdl_positive_integer thresholds.max_p95_ms)"
+MAX_P99_MS="$(kdl_positive_integer thresholds.max_p99_ms)"
+SERVER_CONTAINER="$(kdl_require containers.server)"
+MYSQL_CONTAINER="$(kdl_require containers.mysql)"
+REDIS_CONTAINER="$(kdl_require containers.redis)"
+MYSQL_USER="$(kdl_require mysql.user)"
+MYSQL_PASSWORD="$(kdl_require mysql.password)"
+MYSQL_DATABASE="$(kdl_require mysql.database)"
+OUTPUT_DIR="$(kdl_path evidence.output_dir)"
 
 [[ "$BASE_URL" =~ ^https?://[^[:space:]]+$ ]] || { printf 'Invalid endpoint.base_url.\n' >&2; exit 2; }
 [[ "$MAX_ERROR_RATE" =~ ^[0-9]+([.][0-9]+)?$ ]] || { printf 'Invalid error-rate threshold.\n' >&2; exit 2; }

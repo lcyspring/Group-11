@@ -1,0 +1,39 @@
+schema_version 1
+
+
+endpoint {
+  base_url "http://127.0.0.1:8080/admin-api"
+  tenant_id 1
+
+}
+
+account {
+  username "admin"
+  password "CHANGE_ME"
+
+}
+
+approval {
+  role_code "oa_leave_approver"
+  role_name "OA 请假审批人"
+  role_sort 59
+  approver_username "admin"
+  permission_codes "bpm:task:query,bpm:task:update,bpm:process-instance:query,bpm:oa-leave:query"
+
+}
+
+category {
+  code "OA_COLLABORATION"
+  name "办公协作"
+  sort 60
+
+}
+
+model {
+  key "oa_leave"
+  name "请假审批"
+  description "OA 请假申请审批；业务服务负责工作日计算、额度预占、审批回写和取消释放。"
+  form_create_path "/bpm/oa/leave/create"
+  form_view_path "/bpm/oa/leave/detail.vue"
+  approval_node_name "请假审批"
+}

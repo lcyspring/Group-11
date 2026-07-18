@@ -6,30 +6,30 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PODMAN_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
 
 [[ $# -eq 1 ]] || {
-    printf 'Usage: bash ./operations/images/build-image-archives.sh <config.yaml>\n' >&2
+    printf 'Usage: bash ./operations/images/build-image-archives.sh <config.kdl>\n' >&2
     exit 2
 }
 
-# shellcheck source=../../lib/yaml-config.sh
-source "${PODMAN_DIR}/lib/yaml-config.sh"
-yaml_config_init "$1"
+# shellcheck source=../../lib/kdl-config.sh
+source "${PODMAN_DIR}/lib/kdl-config.sh"
+kdl_config_init "$1"
 
-MODE="$(yaml_require operation.mode)"
-ARCHIVE_DIR="$(yaml_path archive.directory)"
-OVERWRITE="$(yaml_bool archive.overwrite)"
-REGISTRY="$(yaml_require registry.host)"
+MODE="$(kdl_require operation.mode)"
+ARCHIVE_DIR="$(kdl_path archive.directory)"
+OVERWRITE="$(kdl_bool archive.overwrite)"
+REGISTRY="$(kdl_require registry.host)"
 
 sources=(
-    "$(yaml_require image.server_builder_source)"
-    "$(yaml_require image.mall_builder_source)"
+    "$(kdl_require image.server_builder_source)"
+    "$(kdl_require image.mall_builder_source)"
 )
 destinations=(
-    "$(yaml_require image.server_builder_destination)"
-    "$(yaml_require image.mall_builder_destination)"
+    "$(kdl_require image.server_builder_destination)"
+    "$(kdl_require image.mall_builder_destination)"
 )
 archives=(
-    "${ARCHIVE_DIR}/$(yaml_require archive.server_builder_filename)"
-    "${ARCHIVE_DIR}/$(yaml_require archive.mall_builder_filename)"
+    "${ARCHIVE_DIR}/$(kdl_require archive.server_builder_filename)"
+    "${ARCHIVE_DIR}/$(kdl_require archive.mall_builder_filename)"
 )
 
 case "$MODE" in

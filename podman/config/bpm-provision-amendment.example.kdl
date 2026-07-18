@@ -1,0 +1,39 @@
+schema_version 1
+
+
+endpoint {
+  base_url "http://127.0.0.1:8080/admin-api"
+  tenant_id 1
+
+}
+
+account {
+  username "admin"
+  password "CHANGE_ME"
+
+}
+
+approval {
+  role_code "crm_contract_approver"
+  role_name "CRM 合同审批人"
+  role_sort 51
+  approver_username "admin"
+  permission_codes "bpm:task:query,bpm:task:update,bpm:process-instance:query,crm:contract:query,crm:contract:amendment"
+
+}
+
+category {
+  code "CRM_SALES"
+  name "CRM 销售"
+  sort 40
+
+}
+
+model {
+  key "crm-contract-amendment-audit"
+  name "CRM 合同补充协议审批"
+  description "已签署合同补充协议独立审批；审批通过后生成新合同业务版本并更新当前有效投影。"
+  form_create_path "/crm/contract"
+  form_view_path "/crm/contract"
+  approval_node_name "合同补充协议审批"
+}

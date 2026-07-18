@@ -1,0 +1,59 @@
+schema_version 1
+
+
+image {
+  base "docker.io/library/ubuntu:26.04"
+  standard "ghcr.io/elel-code/group-11-build-ubuntu:26.04"
+  rebuild #false
+
+}
+
+toolchain {
+  pnpm_version "11.3.0"
+
+}
+
+build {
+  include_targets "server"
+  exclude_targets "mall-h5"
+  clean #false
+  crm_tests #false
+  crm_coverage #false
+  infra_tests #false
+  infra_coverage #false
+  bpm_tests #false
+  bpm_coverage #false
+  common_tests #false
+  common_coverage #false
+  framework_tests #true
+  framework_coverage #true
+  framework_test_pattern "SecurityPropertiesTest,MitedtsmWebAutoConfigurationTest"
+  ci #true
+  maven_threads 4
+  pnpm_frozen_lockfile #true
+
+}
+
+network {
+  use_host_proxy #false
+
+}
+
+web {
+  baidu_analytics_code "disabled"
+  legacy_media_origins "http://test.yudao.iocoder.cn"
+
+}
+
+cache {
+  maven_volume "mitedtsm-build-maven-cache"
+  pnpm_store_volume "mitedtsm-build-pnpm-store"
+  pnpm_store_path "/pnpm-store"
+  web_node_modules_volume "mitedtsm-build-web-node-modules"
+
+}
+
+runtime {
+  memory "8g"
+  cpus 4
+}

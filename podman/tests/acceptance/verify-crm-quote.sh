@@ -1,60 +1,60 @@
 #!/usr/bin/env bash
-# Real API acceptance for CRM quote versioning. The only CLI argument is an explicit YAML path.
+# Real API acceptance for CRM quote versioning. The only CLI argument is an explicit KDL path.
 
 set -Eeuo pipefail
 
 PODMAN_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
-source "${PODMAN_DIR}/lib/yaml-config.sh"
+source "${PODMAN_DIR}/lib/kdl-config.sh"
 
-[[ $# -eq 1 ]] || { printf 'Usage: bash ./tests/acceptance/verify-crm-quote.sh <config.yaml>\n' >&2; exit 2; }
-yaml_config_init "$1"
-[[ "$(yaml_require schema_version)" == "1" ]] || { printf 'Unsupported schema_version.\n' >&2; exit 2; }
+[[ $# -eq 1 ]] || { printf 'Usage: bash ./tests/acceptance/verify-crm-quote.sh <config.kdl>\n' >&2; exit 2; }
+kdl_config_init "$1"
+[[ "$(kdl_require schema_version)" == "1" ]] || { printf 'Unsupported schema_version.\n' >&2; exit 2; }
 
-BASE_URL="$(yaml_require endpoint.base_url)"
-TENANT_ID="$(yaml_positive_integer endpoint.tenant_id)"
-USERNAME="$(yaml_require account.username)"
-PASSWORD="$(yaml_require account.password)"
-OWNER_USER_ID="$(yaml_positive_integer acceptance.owner_user_id)"
-CUSTOMER_ID="$(yaml_positive_integer acceptance.customer_id)"
-PRODUCT_ID="$(yaml_positive_integer acceptance.product_id)"
-STATUS_TYPE_ID="$(yaml_positive_integer acceptance.status_type_id)"
-CURRENCY_CODE="$(yaml_require acceptance.currency_code)"
-BASE_CURRENCY="$(yaml_require acceptance.expected_base_currency)"
-EXCHANGE_RATE="$(yaml_require acceptance.expected_exchange_rate)"
-CATALOG_PRICE="$(yaml_require acceptance.expected_catalog_price)"
-PRODUCT_NAME="$(yaml_require acceptance.expected_product_name)"
-V1_DISCOUNT="$(yaml_require acceptance.v1_discount_percent)"
-V1_PRICE="$(yaml_require acceptance.v1_business_price)"
-V1_COUNT="$(yaml_require acceptance.v1_count)"
-V1_TAX="$(yaml_require acceptance.v1_tax_rate_percent)"
-V1_SUBTOTAL="$(yaml_require acceptance.v1_expected_subtotal)"
-V1_NET="$(yaml_require acceptance.v1_expected_net_amount)"
-V1_TAX_AMOUNT="$(yaml_require acceptance.v1_expected_tax_amount)"
-V1_GROSS="$(yaml_require acceptance.v1_expected_gross_amount)"
-V1_BASE_GROSS="$(yaml_require acceptance.v1_expected_base_gross_amount)"
-V2_DISCOUNT="$(yaml_require acceptance.v2_discount_percent)"
-V2_PRICE="$(yaml_require acceptance.v2_business_price)"
-V2_COUNT="$(yaml_require acceptance.v2_count)"
-V2_TAX="$(yaml_require acceptance.v2_tax_rate_percent)"
-V2_SUBTOTAL="$(yaml_require acceptance.v2_expected_subtotal)"
-V2_DISCOUNT_AMOUNT="$(yaml_require acceptance.v2_expected_discount_amount)"
-V2_NET="$(yaml_require acceptance.v2_expected_net_amount)"
-V2_TAX_AMOUNT="$(yaml_require acceptance.v2_expected_tax_amount)"
-V2_GROSS="$(yaml_require acceptance.v2_expected_gross_amount)"
-V2_BASE_GROSS="$(yaml_require acceptance.v2_expected_base_gross_amount)"
-LOCKED_EDIT_DISCOUNT="$(yaml_require acceptance.locked_edit_discount_percent)"
-LOCKED_EDIT_PRICE="$(yaml_require acceptance.locked_edit_business_price)"
-LOCKED_EDIT_COUNT="$(yaml_require acceptance.locked_edit_count)"
-LOCKED_EDIT_TAX="$(yaml_require acceptance.locked_edit_tax_rate_percent)"
-FORGED_PRODUCT_PRICE="$(yaml_require acceptance.forged_product_price)"
-FORGED_CONTRACT_ROW_ID="$(yaml_positive_integer acceptance.forged_contract_row_id)"
-FORGED_CONTRACT_PRICE="$(yaml_require acceptance.forged_contract_price)"
-FORGED_CONTRACT_COUNT="$(yaml_require acceptance.forged_contract_count)"
-FORGED_CONTRACT_DISCOUNT="$(yaml_require acceptance.forged_contract_discount_percent)"
-MYSQL_CONTAINER="$(yaml_require mysql.container)"
-MYSQL_USER="$(yaml_require mysql.user)"
-MYSQL_PASSWORD="$(yaml_require mysql.password)"
-MYSQL_DATABASE="$(yaml_require mysql.database)"
+BASE_URL="$(kdl_require endpoint.base_url)"
+TENANT_ID="$(kdl_positive_integer endpoint.tenant_id)"
+USERNAME="$(kdl_require account.username)"
+PASSWORD="$(kdl_require account.password)"
+OWNER_USER_ID="$(kdl_positive_integer acceptance.owner_user_id)"
+CUSTOMER_ID="$(kdl_positive_integer acceptance.customer_id)"
+PRODUCT_ID="$(kdl_positive_integer acceptance.product_id)"
+STATUS_TYPE_ID="$(kdl_positive_integer acceptance.status_type_id)"
+CURRENCY_CODE="$(kdl_require acceptance.currency_code)"
+BASE_CURRENCY="$(kdl_require acceptance.expected_base_currency)"
+EXCHANGE_RATE="$(kdl_require acceptance.expected_exchange_rate)"
+CATALOG_PRICE="$(kdl_require acceptance.expected_catalog_price)"
+PRODUCT_NAME="$(kdl_require acceptance.expected_product_name)"
+V1_DISCOUNT="$(kdl_require acceptance.v1_discount_percent)"
+V1_PRICE="$(kdl_require acceptance.v1_business_price)"
+V1_COUNT="$(kdl_require acceptance.v1_count)"
+V1_TAX="$(kdl_require acceptance.v1_tax_rate_percent)"
+V1_SUBTOTAL="$(kdl_require acceptance.v1_expected_subtotal)"
+V1_NET="$(kdl_require acceptance.v1_expected_net_amount)"
+V1_TAX_AMOUNT="$(kdl_require acceptance.v1_expected_tax_amount)"
+V1_GROSS="$(kdl_require acceptance.v1_expected_gross_amount)"
+V1_BASE_GROSS="$(kdl_require acceptance.v1_expected_base_gross_amount)"
+V2_DISCOUNT="$(kdl_require acceptance.v2_discount_percent)"
+V2_PRICE="$(kdl_require acceptance.v2_business_price)"
+V2_COUNT="$(kdl_require acceptance.v2_count)"
+V2_TAX="$(kdl_require acceptance.v2_tax_rate_percent)"
+V2_SUBTOTAL="$(kdl_require acceptance.v2_expected_subtotal)"
+V2_DISCOUNT_AMOUNT="$(kdl_require acceptance.v2_expected_discount_amount)"
+V2_NET="$(kdl_require acceptance.v2_expected_net_amount)"
+V2_TAX_AMOUNT="$(kdl_require acceptance.v2_expected_tax_amount)"
+V2_GROSS="$(kdl_require acceptance.v2_expected_gross_amount)"
+V2_BASE_GROSS="$(kdl_require acceptance.v2_expected_base_gross_amount)"
+LOCKED_EDIT_DISCOUNT="$(kdl_require acceptance.locked_edit_discount_percent)"
+LOCKED_EDIT_PRICE="$(kdl_require acceptance.locked_edit_business_price)"
+LOCKED_EDIT_COUNT="$(kdl_require acceptance.locked_edit_count)"
+LOCKED_EDIT_TAX="$(kdl_require acceptance.locked_edit_tax_rate_percent)"
+FORGED_PRODUCT_PRICE="$(kdl_require acceptance.forged_product_price)"
+FORGED_CONTRACT_ROW_ID="$(kdl_positive_integer acceptance.forged_contract_row_id)"
+FORGED_CONTRACT_PRICE="$(kdl_require acceptance.forged_contract_price)"
+FORGED_CONTRACT_COUNT="$(kdl_require acceptance.forged_contract_count)"
+FORGED_CONTRACT_DISCOUNT="$(kdl_require acceptance.forged_contract_discount_percent)"
+MYSQL_CONTAINER="$(kdl_require mysql.container)"
+MYSQL_USER="$(kdl_require mysql.user)"
+MYSQL_PASSWORD="$(kdl_require mysql.password)"
+MYSQL_DATABASE="$(kdl_require mysql.database)"
 
 [[ "$BASE_URL" =~ ^https?://[^[:space:]]+$ ]] || { printf 'Invalid endpoint.base_url.\n' >&2; exit 2; }
 [[ "$CURRENCY_CODE" =~ ^[A-Z]{3}$ && "$BASE_CURRENCY" =~ ^[A-Z]{3}$ ]] || {
@@ -72,7 +72,7 @@ for value in "${NUMERIC_VALUES[@]}"; do
     }
 done
 [[ "$MYSQL_CONTAINER" =~ ^[a-zA-Z0-9_.-]+$ && "$MYSQL_USER" =~ ^[a-zA-Z0-9_.-]+$ && "$MYSQL_DATABASE" =~ ^[a-zA-Z0-9_]+$ ]] || {
-    printf 'Invalid MySQL identifier in YAML.\n' >&2; exit 2;
+    printf 'Invalid MySQL identifier in KDL.\n' >&2; exit 2;
 }
 for command in curl jq podman date; do
     command -v "$command" >/dev/null || { printf 'Missing command: %s\n' "$command" >&2; exit 1; }
@@ -149,7 +149,7 @@ jq -e --arg currency "$CURRENCY_CODE" --arg base "$BASE_CURRENCY" --argjson rate
     --argjson v1Tax "$V1_TAX" --argjson v2Tax "$V2_TAX" \
     '.data.baseCurrency == $base and .data.exchangeRatesToBase[$currency] == $rate
      and (.data.allowedTaxRates | index($v1Tax)) != null and (.data.allowedTaxRates | index($v2Tax)) != null' \
-    >/dev/null <<< "$POLICY" || { printf 'YAML quote policy mismatch.\n' >&2; exit 1; }
+    >/dev/null <<< "$POLICY" || { printf 'KDL quote policy mismatch.\n' >&2; exit 1; }
 CONTRACT_AMOUNT_COLUMN="$(mysql_exec "SELECT CONCAT(numeric_precision,':',numeric_scale)
   FROM information_schema.columns
   WHERE table_schema=DATABASE() AND table_name='crm_contract' AND column_name='total_price';")"

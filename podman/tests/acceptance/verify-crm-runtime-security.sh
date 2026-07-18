@@ -6,7 +6,7 @@ PODMAN_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 PROJECT_ROOT="$(cd -- "${PODMAN_DIR}/.." && pwd)"
 
 usage() {
-    printf 'Usage: bash ./tests/acceptance/verify-crm-runtime-security.sh <runtime-config.yaml>\n' >&2
+    printf 'Usage: bash ./tests/acceptance/verify-crm-runtime-security.sh <runtime-config.kdl>\n' >&2
 }
 
 [[ $# -eq 1 ]] || {
@@ -14,21 +14,21 @@ usage() {
     exit 2
 }
 
-# shellcheck source=../../lib/yaml-config.sh
-source "${PODMAN_DIR}/lib/yaml-config.sh"
-yaml_config_init "$1"
+# shellcheck source=../../lib/kdl-config.sh
+source "${PODMAN_DIR}/lib/kdl-config.sh"
+kdl_config_init "$1"
 
-SERVER_PORT="$(yaml_port network.server_host_port)"
-SERVER_CONTAINER="$(yaml_require container.server)"
-MOCK_ENABLED="$(yaml_bool security.mock_login_enabled)"
-BCRYPT_LENGTH="$(yaml_positive_integer security.password_encoder_length)"
-XSS_ENABLED="$(yaml_bool security.xss_enabled)"
-ALLOWED_ORIGINS="$(yaml_require security.cors_allowed_origins)"
-ACTUATOR_EXPOSURE="$(yaml_require security.actuator_exposure)"
-API_DOCS_ENABLED="$(yaml_bool security.api_docs_enabled)"
-DRUID_ENABLED="$(yaml_bool security.druid_console_enabled)"
-TDENGINE_USERNAME="$(yaml_require tdengine.username)"
-TDENGINE_PASSWORD="$(yaml_require tdengine.password)"
+SERVER_PORT="$(kdl_port network.server_host_port)"
+SERVER_CONTAINER="$(kdl_require container.server)"
+MOCK_ENABLED="$(kdl_bool security.mock_login_enabled)"
+BCRYPT_LENGTH="$(kdl_positive_integer security.password_encoder_length)"
+XSS_ENABLED="$(kdl_bool security.xss_enabled)"
+ALLOWED_ORIGINS="$(kdl_require security.cors_allowed_origins)"
+ACTUATOR_EXPOSURE="$(kdl_require security.actuator_exposure)"
+API_DOCS_ENABLED="$(kdl_bool security.api_docs_enabled)"
+DRUID_ENABLED="$(kdl_bool security.druid_console_enabled)"
+TDENGINE_USERNAME="$(kdl_require tdengine.username)"
+TDENGINE_PASSWORD="$(kdl_require tdengine.password)"
 BASE_URL="http://127.0.0.1:${SERVER_PORT}"
 ALLOWED_ORIGIN="${ALLOWED_ORIGINS%%,*}"
 
@@ -132,7 +132,7 @@ if ! awk '
         }
     }
     END { exit bad }
-' "${PROJECT_ROOT}/Server/mitedtsm-server/src/main/resources/application.yaml"; then
+' "${PROJECT_ROOT}/Server/mitedtsm-server/src/main/resources/application.kdl"; then
     fail 'common application configuration still contains an inline integration secret'
 fi
 
@@ -148,13 +148,13 @@ if ! awk '
         }
     }
     END { exit bad }
-' "${PROJECT_ROOT}/Server/mitedtsm-server/src/main/resources/application-local.yaml"; then
+' "${PROJECT_ROOT}/Server/mitedtsm-server/src/main/resources/application-local.kdl"; then
     fail 'local application configuration still contains an inline credential'
 fi
 
 if rg -n "mock-enable:[[:space:]]*true|include:[[:space:]]*['\"]?\\*['\"]?|addAllowedOriginPattern\\(\"\\*\"\\)" \
-    "${PROJECT_ROOT}/Server/mitedtsm-server/src/main/resources/application.yaml" \
-    "${PROJECT_ROOT}/Server/mitedtsm-server/src/main/resources/application-local.yaml" \
+    "${PROJECT_ROOT}/Server/mitedtsm-server/src/main/resources/application.kdl" \
+    "${PROJECT_ROOT}/Server/mitedtsm-server/src/main/resources/application-local.kdl" \
     "${PROJECT_ROOT}/Server/mitedtsm-framework/mitedtsm-spring-boot-starter-web/src/main/java"; then
     fail 'unsafe wildcard or mock-login default remains in the active Podman source path'
 fi

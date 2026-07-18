@@ -6,19 +6,19 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PODMAN_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
 
 [[ $# -eq 1 ]] || {
-    printf 'Usage: bash ./tests/marketing-provider-provision/run.sh <runtime-config.yaml>\n' >&2
+    printf 'Usage: bash ./tests/marketing-provider-provision/run.sh <runtime-config.kdl>\n' >&2
     exit 2
 }
 
-# shellcheck source=../../lib/yaml-config.sh
-source "${PODMAN_DIR}/lib/yaml-config.sh"
-yaml_config_init "$1"
-SOURCE_CONFIG="$YAML_CONFIG_PATH"
-MYSQL_CONTAINER="$(yaml_require container.mysql)"
-SOURCE_DATABASE="$(yaml_require mysql.database)"
-MYSQL_PASSWORD="$(yaml_require mysql.root_password)"
-MYSQL_CHARACTER_SET="$(yaml_require mysql.character_set)"
-MYSQL_USER="$(yaml_require health.mysql_user)"
+# shellcheck source=../../lib/kdl-config.sh
+source "${PODMAN_DIR}/lib/kdl-config.sh"
+kdl_config_init "$1"
+SOURCE_CONFIG="$KDL_CONFIG_PATH"
+MYSQL_CONTAINER="$(kdl_require container.mysql)"
+SOURCE_DATABASE="$(kdl_require mysql.database)"
+MYSQL_PASSWORD="$(kdl_require mysql.root_password)"
+MYSQL_CHARACTER_SET="$(kdl_require mysql.character_set)"
+MYSQL_USER="$(kdl_require health.mysql_user)"
 
 suffix="$$"
 TEST_DATABASE="mitedtsm_provider_test_${suffix}"
@@ -49,44 +49,38 @@ CREATE TABLE ${TEST_DATABASE}.system_mail_template LIKE ${SOURCE_DATABASE}.syste
 write_config() {
     local output="$1" mode="$2" version="$3" sms_enabled=true mail_enabled=true
     [[ "$mode" != disabled ]] || { sms_enabled=false; mail_enabled=false; }
-    awk -v database="$TEST_DATABASE" -v mode="$mode" -v version="$version" \
-        -v sms_enabled="$sms_enabled" -v mail_enabled="$mail_enabled" \
-        -v sms_code="$SMS_TEMPLATE_CODE" -v mail_code="$MAIL_TEMPLATE_CODE" \
-        -v mail_address="$MAIL_ADDRESS" '
-        /^[^ ]/ { section=$1; sub(/:$/, "", section) }
-        section=="operation" && /^  startup_mode:/ { print "  startup_mode: replace-server"; next }
-        section=="mysql" && /^  database:/ { print "  database: " database; next }
-        section=="crm_marketing" && /^  provider_mode:/ { print "  provider_mode: system"; next }
-        section=="marketing_provider" && /^  provision_mode:/ { print "  provision_mode: " mode; next }
-        section=="marketing_provider" && /^  sms_enabled:/ { print "  sms_enabled: " sms_enabled; next }
-        section=="marketing_provider" && /^  sms_channel_code:/ { print "  sms_channel_code: ALIYUN"; next }
-        section=="marketing_provider" && /^  sms_signature:/ { print "  sms_signature: CRM验收" version; next }
-        section=="marketing_provider" && /^  sms_api_key:/ { print "  sms_api_key: acceptance-key-" version; next }
-        section=="marketing_provider" && /^  sms_api_secret:/ { print "  sms_api_secret: acceptance-secret-" version; next }
-        section=="marketing_provider" && /^  sms_template_code:/ { print "  sms_template_code: " sms_code; next }
-        section=="marketing_provider" && /^  sms_template_name:/ { print "  sms_template_name: CRM Provider 验收 " version; next }
-        section=="marketing_provider" && /^  sms_template_content:/ { print "  sms_template_content: \"Provider " version " {content}\""; next }
-        section=="marketing_provider" && /^  sms_api_template_id:/ { print "  sms_api_template_id: provider-api-" version; next }
-        section=="marketing_provider" && /^  mail_enabled:/ { print "  mail_enabled: " mail_enabled; next }
-        section=="marketing_provider" && /^  mail_address:/ { print "  mail_address: " mail_address; next }
-        section=="marketing_provider" && /^  mail_username:/ { print "  mail_username: provider-user-" version; next }
-        section=="marketing_provider" && /^  mail_password:/ { print "  mail_password: provider-password-" version; next }
-        section=="marketing_provider" && /^  mail_host:/ { print "  mail_host: smtp" version ".example.com"; next }
-        section=="marketing_provider" && /^  mail_template_code:/ { print "  mail_template_code: " mail_code; next }
-        section=="marketing_provider" && /^  mail_template_name:/ { print "  mail_template_name: CRM Provider 邮件 " version; next }
-        section=="marketing_provider" && /^  mail_template_title:/ { print "  mail_template_title: Provider " version; next }
-        section=="marketing_provider" && /^  mail_template_content:/ { print "  mail_template_content: \"<p>Provider " version " {content}</p>\""; next }
-        { print }
-    ' "$SOURCE_CONFIG" > "$output"
+    cp "$SOURCE_CONFIG" "$output"
+    kdl_set_file "$output" operation.startup_mode string replace-server
+    kdl_set_file "$output" mysql.database string "$TEST_DATABASE"
+    kdl_set_file "$output" crm_marketing.provider_mode string system
+    kdl_set_file "$output" marketing_provider.provision_mode string "$mode"
+    kdl_set_file "$output" marketing_provider.sms_enabled bool "$sms_enabled"
+    kdl_set_file "$output" marketing_provider.sms_channel_code string ALIYUN
+    kdl_set_file "$output" marketing_provider.sms_signature string "CRM验收${version}"
+    kdl_set_file "$output" marketing_provider.sms_api_key string "acceptance-key-${version}"
+    kdl_set_file "$output" marketing_provider.sms_api_secret string "acceptance-secret-${version}"
+    kdl_set_file "$output" marketing_provider.sms_template_code string "$SMS_TEMPLATE_CODE"
+    kdl_set_file "$output" marketing_provider.sms_template_name string "CRM Provider 验收 ${version}"
+    kdl_set_file "$output" marketing_provider.sms_template_content string "Provider ${version} {content}"
+    kdl_set_file "$output" marketing_provider.sms_api_template_id string "provider-api-${version}"
+    kdl_set_file "$output" marketing_provider.mail_enabled bool "$mail_enabled"
+    kdl_set_file "$output" marketing_provider.mail_address string "$MAIL_ADDRESS"
+    kdl_set_file "$output" marketing_provider.mail_username string "provider-user-${version}"
+    kdl_set_file "$output" marketing_provider.mail_password string "provider-password-${version}"
+    kdl_set_file "$output" marketing_provider.mail_host string "smtp${version}.example.com"
+    kdl_set_file "$output" marketing_provider.mail_template_code string "$MAIL_TEMPLATE_CODE"
+    kdl_set_file "$output" marketing_provider.mail_template_name string "CRM Provider 邮件 ${version}"
+    kdl_set_file "$output" marketing_provider.mail_template_title string "Provider ${version}"
+    kdl_set_file "$output" marketing_provider.mail_template_content string "<p>Provider ${version} {content}</p>"
 }
 
 query_test() {
     mysql_command --database="$TEST_DATABASE" --batch --skip-column-names --execute "$1"
 }
 
-create_config="${TEMP_DIR}/create.yaml"
-managed_config="${TEMP_DIR}/managed.yaml"
-disabled_config="${TEMP_DIR}/disabled.yaml"
+create_config="${TEMP_DIR}/create.kdl"
+managed_config="${TEMP_DIR}/managed.kdl"
+disabled_config="${TEMP_DIR}/disabled.kdl"
 write_config "$create_config" create-only v1
 write_config "$managed_config" managed v2
 write_config "$disabled_config" disabled v3

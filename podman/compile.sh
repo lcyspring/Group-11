@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Unified compilation entry point. YAML include/exclude sets select Server,
+# Unified compilation entry point. KDL include/exclude sets select Server,
 # InitService, Web, and Mall H5 targets; exclusions always win. The command
 # never selects work from file names, Host tools, or environment variables.
 
@@ -10,21 +10,21 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 
 [[ $# -eq 1 ]] || {
-    printf 'Usage: bash ./compile.sh <config.yaml>\n' >&2
+    printf 'Usage: bash ./compile.sh <config.kdl>\n' >&2
     exit 2
 }
 
-# shellcheck source=lib/yaml-config.sh
-source "${SCRIPT_DIR}/lib/yaml-config.sh"
-yaml_config_init "$1"
+# shellcheck source=lib/kdl-config.sh
+source "${SCRIPT_DIR}/lib/kdl-config.sh"
+kdl_config_init "$1"
 
-[[ "$(yaml_require schema_version)" == "1" ]] || {
+[[ "$(kdl_require schema_version)" == "1" ]] || {
     printf 'Unsupported schema_version; expected 1.\n' >&2
     exit 2
 }
 
-INCLUDE_TARGETS="$(yaml_require build.include_targets)"
-EXCLUDE_TARGETS="$(yaml_require build.exclude_targets)"
+INCLUDE_TARGETS="$(kdl_require build.include_targets)"
+EXCLUDE_TARGETS="$(kdl_require build.exclude_targets)"
 
 validate_selector() {
     local key="$1" value="$2" item
@@ -60,7 +60,7 @@ target_selected() {
 
 optional_bool() {
     local key="$1" fallback="$2" value
-    value="$(yaml_get "$key")"
+    value="$(kdl_get "$key")"
     value="${value:-$fallback}"
     case "$value" in
         true|false) printf '%s' "$value" ;;
@@ -90,7 +90,7 @@ for task_key in \
     framework_tests framework_coverage system_tests system_coverage; do
     [[ "$(optional_bool "build.${task_key}" false)" == true ]] && STANDARD_REQUIRED=true
 done
-[[ -n "$(yaml_get web.test_script)" ]] && STANDARD_REQUIRED=true
+[[ -n "$(kdl_get web.test_script)" ]] && STANDARD_REQUIRED=true
 
 if [[ "$STANDARD_REQUIRED" == false && "$BUILD_MALL_H5" == false ]]; then
     printf 'Compilation selection is empty: include=%s exclude=%s and no standard test task is enabled.\n' \
@@ -104,7 +104,7 @@ if [[ "$STANDARD_REQUIRED" == true ]]; then
     COMPILE_BUILD_SERVER="$BUILD_SERVER" \
     COMPILE_BUILD_INIT_SERVICE="$BUILD_INIT_SERVICE" \
     COMPILE_BUILD_WEB="$BUILD_WEB" \
-        bash "${SCRIPT_DIR}/internal/compile-standard.sh" "$YAML_CONFIG_PATH"
+        bash "${SCRIPT_DIR}/internal/compile-standard.sh" "$KDL_CONFIG_PATH"
 fi
 
 run_mall_h5() {
@@ -113,24 +113,24 @@ run_mall_h5() {
     local dependency_network_mode use_host_proxy pnpm_store_volume pnpm_store_path
     local node_modules_volume frozen_lockfile memory cpus proxy_name
 
-    base_image="$(yaml_require image.base)"
-    hbuilderx_image="$(yaml_require image.hbuilderx)"
-    dependency_image="$(yaml_require image.dependency)"
-    rebuild_image="$(yaml_bool image.rebuild)"
-    hbuilderx_source_dir="$(yaml_path hbuilderx.source_dir)"
-    platform="$(yaml_require build.platform)"
-    clean_output="$(yaml_bool build.clean_output)"
-    legacy_media_origins="$(yaml_require media.legacy_origins)"
-    legacy_media_fallback="$(yaml_require media.legacy_fallback)"
-    network_mode="$(yaml_require network.mall_mode)"
-    dependency_network_mode="$(yaml_require network.mall_dependency_mode)"
-    use_host_proxy="$(yaml_bool network.use_host_proxy)"
-    pnpm_store_volume="$(yaml_require cache.mall_pnpm_store_volume)"
-    pnpm_store_path="$(yaml_require cache.mall_pnpm_store_path)"
-    node_modules_volume="$(yaml_require cache.mall_node_modules_volume)"
-    frozen_lockfile="$(yaml_bool dependency.mall_frozen_lockfile)"
-    memory="$(yaml_require runtime.mall_memory)"
-    cpus="$(yaml_positive_integer runtime.mall_cpus)"
+    base_image="$(kdl_require image.base)"
+    hbuilderx_image="$(kdl_require image.hbuilderx)"
+    dependency_image="$(kdl_require image.dependency)"
+    rebuild_image="$(kdl_bool image.rebuild)"
+    hbuilderx_source_dir="$(kdl_path hbuilderx.source_dir)"
+    platform="$(kdl_require build.platform)"
+    clean_output="$(kdl_bool build.clean_output)"
+    legacy_media_origins="$(kdl_require media.legacy_origins)"
+    legacy_media_fallback="$(kdl_require media.legacy_fallback)"
+    network_mode="$(kdl_require network.mall_mode)"
+    dependency_network_mode="$(kdl_require network.mall_dependency_mode)"
+    use_host_proxy="$(kdl_bool network.use_host_proxy)"
+    pnpm_store_volume="$(kdl_require cache.mall_pnpm_store_volume)"
+    pnpm_store_path="$(kdl_require cache.mall_pnpm_store_path)"
+    node_modules_volume="$(kdl_require cache.mall_node_modules_volume)"
+    frozen_lockfile="$(kdl_bool dependency.mall_frozen_lockfile)"
+    memory="$(kdl_require runtime.mall_memory)"
+    cpus="$(kdl_positive_integer runtime.mall_cpus)"
     proxy_name=host.containers.internal
 
     [[ "$platform" == h5 ]] || {

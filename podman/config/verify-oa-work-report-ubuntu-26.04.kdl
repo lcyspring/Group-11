@@ -1,0 +1,44 @@
+schema_version 1
+
+image {
+  base "docker.io/library/ubuntu:26.04"
+  standard "ghcr.io/elel-code/group-11-build-ubuntu:26.04"
+  rebuild #false
+}
+
+toolchain {
+  pnpm_version "11.3.0"
+}
+
+build {
+  include_targets "server,web"
+  exclude_targets "mall-h5"
+  clean #false
+  crm_tests #true
+  crm_coverage #true
+  ci #true
+  maven_threads 4
+  pnpm_frozen_lockfile #true
+}
+
+network {
+  use_host_proxy #false
+}
+
+web {
+  baidu_analytics_code "disabled"
+  legacy_media_origins "http://test.yudao.iocoder.cn"
+  test_script "verify:oa-work-report"
+}
+
+cache {
+  maven_volume "mitedtsm-build-maven-cache"
+  pnpm_store_volume "mitedtsm-build-pnpm-store"
+  pnpm_store_path "/pnpm-store"
+  web_node_modules_volume "mitedtsm-build-web-node-modules"
+}
+
+runtime {
+  memory "8g"
+  cpus 4
+}

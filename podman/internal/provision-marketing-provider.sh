@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Idempotently provisions one CRM marketing SMS channel/template and/or one
-# mail account/template from the runtime YAML. Secrets are base64-encoded into
+# mail account/template from the runtime KDL. Secrets are base64-encoded into
 # SQL sent through stdin and are never printed or passed as mysql arguments.
 
 set -Eeuo pipefail
@@ -10,50 +10,50 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PODMAN_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 
 [[ $# -eq 1 ]] || {
-    printf 'Usage: bash ./internal/provision-marketing-provider.sh <runtime-config.yaml>\n' >&2
+    printf 'Usage: bash ./internal/provision-marketing-provider.sh <runtime-config.kdl>\n' >&2
     exit 2
 }
 
-# shellcheck source=../lib/yaml-config.sh
-source "${PODMAN_DIR}/lib/yaml-config.sh"
-yaml_config_init "$1"
-[[ "$(yaml_require schema_version)" == 1 ]] || exit 2
+# shellcheck source=../lib/kdl-config.sh
+source "${PODMAN_DIR}/lib/kdl-config.sh"
+kdl_config_init "$1"
+[[ "$(kdl_require schema_version)" == 1 ]] || exit 2
 
-START_MODE="$(yaml_require operation.startup_mode)"
-MYSQL_CONTAINER="$(yaml_require container.mysql)"
-MYSQL_DATABASE="$(yaml_require mysql.database)"
-MYSQL_ROOT_PASSWORD="$(yaml_require mysql.root_password)"
-MYSQL_CHARACTER_SET="$(yaml_require mysql.character_set)"
-MYSQL_USER="$(yaml_require health.mysql_user)"
-CRM_PROVIDER_MODE="$(yaml_require crm_marketing.provider_mode)"
-PROVISION_MODE="$(yaml_require marketing_provider.provision_mode)"
+START_MODE="$(kdl_require operation.startup_mode)"
+MYSQL_CONTAINER="$(kdl_require container.mysql)"
+MYSQL_DATABASE="$(kdl_require mysql.database)"
+MYSQL_ROOT_PASSWORD="$(kdl_require mysql.root_password)"
+MYSQL_CHARACTER_SET="$(kdl_require mysql.character_set)"
+MYSQL_USER="$(kdl_require health.mysql_user)"
+CRM_PROVIDER_MODE="$(kdl_require crm_marketing.provider_mode)"
+PROVISION_MODE="$(kdl_require marketing_provider.provision_mode)"
 
-SMS_ENABLED="$(yaml_bool marketing_provider.sms_enabled)"
-SMS_CHANNEL_CODE="$(yaml_require marketing_provider.sms_channel_code)"
-SMS_SIGNATURE="$(yaml_require marketing_provider.sms_signature)"
-SMS_API_KEY="$(yaml_require marketing_provider.sms_api_key)"
-SMS_API_SECRET="$(yaml_require marketing_provider.sms_api_secret)"
-SMS_CALLBACK_URL="$(yaml_require marketing_provider.sms_callback_url)"
-SMS_TEMPLATE_CODE="$(yaml_require marketing_provider.sms_template_code)"
-SMS_TEMPLATE_NAME="$(yaml_require marketing_provider.sms_template_name)"
-SMS_TEMPLATE_CONTENT="$(yaml_require marketing_provider.sms_template_content)"
-SMS_TEMPLATE_PARAMS="$(yaml_require marketing_provider.sms_template_params)"
-SMS_API_TEMPLATE_ID="$(yaml_require marketing_provider.sms_api_template_id)"
+SMS_ENABLED="$(kdl_bool marketing_provider.sms_enabled)"
+SMS_CHANNEL_CODE="$(kdl_require marketing_provider.sms_channel_code)"
+SMS_SIGNATURE="$(kdl_require marketing_provider.sms_signature)"
+SMS_API_KEY="$(kdl_require marketing_provider.sms_api_key)"
+SMS_API_SECRET="$(kdl_require marketing_provider.sms_api_secret)"
+SMS_CALLBACK_URL="$(kdl_require marketing_provider.sms_callback_url)"
+SMS_TEMPLATE_CODE="$(kdl_require marketing_provider.sms_template_code)"
+SMS_TEMPLATE_NAME="$(kdl_require marketing_provider.sms_template_name)"
+SMS_TEMPLATE_CONTENT="$(kdl_require marketing_provider.sms_template_content)"
+SMS_TEMPLATE_PARAMS="$(kdl_require marketing_provider.sms_template_params)"
+SMS_API_TEMPLATE_ID="$(kdl_require marketing_provider.sms_api_template_id)"
 
-MAIL_ENABLED="$(yaml_bool marketing_provider.mail_enabled)"
-MAIL_ADDRESS="$(yaml_require marketing_provider.mail_address)"
-MAIL_USERNAME="$(yaml_require marketing_provider.mail_username)"
-MAIL_PASSWORD="$(yaml_require marketing_provider.mail_password)"
-MAIL_HOST="$(yaml_require marketing_provider.mail_host)"
-MAIL_PORT="$(yaml_port marketing_provider.mail_port)"
-MAIL_SSL_ENABLED="$(yaml_bool marketing_provider.mail_ssl_enabled)"
-MAIL_STARTTLS_ENABLED="$(yaml_bool marketing_provider.mail_starttls_enabled)"
-MAIL_TEMPLATE_CODE="$(yaml_require marketing_provider.mail_template_code)"
-MAIL_TEMPLATE_NAME="$(yaml_require marketing_provider.mail_template_name)"
-MAIL_TEMPLATE_NICKNAME="$(yaml_require marketing_provider.mail_template_nickname)"
-MAIL_TEMPLATE_TITLE="$(yaml_require marketing_provider.mail_template_title)"
-MAIL_TEMPLATE_CONTENT="$(yaml_require marketing_provider.mail_template_content)"
-MAIL_TEMPLATE_PARAMS="$(yaml_require marketing_provider.mail_template_params)"
+MAIL_ENABLED="$(kdl_bool marketing_provider.mail_enabled)"
+MAIL_ADDRESS="$(kdl_require marketing_provider.mail_address)"
+MAIL_USERNAME="$(kdl_require marketing_provider.mail_username)"
+MAIL_PASSWORD="$(kdl_require marketing_provider.mail_password)"
+MAIL_HOST="$(kdl_require marketing_provider.mail_host)"
+MAIL_PORT="$(kdl_port marketing_provider.mail_port)"
+MAIL_SSL_ENABLED="$(kdl_bool marketing_provider.mail_ssl_enabled)"
+MAIL_STARTTLS_ENABLED="$(kdl_bool marketing_provider.mail_starttls_enabled)"
+MAIL_TEMPLATE_CODE="$(kdl_require marketing_provider.mail_template_code)"
+MAIL_TEMPLATE_NAME="$(kdl_require marketing_provider.mail_template_name)"
+MAIL_TEMPLATE_NICKNAME="$(kdl_require marketing_provider.mail_template_nickname)"
+MAIL_TEMPLATE_TITLE="$(kdl_require marketing_provider.mail_template_title)"
+MAIL_TEMPLATE_CONTENT="$(kdl_require marketing_provider.mail_template_content)"
+MAIL_TEMPLATE_PARAMS="$(kdl_require marketing_provider.mail_template_params)"
 
 case "$PROVISION_MODE" in
     disabled|create-only|managed) ;;
@@ -276,25 +276,25 @@ SET @mail_address=$(sql_text "$MAIL_ADDRESS"), @mail_username=$(sql_text "$MAIL_
 START TRANSACTION;
 INSERT INTO system_sms_channel
     (signature, code, status, remark, api_key, api_secret, callback_url, creator, updater, deleted)
-SELECT @sms_signature, @sms_channel_code, 0, 'managed-by:podman-yaml', @sms_api_key, @sms_api_secret,
+SELECT @sms_signature, @sms_channel_code, 0, 'managed-by:podman-kdl', @sms_api_key, @sms_api_secret,
        NULLIF(@sms_callback_url, 'none'), '1', '1', b'0'
 WHERE @sms_enabled=1 AND NOT EXISTS (
     SELECT 1 FROM system_sms_channel WHERE code=@sms_channel_code AND deleted=b'0');
 SET @sms_channel_id=(SELECT id FROM system_sms_channel WHERE code=@sms_channel_code AND deleted=b'0' LIMIT 1);
 UPDATE system_sms_channel
-SET signature=@sms_signature, status=0, remark='managed-by:podman-yaml', api_key=@sms_api_key,
+SET signature=@sms_signature, status=0, remark='managed-by:podman-kdl', api_key=@sms_api_key,
     api_secret=@sms_api_secret, callback_url=NULLIF(@sms_callback_url, 'none'), updater='1'
 WHERE @sms_enabled=1 AND @managed=1 AND id=@sms_channel_id;
 
 INSERT INTO system_sms_template
     (type, status, code, name, content, params, remark, api_template_id, channel_id, channel_code, creator, updater, deleted)
 SELECT 3, 0, @sms_template_code, @sms_template_name, @sms_template_content, @sms_template_params,
-       'managed-by:podman-yaml', @sms_api_template_id, @sms_channel_id, @sms_channel_code, '1', '1', b'0'
+       'managed-by:podman-kdl', @sms_api_template_id, @sms_channel_id, @sms_channel_code, '1', '1', b'0'
 WHERE @sms_enabled=1 AND NOT EXISTS (
     SELECT 1 FROM system_sms_template WHERE code=@sms_template_code AND deleted=b'0');
 UPDATE system_sms_template
 SET type=3, status=0, name=@sms_template_name, content=@sms_template_content, params=@sms_template_params,
-    remark='managed-by:podman-yaml', api_template_id=@sms_api_template_id, channel_id=@sms_channel_id,
+    remark='managed-by:podman-kdl', api_template_id=@sms_api_template_id, channel_id=@sms_channel_id,
     channel_code=@sms_channel_code, updater='1'
 WHERE @sms_enabled=1 AND @managed=1 AND code=@sms_template_code AND deleted=b'0';
 
@@ -314,13 +314,13 @@ INSERT INTO system_mail_template
     (name, code, account_id, nickname, title, content, params, status, remark, creator, updater, deleted)
 SELECT @mail_template_name, @mail_template_code, @mail_account_id, @mail_template_nickname,
        @mail_template_title, @mail_template_content, @mail_template_params, 0,
-       'managed-by:podman-yaml', '1', '1', b'0'
+       'managed-by:podman-kdl', '1', '1', b'0'
 WHERE @mail_enabled=1 AND NOT EXISTS (
     SELECT 1 FROM system_mail_template WHERE code=@mail_template_code AND deleted=b'0');
 UPDATE system_mail_template
 SET name=@mail_template_name, account_id=@mail_account_id, nickname=@mail_template_nickname,
     title=@mail_template_title, content=@mail_template_content, params=@mail_template_params,
-    status=0, remark='managed-by:podman-yaml', updater='1'
+    status=0, remark='managed-by:podman-kdl', updater='1'
 WHERE @mail_enabled=1 AND @managed=1 AND code=@mail_template_code AND deleted=b'0';
 COMMIT;
 SQL

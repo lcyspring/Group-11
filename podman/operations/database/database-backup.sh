@@ -6,22 +6,22 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PODMAN_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
 
 [[ $# -eq 1 ]] || {
-    printf 'Usage: bash ./operations/database/database-backup.sh <backup-config.yaml>\n' >&2
+    printf 'Usage: bash ./operations/database/database-backup.sh <backup-config.kdl>\n' >&2
     exit 2
 }
 
-# shellcheck source=../../lib/yaml-config.sh
-source "${PODMAN_DIR}/lib/yaml-config.sh"
-yaml_config_init "$1"
+# shellcheck source=../../lib/kdl-config.sh
+source "${PODMAN_DIR}/lib/kdl-config.sh"
+kdl_config_init "$1"
 
-MODE="$(yaml_require operation.mode)"
-MYSQL_CONTAINER="$(yaml_require container.mysql)"
-MYSQL_DATABASE="$(yaml_require mysql.database)"
-MYSQL_USERNAME="$(yaml_require mysql.username)"
-MYSQL_PASSWORD="$(yaml_require mysql.password)"
-ARCHIVE_DIR="$(yaml_path archive.directory)"
-ARCHIVE_FILENAME="$(yaml_require archive.filename)"
-OVERWRITE="$(yaml_bool archive.overwrite)"
+MODE="$(kdl_require operation.mode)"
+MYSQL_CONTAINER="$(kdl_require container.mysql)"
+MYSQL_DATABASE="$(kdl_require mysql.database)"
+MYSQL_USERNAME="$(kdl_require mysql.username)"
+MYSQL_PASSWORD="$(kdl_require mysql.password)"
+ARCHIVE_DIR="$(kdl_path archive.directory)"
+ARCHIVE_FILENAME="$(kdl_require archive.filename)"
+OVERWRITE="$(kdl_bool archive.overwrite)"
 ARCHIVE_PATH="${ARCHIVE_DIR}/${ARCHIVE_FILENAME}"
 CHECKSUM_PATH="${ARCHIVE_PATH}.sha256"
 

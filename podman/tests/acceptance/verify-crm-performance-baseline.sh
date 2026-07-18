@@ -1,39 +1,39 @@
 #!/usr/bin/env bash
-# CRM read-only performance baseline. The only CLI argument is a YAML path.
+# CRM read-only performance baseline. The only CLI argument is a KDL path.
 
 set -Eeuo pipefail
 
 PODMAN_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
-source "${PODMAN_DIR}/lib/yaml-config.sh"
+source "${PODMAN_DIR}/lib/kdl-config.sh"
 
-[[ $# -eq 1 ]] || { printf 'Usage: bash ./tests/acceptance/verify-crm-performance-baseline.sh <config.yaml>\n' >&2; exit 2; }
-yaml_config_init "$1"
-[[ "$(yaml_require schema_version)" == "1" ]] || { printf 'Unsupported schema_version.\n' >&2; exit 2; }
+[[ $# -eq 1 ]] || { printf 'Usage: bash ./tests/acceptance/verify-crm-performance-baseline.sh <config.kdl>\n' >&2; exit 2; }
+kdl_config_init "$1"
+[[ "$(kdl_require schema_version)" == "1" ]] || { printf 'Unsupported schema_version.\n' >&2; exit 2; }
 
-BASE_URL="$(yaml_require endpoint.base_url)"
-TENANT_ID="$(yaml_positive_integer endpoint.tenant_id)"
-USERNAME="$(yaml_require account.username)"
-PASSWORD="$(yaml_require account.password)"
-WARMUP_REQUESTS="$(yaml_positive_integer workload.warmup_requests)"
-REQUESTS="$(yaml_positive_integer workload.requests_per_scenario)"
-CONCURRENCY="$(yaml_positive_integer workload.concurrency)"
-TIMEOUT_SECONDS="$(yaml_positive_integer workload.timeout_seconds)"
-PAGE_SIZE="$(yaml_positive_integer workload.page_size)"
-DEPARTMENT_ID="$(yaml_positive_integer workload.department_id)"
-INTERVAL="$(yaml_positive_integer workload.interval)"
-START_TIME="$(yaml_require workload.start_time)"
-END_TIME="$(yaml_require workload.end_time)"
-MAX_ERROR_RATE="$(yaml_require thresholds.max_error_rate_percent)"
-MAX_P95_MS="$(yaml_positive_integer thresholds.max_p95_ms)"
-MAX_P99_MS="$(yaml_positive_integer thresholds.max_p99_ms)"
-MIN_THROUGHPUT="$(yaml_require thresholds.min_throughput_rps)"
-SERVER_CONTAINER="$(yaml_require containers.server)"
-MYSQL_CONTAINER="$(yaml_require containers.mysql)"
-REDIS_CONTAINER="$(yaml_require containers.redis)"
-MYSQL_USER="$(yaml_require mysql.user)"
-MYSQL_PASSWORD="$(yaml_require mysql.password)"
-MYSQL_DATABASE="$(yaml_require mysql.database)"
-OUTPUT_DIR="$(yaml_path evidence.output_dir)"
+BASE_URL="$(kdl_require endpoint.base_url)"
+TENANT_ID="$(kdl_positive_integer endpoint.tenant_id)"
+USERNAME="$(kdl_require account.username)"
+PASSWORD="$(kdl_require account.password)"
+WARMUP_REQUESTS="$(kdl_positive_integer workload.warmup_requests)"
+REQUESTS="$(kdl_positive_integer workload.requests_per_scenario)"
+CONCURRENCY="$(kdl_positive_integer workload.concurrency)"
+TIMEOUT_SECONDS="$(kdl_positive_integer workload.timeout_seconds)"
+PAGE_SIZE="$(kdl_positive_integer workload.page_size)"
+DEPARTMENT_ID="$(kdl_positive_integer workload.department_id)"
+INTERVAL="$(kdl_positive_integer workload.interval)"
+START_TIME="$(kdl_require workload.start_time)"
+END_TIME="$(kdl_require workload.end_time)"
+MAX_ERROR_RATE="$(kdl_require thresholds.max_error_rate_percent)"
+MAX_P95_MS="$(kdl_positive_integer thresholds.max_p95_ms)"
+MAX_P99_MS="$(kdl_positive_integer thresholds.max_p99_ms)"
+MIN_THROUGHPUT="$(kdl_require thresholds.min_throughput_rps)"
+SERVER_CONTAINER="$(kdl_require containers.server)"
+MYSQL_CONTAINER="$(kdl_require containers.mysql)"
+REDIS_CONTAINER="$(kdl_require containers.redis)"
+MYSQL_USER="$(kdl_require mysql.user)"
+MYSQL_PASSWORD="$(kdl_require mysql.password)"
+MYSQL_DATABASE="$(kdl_require mysql.database)"
+OUTPUT_DIR="$(kdl_path evidence.output_dir)"
 
 [[ "$BASE_URL" =~ ^https?://[^[:space:]]+$ ]] || { printf 'Invalid endpoint.base_url.\n' >&2; exit 2; }
 [[ "$MAX_ERROR_RATE" =~ ^[0-9]+([.][0-9]+)?$ && "$MIN_THROUGHPUT" =~ ^[0-9]+([.][0-9]+)?$ ]] || {

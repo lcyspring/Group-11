@@ -7,7 +7,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PODMAN_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
 
 usage() {
-    printf 'Usage: bash ./operations/images/image-archives.sh <config.yaml>\n' >&2
+    printf 'Usage: bash ./operations/images/image-archives.sh <config.kdl>\n' >&2
 }
 
 [[ $# -eq 1 ]] || {
@@ -15,22 +15,22 @@ usage() {
     exit 2
 }
 
-# shellcheck source=../../lib/yaml-config.sh
-source "${PODMAN_DIR}/lib/yaml-config.sh"
-yaml_config_init "$1"
+# shellcheck source=../../lib/kdl-config.sh
+source "${PODMAN_DIR}/lib/kdl-config.sh"
+kdl_config_init "$1"
 
-[[ "$(yaml_require schema_version)" == "1" ]] || {
+[[ "$(kdl_require schema_version)" == "1" ]] || {
     printf 'Unsupported schema_version; expected 1.\n' >&2
     exit 2
 }
 
-ARCHIVE_MODE="$(yaml_require operation.archive_mode)"
-IMAGE_ARCHIVE_DIR="$(yaml_path image.archive_dir)"
-USE_HOST_PROXY="$(yaml_bool network.use_host_proxy)"
-HTTP_PROXY_URL="$(yaml_require network.http_proxy)"
-HTTPS_PROXY_URL="$(yaml_require network.https_proxy)"
-ALL_PROXY_URL="$(yaml_require network.all_proxy)"
-NO_PROXY_VALUE="$(yaml_require network.no_proxy)"
+ARCHIVE_MODE="$(kdl_require operation.archive_mode)"
+IMAGE_ARCHIVE_DIR="$(kdl_path image.archive_dir)"
+USE_HOST_PROXY="$(kdl_bool network.use_host_proxy)"
+HTTP_PROXY_URL="$(kdl_require network.http_proxy)"
+HTTPS_PROXY_URL="$(kdl_require network.https_proxy)"
+ALL_PROXY_URL="$(kdl_require network.all_proxy)"
+NO_PROXY_VALUE="$(kdl_require network.no_proxy)"
 
 clear_host_proxy() {
     unset http_proxy HTTP_PROXY https_proxy HTTPS_PROXY \
@@ -50,20 +50,20 @@ if [[ "$USE_HOST_PROXY" == "true" ]]; then
 fi
 
 archives=(
-    "${IMAGE_ARCHIVE_DIR}/$(yaml_require archive.runtime_base)"
-    "${IMAGE_ARCHIVE_DIR}/$(yaml_require archive.mysql_base)"
-    "${IMAGE_ARCHIVE_DIR}/$(yaml_require archive.redis_base)"
-    "${IMAGE_ARCHIVE_DIR}/$(yaml_require archive.rabbitmq_base)"
-    "${IMAGE_ARCHIVE_DIR}/$(yaml_require archive.tdengine_base)"
-    "${IMAGE_ARCHIVE_DIR}/$(yaml_require archive.nginx_base)"
+    "${IMAGE_ARCHIVE_DIR}/$(kdl_require archive.runtime_base)"
+    "${IMAGE_ARCHIVE_DIR}/$(kdl_require archive.mysql_base)"
+    "${IMAGE_ARCHIVE_DIR}/$(kdl_require archive.redis_base)"
+    "${IMAGE_ARCHIVE_DIR}/$(kdl_require archive.rabbitmq_base)"
+    "${IMAGE_ARCHIVE_DIR}/$(kdl_require archive.tdengine_base)"
+    "${IMAGE_ARCHIVE_DIR}/$(kdl_require archive.nginx_base)"
 )
 images=(
-    "$(yaml_require image.runtime_base)"
-    "$(yaml_require image.mysql_base)"
-    "$(yaml_require image.redis_base)"
-    "$(yaml_require image.rabbitmq_base)"
-    "$(yaml_require image.tdengine_base)"
-    "$(yaml_require image.nginx_base)"
+    "$(kdl_require image.runtime_base)"
+    "$(kdl_require image.mysql_base)"
+    "$(kdl_require image.redis_base)"
+    "$(kdl_require image.rabbitmq_base)"
+    "$(kdl_require image.tdengine_base)"
+    "$(kdl_require image.nginx_base)"
 )
 
 case "$ARCHIVE_MODE" in

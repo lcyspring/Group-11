@@ -1,0 +1,32 @@
+schema_version 1
+
+
+endpoint {
+  base_url "http://127.0.0.1:8080/admin-api"
+  tenant_id 1
+  negative_tenant_id 121
+
+}
+
+account {
+  template_username "admin"
+  template_password "CHANGE_ME"
+
+}
+
+mysql {
+  container "mitedtsm-rootless-mysql"
+  user "root"
+  password "CHANGE_ME"
+  database "mitedtsm_database"
+
+}
+
+acceptance {
+  department_id 103
+  peer_user_id 118
+  customer_permission "crm:statistics-customer:query"
+  denied_scope "funnel"
+  start_time "2026-07-01 00:00:00"
+  end_time "2026-07-31 23:59:59"
+}

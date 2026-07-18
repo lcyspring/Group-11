@@ -1,0 +1,81 @@
+schema_version 1
+
+
+image {
+  base "docker.io/library/ubuntu:26.04"
+  standard "ghcr.io/elel-code/group-11-build-ubuntu:26.04"
+  hbuilderx "ghcr.io/elel-code/group-11-hbuilderx-ubuntu:26.04-5.05"
+  dependency "ghcr.io/elel-code/group-11-build-ubuntu:26.04"
+  rebuild #false
+
+}
+
+toolchain {
+  pnpm_version "11.3.0"
+
+}
+
+hbuilderx {
+  source_dir "/opt/HBuilderX"
+
+}
+
+build {
+  include_targets "all"
+  exclude_targets "none"
+  platform "h5"
+  clean #true
+  clean_output #true
+  crm_tests #true
+  crm_coverage #true
+  pay_tests #true
+  pay_coverage #true
+  pay_test_pattern "*Test"
+  ci #true
+  maven_threads 4
+  pnpm_frozen_lockfile #true
+
+}
+
+dependency {
+  mall_frozen_lockfile #true
+
+}
+
+network {
+  use_host_proxy #false
+  mall_mode "none"
+  mall_dependency_mode "pasta"
+
+}
+
+web {
+  baidu_analytics_code "disabled"
+  legacy_media_origins "http://test.yudao.iocoder.cn"
+  test_script "verify:web-media"
+
+}
+
+media {
+  legacy_origins "http://test.yudao.iocoder.cn"
+  legacy_fallback "/static/goods-empty.png"
+
+}
+
+cache {
+  maven_volume "mitedtsm-build-maven-cache"
+  pnpm_store_volume "mitedtsm-build-pnpm-store"
+  pnpm_store_path "/pnpm-store"
+  web_node_modules_volume "mitedtsm-build-web-node-modules"
+  mall_pnpm_store_volume "mitedtsm-mall-h5-pnpm-store"
+  mall_pnpm_store_path "/pnpm-store"
+  mall_node_modules_volume "mitedtsm-mall-h5-node-modules"
+
+}
+
+runtime {
+  memory "8g"
+  cpus 4
+  mall_memory "4g"
+  mall_cpus 4
+}

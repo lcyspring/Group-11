@@ -6,28 +6,28 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PODMAN_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
 
 [[ $# -eq 1 ]] || {
-    printf 'Usage: bash ./operations/database/database-restore.sh <restore-config.yaml>\n' >&2
+    printf 'Usage: bash ./operations/database/database-restore.sh <restore-config.kdl>\n' >&2
     exit 2
 }
 
-# shellcheck source=../../lib/yaml-config.sh
-source "${PODMAN_DIR}/lib/yaml-config.sh"
-yaml_config_init "$1"
+# shellcheck source=../../lib/kdl-config.sh
+source "${PODMAN_DIR}/lib/kdl-config.sh"
+kdl_config_init "$1"
 
-MODE="$(yaml_require operation.mode)"
-MYSQL_CONTAINER="$(yaml_require container.mysql)"
-SERVER_CONTAINER="$(yaml_require container.server)"
-SOURCE_DATABASE="$(yaml_require mysql.database)"
-MYSQL_USERNAME="$(yaml_require mysql.username)"
-MYSQL_PASSWORD="$(yaml_require mysql.password)"
-ARCHIVE_DIR="$(yaml_path archive.directory)"
-ARCHIVE_FILENAME="$(yaml_require archive.filename)"
+MODE="$(kdl_require operation.mode)"
+MYSQL_CONTAINER="$(kdl_require container.mysql)"
+SERVER_CONTAINER="$(kdl_require container.server)"
+SOURCE_DATABASE="$(kdl_require mysql.database)"
+MYSQL_USERNAME="$(kdl_require mysql.username)"
+MYSQL_PASSWORD="$(kdl_require mysql.password)"
+ARCHIVE_DIR="$(kdl_path archive.directory)"
+ARCHIVE_FILENAME="$(kdl_require archive.filename)"
 ARCHIVE_PATH="${ARCHIVE_DIR}/${ARCHIVE_FILENAME}"
 CHECKSUM_PATH="${ARCHIVE_PATH}.sha256"
-TARGET_DATABASE="$(yaml_require restore.target_database)"
-ALLOW_REPLACE="$(yaml_bool restore.allow_replace)"
-ALLOW_LIVE_REPLACE="$(yaml_bool restore.allow_live_database_replace)"
-DROP_AFTER_VERIFY="$(yaml_bool restore.drop_after_verify)"
+TARGET_DATABASE="$(kdl_require restore.target_database)"
+ALLOW_REPLACE="$(kdl_bool restore.allow_replace)"
+ALLOW_LIVE_REPLACE="$(kdl_bool restore.allow_live_database_replace)"
+DROP_AFTER_VERIFY="$(kdl_bool restore.drop_after_verify)"
 
 [[ "$MODE" == "check" || "$MODE" == "restore" ]] || {
     printf 'operation.mode must be check or restore; got: %s\n' "$MODE" >&2

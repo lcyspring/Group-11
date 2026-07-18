@@ -1,33 +1,33 @@
 #!/usr/bin/env bash
-# Real API acceptance for CRM contract to ERP fulfillment. The only CLI argument is a YAML path.
+# Real API acceptance for CRM contract to ERP fulfillment. The only CLI argument is a KDL path.
 
 set -Eeuo pipefail
 
 PODMAN_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
-source "${PODMAN_DIR}/lib/yaml-config.sh"
+source "${PODMAN_DIR}/lib/kdl-config.sh"
 
-[[ $# -eq 1 ]] || { printf 'Usage: bash ./tests/acceptance/verify-crm-erp-fulfillment.sh <config.yaml>\n' >&2; exit 2; }
-yaml_config_init "$1"
-[[ "$(yaml_require schema_version)" == "1" ]] || { printf 'Unsupported schema_version.\n' >&2; exit 2; }
+[[ $# -eq 1 ]] || { printf 'Usage: bash ./tests/acceptance/verify-crm-erp-fulfillment.sh <config.kdl>\n' >&2; exit 2; }
+kdl_config_init "$1"
+[[ "$(kdl_require schema_version)" == "1" ]] || { printf 'Unsupported schema_version.\n' >&2; exit 2; }
 
-BASE_URL="$(yaml_require endpoint.base_url)"
-TENANT_ID="$(yaml_positive_integer endpoint.tenant_id)"
-USERNAME="$(yaml_require account.username)"
-PASSWORD="$(yaml_require account.password)"
-CRM_CUSTOMER_ID="$(yaml_positive_integer acceptance.crm_customer_id)"
-CRM_PRODUCT_ID="$(yaml_positive_integer acceptance.crm_product_id)"
-OWNER_USER_ID="$(yaml_positive_integer acceptance.owner_user_id)"
-SOURCE_CURRENCY="$(yaml_require acceptance.source_currency)"
-BASE_CURRENCY="$(yaml_require acceptance.base_currency)"
-EXCHANGE_RATE="$(yaml_require acceptance.exchange_rate)"
-SOURCE_PRICE="$(yaml_require acceptance.source_price)"
-COUNT="$(yaml_require acceptance.count)"
-TAX_RATE="$(yaml_require acceptance.tax_rate_percent)"
-EXPECTED_ERP_TOTAL="$(yaml_require acceptance.expected_erp_total)"
-MYSQL_CONTAINER="$(yaml_require mysql.container)"
-MYSQL_USER="$(yaml_require mysql.user)"
-MYSQL_PASSWORD="$(yaml_require mysql.password)"
-MYSQL_DATABASE="$(yaml_require mysql.database)"
+BASE_URL="$(kdl_require endpoint.base_url)"
+TENANT_ID="$(kdl_positive_integer endpoint.tenant_id)"
+USERNAME="$(kdl_require account.username)"
+PASSWORD="$(kdl_require account.password)"
+CRM_CUSTOMER_ID="$(kdl_positive_integer acceptance.crm_customer_id)"
+CRM_PRODUCT_ID="$(kdl_positive_integer acceptance.crm_product_id)"
+OWNER_USER_ID="$(kdl_positive_integer acceptance.owner_user_id)"
+SOURCE_CURRENCY="$(kdl_require acceptance.source_currency)"
+BASE_CURRENCY="$(kdl_require acceptance.base_currency)"
+EXCHANGE_RATE="$(kdl_require acceptance.exchange_rate)"
+SOURCE_PRICE="$(kdl_require acceptance.source_price)"
+COUNT="$(kdl_require acceptance.count)"
+TAX_RATE="$(kdl_require acceptance.tax_rate_percent)"
+EXPECTED_ERP_TOTAL="$(kdl_require acceptance.expected_erp_total)"
+MYSQL_CONTAINER="$(kdl_require mysql.container)"
+MYSQL_USER="$(kdl_require mysql.user)"
+MYSQL_PASSWORD="$(kdl_require mysql.password)"
+MYSQL_DATABASE="$(kdl_require mysql.database)"
 
 [[ "$BASE_URL" =~ ^https?://[^[:space:]]+$ ]] || { printf 'Invalid endpoint.base_url.\n' >&2; exit 2; }
 [[ "$SOURCE_CURRENCY" =~ ^[A-Z]{3}$ && "$BASE_CURRENCY" =~ ^[A-Z]{3}$ ]] || {
@@ -37,7 +37,7 @@ for value in "$EXCHANGE_RATE" "$SOURCE_PRICE" "$COUNT" "$TAX_RATE" "$EXPECTED_ER
     [[ "$value" =~ ^[0-9]+([.][0-9]+)?$ ]] || { printf 'Invalid numeric value: %s\n' "$value" >&2; exit 2; }
 done
 [[ "$MYSQL_CONTAINER" =~ ^[a-zA-Z0-9_.-]+$ && "$MYSQL_USER" =~ ^[a-zA-Z0-9_.-]+$ && "$MYSQL_DATABASE" =~ ^[a-zA-Z0-9_]+$ ]] || {
-    printf 'Invalid MySQL identifier in YAML.\n' >&2; exit 2;
+    printf 'Invalid MySQL identifier in KDL.\n' >&2; exit 2;
 }
 for command in curl jq podman date; do
     command -v "$command" >/dev/null || { printf 'Missing command: %s\n' "$command" >&2; exit 1; }

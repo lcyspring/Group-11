@@ -1,0 +1,23 @@
+schema_version 1
+
+
+endpoint {
+  admin_base_url "http://127.0.0.1:8080/admin-api"
+  public_base_url "http://127.0.0.1:8080"
+  allowed_target_url "http://127.0.0.1:8081/"
+  tenant_id 1
+
+}
+
+account {
+  username "CHANGE_ME"
+  password "CHANGE_ME"
+
+}
+
+mysql {
+  container "mitedtsm-rootless-mysql"
+  user "root"
+  password "CHANGE_ME"
+  database "mitedtsm_database"
+}

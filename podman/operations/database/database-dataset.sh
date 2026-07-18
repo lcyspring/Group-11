@@ -7,7 +7,7 @@ PODMAN_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
 PROJECT_ROOT="$(cd -- "${PODMAN_DIR}/.." && pwd)"
 
 usage() {
-    printf 'Usage: bash ./operations/database/database-dataset.sh <config.yaml>\n' >&2
+    printf 'Usage: bash ./operations/database/database-dataset.sh <config.kdl>\n' >&2
 }
 
 [[ $# -eq 1 ]] || { usage; exit 2; }
@@ -17,22 +17,22 @@ if [[ "$CONFIG_PATH" != /* ]]; then
     CONFIG_PATH="$(cd -- "$(dirname -- "$CONFIG_PATH")" && pwd)/$(basename -- "$CONFIG_PATH")"
 fi
 
-# shellcheck source=../../lib/yaml-config.sh
-source "${PODMAN_DIR}/lib/yaml-config.sh"
-yaml_config_init "$CONFIG_PATH"
+# shellcheck source=../../lib/kdl-config.sh
+source "${PODMAN_DIR}/lib/kdl-config.sh"
+kdl_config_init "$CONFIG_PATH"
 
-[[ "$(yaml_require schema_version)" == 1 ]] || {
+[[ "$(kdl_require schema_version)" == 1 ]] || {
     printf 'Unsupported schema_version; expected 1.\n' >&2
     exit 2
 }
 
-ACTION="$(yaml_require operation.action)"
-MYSQL_CONTAINER="$(yaml_require container.mysql)"
-MYSQL_DATABASE="$(yaml_require mysql.database)"
-MYSQL_USERNAME="$(yaml_require mysql.username)"
-MYSQL_PASSWORD="$(yaml_require mysql.password)"
-DATASET_NAME="$(yaml_require mysql.dataset)"
-DATASET_MODE="$(yaml_require mysql.dataset_mode)"
+ACTION="$(kdl_require operation.action)"
+MYSQL_CONTAINER="$(kdl_require container.mysql)"
+MYSQL_DATABASE="$(kdl_require mysql.database)"
+MYSQL_USERNAME="$(kdl_require mysql.username)"
+MYSQL_PASSWORD="$(kdl_require mysql.password)"
+DATASET_NAME="$(kdl_require mysql.dataset)"
+DATASET_MODE="$(kdl_require mysql.dataset_mode)"
 
 [[ "$ACTION" == check || "$ACTION" == apply ]] || {
     printf 'operation.action must be check or apply.\n' >&2

@@ -6,7 +6,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 
 usage() {
-    printf 'Usage: bash ./compile.sh <config.yaml>\n' >&2
+    printf 'Usage: bash ./compile.sh <config.kdl>\n' >&2
 }
 
 if [[ $# -ne 1 ]]; then
@@ -14,57 +14,13 @@ if [[ $# -ne 1 ]]; then
     exit 2
 fi
 
-CONFIG_PATH="$1"
-if [[ "$CONFIG_PATH" != /* ]]; then
-    CONFIG_PATH="$(cd -- "$(dirname -- "$CONFIG_PATH")" && pwd)/$(basename -- "$CONFIG_PATH")"
-fi
-[[ -f "$CONFIG_PATH" ]] || {
-    printf 'Build configuration does not exist: %s\n' "$CONFIG_PATH" >&2
-    exit 2
-}
-
-yaml_get() {
-    local wanted="$1"
-    awk -v wanted="$wanted" '
-        function trim(value) {
-            sub(/^[[:space:]]+/, "", value)
-            sub(/[[:space:]]+$/, "", value)
-            return value
-        }
-        /^[[:space:]]*($|#)/ { next }
-        {
-            line = $0
-            indent = match(line, /[^ ]/) - 1
-            content = substr(line, indent + 1)
-            separator = index(content, ":")
-            if (!separator) next
-            key = trim(substr(content, 1, separator - 1))
-            value = trim(substr(content, separator + 1))
-            sub(/[[:space:]]+#.*$/, "", value)
-            value = trim(value)
-            if (indent == 0) {
-                section = key
-                path = key
-            } else if (indent == 2) {
-                path = section "." key
-            } else {
-                next
-            }
-            if (path == wanted && value != "") {
-                if ((substr(value, 1, 1) == "\"" && substr(value, length(value), 1) == "\"") ||
-                    (substr(value, 1, 1) == "\047" && substr(value, length(value), 1) == "\047")) {
-                    value = substr(value, 2, length(value) - 2)
-                }
-                print value
-                exit
-            }
-        }
-    ' "$CONFIG_PATH"
-}
+# shellcheck source=../lib/kdl-config.sh
+source "${SCRIPT_DIR}/lib/kdl-config.sh"
+kdl_config_init "$1"
 
 config_value() {
     local key="$1" default_value="${2:-}" value
-    value="$(yaml_get "$key")"
+    value="$(kdl_get "$key")"
     printf '%s' "${value:-$default_value}"
 }
 
