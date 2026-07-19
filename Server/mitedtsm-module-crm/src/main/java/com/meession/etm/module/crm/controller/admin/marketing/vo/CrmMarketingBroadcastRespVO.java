@@ -11,6 +11,7 @@ public class CrmMarketingBroadcastRespVO {
     private Integer totalCount; private Integer validCount; private Integer suppressedCount;
     private Integer sentCount; private Integer failedCount; private Long reviewerUserId;
     private LocalDateTime reviewedAt; private String reviewComment; private LocalDateTime scheduledAt; private LocalDateTime sentAt;
+    private String processInstanceId;
     private Long creatorUserId; private List<Long> customerIds; private List<Long> contactIds;
     private List<CrmMarketingLinkSaveReqVO> links;
     private LocalDateTime createTime; private LocalDateTime updateTime;

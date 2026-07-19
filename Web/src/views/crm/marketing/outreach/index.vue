@@ -78,19 +78,12 @@
               @click="submitReview(row)"
             >{{ t('crm.marketing.submitReview') }}</el-button>
             <el-button
-              v-if="actionsFor(row.status).review && row.creatorUserId !== currentUserId"
+              v-if="actionsFor(row.status).approval && row.processInstanceId"
               v-hasPermi="['crm:marketing-outreach:review']"
               link
-              type="success"
-              @click="approve(row)"
-            >{{ t('crm.marketing.approve') }}</el-button>
-            <el-button
-              v-if="actionsFor(row.status).review && row.creatorUserId !== currentUserId"
-              v-hasPermi="['crm:marketing-outreach:review']"
-              link
-              type="danger"
-              @click="reject(row)"
-            >{{ t('crm.marketing.reject') }}</el-button>
+              type="warning"
+              @click="viewApproval(row)"
+            >{{ t('crm.marketing.viewApproval') }}</el-button>
             <el-button
               v-if="actionsFor(row.status).send && isDue(row.scheduledAt)"
               v-hasPermi="['crm:marketing-outreach:send']"
@@ -347,9 +340,9 @@
 
 <script setup lang="ts">
 import type { FormInstance, FormRules } from 'element-plus'
-import { ElMessageBox } from 'element-plus'
 import * as MarketingApi from '@/api/crm/marketing'
 import { useUserStore } from '@/store/modules/user'
+import { useRouter } from 'vue-router'
 import { dateFormatter } from '@/utils/formatTime'
 import {
   BroadcastStatus,
@@ -367,7 +360,7 @@ defineOptions({ name: 'CrmMarketingOutreach' })
 
 const { t } = useI18n()
 const message = useMessage()
-const currentUserId = useUserStore().getUser.id
+const router = useRouter()
 const loading = ref(false)
 const formLoading = ref(false)
 const recipientLoading = ref(false)
@@ -567,24 +560,17 @@ const submitReview = async (row: MarketingApi.MarketingBroadcastVO) => {
   message.success(t('crm.marketing.submittedReview'))
   await getList()
 }
-const approve = async (row: MarketingApi.MarketingBroadcastVO) => {
-  const { value } = await ElMessageBox.prompt(t('crm.marketing.reviewCommentOptional'), t('crm.marketing.approve'), {
-    confirmButtonText: t('common.confirm'), cancelButtonText: t('common.cancel')
-  })
-  await MarketingApi.approveBroadcast({ id: row.id, comment: value })
-  message.success(t('crm.marketing.approved'))
-  await getList()
-}
-const reject = async (row: MarketingApi.MarketingBroadcastVO) => {
-  const { value } = await ElMessageBox.prompt(t('crm.marketing.rejectReasonPrompt'), t('crm.marketing.reject'), {
-    confirmButtonText: t('common.confirm'), cancelButtonText: t('common.cancel'),
-    inputValidator: (value) => Boolean(value?.trim()) || t('crm.marketing.rejectReasonRequired')
-  })
-  await MarketingApi.rejectBroadcast({ id: row.id, comment: value })
-  message.success(t('crm.marketing.rejectedSuccess'))
-  await getList()
+const viewApproval = (row: MarketingApi.MarketingBroadcastVO) => {
+  if (!row.processInstanceId) return
+  void router.push({ name: 'BpmProcessInstanceDetail', query: { id: row.processInstanceId } })
 }
 const send = async (row: MarketingApi.MarketingBroadcastVO) => {
+  const readiness = await MarketingApi.getBroadcastSendReadiness(row.id!)
+  if (!readiness.ready) {
+    message.error(readiness.problems.join('；') || t('common.error'))
+    return
+  }
+  if (readiness.warnings?.length) await message.confirm(readiness.warnings.join('；'))
   await message.confirm(t('crm.marketing.confirmSend'))
   await MarketingApi.sendBroadcast(row.id!)
   message.success(t('crm.marketing.sentSuccess'))

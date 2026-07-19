@@ -155,6 +155,7 @@
 | `file.client_id` | `infra_file_config` 中作为 master 的配置 ID |
 | `file.public_base_url` | 文件公开基地址，只接受 HTTP(S) |
 | `crm_marketing.provider_mode` | 群发提供商模式；`record-only` 只留痕，`system` 调用系统短信/邮件提供商 |
+| `crm_marketing.process_definition_key` | 群发审批使用的 BPM 流程定义 Key，默认 `crm-marketing-outreach-audit`；提交前必须在 BPM 中发布 |
 | `crm_marketing.tracking_enabled` | 是否为系统邮件追加不可猜测的打开追踪像素 |
 | `crm_marketing.public_base_url` | 邮件像素公开基地址；真实邮件必须使用外部可访问的 HTTPS 地址 |
 | `crm_marketing.delivery_sync_batch_size` | 每轮调度最多回收的短信/邮件提供商结果数 |

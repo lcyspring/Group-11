@@ -74,9 +74,11 @@ test('page uses actual customer and contact selectors instead of comma separated
   assert.match(page, /Promise\.allSettled/)
 })
 
-test('review, sending and retry commands are available and guarded by backend ownership', () => {
-  assert.match(page, /approveBroadcast/)
-  assert.match(page, /rejectBroadcast/)
+test('review opens BPM and sending is guarded by readiness', () => {
+  assert.doesNotMatch(page, /approveBroadcast/)
+  assert.doesNotMatch(page, /rejectBroadcast/)
+  assert.match(page, /BpmProcessInstanceDetail/)
+  assert.match(page, /getBroadcastSendReadiness/)
   assert.match(page, /retryBroadcast/)
   assert.match(service, /requireCreatorOrAdmin/)
   assert.match(service, /reviewIfPending/)

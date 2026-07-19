@@ -32,7 +32,7 @@ export const broadcastActionVisibility = (status) => ({
   edit: status === BroadcastStatus.DRAFT || status === BroadcastStatus.REJECTED,
   delete: status === BroadcastStatus.DRAFT,
   submit: status === BroadcastStatus.DRAFT,
-  review: status === BroadcastStatus.PENDING_REVIEW,
+  approval: status === BroadcastStatus.PENDING_REVIEW,
   send: status === BroadcastStatus.READY,
   retry: status === BroadcastStatus.PARTIAL_FAILED,
   recipients: true

@@ -16,7 +16,7 @@ resolve_config() {
     if [[ "$configured" == /* ]]; then printf '%s' "$configured"; else printf '%s/%s' "$CONFIG_DIR" "$configured"; fi
 }
 
-for key in leave receivable reimbursement contract refund trip loan customer_visit work_request; do
+for key in leave receivable reimbursement contract refund trip loan customer_visit work_request marketing_outreach; do
     configured="$(kdl_require "models.${key}")"
     model_config="$(resolve_config "$configured")"
     [[ -f "$model_config" ]] || { printf 'BPM model config is missing for %s: %s\n' "$key" "$model_config" >&2; exit 1; }

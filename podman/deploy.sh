@@ -154,6 +154,7 @@ FILE_STORAGE_MODE="$(kdl_require file.storage_mode)"
 FILE_CLIENT_ID="$(kdl_positive_integer file.client_id)"
 FILE_PUBLIC_BASE_URL="$(kdl_require file.public_base_url)"
 CRM_MARKETING_PROVIDER_MODE="$(kdl_require crm_marketing.provider_mode)"
+CRM_MARKETING_PROCESS_DEFINITION_KEY="$(kdl_require crm_marketing.process_definition_key)"
 CRM_MARKETING_TRACKING_ENABLED="$(kdl_bool crm_marketing.tracking_enabled)"
 CRM_MARKETING_PUBLIC_BASE_URL="$(kdl_require crm_marketing.public_base_url)"
 CRM_MARKETING_DELIVERY_SYNC_BATCH_SIZE="$(kdl_positive_integer crm_marketing.delivery_sync_batch_size)"
@@ -399,6 +400,7 @@ start_server() {
         --env "MITEDTSM_EXPRESS_KD100_KEY=${INTEGRATION_EXPRESS_KD100_KEY}" \
         --env "MITEDTSM_EXPRESS_KD100_CUSTOMER=${INTEGRATION_EXPRESS_KD100_CUSTOMER}" \
         --env "MITEDTSM_CRM_MARKETING_PROVIDER_MODE=${CRM_MARKETING_PROVIDER_MODE}" \
+        --env "MITEDTSM_CRM_MARKETING_PROCESS_DEFINITION_KEY=${CRM_MARKETING_PROCESS_DEFINITION_KEY}" \
         --env "MITEDTSM_CRM_MARKETING_TRACKING_ENABLED=${CRM_MARKETING_TRACKING_ENABLED}" \
         --env "MITEDTSM_CRM_MARKETING_PUBLIC_BASE_URL=${CRM_MARKETING_PUBLIC_BASE_URL}" \
         --env "MITEDTSM_CRM_MARKETING_DELIVERY_SYNC_BATCH_SIZE=${CRM_MARKETING_DELIVERY_SYNC_BATCH_SIZE}" \
@@ -737,6 +739,10 @@ replace_server_only() {
     fi
     start_server
     wait_for 'Spring Boot server' "$SERVER_ATTEMPTS" host_curl --fail --silent --show-error "http://${HEALTH_HTTP_HOST}:${SERVER_PORT}${SERVER_HEALTH_PATH}"
+    if [[ "${BPM_PROVISION_AFTER_START,,}" == "true" ]]; then
+        printf 'Provisioning governed BPM models from explicit manifest.\n'
+        bash "${SCRIPT_DIR}/operations/bpm/provision-bpm-models.sh" "$BPM_PROVISION_MANIFEST"
+    fi
 }
 
 replace_web_only() {

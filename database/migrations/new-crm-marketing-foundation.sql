@@ -63,10 +63,12 @@ CREATE TABLE IF NOT EXISTS `crm_marketing_broadcast` (
   `total_count` int NOT NULL DEFAULT 0, `valid_count` int NOT NULL DEFAULT 0, `suppressed_count` int NOT NULL DEFAULT 0,
   `sent_count` int NOT NULL DEFAULT 0, `failed_count` int NOT NULL DEFAULT 0, `reviewer_user_id` bigint NULL,
   `reviewed_at` datetime NULL, `review_comment` varchar(1000) NULL, `scheduled_at` datetime NULL, `sent_at` datetime NULL,
+  `process_instance_id` varchar(64) NULL COMMENT 'BPM 审批流程实例编号',
   `creator` varchar(64) NULL DEFAULT '', `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updater` varchar(64) NULL DEFAULT '', `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted` bit(1) NOT NULL DEFAULT b'0', `tenant_id` bigint NOT NULL DEFAULT 0, PRIMARY KEY (`id`),
-  KEY `idx_crm_marketing_broadcast_status` (`tenant_id`,`status`,`scheduled_at`,`deleted`)
+  KEY `idx_crm_marketing_broadcast_status` (`tenant_id`,`status`,`scheduled_at`,`deleted`),
+  KEY `idx_crm_marketing_broadcast_process` (`tenant_id`,`process_instance_id`,`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='CRM 营销群发任务';
 
 CREATE TABLE IF NOT EXISTS `crm_marketing_broadcast_recipient` (

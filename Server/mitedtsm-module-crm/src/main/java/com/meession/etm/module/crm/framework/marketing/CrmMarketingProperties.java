@@ -16,6 +16,8 @@ import org.springframework.validation.annotation.Validated;
 public class CrmMarketingProperties {
     @NotBlank
     private String providerMode = "record-only";
+    @NotBlank
+    private String processDefinitionKey = "crm-marketing-outreach-audit";
     @Min(1)
     private int batchSize = 50;
     @Min(1)

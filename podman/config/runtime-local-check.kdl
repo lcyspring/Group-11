@@ -201,6 +201,7 @@ crm_export_task {
 
 crm_marketing {
   provider_mode "record-only"
+  process_definition_key "crm-marketing-outreach-audit"
   tracking_enabled #true
   public_base_url "http://127.0.0.1:8080"
   delivery_sync_batch_size 200
