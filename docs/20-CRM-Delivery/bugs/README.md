@@ -20,6 +20,12 @@
 产品分类 CRUD 类型、异常边界与源码杂项清理记录：
 [CRM-PRODUCT-BUG-003](logs/CRM-PRODUCT-BUG-003-category-crud-maintainability.md)。
 
+OA 日程创建入口与标准弹窗修复记录：
+[OA-EVENT-BUG-004](logs/OA-EVENT-BUG-004-create-entry-no-response.md)。
+
+CRM 确认框取消与业务请求异常边界修复记录：
+[CRM-FE-BUG-007](logs/CRM-FE-BUG-007-dialog-errors-silently-swallowed.md)。
+
 Deno/Vite 8 工具链迁移缺陷：
 [WEB-BUILD-BUG-003](logs/WEB-BUILD-BUG-003-node-pnpm-toolchain-drift.md)、
 [004](logs/WEB-BUILD-BUG-004-deno-lifecycle-node-assumption.md)、
