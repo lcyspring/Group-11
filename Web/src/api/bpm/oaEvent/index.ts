@@ -1,4 +1,5 @@
 import request from '@/config/axios'
+import { normalizeEventTimes, type EventTimeValue } from './eventTime'
 
 export interface OaEventSaveReqVO {
   title: string
@@ -19,15 +20,22 @@ export interface OaEventVO extends OaEventUpdateReqVO {
   status?: number
 }
 
+type OaEventRespVO = Omit<OaEventVO, 'startTime' | 'endTime'> & {
+  startTime: EventTimeValue
+  endTime: EventTimeValue
+}
+
 const toLocalDateTime = (value: string) => value.replace(' ', 'T')
 
-export const getOaEventList = (range?: readonly [string, string]) =>
-  request.get<OaEventVO[]>({
+export const getOaEventList = async (range?: readonly [string, string]): Promise<OaEventVO[]> => {
+  const rows = await request.get<OaEventRespVO[]>({
     url: '/bpm/oa/event/list',
     params: range
       ? { from: toLocalDateTime(range[0]), to: toLocalDateTime(range[1]) }
       : undefined
   })
+  return rows.map(normalizeEventTimes)
+}
 
 const toSavePayload = (data: OaEventSaveReqVO | OaEventUpdateReqVO) => ({
   ...data,

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import { formatEventTime, normalizeEventTimes } from '../../../../api/bpm/oaEvent/eventTime.ts'
 
 const source = readFileSync(new URL('./index.vue', import.meta.url), 'utf8')
 const form = readFileSync(new URL('./OaEventForm.vue', import.meta.url), 'utf8')
@@ -62,7 +63,7 @@ test('clearing the calendar date loads all events without invalid time parameter
   assert.match(source, /if \(!anchor\.value\) \{/)
   assert.match(source, /range\.value = undefined/)
   assert.match(source, /if \(!date\.isValid\(\)\)/)
-  assert.match(api, /getOaEventList = \(range\?/)
+  assert.match(api, /getOaEventList = async \(range\?/)
   assert.match(api, /params: range/)
   assert.match(api, /: undefined/)
   assert.doesNotMatch(api, /toLocalDateTime\(from\)/)
@@ -70,4 +71,18 @@ test('clearing the calendar date loads all events without invalid time parameter
   assert.match(controller, /@RequestParam\(required = false\) LocalDateTime to/)
   assert.match(mapper, /ltIfPresent\(BpmOAEventDO::getStartTime, to\)/)
   assert.match(mapper, /gtIfPresent\(BpmOAEventDO::getEndTime, from\)/)
+})
+
+test('event API normalizes timestamp responses for list display and edit backfill', () => {
+  const startTime = 1784908800000
+  const endTime = 1787328000000
+  const event = normalizeEventTimes({ id: 1, startTime, endTime })
+  assert.match(event.startTime, /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
+  assert.match(event.endTime, /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
+  assert.equal(new Date(event.startTime.replace(' ', 'T')).getTime(), startTime)
+  assert.equal(new Date(event.endTime.replace(' ', 'T')).getTime(), endTime)
+  assert.equal(formatEventTime(String(startTime)), event.startTime)
+  assert.equal(formatEventTime('not-a-date'), '')
+  assert.equal(formatEventTime(null), '')
+  assert.match(api, /rows\.map\(normalizeEventTimes\)/)
 })
