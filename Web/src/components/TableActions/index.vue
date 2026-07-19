@@ -1,7 +1,7 @@
 <template>
   <div class="table-actions" @click.stop>
     <el-popover
-      v-if="mode === 'menu'"
+      v-if="mode === 'menu' && hasDefaultActions()"
       v-model:visible="menuVisible"
       :width="menuWidth"
       placement="bottom-end"
@@ -17,7 +17,7 @@
         <slot></slot>
       </div>
     </el-popover>
-    <template v-else>
+    <template v-else-if="mode !== 'menu' && hasDefaultActions()">
       <slot></slot>
       <el-dropdown v-if="$slots.more && showMore" trigger="click">
         <el-button class="table-actions__more" link type="primary" @click.stop>
@@ -35,6 +35,8 @@
 </template>
 
 <script setup lang="ts">
+import { Comment, Fragment, Text, type VNode } from 'vue'
+
 withDefaults(
   defineProps<{
     mode?: 'inline' | 'menu'
@@ -47,7 +49,20 @@ withDefaults(
 )
 
 const { t } = useI18n()
+const slots = useSlots()
 const menuVisible = ref(false)
+
+const hasRenderableNode = (node: VNode): boolean => {
+  if (node.type === Comment) return false
+  if (node.type === Text) return String(node.children || '').trim().length > 0
+  if (node.type === Fragment) {
+    return Array.isArray(node.children) && node.children.some((child) =>
+      typeof child === 'object' && child !== null ? hasRenderableNode(child as VNode) : String(child).trim().length > 0
+    )
+  }
+  return true
+}
+const hasDefaultActions = () => (slots.default?.() || []).some(hasRenderableNode)
 </script>
 
 <style scoped>

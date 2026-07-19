@@ -41,9 +41,24 @@ export interface MarketingBroadcastVO {
   reviewedAt?: Date | string
   reviewComment?: string
   sentAt?: Date | string
+  processInstanceId?: string
   creatorUserId?: number
   createTime?: Date | string
   updateTime?: Date | string
+}
+export interface MarketingSendReadinessVO {
+  ready: boolean
+  realDeliveryEnabled: boolean
+  providerMode?: string
+  validRecipientCount?: number
+  validEmailRecipientCount?: number
+  suppressedEmailRecipientCount?: number
+  mailTemplateConfigured: boolean
+  mailTemplateEnabled: boolean
+  mailAccountConfigured: boolean
+  missingTemplateParams: string[]
+  problems: string[]
+  warnings: string[]
 }
 export interface MarketingLinkVO {
   code: string
@@ -214,6 +229,10 @@ export const syncBroadcastDeliveryResults = (id: number) =>
   request.put<number>({ url: '/crm/marketing/outreach/broadcast/sync-results', params: { id } })
 export const submitBroadcastReview = (id: number) =>
   request.put({ url: '/crm/marketing/outreach/broadcast/submit-review', params: { id } })
+export const getBroadcastSendReadiness = (id: number) =>
+  request.get<MarketingSendReadinessVO>({
+    url: '/crm/marketing/outreach/broadcast/send-readiness', params: { id }
+  })
 export const approveBroadcast = (data: any) =>
   request.put({ url: '/crm/marketing/outreach/broadcast/approve', data })
 export const rejectBroadcast = (data: any) =>

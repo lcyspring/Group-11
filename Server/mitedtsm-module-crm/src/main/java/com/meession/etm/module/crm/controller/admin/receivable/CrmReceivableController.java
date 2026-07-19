@@ -40,6 +40,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -162,6 +163,8 @@ public class CrmReceivableController {
         // 1.3 获得合同列表
         Map<Long, CrmContractDO> contractMap = contractService.getContractMap(
                 convertSet(receivableList, CrmReceivableDO::getContractId));
+        Map<Long, BigDecimal> writtenOffAmountMap = writeOffService.getWrittenOffAmountMap(
+                convertSet(receivableList, CrmReceivableDO::getId));
         // 2. 拼接结果
         return BeanUtils.toBean(receivableList, CrmReceivableRespVO.class, (receivableVO) -> {
             boolean customerExists = customerMap.containsKey(receivableVO.getCustomerId());
@@ -170,6 +173,9 @@ public class CrmReceivableController {
                     && Objects.equals(contract.getCustomerId(), receivableVO.getCustomerId());
             receivableVO.setReferenceStatus(CrmReceivableReferenceStatusEnum
                     .resolve(customerExists, contractValid).getStatus());
+            BigDecimal writtenOff = writtenOffAmountMap.getOrDefault(receivableVO.getId(), BigDecimal.ZERO);
+            receivableVO.setWrittenOffAmount(writtenOff);
+            receivableVO.setRemainingWriteOffAmount(receivableVO.getPrice().subtract(writtenOff).max(BigDecimal.ZERO));
             // 2.1 拼接客户名称
             findAndThen(customerMap, receivableVO.getCustomerId(), customer -> receivableVO.setCustomerName(customer.getName()));
             // 2.2 拼接负责人、创建人名称

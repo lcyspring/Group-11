@@ -128,6 +128,13 @@ public class CrmMarketingOutreachController {
         return success(service.syncDeliveryResults(id, getLoginUserId(), canReadAllBroadcasts()));
     }
 
+    @GetMapping("/broadcast/send-readiness")
+    @Operation(summary = "检查群发发送前置条件")
+    @PreAuthorize("@ss.hasPermission('crm:marketing-outreach:query')")
+    public CommonResult<CrmMarketingSendReadinessRespVO> getSendReadiness(@RequestParam Long id) {
+        return success(service.getSendReadiness(id, getLoginUserId(), canReadAllBroadcasts()));
+    }
+
     @PutMapping("/broadcast/refresh-recipients")
     @Operation(summary = "重新解析群发草稿收件人")
     @PreAuthorize("@ss.hasPermission('crm:marketing-outreach:update')")

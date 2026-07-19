@@ -38,6 +38,14 @@ public class CrmReceivableRespVO {
     @ExcelProperty("回款金额")
     private BigDecimal price;
 
+    @Schema(description = "已核销金额", requiredMode = Schema.RequiredMode.REQUIRED, example = "0")
+    @ExcelProperty("已核销金额")
+    private BigDecimal writtenOffAmount;
+
+    @Schema(description = "剩余可核销金额", requiredMode = Schema.RequiredMode.REQUIRED, example = "9000")
+    @ExcelProperty("剩余可核销金额")
+    private BigDecimal remainingWriteOffAmount;
+
     @Schema(description = "计划回款日期", requiredMode = Schema.RequiredMode.REQUIRED, example = "2024-02-02")
     @ExcelProperty("计划回款日期")
     private LocalDateTime returnTime;

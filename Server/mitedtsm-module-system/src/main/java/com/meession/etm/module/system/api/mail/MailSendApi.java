@@ -2,6 +2,7 @@ package com.meession.etm.module.system.api.mail;
 
 import com.meession.etm.module.system.api.mail.dto.MailSendSingleToUserReqDTO;
 import com.meession.etm.module.system.api.mail.dto.MailSendStatusRespDTO;
+import com.meession.etm.module.system.api.mail.dto.MailTemplateReadinessRespDTO;
 
 import jakarta.validation.Valid;
 
@@ -34,5 +35,8 @@ public interface MailSendApi {
 
     /** 获得邮件异步发送状态；日志不存在时返回 {@code null}。 */
     MailSendStatusRespDTO getMailSendStatus(Long logId);
+
+    MailTemplateReadinessRespDTO getMailTemplateReadiness(String templateCode,
+                                                           java.util.Map<String, Object> templateParams);
 
 }

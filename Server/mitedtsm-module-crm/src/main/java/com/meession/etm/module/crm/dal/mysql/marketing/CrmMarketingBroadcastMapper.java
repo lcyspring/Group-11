@@ -41,6 +41,28 @@ public interface CrmMarketingBroadcastMapper extends BaseMapperX<CrmMarketingBro
                 .set(CrmMarketingBroadcastDO::getStatus, targetStatus));
     }
 
+    default int submitReview(Long id, Integer draftStatus, Integer pendingStatus, String processInstanceId) {
+        return update(new LambdaUpdateWrapper<CrmMarketingBroadcastDO>()
+                .eq(CrmMarketingBroadcastDO::getId, id)
+                .eq(CrmMarketingBroadcastDO::getStatus, draftStatus)
+                .set(CrmMarketingBroadcastDO::getStatus, pendingStatus)
+                .set(CrmMarketingBroadcastDO::getProcessInstanceId, processInstanceId)
+                .set(CrmMarketingBroadcastDO::getReviewerUserId, null)
+                .set(CrmMarketingBroadcastDO::getReviewedAt, null)
+                .set(CrmMarketingBroadcastDO::getReviewComment, null));
+    }
+
+    default int updateReviewStatus(Long id, String processInstanceId, Integer pendingStatus,
+                                   Integer targetStatus, LocalDateTime reviewedAt, String comment) {
+        return update(new LambdaUpdateWrapper<CrmMarketingBroadcastDO>()
+                .eq(CrmMarketingBroadcastDO::getId, id)
+                .eq(CrmMarketingBroadcastDO::getProcessInstanceId, processInstanceId)
+                .eq(CrmMarketingBroadcastDO::getStatus, pendingStatus)
+                .set(CrmMarketingBroadcastDO::getStatus, targetStatus)
+                .set(CrmMarketingBroadcastDO::getReviewedAt, reviewedAt)
+                .set(CrmMarketingBroadcastDO::getReviewComment, comment));
+    }
+
     default int reviewIfPending(Long id, Long reviewerUserId, LocalDateTime reviewedAt,
                                 String comment, Integer targetStatus, Integer pendingStatus) {
         return update(new LambdaUpdateWrapper<CrmMarketingBroadcastDO>()

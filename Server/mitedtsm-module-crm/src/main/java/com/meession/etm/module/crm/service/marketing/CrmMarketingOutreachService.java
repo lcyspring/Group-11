@@ -17,6 +17,7 @@ import com.meession.etm.module.crm.framework.permission.CrmAuthorizationService;
 import com.meession.etm.module.system.api.mail.MailSendApi;
 import com.meession.etm.module.system.api.mail.dto.MailSendSingleToUserReqDTO;
 import com.meession.etm.module.system.api.mail.dto.MailSendStatusRespDTO;
+import com.meession.etm.module.system.api.mail.dto.MailTemplateReadinessRespDTO;
 import com.meession.etm.module.system.api.sms.SmsSendApi;
 import com.meession.etm.module.system.api.sms.dto.SmsSendStatusRespDTO;
 import com.meession.etm.module.system.api.sms.dto.send.SmsSendSingleToUserReqDTO;
@@ -38,6 +39,8 @@ import java.util.*;
 
 import static com.meession.etm.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.*;
+import com.meession.etm.module.bpm.api.task.BpmProcessInstanceApi;
+import com.meession.etm.module.bpm.api.task.dto.BpmProcessInstanceCreateReqDTO;
 
 @Service
 public class CrmMarketingOutreachService {
@@ -54,6 +57,7 @@ public class CrmMarketingOutreachService {
     @Resource private SmsSendApi smsSendApi;
     @Resource private MailSendApi mailSendApi;
     @Resource private ObjectMapper objectMapper;
+    @Resource private BpmProcessInstanceApi bpmProcessInstanceApi;
 
     @Transactional(rollbackFor = Exception.class)
     public Long saveBroadcast(CrmMarketingBroadcastSaveReqVO request, Long userId) {
@@ -263,8 +267,70 @@ public class CrmMarketingOutreachService {
         if (row.getValidCount() == null || row.getValidCount() <= 0) {
             throw exception(MARKETING_RECIPIENT_NONE_SENDABLE);
         }
-        if (broadcastMapper.transition(id, List.of(CrmMarketingBroadcastStatusEnum.DRAFT.getStatus()),
-                CrmMarketingBroadcastStatusEnum.PENDING_REVIEW.getStatus()) == 0) {
+        String processInstanceId = bpmProcessInstanceApi == null ? null : bpmProcessInstanceApi.createProcessInstance(userId,
+                new BpmProcessInstanceCreateReqDTO().setProcessDefinitionKey(properties.getProcessDefinitionKey())
+                        .setBusinessKey(String.valueOf(id)));
+        int changed = processInstanceId == null
+                ? broadcastMapper.transition(id, List.of(CrmMarketingBroadcastStatusEnum.DRAFT.getStatus()),
+                CrmMarketingBroadcastStatusEnum.PENDING_REVIEW.getStatus())
+                : broadcastMapper.submitReview(id, CrmMarketingBroadcastStatusEnum.DRAFT.getStatus(),
+                CrmMarketingBroadcastStatusEnum.PENDING_REVIEW.getStatus(), processInstanceId);
+        if (changed == 0) {
+            throw exception(MARKETING_BROADCAST_STATUS_INVALID);
+        }
+    }
+
+    public CrmMarketingSendReadinessRespVO getSendReadiness(Long id, Long userId, boolean privilegedReader) {
+        CrmMarketingBroadcastDO row = requireBroadcast(id);
+        requireReadable(row, userId, privilegedReader);
+        CrmMarketingSendReadinessRespVO result = new CrmMarketingSendReadinessRespVO()
+                .setProviderMode(properties.getProviderMode())
+                .setRealDeliveryEnabled("system".equals(properties.getProviderMode()))
+                .setValidRecipientCount(row.getValidCount())
+                .setValidEmailRecipientCount(0)
+                .setSuppressedEmailRecipientCount(0);
+        List<String> problems = new ArrayList<>();
+        List<CrmMarketingBroadcastRecipientDO> recipients = recipientMapper.selectList(
+                CrmMarketingBroadcastRecipientDO::getBroadcastId, id);
+        int validEmail = (int) recipients.stream().filter(item -> Integer.valueOf(2).equals(item.getChannel())
+                && CrmMarketingRecipientStatusEnum.PENDING.getStatus().equals(item.getStatus())).count();
+        int suppressedEmail = (int) recipients.stream().filter(item -> Integer.valueOf(2).equals(item.getChannel())
+                && CrmMarketingRecipientStatusEnum.SUPPRESSED.getStatus().equals(item.getStatus())).count();
+        result.setValidEmailRecipientCount(validEmail).setSuppressedEmailRecipientCount(suppressedEmail);
+        if (!"system".equals(properties.getProviderMode())) {
+            result.getWarnings().add("当前 provider_mode=record-only，只记录群发结果，不会实际发送邮件");
+        }
+        if (CrmMarketingBroadcastStatusEnum.READY.getStatus().equals(row.getStatus())
+                && row.getProcessInstanceId() == null) {
+            problems.add("群发必须经过 BPM 审批并处于待发送状态");
+        }
+        if (Integer.valueOf(2).equals(row.getChannel()) || Integer.valueOf(3).equals(row.getChannel())) {
+            MailTemplateReadinessRespDTO mail = mailSendApi.getMailTemplateReadiness(row.getMailTemplateCode(), parseParams(row.getTemplateParams()));
+            result.setMailTemplateConfigured(mail.isTemplateExists()).setMailTemplateEnabled(mail.isTemplateEnabled())
+                    .setMailAccountConfigured(mail.isAccountConfigured()).setMissingTemplateParams(mail.getMissingParams());
+            if (!mail.isTemplateExists()) problems.add("邮件模板不存在");
+            if (!mail.isTemplateEnabled()) problems.add("邮件模板未启用");
+            if (!mail.isAccountConfigured()) problems.add("邮件 SMTP 账号未完整配置");
+            if (!mail.getMissingParams().isEmpty()) problems.add("邮件模板参数缺失：" + String.join(", ", mail.getMissingParams()));
+            if (validEmail == 0) problems.add("没有可发送的邮件收件人，请检查邮箱和渠道同意记录");
+        }
+        result.setProblems(problems).setReady(problems.isEmpty());
+        return result;
+    }
+
+    public void updateApprovalStatus(Long id, String processInstanceId, Integer bpmStatus) {
+        Integer target = switch (bpmStatus) {
+            case 2 -> CrmMarketingBroadcastStatusEnum.READY.getStatus();
+            case 3 -> CrmMarketingBroadcastStatusEnum.REJECTED.getStatus();
+            case 4 -> CrmMarketingBroadcastStatusEnum.CANCELLED.getStatus();
+            default -> null;
+        };
+        if (target == null) return;
+        CrmMarketingBroadcastDO current = requireBroadcast(id);
+        if (Objects.equals(current.getProcessInstanceId(), processInstanceId)
+                && Objects.equals(current.getStatus(), target)) return;
+        if (broadcastMapper.updateReviewStatus(id, processInstanceId,
+                CrmMarketingBroadcastStatusEnum.PENDING_REVIEW.getStatus(), target, LocalDateTime.now(), null) == 0) {
             throw exception(MARKETING_BROADCAST_STATUS_INVALID);
         }
     }
@@ -293,6 +359,10 @@ public class CrmMarketingOutreachService {
             throw exception(MARKETING_BROADCAST_STATUS_INVALID);
         if (row.getScheduledAt() != null && row.getScheduledAt().isAfter(LocalDateTime.now()))
             throw exception(MARKETING_BROADCAST_STATUS_INVALID);
+        CrmMarketingSendReadinessRespVO readiness = getSendReadiness(id, parseCreatorUserId(row.getCreator()), true);
+        if (!readiness.isReady()) {
+            throw exception(MARKETING_SEND_PREREQUISITE_MISSING, String.join("；", readiness.getProblems()));
+        }
         enforceQuota(row.getId());
         if (broadcastMapper.transition(row.getId(), List.of(CrmMarketingBroadcastStatusEnum.READY.getStatus(),
                 CrmMarketingBroadcastStatusEnum.PARTIAL_FAILED.getStatus()),

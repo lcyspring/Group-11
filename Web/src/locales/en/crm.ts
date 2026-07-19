@@ -1082,7 +1082,14 @@ export default {
     missingContractReference: 'Original contract is missing or belongs to another customer (ID: {id})',
     writeOff: 'Receivable Write-off', writeOffAmount: 'Write-off Amount', writeOffTime: 'Write-off Time', writeOffSource: 'Source',
     writeOffManual: 'Manual', writeOffBank: 'Bank Transaction', writeOffImport: 'Import', writeOffReference: 'External Reference',
-    writeOffSuccess: 'Receivable write-off created',
+    writeOffSuccess: 'Receivable write-off created', writeOffLedgerTitle: 'Receivable Write-off Ledger · {no}', receivableAmount: 'Receivable Amount',
+    writtenOffAmount: 'Written-off Amount', writeOffRemaining: 'Remaining', writeOffCompleted: 'This receivable is fully written off',
+    writeOffLedger: 'Write-off Records', writeOffActive: 'Active', writeOffReversed: 'Reversed', reverseWriteOff: 'Reverse',
+    reverseWriteOffConfirm: 'Reverse this write-off record? The audit record will be retained.', reverseWriteOffSuccess: 'Write-off record reversed',
+    noWriteOffRecords: 'No write-off records', writeOffAllRemaining: 'Use Full Remaining Amount', confirmWriteOff: 'Confirm Write-off',
+    writeOffReferencePlaceholder: 'Optional external unique reference, such as a bank transaction number', writeOffAmountRequired: 'Amount must be at least 0.01',
+    writeOffAmountExceeded: 'Amount cannot exceed the remaining {amount}', writeOffTimeRequired: 'Select the write-off time',
+    writeOffSourceRequired: 'Select a write-off source',
     referenceArchiveNotice:
       'This approved receivable remains as financial history and will not be deleted or rebound automatically. Original customer ID: {customerId}; original contract ID: {contractId}'
   },

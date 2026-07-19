@@ -57,7 +57,7 @@
           v-model="formData.refundTime"
           class="!w-full"
           type="datetime"
-          value-format="YYYY-MM-DD HH:mm:ss"
+          value-format="x"
         />
       </el-form-item>
       <el-form-item :label="t('refund.reason')" prop="reason">
@@ -90,9 +90,9 @@
 </template>
 
 <script setup lang="ts">
-import dayjs from 'dayjs'
 import * as RefundApi from '@/api/crm/refund'
 import * as ReceivableApi from '@/api/crm/receivable'
+import { toRefundEpochMillis } from './constants'
 
 const { t } = useI18n('crm')
 const message = useMessage()
@@ -177,7 +177,7 @@ const open = async (type: 'create' | 'update', id?: number, receivableId?: numbe
       : ({
           receivableId,
           type: 1,
-          refundTime: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+          refundTime: Date.now(),
           amount: 0.01,
           reason: ''
         } as RefundApi.ReceivableRefundVO)
@@ -191,8 +191,17 @@ const submit = async () => {
   if (!(await formRef.value.validate())) return
   loading.value = true
   try {
-    if (mode.value === 'create') await RefundApi.createRefund(formData.value)
-    else await RefundApi.updateRefund(formData.value)
+    const command: RefundApi.ReceivableRefundSaveReqVO = {
+      id: formData.value.id,
+      receivableId: formData.value.receivableId,
+      type: formData.value.type,
+      refundTime: toRefundEpochMillis(formData.value.refundTime),
+      amount: formData.value.amount,
+      reason: formData.value.reason,
+      remark: formData.value.remark
+    }
+    if (mode.value === 'create') await RefundApi.createRefund(command)
+    else await RefundApi.updateRefund(command)
     message.success(mode.value === 'create' ? t('common.createSuccess') : t('common.updateSuccess'))
     visible.value = false
     emit('success')

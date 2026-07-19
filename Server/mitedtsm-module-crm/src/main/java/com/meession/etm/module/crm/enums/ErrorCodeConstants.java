@@ -33,6 +33,8 @@ public interface ErrorCodeConstants {
             "营销链接无效、重复、超过数量上限，或目标域名未进入 YAML 白名单");
     ErrorCode MARKETING_LINK_TOKEN_INVALID = new ErrorCode(1_020_014_024,
             "营销链接令牌无效或已停用");
+    ErrorCode MARKETING_SEND_PREREQUISITE_MISSING = new ErrorCode(1_020_014_025,
+            "群发发送前置条件未满足：{}");
     ErrorCode MARKETING_CONSENT_NOT_EXISTS = new ErrorCode(1_020_014_015, "营销同意记录不存在");
     ErrorCode MARKETING_CARE_PLAN_NOT_EXISTS = new ErrorCode(1_020_014_016, "客户关怀计划不存在");
     ErrorCode MARKETING_CARE_PLAN_CODE_EXISTS = new ErrorCode(1_020_014_017, "客户关怀计划编码已存在");

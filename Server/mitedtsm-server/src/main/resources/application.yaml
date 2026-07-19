@@ -362,6 +362,7 @@ mitedtsm:
         max-retries: ${MITEDTSM_CRM_RECEIVABLE_OVERDUE_MAX_RETRIES:5}
     marketing:
       provider-mode: ${MITEDTSM_CRM_MARKETING_PROVIDER_MODE:record-only}
+      process-definition-key: ${MITEDTSM_CRM_MARKETING_PROCESS_DEFINITION_KEY:crm-marketing-outreach-audit}
       care-enabled: true
       batch-size: 50
       max-batch-size: 500

@@ -14,10 +14,10 @@ import {
 
 test('action matrix exposes every lifecycle command only in its valid state', () => {
   assert.deepEqual(broadcastActionVisibility(BroadcastStatus.DRAFT), {
-    edit: true, delete: true, submit: true, review: false, send: false, retry: false, recipients: true
+    edit: true, delete: true, submit: true, approval: false, send: false, retry: false, recipients: true
   })
   assert.equal(broadcastActionVisibility(BroadcastStatus.REJECTED).edit, true)
-  assert.equal(broadcastActionVisibility(BroadcastStatus.PENDING_REVIEW).review, true)
+  assert.equal(broadcastActionVisibility(BroadcastStatus.PENDING_REVIEW).approval, true)
   assert.equal(broadcastActionVisibility(BroadcastStatus.READY).send, true)
   assert.equal(broadcastActionVisibility(BroadcastStatus.PARTIAL_FAILED).retry, true)
   assert.equal(broadcastActionVisibility(BroadcastStatus.SENT).send, false)

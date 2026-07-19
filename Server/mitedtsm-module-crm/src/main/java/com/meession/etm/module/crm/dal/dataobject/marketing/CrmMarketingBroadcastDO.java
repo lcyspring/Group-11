@@ -30,6 +30,7 @@ public class CrmMarketingBroadcastDO extends BaseDO {
     private Long reviewerUserId;
     private LocalDateTime reviewedAt;
     private String reviewComment;
+    private String processInstanceId;
     private LocalDateTime scheduledAt;
     private LocalDateTime sentAt;
 }

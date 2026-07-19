@@ -1,0 +1,30 @@
+schema_version 1
+
+endpoint {
+  base_url "http://127.0.0.1:8080/admin-api"
+  tenant_id 1
+}
+account {
+  username "admin"
+  password "CHANGE_ME"
+}
+approval {
+  role_code "crm_marketing_approver"
+  role_name "CRM 营销群发审批人"
+  role_sort 52
+  approver_username "admin"
+  permission_codes "bpm:task:query,bpm:task:update,bpm:process-instance:query,crm:marketing-outreach:query,crm:marketing-outreach:review"
+}
+category {
+  code "CRM_MARKETING"
+  name "CRM 营销"
+  sort 60
+}
+model {
+  key "crm-marketing-outreach-audit"
+  name "CRM 营销群发审批"
+  description "营销短信/邮件群发必须审批通过后才能发送；审批通过不代表邮件服务商已接受。"
+  form_create_path "/crm/marketing/outreach"
+  form_view_path "/crm/marketing/outreach/index.vue"
+  approval_node_name "营销群发审批"
+}
