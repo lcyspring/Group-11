@@ -5,6 +5,7 @@ import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.module.bpm.controller.admin.oa.vo.BpmOALeaveCreateReqVO;
 import com.meession.etm.module.bpm.controller.admin.oa.vo.BpmOALeavePageReqVO;
 import com.meession.etm.module.bpm.dal.dataobject.oa.BpmOALeaveDO;
+import com.meession.etm.module.bpm.dal.dataobject.oa.BpmOALeaveBalanceDO;
 
 import jakarta.validation.Valid;
 
@@ -49,5 +50,9 @@ public interface BpmOALeaveService {
      * @return 请假申请分页
      */
     PageResult<BpmOALeaveDO> getLeavePage(Long userId, BpmOALeavePageReqVO pageReqVO);
+
+    BpmOALeaveBalanceDO getOrCreateBalance(Long userId, Integer leaveType, Integer year);
+
+    boolean isBalanceRequired(Integer leaveType);
 
 }

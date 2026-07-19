@@ -1,152 +1,294 @@
-<!-- 销售漏斗分�?-->
 <template>
-  <!-- Echarts�?-->
+  <el-alert
+    v-if="!loading && list.length > 0 && !hasConfiguredStages"
+    class="mb-16px"
+    :closable="false"
+    :title="t('funnel.statusGroupMissingStages')"
+    type="warning"
+    show-icon
+  />
   <el-card shadow="never">
-    <el-row>
-      <el-col :span="24">
-        <el-button-group class="mb-10px">
-          <el-button type="primary" @click="handleActive(true)">{{ t('funnel.customerView') }}</el-button>
-          <el-button type="primary" @click="handleActive(false)">{{ t('funnel.dynamicView') }}</el-button>
-        </el-button-group>
-        <el-skeleton :loading="loading" animated>
-          <Echart :height="500" :options="echartsOption" />
-        </el-skeleton>
-      </el-col>
-    </el-row>
+    <el-skeleton :loading="loading" animated>
+      <Echart :height="500" :options="echartsOption" />
+    </el-skeleton>
   </el-card>
 
-  <!-- 统计列表 -->
   <el-card class="mt-16px" shadow="never">
-    <el-table v-loading="loading" :data="list" :table-layout="'auto'">
+    <el-table v-loading="loading" :data="list" table-layout="auto">
       <el-table-column align="center" :label="t('customer.index')" type="index" width="80" />
-      <el-table-column align="center" :label="t('funnel.stage')" prop="endStatus" min-width="200">
+      <el-table-column align="center" :label="t('funnel.stage')" min-width="180">
         <template #default="scope">
-          <dict-tag :type="DICT_TYPE.CRM_BUSINESS_END_STATUS_TYPE" :value="scope.row.endStatus" />
+          <dict-tag
+            v-if="scope.row.endStatus"
+            :type="DICT_TYPE.CRM_BUSINESS_END_STATUS_TYPE"
+            :value="scope.row.endStatus"
+          />
+          <span v-else>{{ scope.row.statusName }}</span>
         </template>
       </el-table-column>
-      <el-table-column align="center" :label="t('funnel.businessCount')" min-width="200" prop="businessCount" />
-      <el-table-column align="center" :label="t('funnel.businessTotalPrice')" min-width="200" prop="totalPrice" />
+      <el-table-column
+        align="center"
+        :label="t('funnel.businessCount')"
+        min-width="140"
+        prop="businessCount"
+      />
+      <el-table-column
+        align="center"
+        :label="t('funnel.businessTotalPrice')"
+        min-width="180"
+        prop="totalPrice"
+      />
+      <el-table-column align="center" :label="t('funnel.conversionOrOutcomeRate')" min-width="180">
+        <template #default="scope">{{ scope.row.conversionRate }}%</template>
+      </el-table-column>
+      <el-table-column align="center" fixed="right" :label="t('common.action')" width="100">
+        <template #default="scope">
+          <el-button
+            v-hasPermi="['crm:business:query']"
+            link
+            type="primary"
+            @click="openStageDetails(scope.row)"
+          >
+            {{ t('common.detail') }}
+          </el-button>
+        </template>
+      </el-table-column>
     </el-table>
   </el-card>
+
+  <Dialog
+    v-model="detailsVisible"
+    :title="detailsTitle"
+    width="1100px"
+    scroll
+    max-height="calc(100vh - 150px)"
+  >
+    <el-table v-loading="detailsLoading" :data="businessList" table-layout="auto">
+      <el-table-column align="center" :label="t('funnel.businessName')" min-width="180">
+        <template #default="scope">
+          <el-link :underline="false" type="primary" @click="openBusinessDetail(scope.row.id)">
+            {{ scope.row.name }}
+          </el-link>
+        </template>
+      </el-table-column>
+      <el-table-column align="center" :label="t('funnel.customerName')" min-width="160">
+        <template #default="scope">
+          <el-link
+            :underline="false"
+            type="primary"
+            @click="openCustomerDetail(scope.row.customerId)"
+          >
+            {{ scope.row.customerName }}
+          </el-link>
+        </template>
+      </el-table-column>
+      <el-table-column
+        align="right"
+        :formatter="erpPriceTableColumnFormatter"
+        :label="t('funnel.totalPrice')"
+        min-width="150"
+        prop="totalPrice"
+      />
+      <el-table-column
+        align="center"
+        :formatter="dateFormatter"
+        :label="t('funnel.dealTime')"
+        min-width="180"
+        prop="dealTime"
+      />
+      <el-table-column
+        align="center"
+        :label="t('funnel.statusName')"
+        min-width="140"
+      >
+        <template #default="scope">
+          {{ selectedStage ? stageLabel(selectedStage) : scope.row.statusName }}
+        </template>
+      </el-table-column>
+      <el-table-column align="center" :label="t('funnel.outcome')" min-width="120">
+        <template #default="scope">
+          <dict-tag
+            v-if="scope.row.endStatus"
+            :type="DICT_TYPE.CRM_BUSINESS_END_STATUS_TYPE"
+            :value="scope.row.endStatus"
+          />
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
+      <el-table-column
+        align="center"
+        :label="t('funnel.ownerUserName')"
+        min-width="140"
+        prop="ownerUserName"
+      />
+    </el-table>
+    <Pagination
+      v-model:limit="detailsPage.pageSize"
+      v-model:page="detailsPage.pageNo"
+      :total="detailsTotal"
+      @pagination="loadStageDetails"
+    />
+  </Dialog>
 </template>
+
 <script lang="ts" setup>
-import { CrmStatisticFunnelRespVO, StatisticFunnelApi } from '@/api/crm/statistics/funnel'
+import {
+  CrmStatisticsBusinessStageSummaryRespVO,
+  StatisticFunnelApi
+} from '@/api/crm/statistics/funnel'
+import { DICT_TYPE, getDictLabel } from '@/utils/dict'
 import { EChartsOption } from 'echarts'
-import { DICT_TYPE } from '@/utils/dict'
+import type { BusinessVO } from '@/api/crm/business'
+import { erpPriceTableColumnFormatter } from '@/utils'
+import { dateFormatter } from '@/utils/formatTime'
 
 defineOptions({ name: 'FunnelBusiness' })
 
-const { t } = useI18n('crm.statistics') // 国际�?
+const { t } = useI18n('crm.statistics')
+const props = defineProps<{ queryParams: any }>()
+const loading = ref(false)
+const list = ref<CrmStatisticsBusinessStageSummaryRespVO[]>([])
+const detailsVisible = ref(false)
+const detailsLoading = ref(false)
+const selectedStage = ref<CrmStatisticsBusinessStageSummaryRespVO>()
+const businessList = ref<BusinessVO[]>([])
+const detailsTotal = ref(0)
+const detailsPage = reactive({ pageNo: 1, pageSize: 10 })
+const hasConfiguredStages = computed(() => list.value.some((row) => !row.endStatus && row.statusId))
 
-const props = defineProps<{ queryParams: any }>() // 搜索参数
-
-const active = ref(true)
-const loading = ref(false) // 加载�?
-const list = ref<CrmStatisticFunnelRespVO[]>([]) // 列表的数�?
-
-/** 销售漏�?*/
 const echartsOption = reactive<EChartsOption>({
-  title: {
-    text: t('funnel.funnel')
-  },
+  title: { text: t('funnel.stageAndOutcome') },
   tooltip: {
     trigger: 'item',
-    formatter: '{a} <br/>{b}'
+    formatter: (params: any) => {
+      const row = params.data.raw as CrmStatisticsBusinessStageSummaryRespVO
+      return `${params.name}<br/>${t('funnel.businessTotalPrice')}: ${row.totalPrice}<br/>${t(
+        'funnel.conversionOrOutcomeRate'
+      )}: ${row.conversionRate}%`
+    }
   },
   toolbox: {
     feature: {
-      dataView: { readOnly: false },
+      dataView: { readOnly: true },
       restore: {},
       saveAsImage: {}
     }
-  },
-  legend: {
-    data: [t('funnel.customer'), t('funnel.business'), t('funnel.win')]
   },
   series: [
     {
       name: t('funnel.funnel'),
       type: 'funnel',
-      left: '10%',
+      left: '4%',
       top: 60,
-      bottom: 60,
-      width: '80%',
+      bottom: 40,
+      width: '58%',
       min: 0,
-      max: 100,
       minSize: '0%',
       maxSize: '100%',
-      sort: 'descending',
+      sort: 'none',
       gap: 2,
-      label: {
-        show: true,
-        position: 'inside'
-      },
-      labelLine: {
-        length: 10,
-        lineStyle: {
-          width: 1,
-          type: 'solid'
-        }
-      },
-      itemStyle: {
-        borderColor: '#fff',
-        borderWidth: 1
-      },
-      emphasis: {
-        label: {
-          fontSize: 20
-        }
-      },
-      data: [
-        { value: 60, name: `${t('funnel.customer')}-0${t('funnel.unit')}` },
-        { value: 40, name: `${t('funnel.business')}-0${t('funnel.unit')}` },
-        { value: 20, name: `${t('funnel.win')}-0${t('funnel.unit')}` }
-      ]
+      label: { show: true, position: 'inside' },
+      itemStyle: { borderColor: '#fff', borderWidth: 1 },
+      emphasis: { label: { fontSize: 18 } },
+      data: []
+    },
+    {
+      name: t('funnel.outcomeDistribution'),
+      type: 'pie',
+      center: ['82%', '38%'],
+      radius: ['22%', '38%'],
+      label: { formatter: '{b}\n{c}' },
+      data: []
     }
   ]
 }) as EChartsOption
 
-const handleActive = async (val: boolean) => {
-  active.value = val
-  await loadData()
-}
+const stageLabel = (row: CrmStatisticsBusinessStageSummaryRespVO) =>
+  row.endStatus
+    ? getDictLabel(DICT_TYPE.CRM_BUSINESS_END_STATUS_TYPE, row.endStatus) || '-'
+    : row.statusName || '-'
 
-/** 获取统计数据 */
-const loadData = async () => {
-  loading.value = true
-  // 1. 加载漏斗数据
-  const data = (await StatisticFunnelApi.getFunnelSummary(
-    props.queryParams
-  )) as CrmStatisticFunnelRespVO
-  // 2.1 更新 Echarts 数据
-  if (
-    !!data &&
-    echartsOption.series &&
-    echartsOption.series[0] &&
-    echartsOption.series[0]['data']
-  ) {
-    // tips：写�?value 值是为了保持漏斗顺序不变
-    const list: { value: number; name: string }[] = []
-    if (active.value) {
-      list.push({ value: 60, name: `${t('funnel.customer')}-${data.customerCount || 0}${t('funnel.unit')}` })
-      list.push({ value: 40, name: `${t('funnel.business')}-${data.businessCount || 0}${t('funnel.unit')}` })
-      list.push({ value: 20, name: `${t('funnel.win')}-${data.businessWinCount || 0}${t('funnel.unit')}` })
-    } else {
-      list.push({ value: data.customerCount || 0, name: `${t('funnel.customer')}-${data.customerCount || 0}${t('funnel.unit')}` })
-      list.push({ value: data.businessCount || 0, name: `${t('funnel.business')}-${data.businessCount || 0}${t('funnel.unit')}` })
-      list.push({ value: data.businessWinCount || 0, name: `${t('funnel.win')}-${data.businessWinCount || 0}${t('funnel.unit')}` })
+const detailsTitle = computed(() =>
+  selectedStage.value
+    ? `${stageLabel(selectedStage.value)} - ${t('funnel.stageDetails')}`
+    : t('funnel.stageDetails')
+)
+
+const loadStageDetails = async () => {
+  if (!selectedStage.value) return
+  detailsLoading.value = true
+  try {
+    const params = {
+      ...props.queryParams,
+      pageNo: detailsPage.pageNo,
+      pageSize: detailsPage.pageSize
     }
-
-    echartsOption.series[0]['data'] = list
+    const data = selectedStage.value.endStatus
+      ? await StatisticFunnelApi.getBusinessOutcomePage({
+          ...params,
+          endStatus: selectedStage.value.endStatus
+        })
+      : await StatisticFunnelApi.getBusinessStagePage({
+          ...params,
+          statusId: selectedStage.value.statusId
+        })
+    businessList.value = data.list
+    detailsTotal.value = data.total
+  } finally {
+    detailsLoading.value = false
   }
-  // 2.2 获取商机结束状态统�?
-  list.value = await StatisticFunnelApi.getBusinessSummaryByEndStatus(props.queryParams)
-  loading.value = false
 }
-defineExpose({ loadData })
 
-/** 初始�?*/
-onMounted(() => {
-  loadData()
-})
+const openStageDetails = async (row: CrmStatisticsBusinessStageSummaryRespVO) => {
+  selectedStage.value = row
+  detailsPage.pageNo = 1
+  detailsVisible.value = true
+  await loadStageDetails()
+}
+
+const clearData = () => {
+  list.value = []
+  if (echartsOption.series?.[0]) {
+    echartsOption.series[0]['data'] = []
+  }
+  if (echartsOption.series?.[1]) echartsOption.series[1]['data'] = []
+}
+
+const loadData = async () => {
+  if (!props.queryParams.statusTypeId) {
+    clearData()
+    return
+  }
+  detailsVisible.value = false
+  loading.value = true
+  try {
+    const data = (await StatisticFunnelApi.getBusinessStageSummary(
+      props.queryParams
+    )) as CrmStatisticsBusinessStageSummaryRespVO[]
+    list.value = data
+    if (echartsOption.series?.[0]) {
+      echartsOption.series[0]['data'] = data.filter((row) => !row.endStatus).map((row) => ({
+        value: row.businessCount,
+        name: `${stageLabel(row)}-${row.businessCount}${t('funnel.unit')}`,
+        raw: row
+      }))
+    }
+    if (echartsOption.series?.[1]) {
+      echartsOption.series[1]['data'] = data.filter((row) => row.endStatus).map((row) => ({
+        value: row.businessCount,
+        name: stageLabel(row),
+        raw: row
+      }))
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+const { push } = useRouter()
+const openBusinessDetail = (id: number) => push({ name: 'CrmBusinessDetail', params: { id } })
+const openCustomerDetail = (id: number) => push({ name: 'CrmCustomerDetail', params: { id } })
+
+defineExpose({ loadData })
+onMounted(loadData)
 </script>

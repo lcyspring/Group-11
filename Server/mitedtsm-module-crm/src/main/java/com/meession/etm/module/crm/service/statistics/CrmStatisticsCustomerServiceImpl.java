@@ -10,6 +10,7 @@ import com.meession.etm.framework.ip.core.enums.AreaTypeEnum;
 import com.meession.etm.framework.ip.core.utils.AreaUtils;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.customer.*;
 import com.meession.etm.module.crm.dal.mysql.statistics.CrmStatisticsCustomerMapper;
+import com.meession.etm.module.crm.service.statistics.bo.CrmStatisticsFollowUpCustomerByDateBO;
 import com.meession.etm.module.system.api.dept.DeptApi;
 import com.meession.etm.module.system.api.dept.dto.DeptRespDTO;
 import com.meession.etm.module.system.api.user.AdminUserApi;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -69,7 +71,8 @@ public class CrmStatisticsCustomerServiceImpl implements CrmStatisticsCustomerSe
                     .mapToInt(CrmStatisticsCustomerSummaryByDateRespVO::getCustomerDealCount).sum();
             return new CrmStatisticsCustomerSummaryByDateRespVO()
                     .setTime(LocalDateTimeUtils.formatDateRange(times[0], times[1], reqVO.getInterval()))
-                    .setCustomerCreateCount(customerCreateCount).setCustomerDealCount(customerDealCount);
+                    .setCustomerCreateCount(customerCreateCount).setCustomerDealCount(customerDealCount)
+                    .setCustomerDealRate(calculatePercentage(customerDealCount, customerCreateCount));
         });
     }
 
@@ -99,7 +102,11 @@ public class CrmStatisticsCustomerServiceImpl implements CrmStatisticsCustomerSe
                     .reduce(BigDecimal.ZERO, (sum, vo) -> sum.add(vo.getReceivablePrice()), BigDecimal::add);
             return (CrmStatisticsCustomerSummaryByUserRespVO) new CrmStatisticsCustomerSummaryByUserRespVO()
                     .setCustomerCreateCount(customerCreateCount).setCustomerDealCount(customerDealCount)
-                    .setContractPrice(contractPrice).setReceivablePrice(receivablePrice).setOwnerUserId(userId);
+                    .setCustomerDealRate(calculatePercentage(customerDealCount, customerCreateCount))
+                    .setContractPrice(contractPrice).setReceivablePrice(receivablePrice)
+                    .setUnreceivablePrice(contractPrice.subtract(receivablePrice))
+                    .setReceivableRate(calculatePercentage(receivablePrice, contractPrice))
+                    .setOwnerUserId(userId);
         });
         // 3.2 拼接用户信息
         appendUserInfo(summaryList);
@@ -116,7 +123,7 @@ public class CrmStatisticsCustomerServiceImpl implements CrmStatisticsCustomerSe
 
         // 2. 按天统计，获取分项统计数据
         List<CrmStatisticsFollowUpSummaryByDateRespVO> followUpRecordCountList = customerMapper.selectFollowUpRecordCountGroupByDate(reqVO);
-        List<CrmStatisticsFollowUpSummaryByDateRespVO> followUpCustomerCountList = customerMapper.selectFollowUpCustomerCountGroupByDate(reqVO);
+        List<CrmStatisticsFollowUpCustomerByDateBO> followUpCustomerList = customerMapper.selectFollowUpCustomerListByDate(reqVO);
 
         // 3. 按照时间间隔，合并统计数据
         List<LocalDateTime[]> timeRanges = LocalDateTimeUtils.getDateRangeList(reqVO.getTimes()[0], reqVO.getTimes()[1], reqVO.getInterval());
@@ -124,12 +131,12 @@ public class CrmStatisticsCustomerServiceImpl implements CrmStatisticsCustomerSe
             Integer followUpRecordCount = followUpRecordCountList.stream()
                     .filter(vo -> LocalDateTimeUtils.isBetween(times[0], times[1], vo.getTime()))
                     .mapToInt(CrmStatisticsFollowUpSummaryByDateRespVO::getFollowUpRecordCount).sum();
-            Integer followUpCustomerCount = followUpCustomerCountList.stream()
+            Integer followUpCustomerCount = (int) followUpCustomerList.stream()
                     .filter(vo -> LocalDateTimeUtils.isBetween(times[0], times[1], vo.getTime()))
-                    .mapToInt(CrmStatisticsFollowUpSummaryByDateRespVO::getFollowUpCustomerCount).sum();
+                    .map(CrmStatisticsFollowUpCustomerByDateBO::getCustomerId).distinct().count();
             return new CrmStatisticsFollowUpSummaryByDateRespVO()
                     .setTime(LocalDateTimeUtils.formatDateRange(times[0], times[1], reqVO.getInterval()))
-                    .setFollowUpCustomerCount(followUpRecordCount).setFollowUpRecordCount(followUpCustomerCount);
+                    .setFollowUpRecordCount(followUpRecordCount).setFollowUpCustomerCount(followUpCustomerCount);
         });
     }
 
@@ -152,7 +159,7 @@ public class CrmStatisticsCustomerServiceImpl implements CrmStatisticsCustomerSe
             Integer followUpCustomerCount = followUpCustomerCountList.stream().filter(vo -> userId.equals(vo.getOwnerUserId()))
                     .mapToInt(CrmStatisticsFollowUpSummaryByUserRespVO::getFollowUpCustomerCount).sum();
             return (CrmStatisticsFollowUpSummaryByUserRespVO) new CrmStatisticsFollowUpSummaryByUserRespVO()
-                    .setFollowUpCustomerCount(followUpRecordCount).setFollowUpRecordCount(followUpCustomerCount).setOwnerUserId(userId);
+                    .setFollowUpRecordCount(followUpRecordCount).setFollowUpCustomerCount(followUpCustomerCount).setOwnerUserId(userId);
         });
         // 3.2 拼接用户信息
         appendUserInfo(summaryList);
@@ -190,6 +197,15 @@ public class CrmStatisticsCustomerServiceImpl implements CrmStatisticsCustomerSe
             findAndThen(userMap, vo.getOwnerUserId(), user -> vo.setOwnerUserName(user.getNickname()));
         });
         return summaryList;
+    }
+
+    @Override
+    public List<CrmStatisticsCustomerDealTopRespVO> getCustomerDealTop10(CrmStatisticsCustomerReqVO reqVO) {
+        reqVO.setUserIds(getUserIds(reqVO));
+        if (CollUtil.isEmpty(reqVO.getUserIds())) {
+            return Collections.emptyList();
+        }
+        return customerMapper.selectCustomerDealTop10(reqVO);
     }
 
     @Override
@@ -260,12 +276,18 @@ public class CrmStatisticsCustomerServiceImpl implements CrmStatisticsCustomerSe
         // 3. 按照日期间隔，合并统计数据
         List<LocalDateTime[]> timeRanges = LocalDateTimeUtils.getDateRangeList(reqVO.getTimes()[0], reqVO.getTimes()[1], reqVO.getInterval());
         return convertList(timeRanges, times -> {
-            Double customerDealCycle = customerDealCycleList.stream()
+            double averageDealCycle = customerDealCycleList.stream()
                     .filter(vo -> LocalDateTimeUtils.isBetween(times[0], times[1], vo.getTime()))
-                    .mapToDouble(CrmStatisticsCustomerDealCycleByDateRespVO::getCustomerDealCycle).sum();
+                    .mapToDouble(CrmStatisticsCustomerDealCycleByDateRespVO::getCustomerDealCycle)
+                    .average().orElse(0D);
+            double customerDealCycle = BigDecimal.valueOf(averageDealCycle)
+                    .setScale(1, RoundingMode.DOWN).doubleValue();
+            int negativeSampleCount = customerDealCycleList.stream()
+                    .filter(vo -> LocalDateTimeUtils.isBetween(times[0], times[1], vo.getTime()))
+                    .mapToInt(vo -> ObjUtil.defaultIfNull(vo.getNegativeSampleCount(), 0)).sum();
             return new CrmStatisticsCustomerDealCycleByDateRespVO()
                     .setTime(LocalDateTimeUtils.formatDateRange(times[0], times[1], reqVO.getInterval()))
-                    .setCustomerDealCycle(customerDealCycle);
+                    .setCustomerDealCycle(customerDealCycle).setNegativeSampleCount(negativeSampleCount);
         });
     }
 
@@ -287,8 +309,12 @@ public class CrmStatisticsCustomerServiceImpl implements CrmStatisticsCustomerSe
                     .mapToDouble(CrmStatisticsCustomerDealCycleByUserRespVO::getCustomerDealCycle).sum();
             Integer customerDealCount = customerDealCountList.stream().filter(vo -> userId.equals(vo.getOwnerUserId()))
                     .mapToInt(CrmStatisticsCustomerSummaryByUserRespVO::getCustomerDealCount).sum();
+            Integer negativeSampleCount = customerDealCycleList.stream()
+                    .filter(vo -> userId.equals(vo.getOwnerUserId()))
+                    .mapToInt(vo -> ObjUtil.defaultIfNull(vo.getNegativeSampleCount(), 0)).sum();
             return (CrmStatisticsCustomerDealCycleByUserRespVO) new CrmStatisticsCustomerDealCycleByUserRespVO()
-                    .setCustomerDealCycle(customerDealCycle).setCustomerDealCount(customerDealCount).setOwnerUserId(userId);
+                    .setCustomerDealCycle(customerDealCycle).setCustomerDealCount(customerDealCount)
+                    .setNegativeSampleCount(negativeSampleCount).setOwnerUserId(userId);
         });
         // 3.2 拼接用户信息
         appendUserInfo(summaryList);
@@ -331,7 +357,6 @@ public class CrmStatisticsCustomerServiceImpl implements CrmStatisticsCustomerSe
         reqVO.setUserIds(userIds);
 
         // 2. 获取客户产品统计数据
-        // TODO @dhb52：未读取产品名
         return customerMapper.selectCustomerDealCycleGroupByProductId(reqVO);
     }
 
@@ -363,6 +388,18 @@ public class CrmStatisticsCustomerServiceImpl implements CrmStatisticsCustomerSe
         deptIds.add(reqVO.getDeptId());
         // 2.2 获得用户编号
         return convertList(adminUserApi.getUserListByDeptIds(deptIds), AdminUserRespDTO::getId);
+    }
+
+    private static BigDecimal calculatePercentage(long value, long total) {
+        return calculatePercentage(BigDecimal.valueOf(value), BigDecimal.valueOf(total));
+    }
+
+    private static BigDecimal calculatePercentage(BigDecimal value, BigDecimal total) {
+        if (total.signum() == 0) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
+        return value.multiply(BigDecimal.valueOf(100))
+                .divide(total, 2, RoundingMode.HALF_UP);
     }
 
 }

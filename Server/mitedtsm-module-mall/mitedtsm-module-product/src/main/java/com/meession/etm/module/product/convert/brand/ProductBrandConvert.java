@@ -16,7 +16,7 @@ import java.util.List;
  *
  * @author 密讯
  */
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface ProductBrandConvert {
 
     ProductBrandConvert INSTANCE = Mappers.getMapper(ProductBrandConvert.class);

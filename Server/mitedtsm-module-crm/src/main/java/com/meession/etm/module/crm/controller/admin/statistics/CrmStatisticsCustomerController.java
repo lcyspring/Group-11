@@ -2,6 +2,7 @@ package com.meession.etm.module.crm.controller.admin.statistics;
 
 import com.meession.etm.framework.common.pojo.CommonResult;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.customer.*;
+import com.meession.etm.module.crm.framework.permission.core.annotations.CrmStatisticsDataScope;
 import com.meession.etm.module.crm.service.statistics.CrmStatisticsCustomerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,6 +22,7 @@ import static com.meession.etm.framework.common.pojo.CommonResult.success;
 @RestController
 @RequestMapping("/crm/statistics-customer")
 @Validated
+@CrmStatisticsDataScope
 public class CrmStatisticsCustomerController {
 
     @Resource
@@ -66,6 +68,14 @@ public class CrmStatisticsCustomerController {
     @PreAuthorize("@ss.hasPermission('crm:statistics-customer:query')")
     public CommonResult<List<CrmStatisticsCustomerContractSummaryRespVO>> getContractSummary(@Valid CrmStatisticsCustomerReqVO reqVO) {
         return success(customerService.getContractSummary(reqVO));
+    }
+
+    @GetMapping("/get-customer-deal-top10")
+    @Operation(summary = "获取客户成交金额 TOP10", description = "按审批通过合同金额降序排列")
+    @PreAuthorize("@ss.hasPermission('crm:statistics-customer:query')")
+    public CommonResult<List<CrmStatisticsCustomerDealTopRespVO>> getCustomerDealTop10(
+            @Valid CrmStatisticsCustomerReqVO reqVO) {
+        return success(customerService.getCustomerDealTop10(reqVO));
     }
 
     @GetMapping("/get-pool-summary-by-date")

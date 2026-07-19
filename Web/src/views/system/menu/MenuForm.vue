@@ -89,7 +89,7 @@
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item v-if="formData.type !== 1" :label="t('system.menu.permission')" prop="permission">
+          <el-form-item :label="t('system.menu.permission')" prop="permission">
             <template #label>
               <Tooltip
                 :message="t('system.menu.permissionTip')"

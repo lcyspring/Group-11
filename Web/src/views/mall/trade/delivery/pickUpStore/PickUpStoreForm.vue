@@ -112,6 +112,7 @@
   </Dialog>
 </template>
 <script setup lang="ts">
+import type { FormRules } from 'element-plus'
 import * as DeliveryPickUpStoreApi from '@/api/mall/trade/delivery/pickUpStore'
 import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import { CommonStatusEnum } from '@/utils/constants'
@@ -140,7 +141,7 @@ const formData = ref({
   longitude: undefined,
   status: CommonStatusEnum.ENABLE
 })
-const formRules = reactive({
+const formRules = reactive<FormRules>({
   name: [{ required: true, message: t('delivery.storeNameRequired'), trigger: 'blur' }],
   logo: [{ required: true, message: t('delivery.storeLogoRequired'), trigger: 'blur' }],
   phone: [
@@ -243,7 +244,7 @@ const initTencentLbsMap = async () => {
       let loc = event.data
       if (loc && loc.module === 'locationPicker') {
         // 防止其他应用也会向该页面 post 信息，需判断 module 是否为 'locationPicker'
-        window.parent.selectAddress(loc)
+        window.parent.selectAddress?.(loc)
       }
     },
     false

@@ -428,7 +428,7 @@ const initBpmnModeler = () => {
     // },
     keyboard: props.keyboard ? { bindTo: document } : null,
     // additionalModules: additionalModules.value,
-    additionalModules: additionalModules.value,
+    additionalModules: additionalModules.value as any[],
     moddleExtensions: moddleExtensions.value
 
     // additionalModules: [

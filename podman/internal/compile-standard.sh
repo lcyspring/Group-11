@@ -1,0 +1,275 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+
+usage() {
+    printf 'Usage: bash ./compile.sh <config.kdl>\n' >&2
+}
+
+if [[ $# -ne 1 ]]; then
+    usage
+    exit 2
+fi
+
+# shellcheck source=../lib/kdl-config.sh
+source "${SCRIPT_DIR}/lib/kdl-config.sh"
+kdl_config_init "$1"
+
+config_value() {
+    local key="$1" default_value="${2:-}" value
+    value="$(kdl_get "$key")"
+    printf '%s' "${value:-$default_value}"
+}
+
+normalize_bool() {
+    case "${1,,}" in
+        true|1|yes) printf 'true' ;;
+        false|0|no) printf 'false' ;;
+        *)
+            printf 'Configuration value must be boolean; got: %s\n' "$1" >&2
+            exit 2
+            ;;
+    esac
+}
+
+[[ "$(config_value schema_version)" == "1" ]] || {
+    printf 'Unsupported or missing schema_version; expected 1.\n' >&2
+    exit 2
+}
+
+BASE_IMAGE="$(config_value image.base docker.io/library/ubuntu:26.04)"
+BUILD_IMAGE="$(config_value image.standard ghcr.io/elel-code/group-11-build-ubuntu:26.04-deno-2.9.3)"
+REBUILD_IMAGE="$(normalize_bool "$(config_value image.rebuild false)")"
+DENO_VERSION="$(config_value toolchain.deno_version 2.9.3)"
+DENO_BINARY_IMAGE="$(config_value toolchain.deno_binary_image 'docker.io/denoland/deno:bin-2.9.3@sha256:b35d3898bc8b5e2ebcfc7c760578f635f0162cda02e4f8359056c44ea3cb9670')"
+BUILD_SERVER="$(normalize_bool "${COMPILE_BUILD_SERVER:?compile.sh must select the Server target}")"
+BUILD_INIT_SERVICE="$(normalize_bool "${COMPILE_BUILD_INIT_SERVICE:?compile.sh must select the InitService target}")"
+BUILD_WEB="$(normalize_bool "${COMPILE_BUILD_WEB:?compile.sh must select the Web target}")"
+BUILD_CLEAN="$(normalize_bool "$(config_value build.clean true)")"
+BUILD_CRM_TESTS="$(normalize_bool "$(config_value build.crm_tests true)")"
+BUILD_CRM_COVERAGE="$(normalize_bool "$(config_value build.crm_coverage true)")"
+BUILD_ERP_TESTS="$(normalize_bool "$(config_value build.erp_tests false)")"
+BUILD_ERP_COVERAGE="$(normalize_bool "$(config_value build.erp_coverage false)")"
+BUILD_INFRA_TESTS="$(normalize_bool "$(config_value build.infra_tests false)")"
+BUILD_INFRA_COVERAGE="$(normalize_bool "$(config_value build.infra_coverage false)")"
+BUILD_BPM_TESTS="$(normalize_bool "$(config_value build.bpm_tests false)")"
+BUILD_BPM_COVERAGE="$(normalize_bool "$(config_value build.bpm_coverage false)")"
+BUILD_PAY_TESTS="$(normalize_bool "$(config_value build.pay_tests false)")"
+BUILD_PAY_COVERAGE="$(normalize_bool "$(config_value build.pay_coverage false)")"
+BUILD_PAY_TEST_PATTERN="$(config_value build.pay_test_pattern '')"
+BUILD_COMMON_TESTS="$(normalize_bool "$(config_value build.common_tests false)")"
+BUILD_COMMON_COVERAGE="$(normalize_bool "$(config_value build.common_coverage false)")"
+BUILD_COMMON_TEST_PATTERN="$(config_value build.common_test_pattern '')"
+BUILD_FRAMEWORK_TESTS="$(normalize_bool "$(config_value build.framework_tests false)")"
+BUILD_FRAMEWORK_COVERAGE="$(normalize_bool "$(config_value build.framework_coverage false)")"
+BUILD_FRAMEWORK_TEST_PATTERN="$(config_value build.framework_test_pattern '')"
+BUILD_FRAMEWORK_MODULES="$(config_value build.framework_modules 'mitedtsm-framework/mitedtsm-spring-boot-starter-security,mitedtsm-framework/mitedtsm-spring-boot-starter-web')"
+BUILD_SYSTEM_TESTS="$(normalize_bool "$(config_value build.system_tests false)")"
+BUILD_SYSTEM_COVERAGE="$(normalize_bool "$(config_value build.system_coverage false)")"
+BUILD_SYSTEM_TEST_PATTERN="$(config_value build.system_test_pattern '')"
+BUILD_CI="$(normalize_bool "$(config_value build.ci true)")"
+BAIDU_ANALYTICS_CODE="$(config_value web.baidu_analytics_code '')"
+WEB_LEGACY_MEDIA_ORIGINS="$(config_value web.legacy_media_origins '')"
+WEB_TEST_SCRIPT="$(config_value web.test_script '')"
+WEB_COVERAGE_ENABLED="$(normalize_bool "$(config_value web.coverage_enabled false)")"
+WEB_COVERAGE_THRESHOLD="$(config_value web.coverage_threshold 90)"
+MAVEN_THREADS="$(config_value build.maven_threads 1C)"
+DENO_FROZEN_LOCKFILE="$(normalize_bool "$(config_value build.deno_frozen_lockfile true)")"
+USE_HOST_PROXY="$(normalize_bool "$(config_value network.use_host_proxy false)")"
+MAVEN_VOLUME="$(config_value cache.maven_volume mitedtsm-build-maven-cache)"
+DENO_VOLUME="$(config_value cache.deno_cache_volume mitedtsm-build-deno-cache)"
+DENO_CACHE_PATH="$(config_value cache.deno_cache_path /deno-cache)"
+WEB_NODE_MODULES_VOLUME="$(config_value cache.web_node_modules_volume mitedtsm-build-web-node-modules)"
+MEMORY="$(config_value runtime.memory 8g)"
+CPUS="$(config_value runtime.cpus 4)"
+HOST_PROXY_NAME="host.containers.internal"
+
+[[ "$DENO_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+    printf 'toolchain.deno_version must be a semantic version.\n' >&2
+    exit 2
+}
+[[ "$DENO_BINARY_IMAGE" == *":bin-${DENO_VERSION}@sha256:"* ]] || {
+    printf 'toolchain.deno_binary_image must match deno_version and include a sha256 digest.\n' >&2
+    exit 2
+}
+[[ "$DENO_CACHE_PATH" == /* && "$DENO_CACHE_PATH" != "/" && "$DENO_CACHE_PATH" != /workspace* ]] || {
+    printf 'cache.deno_cache_path must be an absolute container path outside /workspace.\n' >&2
+    exit 2
+}
+
+if [[ "$BAIDU_ANALYTICS_CODE" == "disabled" ]]; then
+    BAIDU_ANALYTICS_CODE=""
+fi
+if [[ -n "$BAIDU_ANALYTICS_CODE" && ! "$BAIDU_ANALYTICS_CODE" =~ ^[A-Za-z0-9_-]+$ ]]; then
+    printf 'web.baidu_analytics_code contains unsupported characters.\n' >&2
+    exit 2
+fi
+if [[ -n "$WEB_LEGACY_MEDIA_ORIGINS" &&
+      ! "$WEB_LEGACY_MEDIA_ORIGINS" =~ ^https?://[^,[:space:]]+(,https?://[^,[:space:]]+)*$ ]]; then
+    printf 'web.legacy_media_origins must be a comma-separated list of HTTP(S) origins.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_WEB" == "true" && -z "$WEB_LEGACY_MEDIA_ORIGINS" ]]; then
+    printf 'web.legacy_media_origins is required when the Web target is selected.\n' >&2
+    exit 2
+fi
+if [[ -n "$WEB_TEST_SCRIPT" && ! "$WEB_TEST_SCRIPT" =~ ^[A-Za-z0-9:_-]+$ ]]; then
+    printf 'web.test_script contains unsupported characters.\n' >&2
+    exit 2
+fi
+if [[ "$WEB_COVERAGE_ENABLED" == "true" && -z "$WEB_TEST_SCRIPT" ]]; then
+    printf 'web.coverage_enabled requires web.test_script to be set.\n' >&2
+    exit 2
+fi
+[[ "$WEB_COVERAGE_THRESHOLD" =~ ^[0-9]+$ && "$WEB_COVERAGE_THRESHOLD" -le 100 ]] || {
+    printf 'web.coverage_threshold must be an integer from 0 to 100.\n' >&2
+    exit 2
+}
+for test_pair in \
+    'CRM:BUILD_CRM_TESTS:BUILD_CRM_COVERAGE' \
+    'ERP:BUILD_ERP_TESTS:BUILD_ERP_COVERAGE' \
+    'Infra:BUILD_INFRA_TESTS:BUILD_INFRA_COVERAGE' \
+    'BPM:BUILD_BPM_TESTS:BUILD_BPM_COVERAGE' \
+    'Pay:BUILD_PAY_TESTS:BUILD_PAY_COVERAGE' \
+    'Common:BUILD_COMMON_TESTS:BUILD_COMMON_COVERAGE' \
+    'Framework:BUILD_FRAMEWORK_TESTS:BUILD_FRAMEWORK_COVERAGE' \
+    'System:BUILD_SYSTEM_TESTS:BUILD_SYSTEM_COVERAGE'; do
+    IFS=: read -r module_name tests_var coverage_var <<< "$test_pair"
+    if [[ "${!coverage_var}" == "true" && "${!tests_var}" != "true" ]]; then
+        printf '%s coverage requires %s tests to be enabled.\n' "$module_name" "$module_name" >&2
+        exit 2
+    fi
+done
+if [[ "$BUILD_PAY_TESTS" == "true" && ! "$BUILD_PAY_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?!,]+$ ]]; then
+    printf 'build.pay_test_pattern is required for Pay tests and contains unsupported characters.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_COMMON_TESTS" == "true" && ! "$BUILD_COMMON_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?,]+$ ]]; then
+    printf 'build.common_test_pattern is required for common tests and contains unsupported characters.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_FRAMEWORK_TESTS" == "true" && ! "$BUILD_FRAMEWORK_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?,]+$ ]]; then
+    printf 'build.framework_test_pattern is required for framework tests and contains unsupported characters.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_FRAMEWORK_TESTS" == "true" &&
+      ! "$BUILD_FRAMEWORK_MODULES" =~ ^[A-Za-z0-9_./-]+(,[A-Za-z0-9_./-]+)*$ ]]; then
+    printf 'build.framework_modules must be a comma-separated Maven module path list.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_SYSTEM_TESTS" == "true" && ! "$BUILD_SYSTEM_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?!,]+$ ]]; then
+    printf 'build.system_test_pattern is required for system tests and contains unsupported characters.\n' >&2
+    exit 2
+fi
+
+container_proxy_url() {
+    local url="${1:-}"
+    url="${url//127.0.0.1/${HOST_PROXY_NAME}}"
+    url="${url//localhost/${HOST_PROXY_NAME}}"
+    printf '%s' "$url"
+}
+
+podman_proxy_args=(--http-proxy=false)
+if [[ "$USE_HOST_PROXY" == "true" ]]; then
+    podman_proxy_args=()
+fi
+build_network_args=()
+if [[ "$USE_HOST_PROXY" == "true" ]]; then
+    build_network_args=(--network=host)
+fi
+
+command -v podman >/dev/null 2>&1 || {
+    printf 'Podman is required.\n' >&2
+    exit 1
+}
+[[ "$(podman info --format '{{.Host.Security.Rootless}}')" == "true" ]] || {
+    printf 'Run this script as the rootless Podman user.\n' >&2
+    exit 1
+}
+
+if [[ "$REBUILD_IMAGE" == "true" ]]; then
+    podman image exists "$BASE_IMAGE" || {
+        printf 'Configured Ubuntu base image is not local: %s\n' "$BASE_IMAGE" >&2
+        exit 1
+    }
+    printf 'Building dedicated Ubuntu toolchain image: %s\n' "$BUILD_IMAGE"
+    podman build "${podman_proxy_args[@]}" "${build_network_args[@]}" --pull=never \
+        --build-arg "UBUNTU_BASE_IMAGE=$BASE_IMAGE" \
+        --build-arg "DENO_BIN_IMAGE=$DENO_BINARY_IMAGE" \
+        --tag "$BUILD_IMAGE" \
+        --file "$SCRIPT_DIR/Containerfile.build-ubuntu" \
+        "$PROJECT_ROOT"
+elif ! podman image exists "$BUILD_IMAGE"; then
+    printf 'Pulling published Ubuntu toolchain image: %s\n' "$BUILD_IMAGE"
+    if [[ "$USE_HOST_PROXY" == "true" ]]; then
+        podman pull "$BUILD_IMAGE"
+    else
+        env -u http_proxy -u HTTP_PROXY -u https_proxy -u HTTPS_PROXY \
+            -u all_proxy -u ALL_PROXY -u no_proxy -u NO_PROXY \
+            podman pull "$BUILD_IMAGE"
+    fi
+fi
+
+podman volume inspect "$MAVEN_VOLUME" >/dev/null 2>&1 || podman volume create "$MAVEN_VOLUME" >/dev/null
+podman volume inspect "$DENO_VOLUME" >/dev/null 2>&1 || podman volume create "$DENO_VOLUME" >/dev/null
+podman volume inspect "$WEB_NODE_MODULES_VOLUME" >/dev/null 2>&1 || podman volume create "$WEB_NODE_MODULES_VOLUME" >/dev/null
+
+proxy_args=()
+if [[ "$USE_HOST_PROXY" == "true" ]]; then
+    for proxy_name in http_proxy HTTP_PROXY https_proxy HTTPS_PROXY all_proxy ALL_PROXY no_proxy NO_PROXY; do
+        if [[ -n "${!proxy_name:-}" ]]; then
+            proxy_args+=(--env "$proxy_name=$(container_proxy_url "${!proxy_name}")")
+        fi
+    done
+fi
+
+printf 'Running configured build in %s.\n' "$BUILD_IMAGE"
+podman run "${podman_proxy_args[@]}" --rm --pull=never \
+    --memory "$MEMORY" \
+    --cpus "$CPUS" \
+    --volume "$PROJECT_ROOT:/workspace:rw" \
+    --volume "$MAVEN_VOLUME:/root/.m2:rw" \
+    --volume "$DENO_VOLUME:$DENO_CACHE_PATH:rw" \
+    --volume "$WEB_NODE_MODULES_VOLUME:/workspace/Web/node_modules:rw" \
+    --env "BUILD_SERVER=$BUILD_SERVER" \
+    --env "BUILD_INIT_SERVICE=$BUILD_INIT_SERVICE" \
+    --env "BUILD_WEB=$BUILD_WEB" \
+    --env "BUILD_CLEAN=$BUILD_CLEAN" \
+    --env "BUILD_CRM_TESTS=$BUILD_CRM_TESTS" \
+    --env "BUILD_CRM_COVERAGE=$BUILD_CRM_COVERAGE" \
+    --env "BUILD_ERP_TESTS=$BUILD_ERP_TESTS" \
+    --env "BUILD_ERP_COVERAGE=$BUILD_ERP_COVERAGE" \
+    --env "BUILD_INFRA_TESTS=$BUILD_INFRA_TESTS" \
+    --env "BUILD_INFRA_COVERAGE=$BUILD_INFRA_COVERAGE" \
+    --env "BUILD_BPM_TESTS=$BUILD_BPM_TESTS" \
+    --env "BUILD_BPM_COVERAGE=$BUILD_BPM_COVERAGE" \
+    --env "BUILD_PAY_TESTS=$BUILD_PAY_TESTS" \
+    --env "BUILD_PAY_COVERAGE=$BUILD_PAY_COVERAGE" \
+    --env "BUILD_PAY_TEST_PATTERN=$BUILD_PAY_TEST_PATTERN" \
+    --env "BUILD_COMMON_TESTS=$BUILD_COMMON_TESTS" \
+    --env "BUILD_COMMON_COVERAGE=$BUILD_COMMON_COVERAGE" \
+    --env "BUILD_COMMON_TEST_PATTERN=$BUILD_COMMON_TEST_PATTERN" \
+    --env "BUILD_FRAMEWORK_TESTS=$BUILD_FRAMEWORK_TESTS" \
+    --env "BUILD_FRAMEWORK_COVERAGE=$BUILD_FRAMEWORK_COVERAGE" \
+    --env "BUILD_FRAMEWORK_TEST_PATTERN=$BUILD_FRAMEWORK_TEST_PATTERN" \
+    --env "BUILD_FRAMEWORK_MODULES=$BUILD_FRAMEWORK_MODULES" \
+    --env "BUILD_SYSTEM_TESTS=$BUILD_SYSTEM_TESTS" \
+    --env "BUILD_SYSTEM_COVERAGE=$BUILD_SYSTEM_COVERAGE" \
+    --env "BUILD_SYSTEM_TEST_PATTERN=$BUILD_SYSTEM_TEST_PATTERN" \
+    --env "BUILD_CI=$BUILD_CI" \
+    --env "BUILD_MAVEN_THREADS=$MAVEN_THREADS" \
+    --env "DENO_FROZEN_LOCKFILE=$DENO_FROZEN_LOCKFILE" \
+    --env "DENO_DIR=$DENO_CACHE_PATH" \
+    --env "BUILD_USE_HOST_PROXY=$USE_HOST_PROXY" \
+    --env "VITE_APP_BAIDU_CODE=$BAIDU_ANALYTICS_CODE" \
+    --env "VITE_APP_LEGACY_MEDIA_ORIGINS=$WEB_LEGACY_MEDIA_ORIGINS" \
+    --env "WEB_TEST_SCRIPT=$WEB_TEST_SCRIPT" \
+    --env "WEB_COVERAGE_ENABLED=$WEB_COVERAGE_ENABLED" \
+    --env "WEB_COVERAGE_THRESHOLD=$WEB_COVERAGE_THRESHOLD" \
+    "${proxy_args[@]}" \
+    --entrypoint /bin/bash \
+    "$BUILD_IMAGE" \
+    /workspace/podman/internal/ubuntu-build-entrypoint.sh

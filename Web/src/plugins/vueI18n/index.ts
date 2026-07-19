@@ -1,48 +1,38 @@
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { useLocaleStoreWithOut } from '@/store/modules/locale'
-import type { I18n, I18nOptions } from 'vue-i18n'
 import { setHtmlPageLang } from './helper'
+import zhCN from '../../locales/zh-CN/index'
+import en from '../../locales/en/index'
+import ar from '../../locales/ar/index'
 
-export let i18n: ReturnType<typeof createI18n>
-
-const createI18nOptions = async (): Promise<I18nOptions> => {
-  const localeStore = useLocaleStoreWithOut()
-  const locale = localeStore.getCurrentLocale
-  const localeMap = localeStore.getLocaleMap
-  // 支持模块化语言包：优先加载目录结构，回退到单文件
-  let defaultLocal
-  try {
-    defaultLocal = await import(`../../locales/${locale.lang}/index.ts`)
-  } catch {
-    defaultLocal = await import(`../../locales/${locale.lang}.ts`)
-  }
-  const message = defaultLocal.default ?? {}
-
-  setHtmlPageLang(locale.lang)
-
-  localeStore.setCurrentLocale({
-    lang: locale.lang
-    // elLocale: elLocal
-  })
-
-  return {
-    legacy: false,
-    locale: locale.lang,
-    fallbackLocale: locale.lang,
-    messages: {
-      [locale.lang]: message
-    },
-    availableLocales: localeMap.map((v) => v.lang),
-    sync: true,
-    silentTranslationWarn: true,
-    missingWarn: false,
-    silentFallbackWarn: true
-  }
+export const localeMessages = {
+  'zh-CN': zhCN,
+  en,
+  ar
 }
 
+const localeStore = useLocaleStoreWithOut()
+const requestedLang = localeStore.getCurrentLocale.lang
+const currentLang = requestedLang in localeMessages ? requestedLang : 'zh-CN'
+
+setHtmlPageLang(currentLang)
+localeStore.setCurrentLocale({ lang: currentLang })
+
+// Create the complete instance during module evaluation. Shared route, chart,
+// and form modules call t() at module scope, so an asynchronously-created
+// instance permanently freezes raw keys into their exported constants.
+export const i18n = createI18n({
+  legacy: false,
+  locale: currentLang,
+  fallbackLocale: 'zh-CN',
+  messages: localeMessages,
+  sync: true,
+  silentTranslationWarn: true,
+  missingWarn: false,
+  silentFallbackWarn: true
+})
+
 export const setupI18n = async (app: App<Element>) => {
-  const options = await createI18nOptions()
-  i18n = createI18n(options) as I18n
   app.use(i18n)
 }

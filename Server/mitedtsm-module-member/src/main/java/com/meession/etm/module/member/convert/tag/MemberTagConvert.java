@@ -15,7 +15,7 @@ import java.util.List;
  *
  * @author 密讯
  */
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface MemberTagConvert {
 
     MemberTagConvert INSTANCE = Mappers.getMapper(MemberTagConvert.class);

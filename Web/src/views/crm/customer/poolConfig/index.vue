@@ -26,22 +26,59 @@
         </template>
         <!-- 表单 -->
         <el-form-item :label="t('poolConfig.enabled')" prop="enabled">
-          <el-radio-group v-model="formData.enabled" @change="changeEnable" class="ml-4">
+          <el-radio-group v-model="formData.enabled" class="ml-4">
             <el-radio :value="false" size="large">{{ t('poolConfig.notEnabled') }}</el-radio>
             <el-radio :value="true" size="large">{{ t('poolConfig.enabledText') }}</el-radio>
           </el-radio-group>
         </el-form-item>
         <div v-if="formData.enabled">
-          <el-form-item>
-            <el-input-number class="mr-2" v-model="formData.contactExpireDays" />
-            {{ t('poolConfig.contactExpireDays') }}
-            <el-input-number class="mx-2" v-model="formData.dealExpireDays" />
-            {{ t('poolConfig.dealExpireDays') }}
+          <el-divider content-position="left">{{ t('poolConfig.expirySection') }}</el-divider>
+          <el-form-item :label="t('poolConfig.contactExpireLabel')" prop="contactExpireDays">
+            <el-input-number v-model="formData.contactExpireDays" :min="1" :max="3650" />
+            <span class="ml-8px text-gray-500">{{ t('poolConfig.daysUnit') }}</span>
+          </el-form-item>
+          <el-form-item :label="t('poolConfig.dealExpireLabel')" prop="dealExpireDays">
+            <el-input-number v-model="formData.dealExpireDays" :min="1" :max="3650" />
+            <span class="ml-8px text-gray-500">{{ t('poolConfig.daysUnit') }}</span>
+          </el-form-item>
+          <el-form-item :label="t('poolConfig.highValueLevelThreshold')" prop="highValueLevelThreshold">
+            <el-input-number v-model="formData.highValueLevelThreshold" :min="1" :max="5" />
+          </el-form-item>
+          <el-form-item :label="t('poolConfig.highValueExpireMultiplier')" prop="highValueExpireMultiplier">
+            <el-input-number v-model="formData.highValueExpireMultiplier" :min="1" :max="10" />
+          </el-form-item>
+          <el-form-item :label="t('poolConfig.protectionRules')">
+            <el-checkbox v-model="formData.protectActiveBusiness">
+              {{ t('poolConfig.protectActiveBusiness') }}
+            </el-checkbox>
+            <el-checkbox v-model="formData.protectActiveContract">
+              {{ t('poolConfig.protectActiveContract') }}
+            </el-checkbox>
+          </el-form-item>
+
+          <el-divider content-position="left">{{ t('poolConfig.claimSection') }}</el-divider>
+          <el-form-item :label="t('poolConfig.dailyClaimLimit')" prop="dailyClaimLimit">
+            <el-input-number v-model="formData.dailyClaimLimit" :min="1" :max="1000" />
+          </el-form-item>
+          <el-form-item :label="t('poolConfig.repeatClaimCooldownDays')" prop="repeatClaimCooldownDays">
+            <el-input-number v-model="formData.repeatClaimCooldownDays" :min="0" :max="3650" />
+            <span class="ml-8px text-gray-500">{{ t('poolConfig.daysUnit') }}</span>
+          </el-form-item>
+
+          <el-divider content-position="left">{{ t('poolConfig.schedulerSection') }}</el-divider>
+          <el-form-item :label="t('poolConfig.autoPoolBatchSize')" prop="autoPoolBatchSize">
+            <el-input-number
+              v-model="formData.autoPoolBatchSize"
+              :min="1"
+              :max="formData.autoPoolMaxBatchSize ?? 1"
+            />
+            <span class="ml-8px text-gray-500">
+              {{ t('poolConfig.autoPoolBatchMaxHint', { max: formData.autoPoolMaxBatchSize ?? 1 }) }}
+            </span>
           </el-form-item>
           <el-form-item :label="t('poolConfig.notifyEnabled')" prop="notifyEnabled">
             <el-radio-group
               v-model="formData.notifyEnabled"
-              @change="changeNotifyEnable"
               class="ml-4"
             >
               <el-radio :value="false" size="large">{{ t('poolConfig.notNotify') }}</el-radio>
@@ -49,7 +86,7 @@
             </el-radio-group>
           </el-form-item>
           <div v-if="formData.notifyEnabled">
-            <el-form-item>
+            <el-form-item prop="notifyDays">
               {{ t('poolConfig.notifyDaysBefore') }} <el-input-number class="mx-2" v-model="formData.notifyDays" /> {{ t('poolConfig.notifyDaysAfter') }}
             </el-form-item>
           </div>
@@ -73,10 +110,26 @@ const formData = ref({
   contactExpireDays: undefined,
   dealExpireDays: undefined,
   notifyEnabled: false,
-  notifyDays: undefined
+  notifyDays: undefined,
+  dailyClaimLimit: undefined,
+  repeatClaimCooldownDays: undefined,
+  highValueLevelThreshold: undefined,
+  highValueExpireMultiplier: undefined,
+  protectActiveBusiness: false,
+  protectActiveContract: false,
+  autoPoolBatchSize: undefined,
+  autoPoolMaxBatchSize: undefined
 })
 const formRules = reactive({
-  enabled: [{ required: true, message: t('poolConfig.enabledRequired'), trigger: 'blur' }]
+  enabled: [{ required: true, message: t('poolConfig.enabledRequired'), trigger: 'change' }],
+  contactExpireDays: [{ required: true, message: t('poolConfig.required'), trigger: 'change' }],
+  dealExpireDays: [{ required: true, message: t('poolConfig.required'), trigger: 'change' }],
+  notifyDays: [{ required: true, message: t('poolConfig.required'), trigger: 'change' }],
+  dailyClaimLimit: [{ required: true, message: t('poolConfig.required'), trigger: 'change' }],
+  repeatClaimCooldownDays: [{ required: true, message: t('poolConfig.required'), trigger: 'change' }],
+  highValueLevelThreshold: [{ required: true, message: t('poolConfig.required'), trigger: 'change' }],
+  highValueExpireMultiplier: [{ required: true, message: t('poolConfig.required'), trigger: 'change' }],
+  autoPoolBatchSize: [{ required: true, message: t('poolConfig.required'), trigger: 'change' }]
 })
 const formRef = ref() // 表单 Ref
 
@@ -103,30 +156,14 @@ const onSubmit = async () => {
   // 提交请求
   formLoading.value = true
   try {
-    const data = formData.value as CustomerPoolConfigApi.CustomerPoolConfigVO
+    const data = { ...formData.value }
+    delete data.autoPoolMaxBatchSize
     await CustomerPoolConfigApi.saveCustomerPoolConfig(data)
     message.success(t('common.updateSuccess'))
     await getConfig()
     formLoading.value = false
   } finally {
     formLoading.value = false
-  }
-}
-
-/** 更改客户公海规则设置 */
-const changeEnable = () => {
-  if (!formData.value.enabled) {
-    formData.value.contactExpireDays = undefined
-    formData.value.dealExpireDays = undefined
-    formData.value.notifyEnabled = false
-    formData.value.notifyDays = undefined
-  }
-}
-
-/** 更改提前提醒设置 */
-const changeNotifyEnable = () => {
-  if (!formData.value.notifyEnabled) {
-    formData.value.notifyDays = undefined
   }
 }
 

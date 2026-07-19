@@ -16,7 +16,7 @@ const props = defineProps({
   plain: propTypes.bool.def(false),
   onClick: { type: Function as PropType<(...args) => any>, default: null }
 })
-const getBindValue = computed(() => {
+const getBindValue = computed<Record<string, any>>(() => {
   const delArr: string[] = ['title', 'preIcon', 'postIcon', 'onClick']
   const attrs = useAttrs()
   const obj = { ...attrs, ...props }

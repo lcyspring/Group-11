@@ -1,0 +1,535 @@
+package com.meession.etm.module.crm.service.contact;
+
+import com.meession.etm.module.crm.controller.admin.contact.vo.CrmContactSaveReqVO;
+import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
+import com.meession.etm.module.crm.dal.mysql.contact.CrmContactMapper;
+import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
+import com.meession.etm.module.crm.enums.customer.CrmCustomerPoolStatusEnum;
+import com.meession.etm.module.crm.framework.permission.CrmAuthorizationService;
+import com.meession.etm.module.crm.service.contract.CrmContractService;
+import com.meession.etm.module.crm.service.customer.CrmCustomerService;
+import com.meession.etm.module.crm.service.permission.CrmPermissionService;
+import com.meession.etm.module.system.api.user.AdminUserApi;
+import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import java.lang.reflect.Proxy;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static com.meession.etm.framework.test.core.util.AssertUtils.assertServiceException;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTACT_CONCURRENT_CHANGE;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTACT_MOBILE_EXISTS;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTACT_PRIMARY_DELETE_FAIL;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTACT_PRIMARY_MOVE_FAIL;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTACT_PRIMARY_SWITCH_CONFLICT;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.CONTACT_PRIMARY_UNSET_FAIL;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+class CrmContactServiceImplTest {
+
+    @Test
+    void customerPoolOwnerChangeSynchronizesContactOwnerPermissions() {
+        List<Object[]> permissionCalls = new ArrayList<>();
+        List<CrmContactDO> contacts = List.of(contact(10L, 100L, true), contact(11L, 100L, false));
+        CrmContactMapper mapper = proxy(CrmContactMapper.class, (proxy, method, args) -> switch (method.getName()) {
+            case "selectListByCustomerId" -> contacts;
+            case "updateOwnerUserIdByCustomerId" -> 2;
+            default -> throw new AssertionError("未预期的 Mapper 调用 " + method.getName());
+        });
+        CrmContactServiceImpl service = newService(mapper);
+        ReflectionTestUtils.setField(service, "permissionService", proxy(CrmPermissionService.class,
+                (proxy, method, args) -> {
+                    if (method.getName().equals("replaceOwnerPermission")) {
+                        permissionCalls.add(args.clone());
+                        return null;
+                    }
+                    throw new AssertionError("未预期的权限调用 " + method.getName());
+                }));
+
+        service.updateOwnerUserIdByCustomerId(100L, 9L);
+
+        assertEquals(2, permissionCalls.size());
+        assertEquals(CrmBizTypeEnum.CRM_CONTACT.getType(), permissionCalls.get(0)[0]);
+        assertEquals(10L, permissionCalls.get(0)[1]);
+        assertEquals(9L, permissionCalls.get(0)[2]);
+        assertEquals(11L, permissionCalls.get(1)[1]);
+    }
+
+    @Test
+    void createRejectsDuplicateMobileAfterCustomerLock() {
+        List<String> calls = new ArrayList<>();
+        CrmContactMapper mapper = proxy(CrmContactMapper.class, (proxy, method, args) -> switch (method.getName()) {
+            case "lockCustomerById" -> {
+                calls.add("lock:" + args[0]);
+                yield args[0];
+            }
+            case "selectDuplicateMobileId" -> {
+                calls.add("duplicate:" + args[0] + ":" + args[1] + ":" + args[2]);
+                yield 8L;
+            }
+            default -> throw new AssertionError("手机号重复后不应调用 " + method.getName());
+        });
+        CrmContactServiceImpl service = newService(mapper);
+        CrmContactSaveReqVO reqVO = contactReq(null, 100L, false).setMobile(" 13800138000 ");
+
+        assertServiceException(() -> service.createContact(reqVO, 1L), CONTACT_MOBILE_EXISTS, "13800138000");
+
+        assertEquals("13800138000", reqVO.getMobile());
+        assertEquals(List.of("lock:100", "duplicate:100:13800138000:null"), calls);
+    }
+
+    @Test
+    void updateRejectsDuplicateMobileAndExcludesCurrentContact() {
+        List<String> calls = new ArrayList<>();
+        CrmContactDO oldContact = contact(10L, 100L, false).setMobile("13900139000");
+        CrmContactMapper mapper = proxy(CrmContactMapper.class, (proxy, method, args) -> switch (method.getName()) {
+            case "selectById" -> {
+                calls.add("select-contact");
+                yield oldContact;
+            }
+            case "selectByIdForUpdate" -> {
+                calls.add("select-contact");
+                yield oldContact;
+            }
+            case "lockCustomerById" -> {
+                calls.add("lock:" + args[0]);
+                yield args[0];
+            }
+            case "selectDuplicateMobileId" -> {
+                calls.add("duplicate:" + args[0] + ":" + args[1] + ":" + args[2]);
+                yield 8L;
+            }
+            default -> throw new AssertionError("手机号重复后不应调用 " + method.getName());
+        });
+        CrmContactServiceImpl service = newService(mapper);
+
+        assertServiceException(() -> service.updateContact(
+                contactReq(10L, 100L, false).setMobile("13800138000")), CONTACT_MOBILE_EXISTS, "13800138000");
+
+        assertEquals(List.of("select-contact", "lock:100", "select-contact",
+                "duplicate:100:13800138000:10"), calls);
+    }
+
+    @Test
+    void getPrimaryContactsSkipsMapperForEmptyCustomerIds() {
+        CrmContactMapper mapper = proxy(CrmContactMapper.class, (proxy, method, args) -> {
+            throw new AssertionError("空客户集合不应查询 Mapper");
+        });
+
+        assertTrue(newService(mapper).getPrimaryContactListByCustomerIds(List.of()).isEmpty());
+    }
+
+    @Test
+    void getPrimaryContactsUsesSingleBatchQuery() {
+        CrmContactDO primary = contact(10L, 100L, true);
+        CrmContactMapper mapper = proxy(CrmContactMapper.class, (proxy, method, args) -> {
+            if (method.getName().equals("selectPrimaryContactListByCustomerIds")) {
+                assertEquals(List.of(100L, 200L), args[0]);
+                return List.of(primary);
+            }
+            throw new AssertionError("未预期的 Mapper 调用 " + method.getName());
+        });
+
+        assertEquals(List.of(primary),
+                newService(mapper).getPrimaryContactListByCustomerIds(List.of(100L, 200L)));
+    }
+
+    @Test
+    void createFirstContactForcesPrimaryAfterCustomerLock() {
+        List<String> calls = new ArrayList<>();
+        AtomicReference<CrmContactDO> inserted = new AtomicReference<>();
+        CrmContactMapper mapper = proxy(CrmContactMapper.class, (proxy, method, args) -> switch (method.getName()) {
+            case "lockCustomerById" -> {
+                calls.add("lock:" + args[0]);
+                yield args[0];
+            }
+            case "selectDuplicateMobileId" -> {
+                calls.add("duplicate:" + args[1]);
+                yield null;
+            }
+            case "selectPrimaryContactByCustomerId" -> {
+                calls.add("select-primary:" + args[0]);
+                yield null;
+            }
+            case "insert" -> {
+                calls.add("insert");
+                CrmContactDO contact = (CrmContactDO) args[0];
+                contact.setId(10L);
+                inserted.set(contact);
+                yield 1;
+            }
+            default -> throw new AssertionError("未预期的 Mapper 调用 " + method.getName());
+        });
+        CrmContactServiceImpl service = newService(mapper);
+        CrmContactSaveReqVO reqVO = contactReq(null, 100L, false).setMobile("13800138000");
+
+        Long id = service.createContact(reqVO, 1L);
+
+        assertEquals(10L, id);
+        assertTrue(reqVO.getPrimaryContact());
+        assertTrue(inserted.get().getPrimaryContact());
+        assertEquals(List.of("lock:100", "duplicate:13800138000", "select-primary:100", "insert"), calls);
+    }
+
+    @Test
+    void createRequestedPrimaryUnsetsExistingPrimary() {
+        List<String> calls = new ArrayList<>();
+        CrmContactDO oldPrimary = new CrmContactDO().setId(8L).setName("原首联系人").setPrimaryContact(true);
+        CrmContactMapper mapper = proxy(CrmContactMapper.class, (proxy, method, args) -> switch (method.getName()) {
+            case "lockCustomerById" -> {
+                calls.add("lock");
+                yield args[0];
+            }
+            case "selectPrimaryContactByCustomerId" -> {
+                calls.add("select-primary");
+                yield oldPrimary;
+            }
+            case "unsetPrimaryContact" -> {
+                calls.add("unset:" + args[0]);
+                yield 1;
+            }
+            case "insert" -> {
+                calls.add("insert");
+                ((CrmContactDO) args[0]).setId(10L);
+                yield 1;
+            }
+            default -> throw new AssertionError("未预期的 Mapper 调用 " + method.getName());
+        });
+        CrmContactServiceImpl service = newService(mapper);
+
+        service.createContact(contactReq(null, 100L, true), 1L);
+
+        assertEquals(List.of("lock", "select-primary", "unset:8", "insert"), calls);
+    }
+
+    @Test
+    void updateNewPrimaryUnsetsExistingPrimaryAfterLock() {
+        List<String> calls = new ArrayList<>();
+        AtomicReference<CrmContactDO> updated = new AtomicReference<>();
+        CrmContactDO oldContact = contact(10L, 100L, false);
+        CrmContactDO oldPrimary = new CrmContactDO().setId(8L).setName("原首联系人").setPrimaryContact(true);
+        CrmContactMapper mapper = proxy(CrmContactMapper.class, (proxy, method, args) -> switch (method.getName()) {
+            case "selectById" -> {
+                calls.add("select-contact");
+                yield oldContact;
+            }
+            case "selectByIdForUpdate" -> {
+                calls.add("select-contact");
+                yield oldContact;
+            }
+            case "lockCustomerById" -> {
+                calls.add("lock:" + args[0]);
+                yield args[0];
+            }
+            case "selectPrimaryContactByCustomerId" -> {
+                calls.add("select-primary");
+                yield oldPrimary;
+            }
+            case "unsetPrimaryContact" -> {
+                calls.add("unset:" + args[0]);
+                yield 1;
+            }
+            case "updateById" -> {
+                calls.add("update");
+                updated.set((CrmContactDO) args[0]);
+                yield 1;
+            }
+            default -> throw new AssertionError("未预期的 Mapper 调用 " + method.getName());
+        });
+        CrmContactServiceImpl service = newService(mapper);
+
+        service.updateContact(contactReq(10L, 100L, true));
+
+        assertTrue(updated.get().getPrimaryContact());
+        assertEquals(List.of("select-contact", "lock:100", "select-contact", "select-primary", "unset:8", "update"), calls);
+    }
+
+    @Test
+    void updateNewPrimaryRejectsLostPrimaryStateInsteadOfCreatingDuplicate() {
+        CrmContactDO oldContact = contact(10L, 100L, false);
+        CrmContactDO oldPrimary = new CrmContactDO().setId(8L).setName("原首联系人").setPrimaryContact(true);
+        CrmContactMapper mapper = proxy(CrmContactMapper.class, (proxy, method, args) -> switch (method.getName()) {
+            case "selectById", "selectByIdForUpdate" -> oldContact;
+            case "lockCustomerById" -> args[0];
+            case "selectPrimaryContactByCustomerId" -> oldPrimary;
+            case "unsetPrimaryContact" -> 0;
+            default -> throw new AssertionError("状态冲突后不应调用 " + method.getName());
+        });
+        CrmContactServiceImpl service = newService(mapper);
+
+        assertServiceException(() -> service.updateContact(contactReq(10L, 100L, true)),
+                CONTACT_PRIMARY_SWITCH_CONFLICT);
+    }
+
+    @Test
+    void updateCurrentPrimaryRejectsDirectUnset() {
+        List<String> calls = new ArrayList<>();
+        CrmContactDO oldContact = contact(10L, 100L, true);
+        CrmContactMapper mapper = rejectingLifecycleMapper(oldContact, calls);
+        CrmContactServiceImpl service = newService(mapper);
+
+        assertServiceException(() -> service.updateContact(contactReq(10L, 100L, false)),
+                CONTACT_PRIMARY_UNSET_FAIL);
+
+        assertEquals(List.of("select-contact", "lock:100", "select-contact"), calls);
+    }
+
+    @Test
+    void updateCurrentPrimaryRejectsMovingToAnotherCustomerAndLocksInIdOrder() {
+        List<String> calls = new ArrayList<>();
+        CrmContactDO oldContact = contact(10L, 200L, true);
+        CrmContactMapper mapper = rejectingLifecycleMapper(oldContact, calls);
+        CrmContactServiceImpl service = newService(mapper);
+
+        assertServiceException(() -> service.updateContact(contactReq(10L, 100L, true)),
+                CONTACT_PRIMARY_MOVE_FAIL);
+
+        assertEquals(List.of("select-contact", "lock:100", "lock:200", "select-contact"), calls);
+    }
+
+    @Test
+    void deleteCurrentPrimaryRejectsBeforeContractAndDeleteSideEffects() {
+        List<String> calls = new ArrayList<>();
+        CrmContactDO oldContact = contact(10L, 100L, true);
+        CrmContactMapper mapper = rejectingLifecycleMapper(oldContact, calls);
+        CrmContactServiceImpl service = newService(mapper);
+        ReflectionTestUtils.setField(service, "contractService", proxy(CrmContractService.class,
+                (proxy, method, args) -> {
+                    throw new AssertionError("首联系人拒绝删除后不应查询合同");
+                }));
+
+        assertServiceException(() -> service.deleteContact(10L, 1L), CONTACT_PRIMARY_DELETE_FAIL);
+
+        assertEquals(List.of("select-contact", "lock:100", "select-contact"), calls);
+    }
+
+    @Test
+    void deleteUsesCurrentPrimaryStateAfterCustomerLock() {
+        List<String> calls = new ArrayList<>();
+        CrmContactDO snapshotContact = contact(10L, 100L, false);
+        CrmContactDO currentContact = contact(10L, 100L, true);
+        CrmContactMapper mapper = proxy(CrmContactMapper.class, (proxy, method, args) -> switch (method.getName()) {
+            case "selectById" -> {
+                calls.add("snapshot");
+                yield snapshotContact;
+            }
+            case "lockCustomerById" -> {
+                calls.add("lock:" + args[0]);
+                yield args[0];
+            }
+            case "selectByIdForUpdate" -> {
+                calls.add("current");
+                yield currentContact;
+            }
+            default -> throw new AssertionError("最新首联系人拒绝删除后不应调用 " + method.getName());
+        });
+
+        assertServiceException(() -> newService(mapper).deleteContact(10L, 1L), CONTACT_PRIMARY_DELETE_FAIL);
+
+        assertEquals(List.of("snapshot", "lock:100", "current"), calls);
+    }
+
+    @Test
+    void deleteRejectsContactMovedAfterInitialSnapshot() {
+        List<String> calls = new ArrayList<>();
+        CrmContactDO snapshotContact = contact(10L, 100L, false);
+        CrmContactDO currentContact = contact(10L, 200L, false);
+        CrmContactMapper mapper = proxy(CrmContactMapper.class, (proxy, method, args) -> switch (method.getName()) {
+            case "selectById" -> {
+                calls.add("snapshot:100");
+                yield snapshotContact;
+            }
+            case "lockCustomerById" -> {
+                calls.add("lock:" + args[0]);
+                yield args[0];
+            }
+            case "selectByIdForUpdate" -> {
+                calls.add("current:200");
+                yield currentContact;
+            }
+            default -> throw new AssertionError("客户归属变化后不应调用 " + method.getName());
+        });
+
+        assertServiceException(() -> newService(mapper).deleteContact(10L, 1L), CONTACT_CONCURRENT_CHANGE);
+
+        assertEquals(List.of("snapshot:100", "lock:100", "current:200"), calls);
+    }
+
+    @Test
+    void garbageAdminCanDeletePrimaryContactToUnblockPermanentDeletion() {
+        List<String> calls = new ArrayList<>();
+        CrmContactDO primary = contact(10L, 100L, true);
+        CrmContactMapper mapper = proxy(CrmContactMapper.class, (proxy, method, args) -> switch (method.getName()) {
+            case "selectById", "selectByIdForUpdate" -> primary;
+            case "lockCustomerById" -> 100L;
+            case "deleteById" -> {
+                calls.add("delete-contact");
+                yield 1;
+            }
+            default -> throw new AssertionError("未预期的 Mapper 调用 " + method.getName());
+        });
+        CrmContactServiceImpl service = newService(mapper);
+        CrmAuthorizationService authorizationService = mock(CrmAuthorizationService.class);
+        when(authorizationService.isCrmAdmin(9L)).thenReturn(true);
+        ReflectionTestUtils.setField(service, "authorizationService", authorizationService);
+        ReflectionTestUtils.setField(service, "customerService", proxy(CrmCustomerService.class,
+                (proxy, method, args) -> new CrmCustomerDO().setId(100L)
+                        .setPoolStatus(CrmCustomerPoolStatusEnum.GARBAGE.getStatus())));
+        ReflectionTestUtils.setField(service, "contractService", proxy(CrmContractService.class,
+                (proxy, method, args) -> 0L));
+        ReflectionTestUtils.setField(service, "contactBusinessService", proxy(CrmContactBusinessService.class,
+                (proxy, method, args) -> null));
+
+        service.deleteContact(10L, 9L);
+
+        assertEquals(List.of("delete-contact"), calls);
+    }
+
+    @Test
+    void crmAdminStillCannotDeletePrimaryContactOutsideGarbage() {
+        CrmContactDO primary = contact(10L, 100L, true);
+        CrmContactMapper mapper = rejectingLifecycleMapper(primary, new ArrayList<>());
+        CrmContactServiceImpl service = newService(mapper);
+        CrmAuthorizationService authorizationService = mock(CrmAuthorizationService.class);
+        when(authorizationService.isCrmAdmin(9L)).thenReturn(true);
+        ReflectionTestUtils.setField(service, "authorizationService", authorizationService);
+        ReflectionTestUtils.setField(service, "customerService", proxy(CrmCustomerService.class,
+                (proxy, method, args) -> new CrmCustomerDO().setId(100L)
+                        .setPoolStatus(CrmCustomerPoolStatusEnum.PUBLIC.getStatus())));
+
+        assertServiceException(() -> service.deleteContact(10L, 9L), CONTACT_PRIMARY_DELETE_FAIL);
+    }
+
+    @Test
+    void movingNonPrimaryIntoCustomerWithoutPrimaryRepairsInvariant() {
+        List<Long> lockedCustomerIds = new ArrayList<>();
+        AtomicReference<CrmContactDO> updated = new AtomicReference<>();
+        CrmContactDO oldContact = contact(10L, 100L, false);
+        CrmContactMapper mapper = proxy(CrmContactMapper.class, (proxy, method, args) -> switch (method.getName()) {
+            case "selectById", "selectByIdForUpdate" -> oldContact;
+            case "lockCustomerById" -> {
+                lockedCustomerIds.add((Long) args[0]);
+                yield args[0];
+            }
+            case "selectPrimaryContactByCustomerId" -> null;
+            case "updateById" -> {
+                updated.set((CrmContactDO) args[0]);
+                yield 1;
+            }
+            default -> throw new AssertionError("未预期的 Mapper 调用 " + method.getName());
+        });
+        CrmContactServiceImpl service = newService(mapper);
+        CrmContactSaveReqVO reqVO = contactReq(10L, 200L, false);
+
+        service.updateContact(reqVO);
+
+        assertEquals(List.of(100L, 200L), lockedCustomerIds);
+        assertTrue(reqVO.getPrimaryContact());
+        assertTrue(updated.get().getPrimaryContact());
+        assertFalse(oldContact.getPrimaryContact());
+    }
+
+    @Test
+    void updateUsesCurrentPrimaryStateAfterCustomerLock() {
+        List<String> calls = new ArrayList<>();
+        CrmContactDO snapshotContact = contact(10L, 100L, false);
+        CrmContactDO currentContact = contact(10L, 100L, true);
+        CrmContactMapper mapper = proxy(CrmContactMapper.class, (proxy, method, args) -> switch (method.getName()) {
+            case "selectById" -> {
+                calls.add("snapshot");
+                yield snapshotContact;
+            }
+            case "lockCustomerById" -> {
+                calls.add("lock:" + args[0]);
+                yield args[0];
+            }
+            case "selectByIdForUpdate" -> {
+                calls.add("current");
+                yield currentContact;
+            }
+            default -> throw new AssertionError("当前首联系人拒绝取消后不应调用 " + method.getName());
+        });
+
+        assertServiceException(() -> newService(mapper).updateContact(contactReq(10L, 100L, false)),
+                CONTACT_PRIMARY_UNSET_FAIL);
+
+        assertEquals(List.of("snapshot", "lock:100", "current"), calls);
+    }
+
+    @Test
+    void updateRejectsContactMovedAfterInitialSnapshot() {
+        List<String> calls = new ArrayList<>();
+        CrmContactDO snapshotContact = contact(10L, 100L, false);
+        CrmContactDO currentContact = contact(10L, 300L, false);
+        CrmContactMapper mapper = proxy(CrmContactMapper.class, (proxy, method, args) -> switch (method.getName()) {
+            case "selectById" -> {
+                calls.add("snapshot:100");
+                yield snapshotContact;
+            }
+            case "lockCustomerById" -> {
+                calls.add("lock:" + args[0]);
+                yield args[0];
+            }
+            case "selectByIdForUpdate" -> {
+                calls.add("current:300");
+                yield currentContact;
+            }
+            default -> throw new AssertionError("客户归属变化后不应调用 " + method.getName());
+        });
+
+        assertServiceException(() -> newService(mapper).updateContact(contactReq(10L, 200L, false)),
+                CONTACT_CONCURRENT_CHANGE);
+
+        assertEquals(List.of("snapshot:100", "lock:100", "lock:200", "current:300"), calls);
+    }
+
+    private static CrmContactMapper rejectingLifecycleMapper(CrmContactDO contact, List<String> calls) {
+        return proxy(CrmContactMapper.class, (proxy, method, args) -> switch (method.getName()) {
+            case "selectById", "selectByIdForUpdate" -> {
+                calls.add("select-contact");
+                yield contact;
+            }
+            case "lockCustomerById" -> {
+                calls.add("lock:" + args[0]);
+                yield args[0];
+            }
+            default -> throw new AssertionError("约束拒绝后不应调用 " + method.getName());
+        });
+    }
+
+    private static CrmContactServiceImpl newService(CrmContactMapper mapper) {
+        CrmContactServiceImpl service = new CrmContactServiceImpl();
+        ReflectionTestUtils.setField(service, "contactMapper", mapper);
+        ReflectionTestUtils.setField(service, "customerService", proxy(CrmCustomerService.class,
+                (proxy, method, args) -> method.getName().equals("getCustomer")
+                        ? new CrmCustomerDO().setId((Long) args[0]) : null));
+        ReflectionTestUtils.setField(service, "authorizationService", mock(CrmAuthorizationService.class));
+        ReflectionTestUtils.setField(service, "adminUserApi", proxy(AdminUserApi.class,
+                (proxy, method, args) -> null));
+        ReflectionTestUtils.setField(service, "permissionService", proxy(CrmPermissionService.class,
+                (proxy, method, args) -> null));
+        return service;
+    }
+
+    private static CrmContactSaveReqVO contactReq(Long id, Long customerId, boolean primaryContact) {
+        return new CrmContactSaveReqVO().setId(id).setName("联系人").setCustomerId(customerId)
+                .setOwnerUserId(1L).setMaster(false).setPrimaryContact(primaryContact);
+    }
+
+    private static CrmContactDO contact(Long id, Long customerId, boolean primaryContact) {
+        return new CrmContactDO().setId(id).setName("联系人").setCustomerId(customerId)
+                .setOwnerUserId(1L).setMaster(false).setPrimaryContact(primaryContact);
+    }
+
+    private static <T> T proxy(Class<T> type, java.lang.reflect.InvocationHandler handler) {
+        return type.cast(Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[]{type}, handler));
+    }
+
+}

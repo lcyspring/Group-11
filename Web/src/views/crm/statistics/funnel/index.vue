@@ -2,15 +2,13 @@
 <template>
   <ContentWrap>
     <!-- 搜索工作栏 -->
-    <el-form
-      ref="queryFormRef"
-      :model="queryParams"
-      class="-mb-15px"
-      label-width="auto"
-    >
+    <el-form ref="queryFormRef" :model="queryParams" class="-mb-15px" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
-          <el-form-item :label="t('timeRange')" prop="orderDate">
+          <el-form-item
+            :label="activeTab === 'salesForecastRef' ? t('funnel.forecastPeriod') : t('timeRange')"
+            prop="orderDate"
+          >
             <el-date-picker
               v-model="queryParams.times"
               :default-time="[new Date('1 00:00:00'), new Date('1 23:59:59')]"
@@ -25,7 +23,10 @@
           </el-form-item>
         </el-col>
         <el-col :span="8">
-          <el-form-item :label="t('timeInterval')" prop="interval">
+          <el-form-item
+            :label="activeTab === 'salesForecastRef' ? t('funnel.forecastGranularity') : t('timeInterval')"
+            prop="interval"
+          >
             <el-select
               v-model="queryParams.interval"
               class="!w-240px"
@@ -51,7 +52,7 @@
               class="!w-240px"
               node-key="id"
               :placeholder="t('dept')"
-              @change="(queryParams.userId = undefined), handleQuery()"
+              @change="((queryParams.userId = undefined), handleQuery())"
             />
           </el-form-item>
         </el-col>
@@ -75,6 +76,23 @@
             </el-select>
           </el-form-item>
         </el-col>
+        <el-col v-if="activeTab === 'funnelRef'" :span="8">
+          <el-form-item :label="t('funnel.statusTypeName')" prop="statusTypeId">
+            <el-select
+              v-model="queryParams.statusTypeId"
+              class="!w-240px"
+              :placeholder="t('funnel.statusTypeName')"
+              @change="handleQuery"
+            >
+              <el-option
+                v-for="statusType in statusTypeList"
+                :key="statusType.id"
+                :label="statusType.name"
+                :value="statusType.id"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
       </el-row>
       <el-row>
         <el-col :span="24">
@@ -93,6 +111,12 @@
     </el-form>
   </ContentWrap>
 
+  <StatisticsLineagePanel
+    ref="statisticsLineageRef"
+    scope="funnel"
+    :on-refresh="handleQuery"
+  />
+
   <!-- 客户统计 -->
   <el-col>
     <el-tabs v-model="activeTab">
@@ -108,6 +132,9 @@
           :query-params="queryParams"
         />
       </el-tab-pane>
+      <el-tab-pane :label="t('funnel.salesForecast')" lazy name="salesForecastRef">
+        <SalesForecast ref="salesForecastRef" :query-params="queryParams" />
+      </el-tab-pane>
     </el-tabs>
   </el-col>
 </template>
@@ -115,13 +142,16 @@
 <script lang="ts" setup>
 import * as DeptApi from '@/api/system/dept'
 import * as UserApi from '@/api/system/user'
+import * as BusinessStatusApi from '@/api/crm/business/status'
 import { useUserStore } from '@/store/modules/user'
 import { beginOfDay, defaultShortcuts, endOfDay, formatDate } from '@/utils/formatTime'
 import { defaultProps, handleTree } from '@/utils/tree'
 import FunnelBusiness from './components/FunnelBusiness.vue'
 import BusinessSummary from './components/BusinessSummary.vue'
 import BusinessInversionRateSummary from './components/BusinessInversionRateSummary.vue'
+import SalesForecast from './components/SalesForecast.vue'
 import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
+import StatisticsLineagePanel from '../components/StatisticsLineagePanel.vue'
 
 defineOptions({ name: 'CrmStatisticsFunnel' })
 
@@ -131,6 +161,7 @@ const queryParams = reactive({
   interval: 2, // WEEK, 周
   deptId: useUserStore().getUser.deptId,
   userId: undefined,
+  statusTypeId: undefined as number | undefined,
   times: [
     // 默认显示最近一周的数据
     formatDate(beginOfDay(new Date(new Date().getTime() - 3600 * 1000 * 24 * 7))),
@@ -141,6 +172,7 @@ const queryParams = reactive({
 const queryFormRef = ref() // 搜索的表单
 const deptList = ref<Tree[]>([]) // 部门树形结构
 const userList = ref<UserApi.UserVO[]>([]) // 全量用户清单
+const statusTypeList = ref<BusinessStatusApi.BusinessStatusTypeVO[]>([])
 
 /** 根据选择的部门筛选员工清单 */
 const userListByDeptId = computed(() =>
@@ -153,36 +185,53 @@ const activeTab = ref('funnelRef') // 活跃标签
 const funnelRef = ref() // 销售漏斗
 const businessSummaryRef = ref() // 新增商机分析
 const businessInversionRateSummaryRef = ref() // 商机转化率分析
+const salesForecastRef = ref() // 销售预测
+const statisticsLineageRef = ref<InstanceType<typeof StatisticsLineagePanel>>()
 
 /** 搜索按钮操作 */
-const handleQuery = () => {
+const handleQuery = async () => {
+  let query: Promise<unknown> | undefined
   switch (activeTab.value) {
     case 'funnelRef':
-      funnelRef.value?.loadData?.()
+      query = funnelRef.value?.loadData?.()
       break
     case 'businessSummaryRef':
-      businessSummaryRef.value?.loadData?.()
+      query = businessSummaryRef.value?.loadData?.()
       break
     case 'businessInversionRateSummaryRef':
-      businessInversionRateSummaryRef.value?.loadData?.()
+      query = businessInversionRateSummaryRef.value?.loadData?.()
+      break
+    case 'salesForecastRef':
+      query = salesForecastRef.value?.loadData?.()
       break
   }
+  await query
+  statisticsLineageRef.value?.markRefreshed()
 }
 
 /** 当 activeTab 改变时，刷新当前活动的 tab */
 watch(activeTab, () => {
-  handleQuery()
+  void handleQuery()
 })
 
 /** 重置按钮操作 */
 const resetQuery = () => {
   queryFormRef.value.resetFields()
+  queryParams.statusTypeId = statusTypeList.value[0]?.id
   handleQuery()
 }
 
 /** 初始化 */
 onMounted(async () => {
-  deptList.value = handleTree(await DeptApi.getSimpleDeptList())
-  userList.value = handleTree(await UserApi.getSimpleUserList())
+  const [departments, users, statusTypes] = await Promise.all([
+    DeptApi.getSimpleDeptList(),
+    UserApi.getSimpleUserList(),
+    BusinessStatusApi.getBusinessStatusTypeSimpleList()
+  ])
+  deptList.value = handleTree(departments)
+  userList.value = handleTree(users)
+  statusTypeList.value = statusTypes
+  queryParams.statusTypeId = statusTypes[0]?.id
+  await handleQuery()
 })
 </script>

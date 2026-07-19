@@ -1,19 +1,23 @@
 package com.meession.etm.module.crm.dal.mysql.receivable;
 
 import cn.hutool.core.collection.CollUtil;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.framework.mybatis.core.mapper.BaseMapperX;
 import com.meession.etm.framework.mybatis.core.query.LambdaQueryWrapperX;
 import com.meession.etm.framework.mybatis.core.query.MPJLambdaWrapperX;
 import com.meession.etm.module.crm.controller.admin.receivable.vo.receivable.CrmReceivablePageReqVO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.receivable.CrmReceivableDO;
 import com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.enums.common.CrmSceneTypeEnum;
+import com.meession.etm.module.crm.enums.receivable.CrmReceivableReferenceStatusEnum;
 import com.meession.etm.module.crm.util.CrmPermissionUtils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Select;
 
 import java.math.BigDecimal;
 import java.util.Collection;
@@ -30,6 +34,26 @@ import static com.meession.etm.framework.common.util.collection.CollectionUtils.
  */
 @Mapper
 public interface CrmReceivableMapper extends BaseMapperX<CrmReceivableDO> {
+
+    /**
+     * 锁定合同，串行化同一合同下的回款提交，避免并发提交导致回款金额超过合同金额。
+     */
+    @Select("SELECT id FROM crm_contract WHERE id = #{contractId} AND deleted = 0 FOR UPDATE")
+    Long selectContractIdForUpdate(Long contractId);
+
+    default CrmReceivableDO selectByIdForUpdate(Long id) {
+        return selectOne(new LambdaQueryWrapperX<CrmReceivableDO>()
+                .eq(CrmReceivableDO::getId, id)
+                .last("FOR UPDATE"));
+    }
+
+    default int updateAuditStatusIfProcessing(Long id, String processInstanceId, Integer auditStatus) {
+        return update(new LambdaUpdateWrapper<CrmReceivableDO>()
+                .eq(CrmReceivableDO::getId, id)
+                .eq(CrmReceivableDO::getProcessInstanceId, processInstanceId)
+                .eq(CrmReceivableDO::getAuditStatus, CrmAuditStatusEnum.PROCESS.getStatus())
+                .set(CrmReceivableDO::getAuditStatus, auditStatus));
+    }
 
     default CrmReceivableDO selectByNo(String no) {
         return selectOne(CrmReceivableDO::getNo, no);
@@ -50,13 +74,40 @@ public interface CrmReceivableMapper extends BaseMapperX<CrmReceivableDO> {
         CrmPermissionUtils.appendPermissionCondition(query, CrmBizTypeEnum.CRM_RECEIVABLE.getType(),
                 CrmReceivableDO::getId, userId, pageReqVO.getSceneType());
         // 拼接自身的查询条件
-        query.selectAll(CrmReceivableDO.class)
-                .eqIfPresent(CrmReceivableDO::getNo, pageReqVO.getNo())
+        query.selectAll(CrmReceivableDO.class);
+        appendPageFilter(query, pageReqVO);
+        return selectJoinPage(pageReqVO, CrmReceivableDO.class, query);
+    }
+
+    static void appendPageFilter(MPJLambdaWrapperX<CrmReceivableDO> query,
+                                 CrmReceivablePageReqVO pageReqVO) {
+        query.eqIfPresent(CrmReceivableDO::getNo, pageReqVO.getNo())
                 .eqIfPresent(CrmReceivableDO::getPlanId, pageReqVO.getPlanId())
                 .eqIfPresent(CrmReceivableDO::getContractId, pageReqVO.getContractId())
-                .eqIfPresent(CrmReceivableDO::getAuditStatus, pageReqVO.getAuditStatus())
-                .orderByDesc(CrmReceivableDO::getId);
-        return selectJoinPage(pageReqVO, CrmReceivableDO.class, query);
+                .eqIfPresent(CrmReceivableDO::getCustomerId, pageReqVO.getCustomerId())
+                .eqIfPresent(CrmReceivableDO::getAuditStatus, pageReqVO.getAuditStatus());
+        appendReferenceStatusFilter(query, pageReqVO.getReferenceStatus());
+        query.orderByDesc(CrmReceivableDO::getId);
+    }
+
+    static void appendReferenceStatusFilter(MPJLambdaWrapperX<CrmReceivableDO> query, Integer referenceStatus) {
+        if (referenceStatus == null) {
+            return;
+        }
+        query.leftJoin(CrmCustomerDO.class,
+                        on -> on.eq(CrmCustomerDO::getId, CrmReceivableDO::getCustomerId))
+                .leftJoin(CrmContractDO.class,
+                        on -> on.eq(CrmContractDO::getId, CrmReceivableDO::getContractId)
+                                .eq(CrmContractDO::getCustomerId, CrmReceivableDO::getCustomerId));
+        if (CrmReceivableReferenceStatusEnum.VALID.getStatus().equals(referenceStatus)) {
+            query.isNotNull(CrmCustomerDO::getId).isNotNull(CrmContractDO::getId);
+        } else if (CrmReceivableReferenceStatusEnum.CUSTOMER_MISSING.getStatus().equals(referenceStatus)) {
+            query.isNull(CrmCustomerDO::getId).isNotNull(CrmContractDO::getId);
+        } else if (CrmReceivableReferenceStatusEnum.CONTRACT_INVALID.getStatus().equals(referenceStatus)) {
+            query.isNotNull(CrmCustomerDO::getId).isNull(CrmContractDO::getId);
+        } else if (CrmReceivableReferenceStatusEnum.BOTH_INVALID.getStatus().equals(referenceStatus)) {
+            query.isNull(CrmCustomerDO::getId).isNull(CrmContractDO::getId);
+        }
     }
 
     default Long selectCountByAudit(Long userId) {
@@ -65,7 +116,7 @@ public interface CrmReceivableMapper extends BaseMapperX<CrmReceivableDO> {
         CrmPermissionUtils.appendPermissionCondition(query, CrmBizTypeEnum.CRM_RECEIVABLE.getType(),
                 CrmReceivableDO::getId, userId, CrmSceneTypeEnum.OWNER.getType());
         // 未审核
-        query.eq(CrmContractDO::getAuditStatus, CrmAuditStatusEnum.PROCESS.getStatus());
+        query.eq(CrmReceivableDO::getAuditStatus, CrmAuditStatusEnum.PROCESS.getStatus());
         return selectCount(query);
     }
 
@@ -82,12 +133,25 @@ public interface CrmReceivableMapper extends BaseMapperX<CrmReceivableDO> {
         // SQL sum 查询
         List<Map<String, Object>> result = selectMaps(new QueryWrapper<CrmReceivableDO>()
                 .select("contract_id, SUM(price) AS total_price")
-                .in("audit_status", CrmAuditStatusEnum.DRAFT.getStatus(), // 草稿 + 审批中 + 审批通过
-                        CrmAuditStatusEnum.PROCESS.getStatus(), CrmAuditStatusEnum.APPROVE.getStatus())
+                .eq("audit_status", CrmAuditStatusEnum.APPROVE.getStatus())
                 .groupBy("contract_id")
                 .in("contract_id", contractIds));
         // 获得金额
         return convertMap(result, obj -> (Long) obj.get("contract_id"), obj -> (BigDecimal) obj.get("total_price"));
+    }
+
+    default Map<Long, BigDecimal> selectReservedPriceMapByContractId(Collection<Long> contractIds) {
+        if (CollUtil.isEmpty(contractIds)) {
+            return Collections.emptyMap();
+        }
+        List<Map<String, Object>> result = selectMaps(new QueryWrapper<CrmReceivableDO>()
+                .select("contract_id, SUM(price) AS total_price")
+                .in("audit_status", CrmAuditStatusEnum.PROCESS.getStatus(),
+                        CrmAuditStatusEnum.APPROVE.getStatus())
+                .groupBy("contract_id")
+                .in("contract_id", contractIds));
+        return convertMap(result, obj -> (Long) obj.get("contract_id"),
+                obj -> (BigDecimal) obj.get("total_price"));
     }
 
     default Long selectCountByContractId(Long contractId) {

@@ -8,12 +8,10 @@
         FROM crm_customer
         WHERE deleted = 0
         AND owner_user_id IN
-        <!-- TODO @puhui999：这个 foreach 搞个缩进哈 - -->
         <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
             #{userId}
         </foreach>
         AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND
-        <!-- TODO @puhui999：下面这个，就不缩进啦 - -->
         #{times[1],javaType=java.time.LocalDateTime}
     </select>
 
@@ -33,12 +31,70 @@
         #{reqVO.times[1],javaType=java.time.LocalDateTime}
     </select>
 
+    <select id="selectBusinessStageSummary"
+            resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessStageSummaryRespVO">
+        SELECT stage.statusId,
+               stage.statusName,
+               stage.sort,
+               stage.endStatus,
+               stage.businessCount,
+               stage.totalPrice
+        FROM (
+            SELECT status.id AS statusId,
+                   status.name AS statusName,
+                   status.sort AS sort,
+                   NULL AS endStatus,
+                   COUNT(business.id) AS businessCount,
+                   COALESCE(SUM(business.total_price), 0) AS totalPrice
+            FROM crm_business_status AS status
+            LEFT JOIN crm_business AS business
+                ON business.status_id = status.id
+                AND business.status_type_id = status.type_id
+                AND business.deleted = 0
+                AND business.owner_user_id IN
+                <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+                    #{userId}
+                </foreach>
+                AND business.create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime}
+                AND #{times[1],javaType=java.time.LocalDateTime}
+            WHERE status.deleted = 0
+              AND status.type_id = #{statusTypeId}
+            GROUP BY status.id, status.name, status.sort
+
+            UNION ALL
+
+            SELECT NULL AS statusId,
+                   NULL AS statusName,
+                   2147483640 + outcome.end_status AS sort,
+                   outcome.end_status AS endStatus,
+                   COUNT(business.id) AS businessCount,
+                   COALESCE(SUM(business.total_price), 0) AS totalPrice
+            FROM (
+                SELECT 1 AS end_status
+                UNION ALL SELECT 2
+                UNION ALL SELECT 3
+            ) AS outcome
+            LEFT JOIN crm_business AS business
+              ON business.deleted = 0
+              AND business.status_type_id = #{statusTypeId}
+              AND business.end_status = outcome.end_status
+              AND business.owner_user_id IN
+                <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+                    #{userId}
+                </foreach>
+              AND business.create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime}
+              AND #{times[1],javaType=java.time.LocalDateTime}
+            GROUP BY outcome.end_status
+        ) AS stage
+        ORDER BY stage.sort, stage.statusId
+    </select>
+
     <select id="selectBusinessSummaryListGroupByEndStatus"
             resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessSummaryByEndStatusRespVO">
         SELECT
             end_status AS endStatus,
             COUNT(*) AS businessCount,
-            SUM(total_price) AS totalPrice
+            COALESCE(SUM(total_price), 0) AS totalPrice
         FROM crm_business
         WHERE deleted = 0 AND end_status IS NOT NULL
         AND owner_user_id IN
@@ -55,7 +111,7 @@
         SELECT
             DATE_FORMAT(create_time, '%Y-%m-%d') AS time,
             COUNT(*) AS businessCreateCount,
-            SUM(total_price) AS totalPrice
+            COALESCE(SUM(total_price), 0) AS totalPrice
         FROM crm_business
         WHERE deleted = 0
         AND owner_user_id IN
@@ -82,6 +138,54 @@
         AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND
         #{times[1],javaType=java.time.LocalDateTime}
         GROUP BY time
+    </select>
+
+    <select id="selectBusinessForecastGroupByDate"
+            resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessForecastByDateRespVO">
+        SELECT daily.time,
+               SUM(daily.forecastBusinessCount) AS forecastBusinessCount,
+               SUM(daily.actualBusinessCount) AS actualBusinessCount,
+               COALESCE(SUM(daily.forecastAmount), 0) AS forecastAmount,
+               COALESCE(SUM(daily.actualAmount), 0) AS actualAmount
+        FROM (
+            SELECT DATE_FORMAT(business.deal_time, '%Y-%m-%d') AS time,
+                   COUNT(*) AS forecastBusinessCount,
+                   0 AS actualBusinessCount,
+                   COALESCE(SUM(business.total_price), 0) AS forecastAmount,
+                   0 AS actualAmount
+            FROM crm_business AS business
+            WHERE business.deleted = 0
+              AND business.end_status IS NULL
+              AND business.deal_time IS NOT NULL
+              AND business.owner_user_id IN
+                <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+                    #{userId}
+                </foreach>
+              AND business.deal_time BETWEEN #{times[0],javaType=java.time.LocalDateTime}
+              AND #{times[1],javaType=java.time.LocalDateTime}
+            GROUP BY time
+
+            UNION ALL
+
+            SELECT DATE_FORMAT(business.end_time, '%Y-%m-%d') AS time,
+                   0 AS forecastBusinessCount,
+                   COUNT(*) AS actualBusinessCount,
+                   0 AS forecastAmount,
+                   COALESCE(SUM(business.total_price), 0) AS actualAmount
+            FROM crm_business AS business
+            WHERE business.deleted = 0
+              AND business.end_status = 1
+              AND business.end_time IS NOT NULL
+              AND business.owner_user_id IN
+                <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+                    #{userId}
+                </foreach>
+              AND business.end_time BETWEEN #{times[0],javaType=java.time.LocalDateTime}
+              AND #{times[1],javaType=java.time.LocalDateTime}
+            GROUP BY time
+        ) AS daily
+        GROUP BY daily.time
+        ORDER BY daily.time
     </select>
 
 </mapper>

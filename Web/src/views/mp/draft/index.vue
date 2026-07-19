@@ -12,7 +12,7 @@
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('account.title')" prop="accountId">
-            <WxAccountSelect @change="onAccountChanged" />
+            <WxAccountSelect @change="onAccountChanged" @unavailable="onAccountUnavailable" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -113,8 +113,15 @@ const onAccountChanged = (id: number) => {
   getList()
 }
 
+const onAccountUnavailable = () => {
+  accountId.value = -1
+  list.value = []
+  total.value = 0
+  loading.value = false
+}
+
 // 关闭弹窗
-const onBeforeDialogClose = async (onDone: () => {}) => {
+const onBeforeDialogClose = async (onDone: () => void) => {
   try {
     await message.confirm(t('draft.confirmClose'))
     onDone()

@@ -17,7 +17,7 @@ import java.util.Map;
 import static com.meession.etm.framework.common.util.collection.CollectionUtils.convertMultiMap;
 import static com.meession.etm.framework.common.util.collection.CollectionUtils.findFirst;
 
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface DeliveryExpressTemplateConvert {
 
     DeliveryExpressTemplateConvert INSTANCE = Mappers.getMapper(DeliveryExpressTemplateConvert.class);

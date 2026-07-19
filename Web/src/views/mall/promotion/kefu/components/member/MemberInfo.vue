@@ -133,11 +133,14 @@ defineExpose({ initHistory })
 const scrollbarRef = ref<InstanceType<typeof ElScrollbarType>>()
 const handleScroll = debounce(() => {
   const wrap = scrollbarRef.value?.wrapRef
+  if (!wrap) return
   // 触底重置
-  if (Math.abs(wrap!.scrollHeight - wrap!.clientHeight - wrap!.scrollTop) < 1) {
+  if (Math.abs(wrap.scrollHeight - wrap.clientHeight - wrap.scrollTop) < 1) {
     loadMore()
   }
 }, 200)
+
+onBeforeUnmount(() => handleScroll.cancel())
 
 /** 查询用户钱包信息 */
 const WALLET_INIT_DATA = {

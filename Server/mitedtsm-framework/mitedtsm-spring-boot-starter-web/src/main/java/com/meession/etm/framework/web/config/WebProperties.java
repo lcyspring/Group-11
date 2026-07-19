@@ -11,6 +11,10 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+
 @ConfigurationProperties(prefix = "mitedtsm.web")
 @Validated
 @Data
@@ -23,6 +27,9 @@ public class WebProperties {
 
     @NotNull(message = "Admin UI 不能为空")
     private Ui adminUi;
+    @NotNull(message = "CORS 配置不能为空")
+    @Valid
+    private Cors cors = new Cors();
 
     @Data
     @AllArgsConstructor
@@ -60,6 +67,23 @@ public class WebProperties {
          * 访问地址
          */
         private String url;
+
+    }
+
+    @Data
+    public static class Cors {
+
+        /** 允许携带凭证的精确来源或 Spring Origin Pattern。空集合代表禁止跨域。 */
+        @NotNull(message = "CORS 允许来源不能为空")
+        private List<String> allowedOriginPatterns = new ArrayList<>();
+        @NotEmpty(message = "CORS 允许请求头不能为空")
+        private List<String> allowedHeaders = List.of("Authorization", "Content-Type", "tenant-id", "Accept-Language");
+        @NotEmpty(message = "CORS 允许方法不能为空")
+        private List<String> allowedMethods = List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS");
+        @NotNull(message = "CORS 凭证开关不能为空")
+        private Boolean allowCredentials = true;
+        @NotNull(message = "CORS 缓存时间不能为空")
+        private Duration maxAge = Duration.ofHours(1);
 
     }
 

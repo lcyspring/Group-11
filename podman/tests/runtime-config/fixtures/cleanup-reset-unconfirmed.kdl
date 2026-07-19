@@ -1,0 +1,27 @@
+schema_version 1
+
+
+operation {
+  shutdown_mode "stop"
+  remove_volumes_on_down #true
+  confirm_persistent_data_reset #false
+
+}
+
+deployment {
+  pod_name "must-not-be-touched"
+  stop_timeout_seconds 30
+
+}
+
+container {
+  server "must-not-be-touched-server"
+
+}
+
+volume {
+  mysql "must-not-be-touched-mysql"
+  redis "must-not-be-touched-redis"
+  rabbitmq "must-not-be-touched-rabbitmq"
+  tdengine "must-not-be-touched-tdengine"
+}

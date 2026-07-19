@@ -51,6 +51,21 @@ public class CrmClueRespVO {
     @ExcelProperty("负责人部门")
     private String ownerUserDeptName;
 
+    @Schema(description = "池状态：0 在管，1 公共线索", requiredMode = Schema.RequiredMode.REQUIRED)
+    private Integer poolStatus;
+    @Schema(description = "本次进入公共线索池时间")
+    private LocalDateTime poolEntryTime;
+    @Schema(description = "前负责人编号")
+    private Long poolPreviousOwnerUserId;
+    @Schema(description = "前负责人姓名")
+    private String poolPreviousOwnerUserName;
+    @Schema(description = "入池原因编码")
+    private String poolReason;
+    @Schema(description = "入池原因详情")
+    private String poolReasonDetail;
+    @Schema(description = "累计入池次数")
+    private Integer poolCycleCount;
+
     @Schema(description = "转化状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "true")
     @ExcelProperty(value = "转化状态", converter = DictConvert.class)
     @DictFormat(DictTypeConstants.BOOLEAN_STRING)

@@ -25,6 +25,8 @@
       <CustomerFollowList v-if="leftMenu === 'customerFollow'" />
       <CustomerPutPoolRemindList v-if="leftMenu === 'customerPutPoolRemind'" />
       <ReceivablePlanRemindList v-if="leftMenu === 'receivablePlanRemind'" />
+      <WorkOrderBacklogList v-if="leftMenu === 'workOrder'" />
+      <BpmTaskBacklogList v-if="leftMenu === 'bpmTask'" />
     </el-col>
   </el-row>
 </template>
@@ -38,11 +40,16 @@ import ContractAuditList from './components/ContractAuditList.vue'
 import ContractRemindList from './components/ContractRemindList.vue'
 import ReceivablePlanRemindList from './components/ReceivablePlanRemindList.vue'
 import ReceivableAuditList from './components/ReceivableAuditList.vue'
+import WorkOrderBacklogList from './components/WorkOrderBacklogList.vue'
+import BpmTaskBacklogList from './components/BpmTaskBacklogList.vue'
 import * as CustomerApi from '@/api/crm/customer'
 import * as ClueApi from '@/api/crm/clue'
 import * as ContractApi from '@/api/crm/contract'
 import * as ReceivableApi from '@/api/crm/receivable'
 import * as ReceivablePlanApi from '@/api/crm/receivable/plan'
+import * as WorkOrderApi from '@/api/crm/workorder'
+import * as BpmTaskApi from '@/api/bpm/task'
+import { checkPermi } from '@/utils/permission'
 
 defineOptions({ name: 'CrmBacklog' })
 
@@ -58,6 +65,9 @@ const contractAuditCount = ref(0)
 const contractRemindCount = ref(0)
 const receivableAuditCount = ref(0)
 const receivablePlanRemindCount = ref(0)
+const workOrderCount = ref(0)
+const bpmTaskCount = ref(0)
+const canQueryBpmTask = checkPermi(['bpm:task:query'])
 
 const leftSides = computed(() => [
   {
@@ -99,7 +109,15 @@ const leftSides = computed(() => [
     name: t('backlog.contractRemind'),
     menu: 'contractRemind',
     count: contractRemindCount.value
-  }
+  },
+  {
+    name: t('backlog.workOrder'),
+    menu: 'workOrder',
+    count: workOrderCount.value
+  },
+  ...(canQueryBpmTask
+    ? [{ name: t('backlog.bpmTask'), menu: 'bpmTask', count: bpmTaskCount.value }]
+    : [])
 ])
 
 /** 侧边点击 */
@@ -122,6 +140,14 @@ const getCount = () => {
   ReceivablePlanApi.getReceivablePlanRemindCount().then(
     (count) => (receivablePlanRemindCount.value = count)
   )
+  WorkOrderApi.getWorkOrderPage({ pageNo: 1, pageSize: 1, backlog: true }).then(
+    (data) => (workOrderCount.value = data.total)
+  )
+  if (canQueryBpmTask) {
+    BpmTaskApi.getTaskTodoPage({ pageNo: 1, pageSize: 1 }).then(
+      (data) => (bpmTaskCount.value = data.total)
+    )
+  }
 }
 
 /** 激活时 */

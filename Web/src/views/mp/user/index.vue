@@ -12,7 +12,11 @@
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('account.title')" prop="accountId">
-            <WxAccountSelect @change="onAccountChanged" :modelValue="queryParams.accountId" />
+            <WxAccountSelect
+              v-model="queryParams.accountId"
+              @change="onAccountChanged"
+              @unavailable="onAccountUnavailable"
+            />
           </el-form-item>
         </el-col>
         <el-col :span="8">
@@ -151,6 +155,15 @@ const onAccountChanged = (id: number) => {
   queryParams.accountId = id
   queryParams.pageNo = 1
   getList()
+}
+
+const onAccountUnavailable = () => {
+  queryParams.accountId = -1
+  multipleSelection.value = []
+  tagList.value = []
+  list.value = []
+  total.value = 0
+  loading.value = false
 }
 
 /** 查询列表 */

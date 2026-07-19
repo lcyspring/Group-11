@@ -6,6 +6,9 @@ import org.springframework.validation.annotation.Validated;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.AssertTrue;
 import java.util.Collections;
 import java.util.List;
 
@@ -36,8 +39,12 @@ public class SecurityProperties {
      * mock 模式的密钥
      * 一定要配置密钥，保证安全性
      */
-    @NotEmpty(message = "mock 模式的密钥不能为空") // 这里设置了一个默认值，因为实际上只有 mockEnable 为 true 时才需要配置。
-    private String mockSecret = "test";
+    private String mockSecret;
+
+    @AssertTrue(message = "启用 mock 模式时必须显式配置密钥")
+    public boolean isMockSecretValid() {
+        return !Boolean.TRUE.equals(mockEnable) || mockSecret != null && !mockSecret.isBlank();
+    }
 
     /**
      * 免登录的 URL 列表
@@ -47,5 +54,7 @@ public class SecurityProperties {
     /**
      * PasswordEncoder 加密复杂度，越高开销越大
      */
-    private Integer passwordEncoderLength = 4;
+    @Min(value = 10, message = "BCrypt 强度不能低于 10")
+    @Max(value = 16, message = "BCrypt 强度不能高于 16")
+    private Integer passwordEncoderLength = 10;
 }

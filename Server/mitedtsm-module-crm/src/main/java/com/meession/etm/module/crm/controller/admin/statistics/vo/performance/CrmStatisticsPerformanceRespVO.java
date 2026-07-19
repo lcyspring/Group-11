@@ -21,4 +21,10 @@ public class CrmStatisticsPerformanceRespVO {
     @Schema(description = "去年同期统计结果", requiredMode = Schema.RequiredMode.REQUIRED, example = "3")
     private BigDecimal lastYearCount;
 
+    @Schema(description = "环比增长率（%）；基期为 0 时不可比较", example = "20.00")
+    private BigDecimal monthOnMonthRate;
+
+    @Schema(description = "同比增长率（%）；基期为 0 时不可比较", example = "15.50")
+    private BigDecimal yearOnYearRate;
+
 }

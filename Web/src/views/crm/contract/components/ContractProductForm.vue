@@ -21,7 +21,7 @@
               :placeholder="t('common.select')"
             >
               <el-option
-                v-for="item in productList"
+                v-for="item in productOptions"
                 :key="item.id"
                 :label="item.name"
                 :value="item.id"
@@ -82,9 +82,11 @@
           </el-form-item>
         </template>
       </el-table-column>
-      <el-table-column align="center" fixed="right" :label="t('common.action')" min-width="150">
+      <el-table-column v-if="!disabled" align="center" fixed="right" :label="t('common.action')" min-width="120">
         <template #default="{ $index }">
-          <el-button @click="handleDelete($index)" link/>
+          <el-button @click="handleDelete($index)" link type="danger">
+            <Icon icon="ep:delete" class="mr-5px" />{{ t('common.delete') }}
+          </el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -97,22 +99,55 @@
 import * as ProductApi from '@/api/crm/product'
 import { erpPriceInputFormatter, erpPriceMultiply } from '@/utils'
 import { DICT_TYPE } from '@/utils/dict'
+import type { FormInstance } from 'element-plus'
 
 const { t } = useI18n() // 国际化
 
+interface ContractProductRow {
+  id?: number
+  productId?: number
+  productName?: string
+  productNameSnapshot?: string
+  productNo?: string
+  productNoSnapshot?: string
+  productUnit?: number
+  productUnitSnapshot?: number
+  productPrice?: number
+  contractPrice?: number
+  count?: number
+  totalPrice?: number
+}
+
 const props = defineProps<{
-  products: undefined
-  disabled: false
+  products: ContractProductRow[]
+  disabled: boolean
 }>()
 const formLoading = ref(false) // 表单的加载中
-const formData = ref([])
+const formData = ref<ContractProductRow[]>([])
 const formRules = reactive({
   productId: [{ required: true, message: t('crm.business.productRequired'), trigger: 'blur' }],
   contractPrice: [{ required: true, message: t('crm.contract.contractPriceRequired'), trigger: 'blur' }],
   count: [{ required: true, message: t('crm.business.countRequired'), trigger: 'blur' }]
 })
-const formRef = ref([]) // 表单 Ref
+const formRef = ref<FormInstance>() // 表单 Ref
 const productList = ref<ProductApi.ProductVO[]>([]) // 产品列表
+const productOptions = computed(() => {
+  const options = [...productList.value]
+  formData.value?.forEach((row) => {
+    if (!row.productId || options.some((item) => item.id === row.productId)) {
+      return
+    }
+    // 已下架或已删除产品仍需显示成交快照，但不会进入可新增产品目录。
+    options.push({
+      id: row.productId,
+      name: row.productNameSnapshot || row.productName || `#${row.productId}`,
+      no: row.productNoSnapshot || row.productNo,
+      unit: row.productUnitSnapshot ?? row.productUnit,
+      price: row.productPrice
+    } as ProductApi.ProductVO)
+  })
+  return options
+})
 
 /** 初始化设置产品项 */
 watch(
@@ -162,8 +197,8 @@ const handleDelete = (index: number) => {
 }
 
 /** 处理产品变更 */
-const onChangeProduct = (productId, row) => {
-  const product = productList.value.find((item) => item.id === productId)
+const onChangeProduct = (productId: number | undefined, row: ContractProductRow) => {
+  const product = productOptions.value.find((item) => item.id === productId)
   if (product) {
     row.productUnit = product.unit
     row.productNo = product.no
@@ -174,7 +209,7 @@ const onChangeProduct = (productId, row) => {
 
 /** 表单校验 */
 const validate = () => {
-  return formRef.value.validate()
+  return formRef.value?.validate() ?? Promise.resolve(false)
 }
 defineExpose({ validate })
 

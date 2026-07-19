@@ -3,12 +3,7 @@
 
   <ContentWrap>
     <!-- 搜索工作栏 -->
-    <el-form
-      class="-mb-15px"
-      :model="queryParams"
-      ref="queryFormRef"
-      label-width="auto"
-    >
+    <el-form class="-mb-15px" :model="queryParams" ref="queryFormRef" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="tAi('knowledge.knowledgeName')" prop="name">
@@ -55,8 +50,12 @@
       <el-row>
         <el-col :span="24">
           <el-form-item>
-            <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> {{ t('common.search') }}</el-button>
-            <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> {{ t('common.reset') }}</el-button>
+            <el-button @click="handleQuery"
+              ><Icon icon="ep:search" class="mr-5px" /> {{ t('common.search') }}</el-button
+            >
+            <el-button @click="resetQuery"
+              ><Icon icon="ep:refresh" class="mr-5px" /> {{ t('common.reset') }}</el-button
+            >
             <el-button
               type="primary"
               plain
@@ -73,11 +72,25 @@
 
   <!-- 列表 -->
   <ContentWrap>
-    <el-table v-loading="loading" :data="list" :stripe="true" :show-overflow-tooltip="true" :table-layout="'auto'">
+    <el-table
+      v-loading="loading"
+      :data="list"
+      :stripe="true"
+      :show-overflow-tooltip="true"
+      :table-layout="'auto'"
+    >
       <el-table-column :label="t('common.id')" align="center" prop="id" />
       <el-table-column :label="tAi('knowledge.knowledgeName')" align="center" prop="name" />
-      <el-table-column :label="tAi('knowledge.knowledgeDescription')" align="center" prop="description" />
-      <el-table-column :label="tAi('knowledge.embeddingModel')" align="center" prop="embeddingModel" />
+      <el-table-column
+        :label="tAi('knowledge.knowledgeDescription')"
+        align="center"
+        prop="description"
+      />
+      <el-table-column
+        :label="tAi('knowledge.embeddingModel')"
+        align="center"
+        prop="embeddingModel"
+      />
       <el-table-column :label="t('common.status')" align="center" prop="status">
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.COMMON_STATUS" :value="scope.row.status" />
@@ -89,41 +102,44 @@
         prop="createTime"
         :formatter="dateFormatter"
         min-width="180"
-       fixed="right" />
-      <el-table-column :label="t('common.operation')" align="center" min-width="120px">
+        fixed="right"
+      />
+      <el-table-column :label="t('common.operation')" align="center" width="140">
         <template #default="scope">
-          <el-button
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-            v-hasPermi="['ai:knowledge:update']"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            link
-            type="primary"
-            @click="handleDocument(scope.row.id)"
-            v-hasPermi="['ai:knowledge:query']"
-          >
-            {{ tAi('knowledge.document.title') }}
-          </el-button>
-          <el-button
-            link
-            type="primary"
-            @click="handleRetrieval(scope.row.id)"
-            v-hasPermi="['ai:knowledge:query']"
-          >
-            {{ tAi('knowledge.retrievalTest') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-            v-hasPermi="['ai:knowledge:delete']"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+              v-hasPermi="['ai:knowledge:update']"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              link
+              type="primary"
+              @click="handleDocument(scope.row.id)"
+              v-hasPermi="['ai:knowledge:query']"
+            >
+              {{ tAi('knowledge.document.title') }}
+            </el-button>
+            <el-button
+              link
+              type="primary"
+              @click="handleRetrieval(scope.row.id)"
+              v-hasPermi="['ai:knowledge:query']"
+            >
+              {{ tAi('knowledge.retrievalTest') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+              v-hasPermi="['ai:knowledge:delete']"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

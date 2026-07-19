@@ -187,7 +187,7 @@ public class BpmModelServiceImpl implements BpmModelService {
     }
 
     private Model validateModelExists(String id) {
-        Model model = repositoryService.getModel(id);
+        Model model = getModel(id);
         if (model == null) {
             throw exception(MODEL_NOT_EXISTS);
         }
@@ -287,7 +287,8 @@ public class BpmModelServiceImpl implements BpmModelService {
         // 2. 清理所有流程数据
         // 2.1 先取消所有正在运行的流程
         List<ProcessInstance> processInstances = runtimeService.createProcessInstanceQuery()
-                .processDefinitionKey(model.getKey()).list();
+                .processDefinitionKey(model.getKey())
+                .processInstanceTenantId(FlowableUtils.getTenantId()).list();
         processInstances.forEach(processInstance -> {
             runtimeService.deleteProcessInstance(processInstance.getId(),
                     BpmReasonEnum.CANCEL_BY_SYSTEM.getReason());
@@ -296,14 +297,16 @@ public class BpmModelServiceImpl implements BpmModelService {
         });
         // 2.2 再从历史中删除所有相关的流程数据
         List<HistoricProcessInstance> historicProcessInstances = historyService.createHistoricProcessInstanceQuery()
-                .processDefinitionKey(model.getKey()).list();
+                .processDefinitionKey(model.getKey())
+                .processInstanceTenantId(FlowableUtils.getTenantId()).list();
         historicProcessInstances.forEach(historicProcessInstance -> {
             historyService.deleteHistoricProcessInstance(historicProcessInstance.getId());
             processInstanceCopyService.deleteProcessInstanceCopy(historicProcessInstance.getId());
         });
         // 2.3 清理所有 Task
         List<Task> tasks = taskService.createTaskQuery()
-                .processDefinitionKey(model.getKey()).list();
+                .processDefinitionKey(model.getKey())
+                .taskTenantId(FlowableUtils.getTenantId()).list();
         tasks.forEach(task -> taskService.deleteTask(task.getId(),BpmReasonEnum.CANCEL_BY_PROCESS_CLEAN.getReason()));
     }
 
@@ -324,7 +327,7 @@ public class BpmModelServiceImpl implements BpmModelService {
 
     @Override
     public BpmnModel getBpmnModelByDefinitionId(String processDefinitionId) {
-        return repositoryService.getBpmnModel(processDefinitionId);
+        return processDefinitionService.getProcessDefinitionBpmnModel(processDefinitionId);
     }
 
     @Override
@@ -382,6 +385,7 @@ public class BpmModelServiceImpl implements BpmModelService {
         if (StrUtil.isEmpty(bpmnXml)) {
             return;
         }
+        validateModelExists(id);
         repositoryService.addModelEditorSource(id, StrUtil.utf8Bytes(bpmnXml));
     }
 
@@ -429,12 +433,17 @@ public class BpmModelServiceImpl implements BpmModelService {
 
     @Override
     public Model getModel(String id) {
-        return repositoryService.getModel(id);
+        if (StrUtil.isEmpty(id)) {
+            return null;
+        }
+        return repositoryService.createModelQuery().modelId(id)
+                .modelTenantId(FlowableUtils.getTenantId()).singleResult();
     }
 
     @Override
     public byte[] getModelBpmnXML(String id) {
-        return repositoryService.getModelEditorSource(id);
+        Model model = validateModelExists(id);
+        return repositoryService.getModelEditorSource(model.getId());
     }
 
 }

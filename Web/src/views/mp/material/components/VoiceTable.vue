@@ -18,19 +18,21 @@
         <span>{{ scope.row.createTime }}</span>
       </template>
     </el-table-column>
-    <el-table-column :label="t('common.operation')" align="center" class-name="small-padding fixed-width">
+    <el-table-column :label="t('common.operation')" align="center" class-name="small-padding fixed-width" width="220">
       <template #default="scope">
-        <el-button type="primary" link @click="emit('delete', scope.row.id)">
-          <Icon icon="ep:download"  fixed="right" />{{ t('common.download') }}
-        </el-button>
-        <el-button
-          type="primary"
-          link
-          @click="emit('delete', scope.row.id)"
-          v-hasPermi="['mp:material:delete']"
-        >
-          <Icon icon="ep:delete" />{{ t('common.delete') }}
-        </el-button>
+        <TableActions>
+          <el-button type="primary" link @click="emit('delete', scope.row.id)">
+            <Icon icon="ep:download"  fixed="right" />{{ t('common.download') }}
+          </el-button>
+          <el-button
+            type="primary"
+            link
+            @click="emit('delete', scope.row.id)"
+            v-hasPermi="['mp:material:delete']"
+          >
+            <Icon icon="ep:delete" />{{ t('common.delete') }}
+          </el-button>
+        </TableActions>
       </template>
     </el-table-column>
   </el-table>

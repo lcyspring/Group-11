@@ -38,4 +38,13 @@ public interface CrmStatisticsPerformanceMapper {
      */
     List<CrmStatisticsPerformanceRespVO> selectReceivablePricePerformance(CrmStatisticsPerformanceReqVO performanceReqVO);
 
+    /** 月度客户跟进次数，仅统计客户跟进记录。 */
+    List<CrmStatisticsPerformanceRespVO> selectFollowUpCountPerformance(CrmStatisticsPerformanceReqVO performanceReqVO);
+
+    /** 月度新增客户数。 */
+    List<CrmStatisticsPerformanceRespVO> selectCustomerCountPerformance(CrmStatisticsPerformanceReqVO performanceReqVO);
+
+    /** 月度新增商机数。 */
+    List<CrmStatisticsPerformanceRespVO> selectBusinessCountPerformance(CrmStatisticsPerformanceReqVO performanceReqVO);
+
 }

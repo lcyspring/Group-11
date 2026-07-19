@@ -4,11 +4,7 @@
     <!-- 非列表型：数值 -->
     <div
       v-if="
-        [
-          IoTDataSpecsDataTypeEnum.INT,
-          IoTDataSpecsDataTypeEnum.DOUBLE,
-          IoTDataSpecsDataTypeEnum.FLOAT
-        ].includes(data.property.dataType)
+        isNumericDataType(data.property.dataType)
       "
     >
       取值范围：{{ `${data.property.dataSpecs.min}~${data.property.dataSpecs.max}` }}
@@ -20,11 +16,7 @@
     <!-- 列表型: 数组、结构、时间（特殊） -->
     <div
       v-if="
-        [
-          IoTDataSpecsDataTypeEnum.ARRAY,
-          IoTDataSpecsDataTypeEnum.STRUCT,
-          IoTDataSpecsDataTypeEnum.DATE
-        ].includes(data.property.dataType)
+        isSpecialDataType(data.property.dataType)
       "
     >
       -
@@ -32,9 +24,7 @@
     <!-- 列表型: 布尔值、枚举 -->
     <div
       v-if="
-        [IoTDataSpecsDataTypeEnum.BOOL, IoTDataSpecsDataTypeEnum.ENUM].includes(
-          data.property.dataType
-        )
+        isBooleanOrEnumDataType(data.property.dataType)
       "
     >
       <div>
@@ -66,6 +56,13 @@ import {
 
 /** 数据定义展示组件 */
 defineOptions({ name: 'DataDefinition' })
+
+const isNumericDataType = (dataType?: string) =>
+  ([IoTDataSpecsDataTypeEnum.INT, IoTDataSpecsDataTypeEnum.DOUBLE, IoTDataSpecsDataTypeEnum.FLOAT] as string[]).includes(dataType || '')
+const isSpecialDataType = (dataType?: string) =>
+  ([IoTDataSpecsDataTypeEnum.ARRAY, IoTDataSpecsDataTypeEnum.STRUCT, IoTDataSpecsDataTypeEnum.DATE] as string[]).includes(dataType || '')
+const isBooleanOrEnumDataType = (dataType?: string) =>
+  ([IoTDataSpecsDataTypeEnum.BOOL, IoTDataSpecsDataTypeEnum.ENUM] as string[]).includes(dataType || '')
 
 defineProps<{ data: ThingModelData }>()
 </script>

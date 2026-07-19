@@ -60,6 +60,11 @@
             <dict-tag :type="DICT_TYPE.INFRA_BOOLEAN_STRING" :value="scope.row.master" />
           </template>
         </el-table-column>
+        <el-table-column align="center" :label="t('crm.contact.primaryContact')" min-width="100" prop="primaryContact">
+          <template #default="scope">
+            <dict-tag :type="DICT_TYPE.INFRA_BOOLEAN_STRING" :value="scope.row.primaryContact" />
+          </template>
+        </el-table-column>
       </el-table>
       <!-- 分页 -->
       <Pagination

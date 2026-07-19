@@ -88,6 +88,9 @@ public class BpmTaskRespVO {
     @Schema(description = "节点类型", example = "10")
     private Integer nodeType; // 参见 BpmSimpleModelNodeTypeEnum 枚举。
 
+    @Schema(description = "是否允许撤回")
+    private Boolean withdrawable;
+
     @Data
     @Schema(description = "流程实例")
     public static class ProcessInstance {

@@ -64,4 +64,9 @@ public class CrmBusinessProductDO extends BaseDO {
      */
     private BigDecimal totalPrice;
 
+    /**
+     * 报价税率百分比；旧数据迁移为 0，新报价按 YAML 默认值。
+     */
+    private BigDecimal taxRatePercent;
+
 }

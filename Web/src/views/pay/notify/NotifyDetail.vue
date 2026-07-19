@@ -78,7 +78,7 @@ defineOptions({ name: 'PayNotifyDetail' })
 
 const dialogVisible = ref(false) // 弹窗的是否展示
 const detailLoading = ref(false) // 表单的加载中
-const detailData = ref({})
+const detailData = ref<Record<string, any>>({})
 
 /** 打开弹窗 */
 const open = async (id: number) => {

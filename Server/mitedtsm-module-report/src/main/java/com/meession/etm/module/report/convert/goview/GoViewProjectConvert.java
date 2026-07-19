@@ -8,7 +8,7 @@ import com.meession.etm.module.report.dal.dataobject.goview.GoViewProjectDO;
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
 
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface GoViewProjectConvert {
 
     GoViewProjectConvert INSTANCE = Mappers.getMapper(GoViewProjectConvert.class);

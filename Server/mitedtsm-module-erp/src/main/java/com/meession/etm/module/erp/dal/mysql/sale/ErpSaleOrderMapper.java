@@ -73,4 +73,11 @@ public interface ErpSaleOrderMapper extends BaseMapperX<ErpSaleOrderDO> {
         return selectOne(ErpSaleOrderDO::getNo, no);
     }
 
+    default ErpSaleOrderDO selectByExternalSource(String sourceSystem, String sourceType, Long sourceId) {
+        return selectOne(new com.meession.etm.framework.mybatis.core.query.LambdaQueryWrapperX<ErpSaleOrderDO>()
+                .eq(ErpSaleOrderDO::getExternalSourceSystem, sourceSystem)
+                .eq(ErpSaleOrderDO::getExternalSourceType, sourceType)
+                .eq(ErpSaleOrderDO::getExternalSourceId, sourceId));
+    }
+
 }

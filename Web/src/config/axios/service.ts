@@ -17,6 +17,7 @@ import { resetRouter } from '@/router'
 import { deleteUserCache } from '@/hooks/web/useCache'
 import { ApiEncrypt } from '@/utils/encrypt'
 import { useLocaleStoreWithOut } from '@/store/modules/locale'
+import { normalizeRuntimeMediaPayload } from '@/config/media'
 
 const tenantEnable = import.meta.env.VITE_APP_TENANT_ENABLE
 const { result_code, base_url, request_timeout } = config
@@ -50,8 +51,13 @@ const service: AxiosInstance = axios.create({
 // request拦截器
 service.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    const customHeaders = config.headers as typeof config.headers & {
+      isToken?: boolean
+      isEncrypt?: boolean
+      isEncrypted?: boolean
+    }
     // 是否需要设置 token
-    let isToken = (config!.headers || {}).isToken === false
+    let isToken = customHeaders.isToken === false
     whiteList.some((v) => {
       if (config.url && config.url.indexOf(v) > -1) {
         return (isToken = false)
@@ -93,7 +99,7 @@ service.interceptors.request.use(
       }
     }
     // 是否 API 加密
-    if ((config!.headers || {}).isEncrypt && !(config!.headers || {}).isEncrypted) {
+    if (customHeaders.isEncrypt && !customHeaders.isEncrypted) {
       try {
         // 加密请求数据
         if (config.data) {
@@ -177,8 +183,12 @@ service.interceptors.response.use(
             cb()
           })
           requestList = []
-          if ((config!.headers || {}).isEncrypt){
-            (config!.headers || {}).isEncrypted = true
+          const customHeaders = config.headers as typeof config.headers & {
+            isEncrypt?: boolean
+            isEncrypted?: boolean
+          }
+          if (customHeaders.isEncrypt) {
+            customHeaders.isEncrypted = true
           }
           return service(config)
         } catch (e) {
@@ -227,6 +237,7 @@ service.interceptors.response.use(
       }
       return Promise.reject('error')
     } else {
+      data.data = normalizeRuntimeMediaPayload(data.data)
       return data
     }
   },

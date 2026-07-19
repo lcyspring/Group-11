@@ -45,7 +45,7 @@ export const checkFileUpload = (data: {
 // 上传文件分片
 export const uploadFileChunk = (
   data: {
-    file: File
+    file: Blob
     fileId: string
     chunkIndex: number
     totalChunks: number

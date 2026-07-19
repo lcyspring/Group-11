@@ -71,24 +71,26 @@
       :formatter="dateFormatter"
       min-width="180"
      fixed="right" />
-    <el-table-column :label="t('common.operation')" align="center">
+    <el-table-column :label="t('common.operation')" align="center" width="220">
       <template #default="scope">
-        <el-button
-          type="primary"
-          link
-          @click="emit('on-update', scope.row.id)"
-          v-hasPermi="['mp:auto-reply:update']"
-        >
-          {{ t('common.edit') }}
-        </el-button>
-        <el-button
-          type="danger"
-          link
-          @click="emit('on-delete', scope.row.id)"
-          v-hasPermi="['mp:auto-reply:delete']"
-        >
-          {{ t('common.delete') }}
-        </el-button>
+        <TableActions>
+          <el-button
+            type="primary"
+            link
+            @click="emit('on-update', scope.row.id)"
+            v-hasPermi="['mp:auto-reply:update']"
+          >
+            {{ t('common.edit') }}
+          </el-button>
+          <el-button
+            type="danger"
+            link
+            @click="emit('on-delete', scope.row.id)"
+            v-hasPermi="['mp:auto-reply:delete']"
+          >
+            {{ t('common.delete') }}
+          </el-button>
+        </TableActions>
       </template>
     </el-table-column>
   </el-table>

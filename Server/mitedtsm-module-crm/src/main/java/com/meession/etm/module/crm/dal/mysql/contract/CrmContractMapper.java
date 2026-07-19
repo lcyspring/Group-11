@@ -1,6 +1,7 @@
 package com.meession.etm.module.crm.dal.mysql.contract;
 
 import cn.hutool.core.date.LocalDateTimeUtil;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.framework.mybatis.core.mapper.BaseMapperX;
 import com.meession.etm.framework.mybatis.core.query.LambdaQueryWrapperX;
@@ -16,6 +17,10 @@ import org.apache.ibatis.annotations.Mapper;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Collection;
+import java.util.Set;
+
+import static com.meession.etm.framework.common.util.collection.CollectionUtils.convertSet;
 
 /**
  * CRM 合同 Mapper
@@ -27,6 +32,33 @@ public interface CrmContractMapper extends BaseMapperX<CrmContractDO> {
 
     default CrmContractDO selectByNo(String no) {
         return selectOne(CrmContractDO::getNo, no);
+    }
+
+    default CrmContractDO selectFirstByBusinessId(Long businessId) {
+        return selectOne(new LambdaQueryWrapperX<CrmContractDO>()
+                .eq(CrmContractDO::getBusinessId, businessId)
+                .orderByAsc(CrmContractDO::getId)
+                .last("LIMIT 1"));
+    }
+
+    default CrmContractDO selectBySourceBusinessIdForUpdate(Long businessId) {
+        return selectOne(new LambdaQueryWrapperX<CrmContractDO>()
+                .eq(CrmContractDO::getSourceBusinessId, businessId)
+                .last("FOR UPDATE"));
+    }
+
+    default CrmContractDO selectByIdForUpdate(Long id) {
+        return selectOne(new LambdaQueryWrapperX<CrmContractDO>()
+                .eq(CrmContractDO::getId, id)
+                .last("FOR UPDATE"));
+    }
+
+    default int updateAuditStatusIfProcessing(Long id, String processInstanceId, Integer auditStatus) {
+        return update(new LambdaUpdateWrapper<CrmContractDO>()
+                .eq(CrmContractDO::getId, id)
+                .eq(CrmContractDO::getProcessInstanceId, processInstanceId)
+                .eq(CrmContractDO::getAuditStatus, CrmAuditStatusEnum.PROCESS.getStatus())
+                .set(CrmContractDO::getAuditStatus, auditStatus));
     }
 
     default PageResult<CrmContractDO> selectPageByCustomerId(CrmContractPageReqVO pageReqVO) {
@@ -111,6 +143,35 @@ public interface CrmContractMapper extends BaseMapperX<CrmContractDO> {
         return selectList(new LambdaQueryWrapperX<CrmContractDO>()
                 .eq(CrmContractDO::getCustomerId, customerId)
                 .eq(CrmContractDO::getOwnerUserId, ownerUserId));
+    }
+
+    default List<CrmContractDO> selectReceivableCandidateList(Long customerId) {
+        return selectList(new LambdaQueryWrapperX<CrmContractDO>()
+                .eq(CrmContractDO::getAuditStatus, CrmAuditStatusEnum.APPROVE.getStatus())
+                .eqIfPresent(CrmContractDO::getCustomerId, customerId)
+                .orderByDesc(CrmContractDO::getId));
+    }
+
+    default Set<Long> selectProtectedCustomerIds(Collection<Long> customerIds, Collection<Integer> auditStatuses,
+                                                  LocalDateTime now) {
+        if (customerIds == null || customerIds.isEmpty() || auditStatuses == null || auditStatuses.isEmpty()) {
+            return Set.of();
+        }
+        return convertSet(selectList(new LambdaQueryWrapperX<CrmContractDO>()
+                .select(CrmContractDO::getCustomerId)
+                .in(CrmContractDO::getCustomerId, customerIds)
+                .in(CrmContractDO::getAuditStatus, auditStatuses)
+                .and(scope -> scope.ne(CrmContractDO::getAuditStatus, CrmAuditStatusEnum.APPROVE.getStatus())
+                        .or(approved -> approved.eq(CrmContractDO::getAuditStatus,
+                                        CrmAuditStatusEnum.APPROVE.getStatus())
+                                .and(valid -> valid.isNull(CrmContractDO::getEndTime)
+                                        .or().ge(CrmContractDO::getEndTime, now))))
+                .groupBy(CrmContractDO::getCustomerId)), CrmContractDO::getCustomerId);
+    }
+
+    default boolean existsProtectedByCustomerId(Long customerId, Collection<Integer> auditStatuses,
+                                                 LocalDateTime now) {
+        return selectProtectedCustomerIds(List.of(customerId), auditStatuses, now).contains(customerId);
     }
 
 }

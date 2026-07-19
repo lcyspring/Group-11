@@ -7,13 +7,19 @@ import com.meession.etm.framework.common.util.object.BeanUtils;
 import com.meession.etm.module.crm.controller.admin.permission.vo.CrmPermissionSaveReqVO;
 import com.meession.etm.module.crm.controller.admin.permission.vo.CrmPermissionUpdateReqVO;
 import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessDO;
+import com.meession.etm.module.crm.dal.dataobject.clue.CrmClueDO;
 import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
 import com.meession.etm.module.crm.dal.dataobject.permission.CrmPermissionDO;
+import com.meession.etm.module.crm.dal.mysql.clue.CrmClueMapper;
+import com.meession.etm.module.crm.dal.mysql.customer.CrmCustomerMapper;
 import com.meession.etm.module.crm.dal.mysql.permission.CrmPermissionMapper;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
+import com.meession.etm.module.crm.enums.clue.CrmCluePoolStatusEnum;
+import com.meession.etm.module.crm.enums.customer.CrmCustomerPoolStatusEnum;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
 import com.meession.etm.module.crm.framework.permission.core.annotations.CrmPermission;
+import com.meession.etm.module.crm.framework.permission.CrmAuthorizationService;
 import com.meession.etm.module.crm.service.business.CrmBusinessService;
 import com.meession.etm.module.crm.service.contact.CrmContactService;
 import com.meession.etm.module.crm.service.contract.CrmContractService;
@@ -47,6 +53,10 @@ public class CrmPermissionServiceImpl implements CrmPermissionService {
     @Resource
     private CrmPermissionMapper permissionMapper;
     @Resource
+    private CrmClueMapper clueMapper;
+    @Resource
+    private CrmCustomerMapper customerMapper;
+    @Resource
     @Lazy // 解决依赖循环
     private CrmContactService contactService;
     @Resource
@@ -57,16 +67,20 @@ public class CrmPermissionServiceImpl implements CrmPermissionService {
     private CrmContractService contractService;
     @Resource
     private AdminUserApi adminUserApi;
+    @Resource
+    private CrmAuthorizationService crmAuthorizationService;
 
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     @CrmPermission(bizTypeValue = "#reqVO.bizType", bizId = "#reqVO.bizId", level = CrmPermissionLevelEnum.OWNER)
     public void createPermission(CrmPermissionSaveReqVO reqVO, Long userId) {
-        // 1. 创建数据权限
+        // 1. 已转换线索的权限也属于只读历史，不允许变更
+        validateClueWritableIfNeeded(reqVO.getBizType(), reqVO.getBizId());
+        // 2. 创建数据权限
         createPermission0(BeanUtils.toBean(reqVO, CrmPermissionCreateReqBO.class));
 
-        // 2. 处理【同时添加至】的权限
+        // 3. 处理【同时添加至】的权限
         if (CollUtil.isEmpty(reqVO.getToBizTypes())) {
             return;
         }
@@ -178,19 +192,27 @@ public class CrmPermissionServiceImpl implements CrmPermissionService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updatePermission(CrmPermissionUpdateReqVO updateReqVO) {
-        // 1. 校验存在
-        validatePermissionExists(updateReqVO.getIds());
-        // 2. 更新
+        // 1. 校验权限 ID 确实属于请求中的业务对象，防止伪造 bizType/bizId 绕过对象权限
+        List<CrmPermissionDO> permissions = validatePermissionExists(updateReqVO.getIds());
+        if (permissions.stream().anyMatch(permission ->
+                !ObjUtil.equal(permission.getBizType(), updateReqVO.getBizType())
+                        || !ObjUtil.equal(permission.getBizId(), updateReqVO.getBizId()))) {
+            throw exception(CRM_PERMISSION_NOT_EXISTS);
+        }
+        // 2. 校验业务对象仍可写
+        validateClueWritableIfNeeded(updateReqVO.getBizType(), updateReqVO.getBizId());
+        // 3. 更新
         List<CrmPermissionDO> updateList = CollectionUtils.convertList(updateReqVO.getIds(),
                 id -> new CrmPermissionDO().setId(id).setLevel(updateReqVO.getLevel()));
         permissionMapper.updateBatch(updateList);
     }
 
-    private void validatePermissionExists(Collection<Long> ids) {
+    private List<CrmPermissionDO> validatePermissionExists(Collection<Long> ids) {
         List<CrmPermissionDO> permissionList = permissionMapper.selectByIds(ids);
         if (ObjUtil.notEqual(permissionList.size(), ids.size())) {
             throw exception(CRM_PERMISSION_NOT_EXISTS);
         }
+        return permissionList;
     }
 
     private void validatePermissionNotExists(Collection<CrmPermissionCreateReqBO> createReqBOs) {
@@ -246,6 +268,48 @@ public class CrmPermissionServiceImpl implements CrmPermissionService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    public void replaceOwnerPermission(Integer bizType, Long bizId, Long ownerUserId) {
+        List<CrmPermissionDO> permissions = permissionMapper.selectByBizTypeAndBizId(bizType, bizId);
+        List<CrmPermissionDO> ownerPermissions = permissions.stream()
+                .filter(permission -> isOwner(permission.getLevel()))
+                .toList();
+        if (ownerUserId == null) {
+            if (CollUtil.isNotEmpty(ownerPermissions)) {
+                permissionMapper.deleteByIds(convertSet(ownerPermissions, CrmPermissionDO::getId));
+            }
+            return;
+        }
+
+        adminUserApi.validateUserList(Collections.singleton(ownerUserId));
+        CrmPermissionDO targetPermission = CollUtil.findOne(ownerPermissions,
+                permission -> ObjUtil.equal(permission.getUserId(), ownerUserId));
+        if (targetPermission == null) {
+            targetPermission = CollUtil.findOne(permissions,
+                    permission -> ObjUtil.equal(permission.getUserId(), ownerUserId));
+        }
+        Long retainedOwnerPermissionId = null;
+        if (targetPermission == null) {
+            permissionMapper.insert(new CrmPermissionDO().setBizType(bizType).setBizId(bizId)
+                    .setUserId(ownerUserId).setLevel(CrmPermissionLevelEnum.OWNER.getLevel()));
+        } else {
+            retainedOwnerPermissionId = targetPermission.getId();
+            if (!isOwner(targetPermission.getLevel())) {
+                permissionMapper.updateById(new CrmPermissionDO().setId(targetPermission.getId())
+                        .setLevel(CrmPermissionLevelEnum.OWNER.getLevel()));
+            }
+        }
+        Long finalRetainedOwnerPermissionId = retainedOwnerPermissionId;
+        List<Long> staleOwnerPermissionIds = ownerPermissions.stream()
+                .filter(permission -> !ObjUtil.equal(permission.getId(), finalRetainedOwnerPermissionId))
+                .map(CrmPermissionDO::getId)
+                .toList();
+        if (CollUtil.isNotEmpty(staleOwnerPermissionIds)) {
+            permissionMapper.deleteByIds(staleOwnerPermissionIds);
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deletePermission(Integer bizType, Long bizId, Integer level) {
         // 校验存在
         List<CrmPermissionDO> permissions = permissionMapper.selectListByBizTypeAndBizIdAndLevel(
@@ -267,6 +331,12 @@ public class CrmPermissionServiceImpl implements CrmPermissionService {
     }
 
     @Override
+    public void deletePermissionIfPresent(Integer bizType, Long bizId) {
+        permissionMapper.deletePermission(bizType, bizId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deletePermissionBatch(Collection<Long> ids, Long userId) {
         List<CrmPermissionDO> permissions = permissionMapper.selectByIds(ids);
         if (CollUtil.isEmpty(permissions)) {
@@ -276,6 +346,7 @@ public class CrmPermissionServiceImpl implements CrmPermissionService {
         if (convertSet(permissions, CrmPermissionDO::getBizId).size() > 1) {
             throw exception(CRM_PERMISSION_DELETE_FAIL);
         }
+        validateClueWritableIfNeeded(permissions.get(0).getBizType(), permissions.get(0).getBizId());
         // 校验操作人是否为负责人
         CrmPermissionDO permission = permissionMapper.selectByBizAndUserId(permissions.get(0).getBizType(), permissions.get(0).getBizId(), userId);
         if (permission == null) {
@@ -290,12 +361,14 @@ public class CrmPermissionServiceImpl implements CrmPermissionService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteSelfPermission(Long id, Long userId) {
         // 校验数据存在且是自己
         CrmPermissionDO permission = permissionMapper.selectByIdAndUserId(id, userId);
         if (permission == null) {
             throw exception(CRM_PERMISSION_NOT_EXISTS);
         }
+        validateClueWritableIfNeeded(permission.getBizType(), permission.getBizId());
         // 校验是否是负责人
         if (CrmPermissionLevelEnum.isOwner(permission.getLevel())) {
             throw exception(CRM_PERMISSION_DELETE_SELF_PERMISSION_FAIL_EXIST_OWNER);
@@ -303,6 +376,19 @@ public class CrmPermissionServiceImpl implements CrmPermissionService {
 
         // 删除
         permissionMapper.deleteById(id);
+    }
+
+    private void validateClueWritableIfNeeded(Integer bizType, Long bizId) {
+        if (!ObjUtil.equal(CrmBizTypeEnum.CRM_CLUE.getType(), bizType)) {
+            return;
+        }
+        CrmClueDO clue = clueMapper.selectByIdForUpdate(bizId);
+        if (clue == null) {
+            throw exception(CLUE_NOT_EXISTS);
+        }
+        if (Boolean.TRUE.equals(clue.getTransformStatus())) {
+            throw exception(CLUE_UPDATE_FAIL_TRANSFORMED);
+        }
     }
 
     @Override
@@ -323,13 +409,50 @@ public class CrmPermissionServiceImpl implements CrmPermissionService {
     @Override
     public boolean hasPermission(Integer bizType, Long bizId, Long userId, CrmPermissionLevelEnum level) {
         List<CrmPermissionDO> permissionList = permissionMapper.selectByBizTypeAndBizId(bizType, bizId);
-        return anyMatch(permissionList, permission ->
-                ObjUtil.equal(permission.getUserId(), userId) && ObjUtil.equal(permission.getLevel(), level.getLevel()));
+        if (crmAuthorizationService.isGranted(permissionList, userId, level.getLevel())) {
+            return true;
+        }
+        if (!CrmPermissionLevelEnum.isRead(level.getLevel()) || CollUtil.isNotEmpty(permissionList)) {
+            return false;
+        }
+        // Match the aspect's explicit public-pool read rule. Public objects are readable without
+        // a team grant, but transformed clues and garbage/non-public customers remain closed.
+        if (ObjUtil.equal(bizType, CrmBizTypeEnum.CRM_CLUE.getType())) {
+            CrmClueDO clue = clueMapper.selectById(bizId);
+            return clue != null && !Boolean.TRUE.equals(clue.getTransformStatus())
+                    && ObjUtil.equal(clue.getPoolStatus(), CrmCluePoolStatusEnum.PUBLIC.getStatus())
+                    && clue.getOwnerUserId() == null;
+        }
+        if (ObjUtil.equal(bizType, CrmBizTypeEnum.CRM_CUSTOMER.getType())) {
+            var customer = customerMapper.selectById(bizId);
+            return customer != null
+                    && ObjUtil.equal(customer.getPoolStatus(), CrmCustomerPoolStatusEnum.PUBLIC.getStatus());
+        }
+        return false;
     }
 
     public CrmPermissionDO hasAnyPermission(Integer bizType, Long bizId, Long userId) {
         List<CrmPermissionDO> permissionList = permissionMapper.selectByBizTypeAndBizId(bizType, bizId);
         return findFirst(permissionList, permission -> ObjUtil.equal(permission.getUserId(), userId));
+    }
+
+    @Override
+    public void validateExportPermission(Integer bizType, Collection<Long> bizIds, Long userId) {
+        if (CollUtil.isEmpty(bizIds) || crmAuthorizationService.isCrmAdmin(userId)) {
+            return;
+        }
+        Map<Long, List<CrmPermissionDO>> permissionMap = convertMultiMap(
+                permissionMapper.selectByBizTypeAndBizIds(bizType, bizIds), CrmPermissionDO::getBizId);
+        boolean denied = bizIds.stream().anyMatch(bizId -> {
+            List<CrmPermissionDO> permissions = permissionMap.get(bizId);
+            return CollUtil.isEmpty(permissions) || !anyMatch(permissions, permission ->
+                    ObjUtil.equal(userId, permission.getUserId())
+                            && (CrmPermissionLevelEnum.isOwner(permission.getLevel())
+                            || CrmPermissionLevelEnum.isWrite(permission.getLevel())));
+        });
+        if (denied) {
+            throw exception(CRM_EXPORT_PERMISSION_DENIED, CrmBizTypeEnum.getNameByType(bizType));
+        }
     }
 
 }

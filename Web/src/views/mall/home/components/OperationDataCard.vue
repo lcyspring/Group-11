@@ -35,7 +35,14 @@ const { t } = useI18n('mall.home')
 const router = useRouter() // 路由
 
 /** 数据 */
-const data = reactive({
+interface OperationDataItem {
+  name: string
+  value: number
+  routerName: string
+  prefix?: string
+  decimals?: number
+}
+const data = reactive<Record<string, OperationDataItem>>({
   orderUndelivered: { name: t('pendingOrder'), value: 9, routerName: 'TradeOrder' },
   orderAfterSaleApply: { name: t('refundOrder'), value: 4, routerName: 'TradeAfterSale' },
   orderWaitePickUp: { name: t('pickUpOrder'), value: 0, routerName: 'TradeOrder' },

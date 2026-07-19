@@ -208,6 +208,7 @@ public class BpmTaskServiceImpl implements BpmTaskService {
         List<Task> tasks = taskService.createTaskQuery()
                 .active()
                 .processInstanceId(processInstanceId)
+                .taskTenantId(FlowableUtils.getTenantId())
                 .includeTaskLocalVariables()
                 .includeProcessVariables()
                 .orderByTaskCreateTime().asc() // 按创建时间升序
@@ -225,6 +226,7 @@ public class BpmTaskServiceImpl implements BpmTaskService {
         HistoricTaskInstanceQuery taskQuery = historyService.createHistoricTaskInstanceQuery()
                 .finished() // 已完成
                 .taskAssignee(String.valueOf(userId)) // 分配给自己
+                .taskTenantId(FlowableUtils.getTenantId())
                 .includeTaskLocalVariables()
                 .orderByHistoricTaskInstanceEndTime().desc(); // 审批时间倒序
         if (StrUtil.isNotBlank(pageVO.getName())) {
@@ -292,13 +294,15 @@ public class BpmTaskServiceImpl implements BpmTaskService {
         if (CollUtil.isEmpty(processInstanceIds)) {
             return Collections.emptyList();
         }
-        return taskService.createTaskQuery().processInstanceIdIn(processInstanceIds).list();
+        return taskService.createTaskQuery().processInstanceIdIn(processInstanceIds)
+                .taskTenantId(FlowableUtils.getTenantId()).list();
     }
 
     @Override
     public List<HistoricTaskInstance> getTaskListByProcessInstanceId(String processInstanceId, Boolean asc) {
         HistoricTaskInstanceQuery query = historyService.createHistoricTaskInstanceQuery()
                 .includeTaskLocalVariables()
+                .taskTenantId(FlowableUtils.getTenantId())
                 .processInstanceId(processInstanceId);
         if (Boolean.TRUE.equals(asc)) {
             query.orderByHistoricTaskInstanceStartTime().asc();
@@ -330,23 +334,30 @@ public class BpmTaskServiceImpl implements BpmTaskService {
 
     @Override
     public Task getTask(String id) {
-        return taskService.createTaskQuery().taskId(id).includeTaskLocalVariables().singleResult();
+        return taskService.createTaskQuery().taskId(id)
+                .taskTenantId(FlowableUtils.getTenantId())
+                .includeTaskLocalVariables().singleResult();
     }
 
     @Override
     public HistoricTaskInstance getHistoricTask(String id) {
-        return historyService.createHistoricTaskInstanceQuery().taskId(id).includeTaskLocalVariables().singleResult();
+        return historyService.createHistoricTaskInstanceQuery().taskId(id)
+                .taskTenantId(FlowableUtils.getTenantId())
+                .includeTaskLocalVariables().singleResult();
     }
 
     @Override
     public List<HistoricTaskInstance> getHistoricTasks(Collection<String> taskIds) {
-        return historyService.createHistoricTaskInstanceQuery().taskIds(taskIds).includeTaskLocalVariables().list();
+        return historyService.createHistoricTaskInstanceQuery().taskIds(taskIds)
+                .taskTenantId(FlowableUtils.getTenantId())
+                .includeTaskLocalVariables().list();
     }
 
     @Override
     public List<Task> getRunningTaskListByProcessInstanceId(String processInstanceId, Boolean assigned, String defineKey) {
         Assert.notNull(processInstanceId, "processInstanceId 不能为空");
         TaskQuery taskQuery = taskService.createTaskQuery().processInstanceId(processInstanceId).active()
+                .taskTenantId(FlowableUtils.getTenantId())
                 .includeTaskLocalVariables();
         if (BooleanUtil.isTrue(assigned)) {
             taskQuery.taskAssigned();

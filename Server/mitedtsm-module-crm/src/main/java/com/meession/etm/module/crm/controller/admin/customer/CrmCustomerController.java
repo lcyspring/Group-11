@@ -7,16 +7,23 @@ import com.meession.etm.framework.common.pojo.CommonResult;
 import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.framework.common.util.collection.CollectionUtils;
 import com.meession.etm.framework.common.util.collection.MapUtils;
-import com.meession.etm.framework.common.util.date.LocalDateTimeUtils;
 import com.meession.etm.framework.common.util.number.NumberUtils;
 import com.meession.etm.framework.common.util.object.BeanUtils;
 import com.meession.etm.framework.excel.core.util.ExcelUtils;
 import com.meession.etm.framework.ip.core.utils.AreaUtils;
+import com.meession.etm.framework.security.core.service.SecurityFrameworkService;
 import com.meession.etm.module.crm.controller.admin.customer.vo.customer.*;
+import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
-import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerPoolConfigDO;
-import com.meession.etm.module.crm.service.customer.CrmCustomerPoolConfigService;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerLifecycleRecordDO;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerOwnerRecordDO;
+import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
+import com.meession.etm.module.crm.service.contact.CrmContactService;
+import com.meession.etm.module.crm.service.customer.CrmCustomer360Service;
+import com.meession.etm.module.crm.service.customer.CrmCustomerImportPreviewService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
+import com.meession.etm.module.crm.service.customer.CrmCustomerResponseAssembler;
+import com.meession.etm.module.crm.service.permission.CrmPermissionService;
 import com.meession.etm.module.system.api.dept.DeptApi;
 import com.meession.etm.module.system.api.dept.dto.DeptRespDTO;
 import com.meession.etm.module.system.api.user.AdminUserApi;
@@ -37,6 +44,7 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static com.meession.etm.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
@@ -55,12 +63,22 @@ public class CrmCustomerController {
     @Resource
     private CrmCustomerService customerService;
     @Resource
-    private CrmCustomerPoolConfigService customerPoolConfigService;
+    private CrmCustomerImportPreviewService customerImportPreviewService;
+    @Resource
+    private CrmCustomerResponseAssembler customerResponseAssembler;
+    @Resource
+    private CrmCustomer360Service customer360Service;
+    @Resource
+    private CrmContactService contactService;
 
     @Resource
     private DeptApi deptApi;
     @Resource
     private AdminUserApi adminUserApi;
+    @Resource
+    private SecurityFrameworkService securityFrameworkService;
+    @Resource
+    private CrmPermissionService permissionService;
 
     @PostMapping("/create")
     @Operation(summary = "创建客户")
@@ -85,8 +103,31 @@ public class CrmCustomerController {
     })
     public CommonResult<Boolean> updateCustomerDealStatus(@RequestParam("id") Long id,
                                                           @RequestParam("dealStatus") Boolean dealStatus) {
-        customerService.updateCustomerDealStatus(id, dealStatus);
+        customerService.updateCustomerDealStatus(id, dealStatus, getLoginUserId());
         return success(true);
+    }
+
+    @PutMapping("/update-lifecycle-status")
+    @Operation(summary = "更新客户生命周期状态")
+    @PreAuthorize("@ss.hasPermission('crm:customer:update')")
+    public CommonResult<Boolean> updateCustomerLifecycleStatus(
+            @Valid @RequestBody CrmCustomerLifecycleUpdateReqVO reqVO) {
+        customerService.updateCustomerLifecycleStatus(reqVO, getLoginUserId());
+        return success(true);
+    }
+
+    @GetMapping("/lifecycle-record-list")
+    @Operation(summary = "获得客户生命周期变更记录")
+    @Parameter(name = "customerId", description = "客户编号", required = true, example = "1024")
+    @PreAuthorize("@ss.hasPermission('crm:customer:query')")
+    public CommonResult<List<CrmCustomerLifecycleRecordRespVO>> getCustomerLifecycleRecordList(
+            @RequestParam("customerId") Long customerId) {
+        List<CrmCustomerLifecycleRecordDO> records = customerService.getCustomerLifecycleRecordList(customerId);
+        Map<Long, AdminUserRespDTO> userMap = adminUserApi.getUserMap(
+                convertSet(records, CrmCustomerLifecycleRecordDO::getOperatorUserId));
+        return success(BeanUtils.toBean(records, CrmCustomerLifecycleRecordRespVO.class, recordVO ->
+                MapUtils.findAndThen(userMap, recordVO.getOperatorUserId(),
+                        user -> recordVO.setOperatorUserName(user.getNickname()))));
     }
 
     @DeleteMapping("/delete")
@@ -129,31 +170,56 @@ public class CrmCustomerController {
         return success(new PageResult<>(buildCustomerDetailList(pageResult.getList()), pageResult.getTotal()));
     }
 
-    public List<CrmCustomerRespVO> buildCustomerDetailList(List<CrmCustomerDO> list) {
-        if (CollUtil.isEmpty(list)) {
-            return java.util.Collections.emptyList();
+    @GetMapping("/360-summary")
+    @Operation(summary = "获得客户 360 只读聚合摘要")
+    @Parameter(name = "customerId", description = "客户编号", required = true, example = "1024")
+    @PreAuthorize("@ss.hasPermission('crm:customer:query')")
+    public CommonResult<CrmCustomer360SummaryRespVO> getCustomer360Summary(
+            @RequestParam("customerId") Long customerId) {
+        boolean queryAllWorkOrders = securityFrameworkService.hasPermission("crm:work-order:query-all");
+        return success(customer360Service.getSummary(customerId, getLoginUserId(), queryAllWorkOrders));
+    }
+
+    @GetMapping("/duplicate-check")
+    @Operation(summary = "查询疑似重复客户", description = "按名称或手机精确匹配，仅返回当前用户有权查看的客户")
+    @PreAuthorize("@ss.hasAnyPermissions('crm:customer:query', 'crm:customer:create')")
+    public CommonResult<List<CrmCustomerDuplicateRespVO>> getDuplicateCustomerList(
+            @Valid CrmCustomerDuplicateCheckReqVO reqVO) {
+        List<CrmCustomerDO> list = customerService.getDuplicateCustomerList(reqVO, getLoginUserId());
+        return success(convertList(list, customer -> new CrmCustomerDuplicateRespVO()
+                .setId(customer.getId()).setName(customer.getName()).setMobile(customer.getMobile())));
+    }
+
+    @GetMapping("/owner-record-list")
+    @Operation(summary = "获得客户归属变更记录")
+    @Parameter(name = "customerId", description = "客户编号", required = true, example = "1024")
+    @PreAuthorize("@ss.hasPermission('crm:customer:query')")
+    public CommonResult<List<CrmCustomerOwnerRecordRespVO>> getCustomerOwnerRecordList(
+            @RequestParam("customerId") Long customerId) {
+        // Service 层会先执行 CRM 客户 READ 权限校验，避免按客户编号越权读取历史
+        List<CrmCustomerOwnerRecordDO> records = customerService.getCustomerOwnerRecordList(customerId);
+        if (CollUtil.isEmpty(records)) {
+            return success(java.util.Collections.emptyList());
         }
-        // 1.1 获取创建人、负责人列表
-        Map<Long, AdminUserRespDTO> userMap = adminUserApi.getUserMap(convertSetByFlatMap(list,
-                contact -> Stream.of(NumberUtils.parseLong(contact.getCreator()), contact.getOwnerUserId())));
-        Map<Long, DeptRespDTO> deptMap = deptApi.getDeptMap(convertSet(userMap.values(), AdminUserRespDTO::getDeptId));
-        // 1.2 获取距离进入公海的时间
-        Map<Long, Long> poolDayMap = getPoolDayMap(list);
-        // 2. 转换成 VO
-        return BeanUtils.toBean(list, CrmCustomerRespVO.class, customerVO -> {
-            customerVO.setAreaName(AreaUtils.format(customerVO.getAreaId()));
-            // 2.1 设置创建人、负责人名称
-            MapUtils.findAndThen(userMap, NumberUtils.parseLong(customerVO.getCreator()),
-                    user -> customerVO.setCreatorName(user.getNickname()));
-            MapUtils.findAndThen(userMap, customerVO.getOwnerUserId(), user -> {
-                customerVO.setOwnerUserName(user.getNickname());
-                MapUtils.findAndThen(deptMap, user.getDeptId(), dept -> customerVO.setOwnerUserDeptName(dept.getName()));
-            });
-            // 2.2 设置距离进入公海的时间
-            if (customerVO.getOwnerUserId() != null) {
-                customerVO.setPoolDay(poolDayMap.get(customerVO.getId()));
-            }
-        });
+        Set<Long> userIds = convertSetByFlatMap(records, record -> Stream.of(record.getPreviousOwnerUserId(),
+                record.getNewOwnerUserId(), NumberUtils.parseLong(record.getCreator())));
+        Map<Long, AdminUserRespDTO> userMap = adminUserApi.getUserMap(userIds);
+        Map<Long, CrmCustomerOwnerRecordDO> recordMap = convertMap(records, CrmCustomerOwnerRecordDO::getId);
+        return success(BeanUtils.toBean(records, CrmCustomerOwnerRecordRespVO.class, recordVO -> {
+            CrmCustomerOwnerRecordDO record = recordMap.get(recordVO.getId());
+            Long operatorUserId = NumberUtils.parseLong(record.getCreator());
+            recordVO.setOperatorUserId(operatorUserId);
+            MapUtils.findAndThen(userMap, record.getPreviousOwnerUserId(),
+                    user -> recordVO.setPreviousOwnerUserName(user.getNickname()));
+            MapUtils.findAndThen(userMap, record.getNewOwnerUserId(),
+                    user -> recordVO.setNewOwnerUserName(user.getNickname()));
+            MapUtils.findAndThen(userMap, operatorUserId,
+                    user -> recordVO.setOperatorUserName(user.getNickname()));
+        }));
+    }
+
+    public List<CrmCustomerRespVO> buildCustomerDetailList(List<CrmCustomerDO> list) {
+        return customerResponseAssembler.buildDetailList(list);
     }
 
     @GetMapping("/put-pool-remind-page")
@@ -193,34 +259,6 @@ public class CrmCustomerController {
      * @param list 客户列表
      * @return key 客户编号, value 距离进入公海的时间
      */
-    private Map<Long, Long> getPoolDayMap(List<CrmCustomerDO> list) {
-        CrmCustomerPoolConfigDO poolConfig = customerPoolConfigService.getCustomerPoolConfig();
-        if (poolConfig == null || !poolConfig.getEnabled()) {
-            return MapUtil.empty();
-        }
-        list = CollectionUtils.filterList(list, customer -> {
-            // 特殊：如果没负责人，则说明已经在公海，不用计算
-            if (customer.getOwnerUserId() == null) {
-                return false;
-            }
-            // 已成交 or 已锁定，不进入公海
-            return !customer.getDealStatus() && !customer.getLockStatus();
-        });
-        return convertMap(list, CrmCustomerDO::getId, customer -> {
-            // 1.1 未成交放入公海天数
-            long dealExpireDay = poolConfig.getDealExpireDays() - LocalDateTimeUtils.between(customer.getOwnerTime());
-            // 1.2 未跟进放入公海天数
-            LocalDateTime lastTime = customer.getOwnerTime();
-            if (customer.getContactLastTime() != null && customer.getContactLastTime().isAfter(lastTime)) {
-                lastTime = customer.getContactLastTime();
-            }
-            long contactExpireDay = poolConfig.getContactExpireDays() - LocalDateTimeUtils.between(lastTime);
-            // 2. 返回最小的天数
-            long poolDay = Math.min(dealExpireDay, contactExpireDay);
-            return poolDay > 0 ? poolDay : 0;
-        });
-    }
-
     @GetMapping(value = "/simple-list")
     @Operation(summary = "获取客户精简信息列表", description = "只包含有读权限的客户，主要用于前端的下拉选项")
     public CommonResult<List<CrmCustomerRespVO>> getCustomerSimpleList() {
@@ -238,7 +276,10 @@ public class CrmCustomerController {
     public void exportCustomerExcel(@Valid CrmCustomerPageReqVO pageVO,
                                     HttpServletResponse response) throws IOException {
         pageVO.setPageSize(PAGE_SIZE_NONE); // 不分页
-        List<CrmCustomerDO> list = customerService.getCustomerPage(pageVO, getLoginUserId()).getList();
+        Long userId = getLoginUserId();
+        List<CrmCustomerDO> list = customerService.getCustomerPage(pageVO, userId).getList();
+        permissionService.validateExportPermission(CrmBizTypeEnum.CRM_CUSTOMER.getType(),
+                convertSet(list, CrmCustomerDO::getId), userId);
         // 导出 Excel
         ExcelUtils.write(response, "客户.xls", "数据", CrmCustomerRespVO.class,
                 buildCustomerDetailList(list));
@@ -269,6 +310,29 @@ public class CrmCustomerController {
         return success(customerService.importCustomerList(list, importReqVO));
     }
 
+    @PostMapping("/import-preview")
+    @Operation(summary = "预检客户导入文件和字段映射")
+    @PreAuthorize("@ss.hasPermission('crm:customer:import')")
+    public CommonResult<CrmCustomerImportPreviewRespVO> previewImport(
+            @Valid CrmCustomerImportPreviewReqVO request) throws IOException {
+        return success(customerImportPreviewService.createPreview(request, getLoginUserId()));
+    }
+
+    @GetMapping("/import-preview/get")
+    @Operation(summary = "获得客户导入预检结果")
+    @PreAuthorize("@ss.hasPermission('crm:customer:import')")
+    public CommonResult<CrmCustomerImportPreviewRespVO> getImportPreview(@RequestParam("id") Long id) {
+        return success(customerImportPreviewService.getPreview(id, getLoginUserId()));
+    }
+
+    @PostMapping("/import-preview/confirm")
+    @Operation(summary = "确认客户导入预检")
+    @PreAuthorize("@ss.hasPermission('crm:customer:import')")
+    public CommonResult<CrmCustomerImportRespVO> confirmImportPreview(
+            @Valid @RequestBody CrmCustomerImportConfirmReqVO request) {
+        return success(customerImportPreviewService.confirmPreview(request.getId(), getLoginUserId()));
+    }
+
     @PutMapping("/transfer")
     @Operation(summary = "转移客户")
     @PreAuthorize("@ss.hasPermission('crm:customer:update')")
@@ -292,7 +356,7 @@ public class CrmCustomerController {
     @Parameter(name = "id", description = "客户编号", required = true, example = "1024")
     @PreAuthorize("@ss.hasPermission('crm:customer:update')")
     public CommonResult<Boolean> putCustomerPool(@RequestParam("id") Long id) {
-        customerService.putCustomerPool(id);
+        customerService.putCustomerPool(id, getLoginUserId());
         return success(true);
     }
 

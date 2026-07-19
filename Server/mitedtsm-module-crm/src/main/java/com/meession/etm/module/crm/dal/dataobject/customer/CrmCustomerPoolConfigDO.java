@@ -49,4 +49,26 @@ public class CrmCustomerPoolConfigDO extends BaseDO {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Integer notifyDays;
 
+    /** 每日自助领取上限。 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Integer dailyClaimLimit;
+    /** 同一用户重复领取同一客户的冷却天数。 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Integer repeatClaimCooldownDays;
+    /** 重点客户等级阈值。 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Integer highValueLevelThreshold;
+    /** 重点客户保护期倍数。 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Integer highValueExpireMultiplier;
+    /** 是否保护存在活跃商机的客户。 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Boolean protectActiveBusiness;
+    /** 是否保护存在未完结销售单据的客户。 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Boolean protectActiveContract;
+    /** 自动回收单批最大数量。 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Integer autoPoolBatchSize;
+
 }

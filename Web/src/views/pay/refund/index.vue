@@ -151,12 +151,12 @@
       />
       <el-table-column :label="t('refund.payPrice')" align="center" prop="payPrice" min-width="100">
         <template #default="scope">
-          ￥{{ parseFloat(scope.row.payPrice / 100).toFixed(2) }}
+          ￥{{ Number(scope.row.payPrice / 100).toFixed(2) }}
         </template>
       </el-table-column>
       <el-table-column :label="t('refund.price')" align="center" prop="refundPrice" min-width="100">
         <template #default="scope">
-          ￥{{ parseFloat(scope.row.refundPrice / 100).toFixed(2) }}
+          ￥{{ Number(scope.row.refundPrice / 100).toFixed(2) }}
         </template>
       </el-table-column>
       <el-table-column :label="t('refund.no')" align="left" min-width="300">

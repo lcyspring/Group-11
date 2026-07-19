@@ -1,0 +1,55 @@
+schema_version 1
+
+
+image {
+  base "docker.io/library/ubuntu:26.04"
+  standard "ghcr.io/elel-code/group-11-build-ubuntu:26.04-deno-2.9.3"
+  rebuild #false
+
+}
+
+toolchain {
+  deno_version "2.9.3"
+  deno_binary_image "docker.io/denoland/deno:bin-2.9.3@sha256:b35d3898bc8b5e2ebcfc7c760578f635f0162cda02e4f8359056c44ea3cb9670"
+
+}
+
+build {
+  include_targets "none"
+  exclude_targets "mall-h5"
+  clean #false
+  crm_tests #false
+  crm_coverage #false
+  framework_tests #true
+  framework_coverage #false
+  framework_modules "mitedtsm-framework/mitedtsm-spring-boot-starter-biz-tenant"
+  framework_test_pattern "TenantJobAspectTest"
+  ci #true
+  maven_threads 4
+  deno_frozen_lockfile #true
+
+}
+
+network {
+  use_host_proxy #false
+
+}
+
+web {
+  baidu_analytics_code "disabled"
+  legacy_media_origins "http://test.yudao.iocoder.cn"
+
+}
+
+cache {
+  maven_volume "mitedtsm-build-maven-cache"
+  deno_cache_volume "mitedtsm-build-deno-cache"
+  deno_cache_path "/deno-cache"
+  web_node_modules_volume "mitedtsm-build-web-node-modules"
+
+}
+
+runtime {
+  memory "6g"
+  cpus 4
+}

@@ -19,11 +19,12 @@
         min-width="200"
       />
       <el-table-column :label="t('customer.customerDealCount')" align="right" prop="customerDealCount" min-width="200" />
-      <el-table-column :label="t('customer.customerDealRate')" align="right" min-width="200">
-        <template #default="scope">
-          {{ erpCalculatePercentage(scope.row.customerDealCount, scope.row.customerCreateCount) }}
-        </template>
-      </el-table-column>
+      <el-table-column
+        :label="t('customer.customerDealRate')"
+        align="right"
+        prop="customerDealRate"
+        min-width="200"
+      />
       <el-table-column
         :label="t('customer.contractPrice')"
         align="right"
@@ -38,16 +39,20 @@
         min-width="200"
         :formatter="erpPriceTableColumnFormatter"
       />
-      <el-table-column :label="t('customer.unreceivablePrice')" align="right" min-width="200">
-        <template #default="scope">
-          {{ erpCalculatePercentage(scope.row.receivablePrice, scope.row.contractPrice) }}
-        </template>
-      </el-table-column>
-      <el-table-column :label="t('customer.receivableRate')" align="right" min-width="200" fixed="right">
-        <template #default="scope">
-          {{ erpCalculatePercentage(scope.row.receivablePrice, scope.row.contractPrice) }}
-        </template>
-      </el-table-column>
+      <el-table-column
+        :formatter="erpPriceTableColumnFormatter"
+        :label="t('customer.unreceivablePrice')"
+        align="right"
+        prop="unreceivablePrice"
+        min-width="200"
+      />
+      <el-table-column
+        :label="t('customer.receivableRate')"
+        align="right"
+        prop="receivableRate"
+        min-width="200"
+        fixed="right"
+      />
     </el-table>
   </el-card>
 </template>
@@ -58,7 +63,7 @@ import {
   CrmStatisticsCustomerSummaryByUserRespVO
 } from '@/api/crm/statistics/customer'
 import { EChartsOption } from 'echarts'
-import { erpCalculatePercentage, erpPriceTableColumnFormatter } from '@/utils'
+import { erpPriceTableColumnFormatter } from '@/utils'
 
 defineOptions({ name: 'CustomerSummary' })
 

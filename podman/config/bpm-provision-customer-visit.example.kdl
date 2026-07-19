@@ -1,0 +1,39 @@
+schema_version 1
+
+
+endpoint {
+  base_url "http://127.0.0.1:8080/admin-api"
+  tenant_id 1
+
+}
+
+account {
+  username "admin"
+  password "CHANGE_ME"
+
+}
+
+approval {
+  role_code "crm_customer_visit_approver"
+  role_name "CRM 客户拜访审批人"
+  role_sort 62
+  approver_username "admin"
+  permission_codes "bpm:task:query,bpm:task:update,bpm:process-instance:query,crm:customer-visit:query,crm:customer:query"
+
+}
+
+category {
+  code "OA_COLLABORATION"
+  name "办公协作"
+  sort 60
+
+}
+
+model {
+  key "crm_customer_visit_audit"
+  name "客户拜访审批"
+  description "CRM 客户拜访申请审批；审批通过后由申请人回填实际结果并自动生成客户跟进记录。"
+  form_create_path "/crm/customer-visit/create"
+  form_view_path "/crm/customerVisit/detail.vue"
+  approval_node_name "客户拜访审批"
+}

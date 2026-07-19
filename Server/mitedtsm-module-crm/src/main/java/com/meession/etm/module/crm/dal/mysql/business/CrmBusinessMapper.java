@@ -6,14 +6,22 @@ import com.meession.etm.framework.mybatis.core.query.LambdaQueryWrapperX;
 import com.meession.etm.framework.mybatis.core.query.MPJLambdaWrapperX;
 import com.meession.etm.module.crm.controller.admin.business.vo.business.CrmBusinessPageReqVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsFunnelReqVO;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessStagePageReqVO;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessStageReqVO;
 import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessDO;
+import com.meession.etm.module.crm.enums.business.CrmBusinessEndStatusEnum;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.util.CrmPermissionUtils;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
+
+import static com.meession.etm.framework.common.util.collection.CollectionUtils.convertSet;
 
 /**
  * 商机 Mapper
@@ -23,10 +31,35 @@ import java.util.List;
 @Mapper
 public interface CrmBusinessMapper extends BaseMapperX<CrmBusinessDO> {
 
+    @Select("SELECT * FROM crm_business WHERE id=#{id} AND deleted=0 FOR UPDATE")
+    CrmBusinessDO selectByIdForUpdate(@Param("id") Long id);
+
     default int updateOwnerUserIdById(Long id, Long ownerUserId) {
         return update(new LambdaUpdateWrapper<CrmBusinessDO>()
                 .eq(CrmBusinessDO::getId, id)
                 .set(CrmBusinessDO::getOwnerUserId, ownerUserId));
+    }
+
+    default int updateStatusIfUnchanged(Long id, Long oldStatusId, Integer oldEndStatus,
+                                        Long newStatusId, Integer newEndStatus, String endRemark,
+                                        java.time.LocalDateTime endTime) {
+        LambdaUpdateWrapper<CrmBusinessDO> update = new LambdaUpdateWrapper<CrmBusinessDO>()
+                .eq(CrmBusinessDO::getId, id)
+                .set(CrmBusinessDO::getStatusId, newStatusId)
+                .set(CrmBusinessDO::getEndStatus, newEndStatus)
+                .set(CrmBusinessDO::getEndRemark, endRemark)
+                .set(CrmBusinessDO::getEndTime, endTime);
+        if (oldStatusId == null) {
+            update.isNull(CrmBusinessDO::getStatusId);
+        } else {
+            update.eq(CrmBusinessDO::getStatusId, oldStatusId);
+        }
+        if (oldEndStatus == null) {
+            update.isNull(CrmBusinessDO::getEndStatus);
+        } else {
+            update.eq(CrmBusinessDO::getEndStatus, oldEndStatus);
+        }
+        return update(update);
     }
 
     default PageResult<CrmBusinessDO> selectPageByCustomerId(CrmBusinessPageReqVO pageReqVO) {
@@ -65,10 +98,68 @@ public interface CrmBusinessMapper extends BaseMapperX<CrmBusinessDO> {
                 .eq(CrmBusinessDO::getOwnerUserId, ownerUserId));
     }
 
+    default Set<Long> selectActiveCustomerIds(Collection<Long> customerIds) {
+        if (customerIds == null || customerIds.isEmpty()) {
+            return Set.of();
+        }
+        return convertSet(selectList(new LambdaQueryWrapperX<CrmBusinessDO>()
+                .select(CrmBusinessDO::getCustomerId)
+                .in(CrmBusinessDO::getCustomerId, customerIds)
+                .isNull(CrmBusinessDO::getEndStatus)
+                .groupBy(CrmBusinessDO::getCustomerId)), CrmBusinessDO::getCustomerId);
+    }
+
+    default boolean existsActiveByCustomerId(Long customerId) {
+        return selectCount(new LambdaQueryWrapperX<CrmBusinessDO>()
+                .eq(CrmBusinessDO::getCustomerId, customerId)
+                .isNull(CrmBusinessDO::getEndStatus)) > 0;
+    }
+
     default PageResult<CrmBusinessDO> selectPage(CrmStatisticsFunnelReqVO pageVO) {
         return selectPage(pageVO, new LambdaQueryWrapperX<CrmBusinessDO>()
                 .in(CrmBusinessDO::getOwnerUserId, pageVO.getUserIds())
                 .betweenIfPresent(CrmBusinessDO::getCreateTime, pageVO.getTimes()));
+    }
+
+    default PageResult<CrmBusinessDO> selectForecastPage(CrmStatisticsFunnelReqVO pageVO) {
+        return selectPage(pageVO, new LambdaQueryWrapperX<CrmBusinessDO>()
+                .in(CrmBusinessDO::getOwnerUserId, pageVO.getUserIds())
+                .betweenIfPresent(CrmBusinessDO::getDealTime, pageVO.getTimes())
+                .isNull(CrmBusinessDO::getEndStatus)
+                .isNotNull(CrmBusinessDO::getDealTime)
+                .orderByAsc(CrmBusinessDO::getDealTime)
+                .orderByAsc(CrmBusinessDO::getId));
+    }
+
+    default PageResult<CrmBusinessDO> selectStagePage(CrmStatisticsBusinessStagePageReqVO pageVO) {
+        return selectPage(pageVO, new LambdaQueryWrapperX<CrmBusinessDO>()
+                .eq(CrmBusinessDO::getStatusTypeId, pageVO.getStatusTypeId())
+                .eq(CrmBusinessDO::getStatusId, pageVO.getStatusId())
+                .in(CrmBusinessDO::getOwnerUserId, pageVO.getUserIds())
+                .between(CrmBusinessDO::getCreateTime, pageVO.getTimes()[0], pageVO.getTimes()[1])
+                .orderByAsc(CrmBusinessDO::getDealTime)
+                .orderByAsc(CrmBusinessDO::getId));
+    }
+
+    default PageResult<CrmBusinessDO> selectWonPage(CrmStatisticsBusinessStageReqVO pageVO) {
+        return selectPage(pageVO, new LambdaQueryWrapperX<CrmBusinessDO>()
+                .eq(CrmBusinessDO::getStatusTypeId, pageVO.getStatusTypeId())
+                .eq(CrmBusinessDO::getEndStatus, CrmBusinessEndStatusEnum.WIN.getStatus())
+                .in(CrmBusinessDO::getOwnerUserId, pageVO.getUserIds())
+                .between(CrmBusinessDO::getCreateTime, pageVO.getTimes()[0], pageVO.getTimes()[1])
+                .orderByAsc(CrmBusinessDO::getDealTime)
+                .orderByAsc(CrmBusinessDO::getId));
+    }
+
+    default PageResult<CrmBusinessDO> selectOutcomePage(
+            com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessOutcomePageReqVO pageVO) {
+        return selectPage(pageVO, new LambdaQueryWrapperX<CrmBusinessDO>()
+                .eq(CrmBusinessDO::getStatusTypeId, pageVO.getStatusTypeId())
+                .eq(CrmBusinessDO::getEndStatus, pageVO.getEndStatus())
+                .in(CrmBusinessDO::getOwnerUserId, pageVO.getUserIds())
+                .between(CrmBusinessDO::getCreateTime, pageVO.getTimes()[0], pageVO.getTimes()[1])
+                .orderByAsc(CrmBusinessDO::getEndTime)
+                .orderByAsc(CrmBusinessDO::getId));
     }
 
 }

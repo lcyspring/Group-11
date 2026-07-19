@@ -10,7 +10,7 @@ import org.mapstruct.factory.Mappers;
  *
  * @author 密讯
  */
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface TenantConvert {
 
     TenantConvert INSTANCE = Mappers.getMapper(TenantConvert.class);

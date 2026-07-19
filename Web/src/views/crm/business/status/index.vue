@@ -47,24 +47,26 @@
         :formatter="dateFormatter"
         min-width="180"
       />
-      <el-table-column :label="t('common.action')" align="center">
+      <el-table-column :label="t('common.action')" align="center" width="220">
         <template #default="scope">
-          <el-button
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-            v-hasPermi="['crm:business-status:update']"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-            v-hasPermi="['crm:business-status:delete']"
-          >
-            {{ t('common.del') }}
-          </el-button>
+          <TableActions>
+            <el-button
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+              v-hasPermi="['crm:business-status:update']"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+              v-hasPermi="['crm:business-status:delete']"
+            >
+              {{ t('common.del') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>
@@ -84,6 +86,7 @@
 <script setup lang="ts">
 import { dateFormatter } from '@/utils/formatTime'
 import download from '@/utils/download'
+import { resolveDialogAction } from '@/utils/dialogAction'
 import * as BusinessStatusApi from '@/api/crm/business/status'
 import BusinessStatusForm from './BusinessStatusForm.vue'
 import { deleteBusinessStatus } from '@/api/crm/business/status'
@@ -134,15 +137,10 @@ const openForm = (type: string, id?: number) => {
 
 /** 删除按钮操作 */
 const handleDelete = async (id: number) => {
-  try {
-    // 删除的二次确认
-    await message.delConfirm()
-    // 发起删除
-    await BusinessStatusApi.deleteBusinessStatus(id)
-    message.success(t('common.delSuccess'))
-    // 刷新列表
-    await getList()
-  } catch {}
+  if (!(await resolveDialogAction(message.delConfirm()))) return
+  await BusinessStatusApi.deleteBusinessStatus(id)
+  message.success(t('common.delSuccess'))
+  await getList()
 }
 
 /** 初始化 **/

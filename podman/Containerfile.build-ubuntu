@@ -1,0 +1,33 @@
+ARG DENO_BIN_IMAGE=docker.io/denoland/deno:bin-2.9.3@sha256:b35d3898bc8b5e2ebcfc7c760578f635f0162cda02e4f8359056c44ea3cb9670
+ARG UBUNTU_BASE_IMAGE=docker.io/library/ubuntu:26.04
+FROM ${DENO_BIN_IMAGE} AS deno-toolchain
+
+FROM ${UBUNTU_BASE_IMAGE}
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 \
+    MAVEN_CONFIG=/root/.m2 \
+    DENO_DIR=/deno-cache \
+    PATH=/usr/lib/jvm/java-17-openjdk-amd64/bin:${PATH} \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    TZ=Asia/Shanghai
+
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends \
+        ca-certificates \
+        git \
+        maven \
+        openjdk-17-jdk-headless \
+        tzdata \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=deno-toolchain /deno /usr/local/bin/deno
+RUN deno --version
+
+COPY podman/internal/ubuntu-build-entrypoint.sh /usr/local/bin/mitedtsm-build
+RUN chmod 0755 /usr/local/bin/mitedtsm-build
+
+WORKDIR /workspace
+ENTRYPOINT ["/usr/local/bin/mitedtsm-build"]

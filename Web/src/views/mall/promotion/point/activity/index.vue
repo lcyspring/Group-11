@@ -3,12 +3,7 @@
 
   <ContentWrap>
     <!-- 搜索工作区 -->
-    <el-form
-      ref="queryFormRef"
-      :model="queryParams"
-      class="-mb-15px"
-      label-width="auto"
-    >
+    <el-form ref="queryFormRef" :model="queryParams" class="-mb-15px" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('status')" prop="status">
@@ -56,7 +51,13 @@
 
   <!-- 列表 -->
   <ContentWrap>
-    <el-table v-loading="loading" :data="list" :show-overflow-tooltip="true" :stripe="true" :table-layout="'auto'">
+    <el-table
+      v-loading="loading"
+      :data="list"
+      :show-overflow-tooltip="true"
+      :stripe="true"
+      :table-layout="'auto'"
+    >
       <el-table-column :label="t('activityId')" min-width="80" prop="id" />
       <el-table-column :label="t('picUrl')" min-width="80" prop="spuName">
         <template #default="scope">
@@ -82,7 +83,12 @@
       </el-table-column>
       <el-table-column align="center" :label="t('stock')" min-width="80" prop="stock" />
       <el-table-column align="center" :label="t('totalStock')" min-width="80" prop="totalStock" />
-      <el-table-column align="center" :label="t('redeemedQuantity')" min-width="100" prop="redeemedQuantity">
+      <el-table-column
+        align="center"
+        :label="t('redeemedQuantity')"
+        min-width="100"
+        prop="redeemedQuantity"
+      >
         <template #default="{ row }">
           {{ getRedeemedQuantity(row) }}
         </template>
@@ -94,34 +100,36 @@
         prop="createTime"
         min-width="180"
       />
-      <el-table-column align="center" fixed="right" :label="$t('common.operation')" min-width="150">
+      <el-table-column align="center" fixed="right" :label="$t('common.operation')" width="140">
         <template #default="scope">
-          <el-button
-            v-hasPermi="['promotion:point-activity:update']"
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-          >
-            {{ $t('action.edit') }}
-          </el-button>
-          <el-button
-            v-if="scope.row.status === 0"
-            v-hasPermi="['promotion:point-activity:close']"
-            link
-            type="danger"
-            @click="handleClose(scope.row.id)"
-          >
-            {{ t('close') }}
-          </el-button>
-          <el-button
-            v-else
-            v-hasPermi="['promotion:point-activity:delete']"
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-          >
-            {{ $t('action.delete') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              v-hasPermi="['promotion:point-activity:update']"
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+            >
+              {{ $t('action.edit') }}
+            </el-button>
+            <el-button
+              v-if="scope.row.status === 0"
+              v-hasPermi="['promotion:point-activity:close']"
+              link
+              type="danger"
+              @click="handleClose(scope.row.id)"
+            >
+              {{ t('close') }}
+            </el-button>
+            <el-button
+              v-else
+              v-hasPermi="['promotion:point-activity:delete']"
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+            >
+              {{ $t('action.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

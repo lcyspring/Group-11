@@ -34,6 +34,15 @@ public interface CrmContractService {
     Long createContract(@Valid CrmContractSaveReqVO createReqVO, Long userId);
 
     /**
+     * 从赢单商机幂等创建合同
+     *
+     * @param createReqVO 合同及来源商机信息
+     * @param userId      操作用户编号
+     * @return 合同编号
+     */
+    Long createContractFromBusiness(@Valid CrmContractSaveReqVO createReqVO, Long userId);
+
+    /**
      * 更新合同
      *
      * @param updateReqVO 更新信息
@@ -76,9 +85,10 @@ public interface CrmContractService {
      * 更新合同流程审批结果
      *
      * @param id        合同编号
-     * @param bpmResult BPM 审批结果
+     * @param processInstanceId BPM 流程实例编号
+     * @param bpmResult         BPM 审批结果
      */
-    void updateContractAuditStatus(Long id, Integer bpmResult);
+    void updateContractAuditStatus(Long id, String processInstanceId, Integer bpmResult);
 
     /**
      * 获得合同
@@ -95,6 +105,9 @@ public interface CrmContractService {
      * @return 合同
      */
     CrmContractDO validateContract(Long id);
+
+    /** 锁定并校验合同，用于串行化合同金额类下游单据。 */
+    CrmContractDO validateContractForUpdate(Long id);
 
     /**
      * 获得合同列表
@@ -201,5 +214,8 @@ public interface CrmContractService {
      * @return 合同列表
      */
     List<CrmContractDO> getContractListByCustomerIdOwnerUserId(Long customerId, Long ownerUserId);
+
+    /** Approved contracts that the current user can write and therefore use for a receivable. */
+    List<CrmContractDO> getReceivableCandidateList(Long customerId, Long userId);
 
 }

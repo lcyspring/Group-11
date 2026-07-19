@@ -3,10 +3,12 @@ package com.meession.etm.module.crm.service.statistics;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.util.ObjUtil;
+import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.framework.ip.core.Area;
 import com.meession.etm.framework.ip.core.enums.AreaTypeEnum;
 import com.meession.etm.framework.ip.core.utils.AreaUtils;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.*;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.mysql.statistics.CrmStatisticsPortraitMapper;
 import com.meession.etm.module.system.api.dept.DeptApi;
 import com.meession.etm.module.system.api.dept.dto.DeptRespDTO;
@@ -15,12 +17,17 @@ import com.meession.etm.module.system.api.user.dto.AdminUserRespDTO;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static com.meession.etm.framework.common.util.collection.CollectionUtils.convertList;
-import static com.meession.etm.framework.common.util.collection.CollectionUtils.convertMap;
 
 /**
  * CRM 客户画像 Service 实现类
@@ -40,6 +47,54 @@ public class CrmStatisticsPortraitServiceImpl implements CrmStatisticsPortraitSe
 
     @Override
     public List<CrmStatisticCustomerAreaRespVO> getCustomerSummaryByArea(CrmStatisticsPortraitReqVO reqVO) {
+        return getCustomerSummaryByAreaType(reqVO, AreaTypeEnum.PROVINCE);
+    }
+
+    @Override
+    public List<CrmStatisticCustomerAreaRespVO> getCustomerSummaryByCity(CrmStatisticsPortraitReqVO reqVO) {
+        return getCustomerSummaryByAreaType(reqVO, AreaTypeEnum.CITY);
+    }
+
+    @Override
+    public List<CrmStatisticCustomerAreaRespVO> getCustomerSummaryByCountry(CrmStatisticsPortraitReqVO reqVO) {
+        return getCustomerSummaryByAreaType(reqVO, AreaTypeEnum.COUNTRY);
+    }
+
+    @Override
+    public PageResult<CrmCustomerDO> getCustomerPageByArea(CrmStatisticsPortraitCustomerPageReqVO reqVO) {
+        List<Long> userIds = getUserIds(reqVO);
+        if (CollUtil.isEmpty(userIds)) {
+            return PageResult.empty();
+        }
+        reqVO.setUserIds(userIds);
+
+        AreaTypeEnum areaType = Arrays.stream(AreaTypeEnum.values())
+                .filter(item -> item.getType().equals(reqVO.getAreaType()))
+                .findFirst().orElse(null);
+        Area selectedArea = AreaUtils.getArea(reqVO.getAreaId());
+        if (areaType == null || selectedArea == null || !areaType.getType().equals(selectedArea.getType())) {
+            return PageResult.empty();
+        }
+        reqVO.setAreaIds(collectAreaIds(selectedArea));
+        return portraitMapper.selectCustomerPageByArea(reqVO);
+    }
+
+    private static List<Integer> collectAreaIds(Area selectedArea) {
+        List<Integer> areaIds = new ArrayList<>();
+        Deque<Area> pending = new ArrayDeque<>();
+        pending.add(selectedArea);
+        while (!pending.isEmpty()) {
+            Area area = pending.removeFirst();
+            areaIds.add(area.getId());
+            if (CollUtil.isNotEmpty(area.getChildren())) {
+                pending.addAll(area.getChildren());
+            }
+        }
+        return areaIds;
+    }
+
+    private List<CrmStatisticCustomerAreaRespVO> getCustomerSummaryByAreaType(
+            CrmStatisticsPortraitReqVO reqVO, AreaTypeEnum areaType) {
         // 1. 获得用户编号数组
         List<Long> userIds = getUserIds(reqVO);
         if (CollUtil.isEmpty(userIds)) {
@@ -53,21 +108,28 @@ public class CrmStatisticsPortraitServiceImpl implements CrmStatisticsPortraitSe
             return Collections.emptyList();
         }
 
-        // 3. 拼接数据
-        List<Area> areaList = AreaUtils.getByType(AreaTypeEnum.PROVINCE, area -> area);
-        Map<Integer, Area> areaMap = convertMap(areaList, Area::getId);
-        return convertList(list, item -> {
-            Integer parentId = AreaUtils.getParentIdByType(item.getAreaId(), AreaTypeEnum.PROVINCE);
-            if (parentId != null) {
-                Area area = areaMap.get(parentId);
-                if (area != null) {
-                    item.setAreaId(parentId).setAreaName(area.getName());
-                    return item;
-                }
-            }
-            // 找不到，归到未知
-            return item.setAreaId(null).setAreaName("未知");
-        });
+        // 3. 原始 SQL 按客户保存的最细区域分组；转换到城市/省份/国家后必须再次聚合。
+        Map<Integer, CrmStatisticCustomerAreaRespVO> summaries = new HashMap<>();
+        for (CrmStatisticCustomerAreaRespVO item : list) {
+            Integer summaryAreaId = AreaUtils.getParentIdByType(item.getAreaId(), areaType);
+            Area summaryArea = AreaUtils.getArea(summaryAreaId);
+            CrmStatisticCustomerAreaRespVO summary = summaries.computeIfAbsent(summaryAreaId,
+                    ignored -> new CrmStatisticCustomerAreaRespVO()
+                            .setAreaId(summaryAreaId)
+                            .setAreaName(summaryArea == null ? "未知" : summaryArea.getName())
+                            .setCustomerCount(0)
+                            .setDealCount(0));
+            summary.setCustomerCount(summary.getCustomerCount() + zeroIfNull(item.getCustomerCount()));
+            summary.setDealCount(summary.getDealCount() + zeroIfNull(item.getDealCount()));
+        }
+        return summaries.values().stream()
+                .sorted(Comparator.comparingInt(CrmStatisticCustomerAreaRespVO::getCustomerCount).reversed()
+                        .thenComparing(item -> item.getAreaId() == null ? Integer.MAX_VALUE : item.getAreaId()))
+                .toList();
+    }
+
+    private static int zeroIfNull(Integer value) {
+        return value == null ? 0 : value;
     }
 
     @Override
@@ -107,6 +169,16 @@ public class CrmStatisticsPortraitServiceImpl implements CrmStatisticsPortraitSe
 
         // 2. 获取客户级别统计数据
         return portraitMapper.selectCustomerLevelListGroupByLevel(reqVO);
+    }
+
+    @Override
+    public List<CrmStatisticCustomerDealStatusRespVO> getCustomerSummaryByDealStatus(CrmStatisticsPortraitReqVO reqVO) {
+        List<Long> userIds = getUserIds(reqVO);
+        if (CollUtil.isEmpty(userIds)) {
+            return Collections.emptyList();
+        }
+        reqVO.setUserIds(userIds);
+        return portraitMapper.selectCustomerDealStatusList(reqVO);
     }
 
     /**

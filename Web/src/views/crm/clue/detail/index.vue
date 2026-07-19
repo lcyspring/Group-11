@@ -1,39 +1,65 @@
 <template>
   <ClueDetailsHeader :clue="clue" :loading="loading">
     <el-button
-      v-if="permissionListRef?.validateWrite"
+      v-if="permissionListRef?.validateWrite && !clue.transformStatus && clue.poolStatus === 0"
       v-hasPermi="['crm:clue:update']"
       type="primary"
       @click="openForm"
     >
       {{ t('common.edit') }}
     </el-button>
-    <el-button v-if="permissionListRef?.validateOwnerUser" type="primary" @click="transfer">
+    <el-button v-if="permissionListRef?.validateOwnerUser && !clue.transformStatus && clue.poolStatus === 0" type="primary" @click="transfer">
       {{ t('customer.transfer') }}
     </el-button>
     <el-button
-      v-if="permissionListRef?.validateOwnerUser && !clue.transformStatus"
+      v-if="permissionListRef?.validateOwnerUser && !clue.transformStatus && clue.poolStatus === 0"
       type="success"
       @click="handleTransform"
     >
       {{ t('clue.transform') }}
+    </el-button>
+    <el-button
+      v-if="permissionListRef?.validateOwnerUser && !clue.transformStatus && clue.poolStatus === 0"
+      v-hasPermi="['crm:clue-public:put']"
+      type="warning"
+      @click="handlePutPublic"
+    >
+      {{ t('clue.putPublic') }}
+    </el-button>
+    <el-button
+      v-if="!clue.transformStatus && clue.poolStatus === 1"
+      v-hasPermi="['crm:clue-public:claim']"
+      type="primary"
+      @click="handleClaim"
+    >
+      {{ t('clue.claim') }}
     </el-button>
     <el-button v-if="clue.transformStatus" disabled type="success">{{ t('clue.transformStatusYes') }}</el-button>
   </ClueDetailsHeader>
   <el-col>
     <el-tabs>
       <el-tab-pane :label="t('clue.followUpTab')">
-        <FollowUpList :biz-id="clueId" :biz-type="BizTypeEnum.CRM_CLUE" />
+        <FollowUpList
+          :biz-id="clueId" :biz-type="BizTypeEnum.CRM_CLUE"
+          :readonly="clue.transformStatus || clue.poolStatus === 1" />
       </el-tab-pane>
       <el-tab-pane :label="t('clue.basicInfoTab')">
         <ClueDetailsInfo :clue="clue" />
+      </el-tab-pane>
+      <el-tab-pane :label="t('clue.activityTab')" lazy>
+        <CrmActivityPanel
+          v-if="clueId"
+          :biz-id="clueId"
+          :biz-type="BizTypeEnum.CRM_CLUE"
+          :readonly="clue.transformStatus || clue.poolStatus === 1"
+        />
       </el-tab-pane>
       <el-tab-pane :label="t('clue.teamMemberTab')">
         <PermissionList
           ref="permissionListRef"
           :biz-id="clue.id!"
           :biz-type="BizTypeEnum.CRM_CLUE"
-          :show-action="true"
+          :show-action="!clue.transformStatus && clue.poolStatus === 0"
           @quit-team="close"
         />
       </el-tab-pane>
@@ -45,20 +71,24 @@
 
   <!-- 表单弹窗：添加/修改 -->
   <ClueForm ref="formRef" @success="getClue" />
+  <ClueTransformForm ref="transformFormRef" @success="getClue" />
   <CrmTransferForm ref="transferFormRef" :biz-type="BizTypeEnum.CRM_CLUE" @success="close" />
 </template>
 <script lang="ts" setup>
 import { useTagsViewStore } from '@/store/modules/tagsView'
 import * as ClueApi from '@/api/crm/clue'
 import ClueForm from '@/views/crm/clue/ClueForm.vue'
+import ClueTransformForm from '@/views/crm/clue/ClueTransformForm.vue'
 import ClueDetailsHeader from './ClueDetailsHeader.vue' // 线索明细 - 头部
 import ClueDetailsInfo from './ClueDetailsInfo.vue' // 线索明细 - 详细信息
 import PermissionList from '@/views/crm/permission/components/PermissionList.vue' // 团队成员列表（权限）
 import CrmTransferForm from '@/views/crm/permission/components/TransferForm.vue'
 import FollowUpList from '@/views/crm/followup/index.vue'
+import CrmActivityPanel from '@/views/crm/activity/components/CrmActivityPanel.vue'
 import { BizTypeEnum } from '@/api/crm/permission'
 import type { OperateLogVO } from '@/api/system/operatelog'
 import { getOperateLogPage } from '@/api/crm/operateLog'
+import { resolveDialogAction } from '@/utils/dialogAction'
 
 defineOptions({ name: 'CrmClueDetail' })
 
@@ -97,10 +127,38 @@ const transfer = () => {
 }
 
 /** 转化为客户 */
-const handleTransform = async () => {
-  await message.confirm(t('clue.transformConfirm', { name: clue.value.name }))
-  await ClueApi.transformClue(clueId.value)
-  message.success(t('clue.transformSuccess'))
+const transformFormRef = ref<InstanceType<typeof ClueTransformForm>>()
+const handleTransform = () => {
+  transformFormRef.value?.open(clue.value)
+}
+
+/** 放入公共线索池 */
+const handlePutPublic = async () => {
+  const result = await resolveDialogAction(
+    ElMessageBox.prompt(
+      t('clue.putPublicReasonPrompt', { name: clue.value.name }),
+      t('clue.putPublic'),
+      {
+        inputValidator: (input: string) => {
+          if (!input?.trim()) return t('clue.putPublicReasonRequired')
+          if (input.trim().length > 500) return t('clue.putPublicReasonTooLong')
+          return true
+        }
+      }
+    )
+  )
+  if (!result) return
+  await ClueApi.putCluePublic({ clueId: clueId.value, reason: result.value.trim() })
+  message.success(t('clue.putPublicSuccess'))
+  await getClue()
+}
+
+/** 领取当前公共线索 */
+const handleClaim = async () => {
+  const confirmation = message.confirm(t('clue.claimConfirm', { count: 1 }))
+  if (!(await resolveDialogAction(confirmation))) return
+  await ClueApi.claimPublicClues([clueId.value])
+  message.success(t('clue.claimSuccess', { count: 1 }))
   await getClue()
 }
 

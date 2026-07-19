@@ -80,24 +80,26 @@
           <dict-tag :type="DICT_TYPE.COMMON_STATUS" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column :label="t('common.operation')" align="center" fixed="right" min-width="150">
+      <el-table-column :label="t('common.operation')" align="center" fixed="right" width="220">
         <template #default="scope">
-          <el-button
-            type="primary"
-            link
-            @click="openForm('update', scope.row.id)"
-            v-hasPermi="['ai:workflow:update']"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-            v-hasPermi="['ai:workflow:delete']"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions>
+            <el-button
+              type="primary"
+              link
+              @click="openForm('update', scope.row.id)"
+              v-hasPermi="['ai:workflow:update']"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+              v-hasPermi="['ai:workflow:delete']"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

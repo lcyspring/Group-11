@@ -107,7 +107,7 @@ const formRules = reactive({
   benefitScores: [{ required: true, message: t('comment.benefitScoresRequired'), trigger: 'blur' }]
 })
 const formRef = ref() // 表单 Ref
-const skuData = ref({
+const skuData = ref<ProductSpuApi.Sku>({
   id: -1,
   name: '',
   picUrl: ''

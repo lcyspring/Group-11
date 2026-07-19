@@ -1,6 +1,9 @@
 package com.meession.etm.module.crm.dal.mysql.statistics;
 
 import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessInversionRateSummaryByDateRespVO;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessStageReqVO;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessStageSummaryRespVO;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessForecastByDateRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessSummaryByDateRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsBusinessSummaryByEndStatusRespVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.CrmStatisticsFunnelReqVO;
@@ -21,10 +24,14 @@ public interface CrmStatisticsFunnelMapper {
 
     Long selectBusinessCountByDateAndEndStatus(@Param("reqVO") CrmStatisticsFunnelReqVO reqVO, @Param("status") Integer status);
 
+    List<CrmStatisticsBusinessStageSummaryRespVO> selectBusinessStageSummary(CrmStatisticsBusinessStageReqVO reqVO);
+
     List<CrmStatisticsBusinessSummaryByEndStatusRespVO> selectBusinessSummaryListGroupByEndStatus(CrmStatisticsFunnelReqVO reqVO);
 
     List<CrmStatisticsBusinessSummaryByDateRespVO> selectBusinessSummaryGroupByDate(CrmStatisticsFunnelReqVO reqVO);
 
     List<CrmStatisticsBusinessInversionRateSummaryByDateRespVO> selectBusinessInversionRateSummaryByDate(CrmStatisticsFunnelReqVO reqVO);
+
+    List<CrmStatisticsBusinessForecastByDateRespVO> selectBusinessForecastGroupByDate(CrmStatisticsFunnelReqVO reqVO);
 
 }

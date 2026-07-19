@@ -114,7 +114,7 @@ const { t } = useI18n() // 国际化
 const message = useMessage() // 消息弹窗
 
 // 虚拟列表表格
-const columns = [
+const columns: any[] = [
   {
     key: 'name',
     title: t('system.menu.name'),

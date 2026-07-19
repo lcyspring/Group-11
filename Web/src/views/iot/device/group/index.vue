@@ -44,7 +44,7 @@
               @click="openForm('create')"
               v-hasPermi="['iot:device-group:create']"
             >
-              <Icon icon="ep:plus" class="mr-5px" /> {{ t('common.create') }}
+              <Icon icon="ep:plus" class="mr-5px" /> {{ t('action.create') }}
             </el-button>
           </el-form-item>
         </el-col>
@@ -71,24 +71,26 @@
         min-width="180"
       />
       <el-table-column :label="t('device.group.deviceCount')" align="center" prop="deviceCount" />
-      <el-table-column :label="t('common.action')" align="center" min-width="120px">
+      <el-table-column :label="t('common.action')" align="center" width="220">
         <template #default="scope">
-          <el-button
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-            v-hasPermi="['iot:device-group:update']"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-            v-hasPermi="['iot:device-group:delete']"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions>
+            <el-button
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+              v-hasPermi="['iot:device-group:update']"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+              v-hasPermi="['iot:device-group:delete']"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

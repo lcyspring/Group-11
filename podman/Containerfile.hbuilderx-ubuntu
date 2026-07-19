@@ -1,0 +1,22 @@
+ARG UBUNTU_BASE_IMAGE=docker.io/library/ubuntu:26.04
+FROM ${UBUNTU_BASE_IMAGE}
+
+ENV LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    TZ=Asia/Shanghai
+
+# H5 compilation is a Node process. Copy only HBuilderX's bundled runtime and
+# Vue 3/Vite uni-app compiler; the IDE, Qt, X11 and Xvfb are not needed.
+COPY plugins/node/ /opt/HBuilderX/plugins/node/
+COPY plugins/uniapp-cli-vite/ /opt/HBuilderX/plugins/uniapp-cli-vite/
+# The installed HBuilderX package currently reuses Dart Sass from its WeChat
+# tooling plugin. Place that compiler under the canonical uni-app alias path so
+# H5 builds are independent of absolute symlinks in a developer checkout.
+COPY plugins/weapp-miniprogram-ci/node_modules/sass/ /opt/HBuilderX/plugins/compile-dart-sass/node_modules/sass/
+COPY plugins/weapp-miniprogram-ci/node_modules/chokidar/ /opt/HBuilderX/plugins/compile-dart-sass/node_modules/chokidar/
+COPY plugins/weapp-miniprogram-ci/node_modules/immutable/ /opt/HBuilderX/plugins/compile-dart-sass/node_modules/immutable/
+COPY plugins/weapp-miniprogram-ci/node_modules/readdirp/ /opt/HBuilderX/plugins/compile-dart-sass/node_modules/readdirp/
+COPY plugins/weapp-miniprogram-ci/node_modules/source-map-js/ /opt/HBuilderX/plugins/compile-dart-sass/node_modules/source-map-js/
+RUN chmod 0755 /opt/HBuilderX/plugins/node/node
+
+WORKDIR /workspace

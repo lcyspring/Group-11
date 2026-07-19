@@ -3,100 +3,99 @@
 
   <ContentWrap>
     <!-- 搜索工作栏 -->
-    <el-form
-      class="-mb-15px"
-      label-width="auto"
-      :model="queryParams"
-      ref="queryFormRef"
-    >
+    <el-form class="-mb-15px" label-width="auto" :model="queryParams" ref="queryFormRef">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('apiLog.userId')" prop="userId">
-        <el-input
-          v-model="queryParams.userId"
-          :placeholder="t('apiLog.userIdPlaceholder')"
-          clearable
-          @keyup.enter="handleQuery"
-          class="!w-240px"
-        />
-      </el-form-item>
+            <el-input
+              v-model="queryParams.userId"
+              :placeholder="t('apiLog.userIdPlaceholder')"
+              clearable
+              @keyup.enter="handleQuery"
+              class="!w-240px"
+            />
+          </el-form-item>
         </el-col>
         <el-col :span="8">
           <el-form-item :label="t('apiLog.userType')" prop="userType">
-        <el-select
-          v-model="queryParams.userType"
-          :placeholder="t('common.selectPlaceholder')"
-          clearable
-          class="!w-240px"
-        >
-          <el-option
-            v-for="dict in getIntDictOptions(DICT_TYPE.USER_TYPE)"
-            :key="dict.value"
-            :label="dict.label"
-            :value="dict.value"
-          />
-        </el-select>
-      </el-form-item>
+            <el-select
+              v-model="queryParams.userType"
+              :placeholder="t('common.selectPlaceholder')"
+              clearable
+              class="!w-240px"
+            >
+              <el-option
+                v-for="dict in getIntDictOptions(DICT_TYPE.USER_TYPE)"
+                :key="dict.value"
+                :label="dict.label"
+                :value="dict.value"
+              />
+            </el-select>
+          </el-form-item>
         </el-col>
         <el-col :span="8">
           <el-form-item :label="t('apiLog.applicationName')" prop="applicationName">
-        <el-input
-          v-model="queryParams.applicationName"
-          :placeholder="t('apiLog.applicationNamePlaceholder')"
-          clearable
-          @keyup.enter="handleQuery"
-          class="!w-240px"
-        />
-      </el-form-item>
+            <el-input
+              v-model="queryParams.applicationName"
+              :placeholder="t('apiLog.applicationNamePlaceholder')"
+              clearable
+              @keyup.enter="handleQuery"
+              class="!w-240px"
+            />
+          </el-form-item>
         </el-col>
       </el-row>
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('apiLog.exceptionTime')" prop="exceptionTime">
-        <el-date-picker
-          v-model="queryParams.exceptionTime"
-          value-format="YYYY-MM-DD HH:mm:ss"
-          type="daterange"
-          :start-placeholder="t('common.startTime')"
-          :end-placeholder="t('common.endTime')"
-          :default-time="[new Date('1 00:00:00'), new Date('1 23:59:59')]"
-          class="!w-240px"
-        />
-      </el-form-item>
+            <el-date-picker
+              v-model="queryParams.exceptionTime"
+              value-format="YYYY-MM-DD HH:mm:ss"
+              type="daterange"
+              :start-placeholder="t('common.startTime')"
+              :end-placeholder="t('common.endTime')"
+              :default-time="[new Date('1 00:00:00'), new Date('1 23:59:59')]"
+              class="!w-240px"
+            />
+          </el-form-item>
         </el-col>
         <el-col :span="8">
           <el-form-item :label="t('apiLog.processStatus')" prop="processStatus">
-        <el-select
-          v-model="queryParams.processStatus"
-          :placeholder="t('common.selectPlaceholder')"
-          clearable
-          class="!w-240px"
-        >
-          <el-option
-            v-for="dict in getIntDictOptions(DICT_TYPE.INFRA_API_ERROR_LOG_PROCESS_STATUS)"
-            :key="dict.value"
-            :label="dict.label"
-            :value="dict.value"
-          />
-        </el-select>
-      </el-form-item>
+            <el-select
+              v-model="queryParams.processStatus"
+              :placeholder="t('common.selectPlaceholder')"
+              clearable
+              class="!w-240px"
+            >
+              <el-option
+                v-for="dict in getIntDictOptions(DICT_TYPE.INFRA_API_ERROR_LOG_PROCESS_STATUS)"
+                :key="dict.value"
+                :label="dict.label"
+                :value="dict.value"
+              />
+            </el-select>
+          </el-form-item>
         </el-col>
       </el-row>
       <el-row>
         <el-col :span="24">
           <el-form-item>
-        <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> {{ t('common.query') }}</el-button>
-        <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> {{ t('common.reset') }}</el-button>
-        <el-button
-          type="success"
-          plain
-          @click="handleExport"
-          :loading="exportLoading"
-          v-hasPermi="['infra:api-error-log:export']"
-        >
-          <Icon icon="ep:download" class="mr-5px" /> {{ t('common.export') }}
-        </el-button>
-      </el-form-item>
+            <el-button @click="handleQuery"
+              ><Icon icon="ep:search" class="mr-5px" /> {{ t('common.query') }}</el-button
+            >
+            <el-button @click="resetQuery"
+              ><Icon icon="ep:refresh" class="mr-5px" /> {{ t('common.reset') }}</el-button
+            >
+            <el-button
+              type="success"
+              plain
+              @click="handleExport"
+              :loading="exportLoading"
+              v-hasPermi="['infra:api-error-log:export']"
+            >
+              <Icon icon="ep:download" class="mr-5px" /> {{ t('common.export') }}
+            </el-button>
+          </el-form-item>
         </el-col>
       </el-row>
     </el-form>
@@ -112,9 +111,24 @@
           <dict-tag :type="DICT_TYPE.USER_TYPE" :value="scope.row.userType" />
         </template>
       </el-table-column>
-      <el-table-column :label="t('apiLog.applicationName')" align="center" prop="applicationName" min-width="200" />
-      <el-table-column :label="t('apiLog.requestMethod')" align="center" prop="requestMethod" min-width="80" />
-      <el-table-column :label="t('apiLog.requestUrl')" align="center" prop="requestUrl" min-width="180" />
+      <el-table-column
+        :label="t('apiLog.applicationName')"
+        align="center"
+        prop="applicationName"
+        min-width="200"
+      />
+      <el-table-column
+        :label="t('apiLog.requestMethod')"
+        align="center"
+        prop="requestMethod"
+        min-width="80"
+      />
+      <el-table-column
+        :label="t('apiLog.requestUrl')"
+        align="center"
+        prop="requestUrl"
+        min-width="180"
+      />
       <el-table-column
         :label="t('apiLog.exceptionTime')"
         align="center"
@@ -122,7 +136,12 @@
         min-width="180"
         :formatter="dateFormatter"
       />
-      <el-table-column :label="t('apiLog.exceptionName')" align="center" prop="exceptionName" min-width="180" />
+      <el-table-column
+        :label="t('apiLog.exceptionName')"
+        align="center"
+        prop="exceptionName"
+        min-width="180"
+      />
       <el-table-column :label="t('apiLog.processStatus')" align="center" prop="processStatus">
         <template #default="scope">
           <dict-tag
@@ -131,34 +150,36 @@
           />
         </template>
       </el-table-column>
-      <el-table-column :label="t('common.operation')" align="center" min-width="200" fixed="right">
+      <el-table-column :label="t('common.operation')" align="center" fixed="right" width="140">
         <template #default="scope">
-          <el-button
-            link
-            type="primary"
-            @click="openDetail(scope.row)"
-            v-hasPermi="['infra:api-error-log:query']"
-          >
-            {{ t('common.detail') }}
-          </el-button>
-          <el-button
-            link
-            type="primary"
-            v-if="scope.row.processStatus === InfraApiErrorLogProcessStatusEnum.INIT"
-            @click="handleProcess(scope.row.id, InfraApiErrorLogProcessStatusEnum.DONE)"
-            v-hasPermi="['infra:api-error-log:update-status']"
-          >
-            {{ t('apiLog.processed') }}
-          </el-button>
-          <el-button
-            link
-            type="primary"
-            v-if="scope.row.processStatus === InfraApiErrorLogProcessStatusEnum.INIT"
-            @click="handleProcess(scope.row.id, InfraApiErrorLogProcessStatusEnum.IGNORE)"
-            v-hasPermi="['infra:api-error-log:update-status']"
-          >
-            {{ t('apiLog.ignored') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              link
+              type="primary"
+              @click="openDetail(scope.row)"
+              v-hasPermi="['infra:api-error-log:query']"
+            >
+              {{ t('common.detail') }}
+            </el-button>
+            <el-button
+              link
+              type="primary"
+              v-if="scope.row.processStatus === InfraApiErrorLogProcessStatusEnum.INIT"
+              @click="handleProcess(scope.row.id, InfraApiErrorLogProcessStatusEnum.DONE)"
+              v-hasPermi="['infra:api-error-log:update-status']"
+            >
+              {{ t('apiLog.processed') }}
+            </el-button>
+            <el-button
+              link
+              type="primary"
+              v-if="scope.row.processStatus === InfraApiErrorLogProcessStatusEnum.INIT"
+              @click="handleProcess(scope.row.id, InfraApiErrorLogProcessStatusEnum.IGNORE)"
+              v-hasPermi="['infra:api-error-log:update-status']"
+            >
+              {{ t('apiLog.ignored') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>
@@ -239,7 +260,10 @@ const openDetail = (data: ApiErrorLogApi.ApiErrorLogVO) => {
 const handleProcess = async (id: number, processStatus: number) => {
   try {
     // 操作的二次确认
-    const type = processStatus === InfraApiErrorLogProcessStatusEnum.DONE ? t('apiLog.processed') : t('apiLog.ignored')
+    const type =
+      processStatus === InfraApiErrorLogProcessStatusEnum.DONE
+        ? t('apiLog.processed')
+        : t('apiLog.ignored')
     await message.confirm(t('apiLog.confirmMark', { type: type }))
     // 执行操作
     await ApiErrorLogApi.updateApiErrorLogPage(id, processStatus)

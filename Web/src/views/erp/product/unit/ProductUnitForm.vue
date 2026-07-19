@@ -35,7 +35,7 @@
   </Dialog>
 </template>
 <script setup lang="ts">
-import { ProductUnitApi } from '@/api/erp/product/unit'
+import { ProductUnitApi, ProductUnitVO } from '@/api/erp/product/unit'
 import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import { CommonStatusEnum } from '@/utils/constants'
 
@@ -86,7 +86,7 @@ const submitForm = async () => {
   // 提交请求
   formLoading.value = true
   try {
-    const data = formData.value as unknown as ProductUnitApi.ProductUnitVO
+    const data = formData.value as unknown as ProductUnitVO
     if (formType.value === 'create') {
       await ProductUnitApi.createProductUnit(data)
       message.success(t('common.createSuccess'))

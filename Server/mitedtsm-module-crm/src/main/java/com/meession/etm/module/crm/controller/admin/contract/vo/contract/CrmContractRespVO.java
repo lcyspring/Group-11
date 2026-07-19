@@ -87,6 +87,13 @@ public class CrmContractRespVO {
     @Schema(description = "合同金额", example = "5617")
     @ExcelProperty("合同金额")
     private BigDecimal totalPrice;
+    private Long sourceQuoteId;
+    private String currencyCode;
+    private String baseCurrencyCode;
+    private BigDecimal exchangeRateToBase;
+    private BigDecimal taxAmount;
+    private BigDecimal grossAmount;
+    private BigDecimal baseGrossAmount;
 
     @Schema(description = "已回款金额", example = "5617")
     @ExcelProperty("已回款金额")
@@ -140,10 +147,18 @@ public class CrmContractRespVO {
         private Long productId;
         @Schema(description = "产品名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "李四")
         private String productName;
+        @Schema(description = "成交时产品名称快照", example = "李四")
+        private String productNameSnapshot;
         @Schema(description = "产品条码", requiredMode = Schema.RequiredMode.REQUIRED, example = "20529")
         private String productNo;
+        @Schema(description = "成交时产品编码快照", example = "20529")
+        private String productNoSnapshot;
         @Schema(description = "产品单位", requiredMode = Schema.RequiredMode.REQUIRED, example = "李四")
         private Integer productUnit;
+        @Schema(description = "成交时产品单位快照", example = "1")
+        private Integer productUnitSnapshot;
+        private Long productCategoryIdSnapshot;
+        private Integer productVersionSnapshot;
 
         @Schema(description = "产品单价", requiredMode = Schema.RequiredMode.REQUIRED, example = "123.00")
         private BigDecimal productPrice;
@@ -156,6 +171,9 @@ public class CrmContractRespVO {
 
         @Schema(description = "总计价格", requiredMode = Schema.RequiredMode.REQUIRED, example = "123.00")
         private BigDecimal totalPrice;
+        private BigDecimal taxRatePercent;
+        private BigDecimal taxAmount;
+        private BigDecimal grossAmount;
 
     }
 

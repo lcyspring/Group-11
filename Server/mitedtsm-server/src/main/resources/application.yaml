@@ -40,15 +40,15 @@ server:
 
 springdoc:
   api-docs:
-    enabled: true
+    enabled: false
     path: /v3/api-docs
   swagger-ui:
-    enabled: true
+    enabled: false
     path: /swagger-ui
   default-flat-param-object: true # 参见 https://doc.xiaominfo.com/docs/faq/v4/knife4j-parameterobject-flat-param 文档
 
 knife4j:
-  enable: true
+  enable: false
   setting:
     language: zh_cn
 
@@ -165,37 +165,48 @@ spring:
           host: 127.0.0.1
           port: 19530
     qianfan: # 文心一言
-      api-key: x0cuLZ7XsaTCU08vuJWO87Lg
-      secret-key: R9mYF9dl9KASgi5RUq0FQt3wRisSnOcK
+      api-key: ${SPRING_AI_QIANFAN_API_KEY:}
+      secret-key: ${SPRING_AI_QIANFAN_SECRET_KEY:}
     zhipuai: # 智谱 AI
-      api-key: 32f84543e54eee31f8d56b2bd6020573.3vh9idLJZ2ZhxDEs
+      api-key: ${SPRING_AI_ZHIPUAI_API_KEY:}
     openai: # OpenAI 官方
-      api-key: sk-aN6nWn3fILjrgLFT0fC4Aa60B72e4253826c77B29dC94f17
+      api-key: ${SPRING_AI_OPENAI_API_KEY:}
       base-url: https://api.gptsapi.net
     azure: # OpenAI 微软
       openai:
         endpoint: https://eastusprejade.openai.azure.com
     anthropic: # Anthropic Claude
-      api-key: sk-muubv7cXeLw0Etgs743f365cD5Ea44429946Fa7e672d8942
+      api-key: ${SPRING_AI_ANTHROPIC_API_KEY:}
     ollama:
       base-url: http://127.0.0.1:11434
       chat:
         model: llama3
     stabilityai:
-      api-key: sk-e53UqbboF8QJCscYvzJscJxJXoFcFg4iJjl1oqgE7baJETmx
+      api-key: ${SPRING_AI_STABILITYAI_API_KEY:}
     dashscope: # 通义千问
-      api-key: sk-47aa124781be4bfb95244cc62f6xxxx
+      enabled: false
+      api-key: ${SPRING_AI_DASHSCOPE_API_KEY:}
+      agent:
+        enabled: false
     minimax: # Minimax：https://www.minimaxi.com/
-      api-key: xxxx
+      api-key: ${SPRING_AI_MINIMAX_API_KEY:}
     moonshot: # 月之暗面（KIMI）
-      api-key: sk-abc
+      api-key: ${SPRING_AI_MOONSHOT_API_KEY:}
     deepseek: # DeepSeek
-      api-key: sk-cd36a9dac20f4c2bb14da3fd7ab293d8
+      api-key: ${SPRING_AI_DEEPSEEK_API_KEY:}
       chat:
         options:
           model: deepseek-chat
     model:
+      chat: false
+      embedding: false
+      image: false
+      moderation: false
       rerank: false # 是否开启“通义千问”的 Rerank 模型，填写 dashscope 开启
+      video: false
+      audio:
+        speech: false
+        transcription: false
     mcp:
       server:
         enabled: false
@@ -217,68 +228,582 @@ spring:
 mitedtsm:
   ai:
     gemini: # 谷歌 Gemini
-      enable: true
-      api-key: AIzaSyAVoBxgoFvvte820vEQMma2LKBnC98bqMQ
+      enable: ${MITEDTSM_AI_GEMINI_ENABLE:false}
+      api-key: ${MITEDTSM_AI_GEMINI_API_KEY:}
       model: gemini-2.5-flash
     doubao: # 字节豆包
-      enable: true
-      api-key: 5c1b5747-26d2-4ebd-a4e0-dd0e8d8b4272
+      enable: ${MITEDTSM_AI_DOUBAO_ENABLE:false}
+      api-key: ${MITEDTSM_AI_DOUBAO_API_KEY:}
       model: doubao-1-5-lite-32k-250115
     hunyuan: # 腾讯混元
-      enable: true
-      api-key: sk-abc
+      enable: ${MITEDTSM_AI_HUNYUAN_ENABLE:false}
+      api-key: ${MITEDTSM_AI_HUNYUAN_API_KEY:}
       model: hunyuan-turbo
     siliconflow: # 硅基流动
-      enable: true
-      api-key: sk-epsakfenqnyzoxhmbucsxlhkdqlcbnimslqoivkshalvdozz
+      enable: ${MITEDTSM_AI_SILICONFLOW_ENABLE:false}
+      api-key: ${MITEDTSM_AI_SILICONFLOW_API_KEY:}
       model: deepseek-ai/DeepSeek-R1-Distill-Qwen-7B
     xinghuo: # 讯飞星火
-      enable: true
-      appKey: 75b161ed2aef4719b275d6e7f2a4d4cd
-      secretKey: YWYxYWI2MTA4ODI2NGZlYTQyNjAzZTcz
+      enable: ${MITEDTSM_AI_XINGHUO_ENABLE:false}
+      appKey: ${MITEDTSM_AI_XINGHUO_APP_KEY:}
+      secretKey: ${MITEDTSM_AI_XINGHUO_SECRET_KEY:}
       model: x1
     baichuan: # 百川智能
-      enable: true
-      api-key: sk-abc
+      enable: ${MITEDTSM_AI_BAICHUAN_ENABLE:false}
+      api-key: ${MITEDTSM_AI_BAICHUAN_API_KEY:}
       model: Baichuan4-Turbo
     midjourney:
-      enable: true
+      enable: ${MITEDTSM_AI_MIDJOURNEY_ENABLE:false}
   #    base-url: https://api.holdai.top/mj-relax/mj
       base-url: https://api.holdai.top/mj
-      api-key: sk-dZEPiVaNcT3FHhef51996bAa0bC74806BeAb620dA5Da10Bf
+      api-key: ${MITEDTSM_AI_MIDJOURNEY_API_KEY:}
       notify-url: http://java.nat300.top/admin-api/ai/image/midjourney/notify
     suno:
-      enable: true
+      enable: ${MITEDTSM_AI_SUNO_ENABLE:false}
   #    base-url: https://suno-55ishh05u-status2xxs-projects.vercel.app
       base-url: http://127.0.0.1:3001
     web-search:
-      enable: true
-      api-key: sk-40500e52840f4d24b956d0b1d80d9abe
+      enable: ${MITEDTSM_AI_WEB_SEARCH_ENABLE:false}
+      api-key: ${MITEDTSM_AI_WEB_SEARCH_API_KEY:}
 
 --- #################### 密讯相关配置 ####################
 
 mitedtsm:
+  bpm:
+    oa:
+      leave:
+        # 4 年假、5 调休；只有这些类型需要余额预占与审批结算。
+        balance-required-types: [4, 5]
+        # 新用户首次查询或申请时初始化的年度余额；生产环境应按公司制度显式覆盖。
+        default-annual-days:
+          4: 5
+          5: 0
+      loan:
+        # 额度和岗位编码均显式配置；岗位未匹配时按 employee-limit。
+        employee-limit: 5000
+        manager-limit: 20000
+        director-limit: 50000
+        manager-post-codes: [manager]
+        director-post-codes: [director]
+  infra:
+    file-security:
+      protected-path-prefixes: [crm-protected/]
+  crm:
+    work-order-dispatch:
+      enabled: true
+      auto-assign-on-create: true
+      fallback-mode: UNASSIGNED_POOL
+      max-cc-users: 20
+      description-min-length: 20
+      solution-min-length: 20
+    work-order-governance:
+      geofence:
+        enabled: true
+        require-before-complete: false
+        default-radius-meters: 300
+        max-accuracy-meters: 100
+      sla:
+        enabled: true
+        skip-weekends: true
+        zone: Asia/Shanghai
+        workday-start: "09:00:00"
+        workday-end: "18:00:00"
+        default-policy-code: MEDIUM
+        cron: "0 */5 * * * ?"
+        lock-key: crm:work-order:sla
+        lock-lease-seconds: 300
+    erp-fulfillment:
+      enabled: true
+      version: 2026-07-16
+      source-system: CRM
+      source-type: CONTRACT
+      erp-currency: CNY
+      allowed-source-currencies: [CNY, USD, EUR]
+      currency-mode: CONVERT_TO_ERP_CURRENCY
+      amount-scale: 6
+      rounding-mode: HALF_UP
+      total-tolerance: 0.010000
+      max-error-message-length: 1000
+    quote:
+      version: 2026-07-15
+      base-currency: CNY
+      default-currency: CNY
+      exchange-rates-to-base:
+        CNY: 1.000000
+        USD: 7.200000
+        EUR: 7.800000
+      allowed-tax-rates: [0, 1, 3, 6, 9, 13]
+      default-tax-rate: 13
+      amount-scale: 6
+      rounding-mode: HALF_UP
+      max-versions-per-business: 50
+    activity:
+      version: 2026-07-15
+      protected-call-recording-directory: crm-protected/call
+      max-call-duration-seconds: 86400
+      task-overdue:
+        enabled: true
+        cron: "0 0 * * * ?"
+        zone: Asia/Shanghai
+        lock-key: crm:activity:task-overdue
+        lock-lease-seconds: 1800
+        batch-size: 500
+        max-batch-size: 5000
+        max-batches: 20
+      receivable-overdue:
+        enabled: ${MITEDTSM_CRM_RECEIVABLE_OVERDUE_ENABLED:true}
+        cron: ${MITEDTSM_CRM_RECEIVABLE_OVERDUE_CRON:0 15 9 * * ?}
+        zone: ${MITEDTSM_CRM_RECEIVABLE_OVERDUE_ZONE:Asia/Shanghai}
+        lock-key: ${MITEDTSM_CRM_RECEIVABLE_OVERDUE_LOCK_KEY:crm:receivable:overdue}
+        lock-lease-seconds: ${MITEDTSM_CRM_RECEIVABLE_OVERDUE_LOCK_LEASE_SECONDS:1800}
+        batch-size: ${MITEDTSM_CRM_RECEIVABLE_OVERDUE_BATCH_SIZE:200}
+        max-batch-size: ${MITEDTSM_CRM_RECEIVABLE_OVERDUE_MAX_BATCH_SIZE:2000}
+        max-batches: ${MITEDTSM_CRM_RECEIVABLE_OVERDUE_MAX_BATCHES:20}
+        max-retries: ${MITEDTSM_CRM_RECEIVABLE_OVERDUE_MAX_RETRIES:5}
+    marketing:
+      provider-mode: ${MITEDTSM_CRM_MARKETING_PROVIDER_MODE:record-only}
+      care-enabled: true
+      batch-size: 50
+      max-batch-size: 500
+      per-recipient-daily-limit: 1
+      monthly-recipient-limit: 10000
+      care-cron: "0 0 9 * * ?"
+      care-zone: Asia/Shanghai
+      lock-key: crm:marketing:care
+      broadcast-enabled: true
+      broadcast-cron: "0 * * * * ?"
+      broadcast-zone: Asia/Shanghai
+      broadcast-lock-key: crm:marketing:broadcast
+      lock-lease-seconds: 300
+      tracking-enabled: ${MITEDTSM_CRM_MARKETING_TRACKING_ENABLED:true}
+      public-base-url: ${MITEDTSM_CRM_MARKETING_PUBLIC_BASE_URL:http://127.0.0.1:8080}
+      delivery-sync-batch-size: ${MITEDTSM_CRM_MARKETING_DELIVERY_SYNC_BATCH_SIZE:200}
+      click-tracking-enabled: ${MITEDTSM_CRM_MARKETING_CLICK_TRACKING_ENABLED:true}
+      click-allowed-hosts: ${MITEDTSM_CRM_MARKETING_CLICK_ALLOWED_HOSTS:example.com,localhost,127.0.0.1}
+      max-links-per-broadcast: ${MITEDTSM_CRM_MARKETING_MAX_LINKS_PER_BROADCAST:10}
+    customer-import:
+      max-rows: ${MITEDTSM_CRM_CUSTOMER_IMPORT_MAX_ROWS:2000}
+      preview-ttl-minutes: ${MITEDTSM_CRM_CUSTOMER_IMPORT_PREVIEW_TTL_MINUTES:60}
+    export-task:
+      enabled: ${MITEDTSM_CRM_EXPORT_TASK_ENABLED:true}
+      batch-size: ${MITEDTSM_CRM_EXPORT_TASK_BATCH_SIZE:10}
+      max-batch-size: ${MITEDTSM_CRM_EXPORT_TASK_MAX_BATCH_SIZE:100}
+      max-pending-per-user: ${MITEDTSM_CRM_EXPORT_TASK_MAX_PENDING_PER_USER:3}
+      max-rows: ${MITEDTSM_CRM_EXPORT_TASK_MAX_ROWS:5000}
+      retention-hours: ${MITEDTSM_CRM_EXPORT_TASK_RETENTION_HOURS:24}
+      token-ttl-seconds: ${MITEDTSM_CRM_EXPORT_TASK_TOKEN_TTL_SECONDS:300}
+      cron: ${MITEDTSM_CRM_EXPORT_TASK_CRON:0/5 * * * * ?}
+      zone: ${MITEDTSM_CRM_EXPORT_TASK_ZONE:Asia/Shanghai}
+      lock-key: ${MITEDTSM_CRM_EXPORT_TASK_LOCK_KEY:crm:export-task:scheduler}
+      lock-lease-seconds: ${MITEDTSM_CRM_EXPORT_TASK_LOCK_LEASE_SECONDS:300}
+    authorization:
+      # 平台超级管理员和专用 CRM 管理员均可执行 CRM 管理命令；普通角色仍受功能权限和数据范围约束。
+      admin-role-codes: [super_admin, crm_admin]
+    pool-policy:
+      version: 2026-07-15
+      customer:
+        enabled: true
+        contact-expire-days: 30
+        deal-expire-days: 30
+        high-value-level-threshold: 4
+        high-value-expire-multiplier: 2
+        protect-active-business: true
+        protect-active-contract: true
+        protected-contract-audit-statuses: [0, 10, 20]
+        daily-claim-limit: 10
+        repeat-claim-cooldown-days: 30
+        notify-enabled: true
+        notify-days: 2
+        auto-pool-batch-size: 500
+        auto-pool-max-batch-size: 5000
+        auto-pool-max-batches: 20
+      garbage:
+        auto-enabled: true
+        expire-days: 180
+        minimum-pool-cycles: 3
+        batch-size: 500
+        max-batch-size: 5000
+        max-batches: 20
+      clue:
+        enabled: true
+        contact-expire-days: 30
+        max-owned-clues: 100
+        daily-claim-limit: 10
+        repeat-claim-cooldown-days: 30
+        claim-batch-limit: 100
+        auto-pool-batch-size: 500
+        auto-pool-max-batch-size: 5000
+        auto-pool-max-batches: 20
+      scheduler:
+        enabled: true
+        cron: "0 0 2 * * ?"
+        zone: Asia/Shanghai
+        lock-key: crm:pool-policy:scheduler
+        lock-lease-seconds: 1800
+    security:
+      protected-file-directory: crm-protected/contract
+    contract-amendment:
+      process-definition-key: crm-contract-amendment-audit
+      number-prefix: BC
+    receivable-refund:
+      process-definition-key: crm-receivable-refund-audit
+      number-prefix: TK
+    reimbursement:
+      process-definition-key: crm-reimbursement-audit
+      number-prefix: BX
+      default-currency: CNY
+      protected-file-directory: crm-protected/reimbursement
+    statistics-metadata:
+      # CRM 统计当前均为请求时实时聚合；指标口径只能在此处显式声明。
+      refresh-mode: REALTIME_QUERY
+      permission-mode: CRM_TENANT_AND_DATA_SCOPE
+      history-recalculation: QUERY_CURRENT_LEDGER_STATE_ONLY
+      reconciliation: DRILLDOWN_OR_SOURCE_LEDGER_EXPORT
+      metrics:
+        - scope: customer
+          code: customer.new-count
+          name: 新增客户数
+          source-tables: [crm_customer]
+          source-fields: [id, owner_user_id, create_time, deleted]
+          business-time: crm_customer.create_time
+          formula: COUNT(crm_customer.id)
+          filters: [deleted = 0, owner_user_id in authorized users, create_time in selected range]
+          permission: crm:statistics-customer:query + CRM authorized user scope + tenant isolation
+        - scope: customer
+          code: customer.deal-count
+          name: 成交客户数
+          source-tables: [crm_customer, crm_contract]
+          source-fields: [crm_customer.id, crm_customer.owner_user_id, crm_customer.create_time, crm_contract.customer_id, crm_contract.audit_status]
+          business-time: crm_customer.create_time
+          formula: COUNT(DISTINCT crm_customer.id) with approved contract
+          filters: [customer and contract deleted = 0, contract audit_status = approved, owner_user_id in authorized users]
+          permission: crm:statistics-customer:query + CRM authorized user scope + tenant isolation
+        - scope: customer
+          code: customer.deal-cycle
+          name: 客户首次成交周期
+          source-tables: [crm_customer, crm_contract]
+          source-fields: [crm_customer.id, crm_customer.create_time, crm_contract.customer_id, crm_contract.order_date, crm_contract.audit_status]
+          business-time: crm_contract.order_date
+          formula: AVG(DATEDIFF(first approved contract order_date, customer create_time)); negative values remain in the average and are exposed through negativeSampleCount
+          filters: [customer and contract deleted = 0, first contract audit_status = approved, owner_user_id in authorized users]
+          permission: crm:statistics-customer:query + CRM authorized user scope + tenant isolation
+        - scope: customer
+          code: customer.follow-up-count
+          name: 客户跟进次数
+          source-tables: [crm_follow_up_record]
+          source-fields: [id, biz_type, biz_id, creator, create_time, deleted]
+          business-time: crm_follow_up_record.create_time
+          formula: COUNT(crm_follow_up_record.id)
+          filters: [deleted = 0, biz_type = CRM_CUSTOMER, creator in authorized users, create_time in selected range]
+          permission: crm:statistics-customer:query + CRM authorized user scope + tenant isolation
+        - scope: customer
+          code: customer.follow-up-customer-count
+          name: 跟进客户数
+          source-tables: [crm_follow_up_record]
+          source-fields: [biz_id, biz_type, creator, create_time, deleted]
+          business-time: crm_follow_up_record.create_time
+          formula: COUNT(DISTINCT biz_id) inside each display interval
+          filters: [deleted = 0, biz_type = CRM_CUSTOMER, creator in authorized users, create_time in selected range]
+          permission: crm:statistics-customer:query + CRM authorized user scope + tenant isolation
+        - scope: customer
+          code: customer.contract-amount
+          name: 客户合同金额
+          source-tables: [crm_contract]
+          source-fields: [total_price, owner_user_id, order_date, audit_status, deleted]
+          business-time: crm_contract.order_date
+          formula: SUM(crm_contract.total_price)
+          filters: [deleted = 0, audit_status = approved, owner_user_id in authorized users, order_date in selected range]
+          permission: crm:statistics-customer:query + CRM authorized user scope + tenant isolation
+        - scope: customer
+          code: customer.receivable-amount
+          name: 客户回款金额
+          source-tables: [crm_receivable]
+          source-fields: [price, owner_user_id, return_time, audit_status, deleted]
+          business-time: crm_receivable.return_time
+          formula: SUM(crm_receivable.price)
+          filters: [deleted = 0, audit_status = approved, owner_user_id in authorized users, return_time in selected range]
+          permission: crm:statistics-customer:query + CRM authorized user scope + tenant isolation
+        - scope: customer
+          code: customer.deal-top10
+          name: 客户成交金额 TOP10
+          source-tables: [crm_customer, crm_contract]
+          source-fields: [crm_customer.id, crm_customer.name, crm_contract.total_price, crm_contract.order_date, crm_contract.audit_status]
+          business-time: crm_contract.order_date
+          formula: SUM(approved contract total_price) GROUP BY customer ORDER BY amount DESC, customer id ASC LIMIT 10
+          filters: [customer and contract deleted = 0, contract audit_status = approved, customer owner in authorized users]
+          permission: crm:statistics-customer:query + CRM authorized user scope + tenant isolation
+        - scope: funnel
+          code: funnel.business.new-count
+          name: 新增商机数
+          source-tables: [crm_business]
+          source-fields: [id, owner_user_id, create_time, deleted]
+          business-time: crm_business.create_time
+          formula: COUNT(crm_business.id)
+          filters: [deleted = 0, owner_user_id in authorized users, create_time in selected range]
+          permission: crm:statistics-funnel:query + CRM authorized user scope + tenant isolation
+        - scope: funnel
+          code: funnel.stage-count
+          name: 阶段商机数
+          source-tables: [crm_business, crm_business_status]
+          source-fields: [crm_business.id, crm_business.status_id, crm_business.end_status, crm_business.total_price, crm_business_status.sort]
+          business-time: crm_business.create_time
+          formula: COUNT businesses that reached each configured stage
+          filters: [business deleted = 0, active or won business, status type matches query, owner in authorized users]
+          permission: crm:statistics-funnel:query + CRM authorized user scope + tenant isolation
+        - scope: funnel
+          code: funnel.stage-amount
+          name: 阶段商机金额
+          source-tables: [crm_business, crm_business_status]
+          source-fields: [crm_business.total_price, crm_business.status_id, crm_business.end_status, crm_business_status.sort]
+          business-time: crm_business.create_time
+          formula: SUM(total_price) for businesses that reached each configured stage
+          filters: [business deleted = 0, active or won business, status type matches query, owner in authorized users]
+          permission: crm:statistics-funnel:query + CRM authorized user scope + tenant isolation
+        - scope: funnel
+          code: funnel.win-conversion-rate
+          name: 赢单转化率
+          source-tables: [crm_business]
+          source-fields: [id, end_status, owner_user_id, create_time, deleted]
+          business-time: crm_business.create_time
+          formula: won business count / total business count * 100
+          filters: [deleted = 0, owner_user_id in authorized users, create_time in selected range]
+          permission: crm:statistics-funnel:query + CRM authorized user scope + tenant isolation
+        - scope: funnel
+          code: funnel.forecast-expected-amount
+          name: 销售预测金额
+          source-tables: [crm_business]
+          source-fields: [total_price, deal_time, end_status, owner_user_id, deleted]
+          business-time: crm_business.deal_time
+          formula: SUM(total_price)
+          filters: [deleted = 0, end_status = active, owner_user_id in authorized users, deal_time in selected range]
+          permission: crm:statistics-funnel:query + CRM authorized user scope + tenant isolation
+        - scope: funnel
+          code: funnel.forecast-weighted-amount
+          name: 概率金额
+          source-tables: [crm_business, crm_business_status]
+          source-fields: [crm_business.total_price, crm_business.deal_time, crm_business.status_id, crm_business_status.percent]
+          business-time: crm_business.deal_time
+          formula: SUM(total_price * status percent / 100)
+          filters: [business deleted = 0, end_status = active, owner_user_id in authorized users, deal_time in selected range]
+          permission: crm:statistics-funnel:query + CRM authorized user scope + tenant isolation
+        - scope: performance
+          code: performance.contract-count
+          name: 签约合同数
+          source-tables: [crm_contract]
+          source-fields: [id, owner_user_id, order_date, audit_status, deleted]
+          business-time: crm_contract.order_date
+          formula: COUNT(crm_contract.id) GROUP BY calendar month
+          filters: [deleted = 0, audit_status = approved, owner_user_id in authorized users, order_date in selected year]
+          permission: crm:statistics-performance:query + CRM authorized user scope + tenant isolation
+        - scope: performance
+          code: performance.contract-amount
+          name: 签约合同金额
+          source-tables: [crm_contract]
+          source-fields: [total_price, owner_user_id, order_date, audit_status, deleted]
+          business-time: crm_contract.order_date
+          formula: SUM(total_price) GROUP BY calendar month
+          filters: [deleted = 0, audit_status = approved, owner_user_id in authorized users, order_date in selected year]
+          permission: crm:statistics-performance:query + CRM authorized user scope + tenant isolation
+        - scope: performance
+          code: performance.receivable-amount
+          name: 回款金额
+          source-tables: [crm_receivable]
+          source-fields: [price, owner_user_id, return_time, audit_status, deleted]
+          business-time: crm_receivable.return_time
+          formula: SUM(price) GROUP BY calendar month
+          filters: [deleted = 0, audit_status = approved, owner_user_id in authorized users, return_time in selected year]
+          permission: crm:statistics-performance:query + CRM authorized user scope + tenant isolation
+        - scope: performance
+          code: performance.target-completion
+          name: 目标完成率
+          source-tables: [crm_performance_target, crm_contract, crm_receivable, crm_follow_up_record, crm_customer, crm_business]
+          source-fields: [target_type, target_month, target_value, actual metric value]
+          business-time: target calendar month and each actual metric business time
+          formula: actual value / configured target value * 100
+          filters: [target scope matches company department or user, actual metric uses approved ledger rules where applicable]
+          permission: crm:statistics-performance:query + CRM authorized user scope + tenant isolation
+        - scope: portrait
+          code: portrait.customer-region
+          name: 客户区域分布
+          source-tables: [crm_customer, system_area]
+          source-fields: [crm_customer.area_id, crm_customer.owner_user_id, crm_customer.create_time, system_area.parent_id]
+          business-time: crm_customer.create_time
+          formula: COUNT(customer id) GROUP BY normalized city province or country area
+          filters: [customer deleted = 0, area_id is not null, owner_user_id in authorized users, create_time in selected range]
+          permission: crm:statistics-portrait:query + CRM authorized user scope + tenant isolation
+        - scope: portrait
+          code: portrait.customer-industry
+          name: 客户行业分布
+          source-tables: [crm_customer]
+          source-fields: [id, industry_id, deal_status, owner_user_id, create_time]
+          business-time: crm_customer.create_time
+          formula: COUNT(id) and SUM(deal_status) GROUP BY industry_id
+          filters: [deleted = 0, industry_id is not null, owner_user_id in authorized users, create_time in selected range]
+          permission: crm:statistics-portrait:query + CRM authorized user scope + tenant isolation
+        - scope: portrait
+          code: portrait.customer-level
+          name: 客户级别分布
+          source-tables: [crm_customer]
+          source-fields: [id, level, deal_status, owner_user_id, create_time]
+          business-time: crm_customer.create_time
+          formula: COUNT(id) and SUM(deal_status) GROUP BY level
+          filters: [deleted = 0, level is not null, owner_user_id in authorized users, create_time in selected range]
+          permission: crm:statistics-portrait:query + CRM authorized user scope + tenant isolation
+        - scope: portrait
+          code: portrait.customer-source
+          name: 客户来源分布
+          source-tables: [crm_customer]
+          source-fields: [id, source, deal_status, owner_user_id, create_time]
+          business-time: crm_customer.create_time
+          formula: COUNT(id) and SUM(deal_status) GROUP BY source
+          filters: [deleted = 0, source is not null, owner_user_id in authorized users, create_time in selected range]
+          permission: crm:statistics-portrait:query + CRM authorized user scope + tenant isolation
+        - scope: portrait
+          code: portrait.customer-lifecycle
+          name: 客户生命周期分布
+          source-tables: [crm_customer]
+          source-fields: [id, lifecycle_status, owner_user_id, create_time]
+          business-time: crm_customer.create_time
+          formula: COUNT(id) GROUP BY lifecycle_status
+          filters: [deleted = 0, lifecycle_status is not null, owner_user_id in authorized users, create_time in selected range]
+          permission: crm:statistics-portrait:query + CRM authorized user scope + tenant isolation
+        - scope: rank
+          code: rank.contract-amount
+          name: 合同金额排行
+          source-tables: [crm_contract]
+          source-fields: [total_price, owner_user_id, order_date, audit_status, deleted]
+          business-time: crm_contract.order_date
+          formula: SUM(total_price) GROUP BY owner_user_id
+          filters: [deleted = 0, audit_status = approved, owner_user_id in authorized users, order_date in selected range]
+          permission: crm:statistics-rank:query + CRM authorized user scope + tenant isolation
+        - scope: rank
+          code: rank.receivable-amount
+          name: 回款金额排行
+          source-tables: [crm_receivable]
+          source-fields: [price, owner_user_id, return_time, audit_status, deleted]
+          business-time: crm_receivable.return_time
+          formula: SUM(price) GROUP BY owner_user_id
+          filters: [deleted = 0, audit_status = approved, owner_user_id in authorized users, return_time in selected range]
+          permission: crm:statistics-rank:query + CRM authorized user scope + tenant isolation
+        - scope: rank
+          code: rank.contract-count
+          name: 签约合同排行
+          source-tables: [crm_contract]
+          source-fields: [id, owner_user_id, order_date, audit_status, deleted]
+          business-time: crm_contract.order_date
+          formula: COUNT(id) GROUP BY owner_user_id
+          filters: [deleted = 0, audit_status = approved, owner_user_id in authorized users, order_date in selected range]
+          permission: crm:statistics-rank:query + CRM authorized user scope + tenant isolation
+        - scope: rank
+          code: rank.product-sales
+          name: 产品销量排行
+          source-tables: [crm_contract, crm_contract_product]
+          source-fields: [crm_contract.owner_user_id, crm_contract.order_date, crm_contract.audit_status, crm_contract_product.count]
+          business-time: crm_contract.order_date
+          formula: SUM(crm_contract_product.count) GROUP BY contract owner_user_id
+          filters: [contract and product deleted = 0, contract audit_status = approved, owner_user_id in authorized users]
+          permission: crm:statistics-rank:query + CRM authorized user scope + tenant isolation
+        - scope: rank
+          code: rank.customer-count
+          name: 新增客户数排行
+          source-tables: [crm_customer]
+          source-fields: [id, owner_user_id, create_time, deleted]
+          business-time: crm_customer.create_time
+          formula: COUNT(id) GROUP BY owner_user_id
+          filters: [deleted = 0, owner_user_id in authorized users, create_time in selected range]
+          permission: crm:statistics-rank:query + CRM authorized user scope + tenant isolation
+        - scope: rank
+          code: rank.contact-count
+          name: 新增联系人数排行
+          source-tables: [crm_contact]
+          source-fields: [id, owner_user_id, create_time, deleted]
+          business-time: crm_contact.create_time
+          formula: COUNT(id) GROUP BY owner_user_id
+          filters: [deleted = 0, owner_user_id in authorized users, create_time in selected range]
+          permission: crm:statistics-rank:query + CRM authorized user scope + tenant isolation
+        - scope: rank
+          code: rank.follow-up-count
+          name: 跟进次数排行
+          source-tables: [crm_follow_up_record]
+          source-fields: [id, biz_type, creator, create_time, deleted]
+          business-time: crm_follow_up_record.create_time
+          formula: COUNT(id) GROUP BY creator
+          filters: [deleted = 0, biz_type = CRM_CUSTOMER, creator in authorized users, create_time in selected range]
+          permission: crm:statistics-rank:query + CRM authorized user scope + tenant isolation
+        - scope: rank
+          code: rank.follow-up-customer-count
+          name: 跟进客户数排行
+          source-tables: [crm_follow_up_record]
+          source-fields: [biz_id, biz_type, creator, create_time, deleted]
+          business-time: crm_follow_up_record.create_time
+          formula: COUNT(DISTINCT biz_id) GROUP BY creator
+          filters: [deleted = 0, biz_type = CRM_CUSTOMER, creator in authorized users, create_time in selected range]
+          permission: crm:statistics-rank:query + CRM authorized user scope + tenant isolation
+        - scope: workorder
+          code: workorder.total-count
+          name: 工单总数
+          source-tables: [crm_work_order]
+          source-fields: [id, creator, handler_user_id, create_time, tenant_id, deleted]
+          business-time: crm_work_order.create_time
+          formula: COUNT(crm_work_order.id)
+          filters: [tenant_id = current tenant, deleted = 0, creator or handler when query-all permission is absent, create_time in selected range]
+          permission: crm:statistics-work-order:query + tenant isolation + creator/handler scope unless query-all granted
+        - scope: workorder
+          code: workorder.completion-rate
+          name: 工单完结率
+          source-tables: [crm_work_order]
+          source-fields: [id, status, creator, handler_user_id, create_time, tenant_id, deleted]
+          business-time: crm_work_order.create_time
+          formula: completed count / total count * 100
+          filters: [tenant_id = current tenant, deleted = 0, creator or handler when query-all permission is absent, create_time in selected range]
+          permission: crm:statistics-work-order:query + tenant isolation + creator/handler scope unless query-all granted
+        - scope: workorder
+          code: workorder.created-trend
+          name: 工单创建趋势
+          source-tables: [crm_work_order]
+          source-fields: [id, create_time, creator, handler_user_id, tenant_id, deleted]
+          business-time: crm_work_order.create_time
+          formula: COUNT(id) GROUP BY calendar day
+          filters: [tenant_id = current tenant, deleted = 0, creator or handler when query-all permission is absent, create_time in selected range]
+          permission: crm:statistics-work-order:query + tenant isolation + creator/handler scope unless query-all granted
+        - scope: workorder
+          code: workorder.completed-trend
+          name: 工单完结趋势
+          source-tables: [crm_work_order]
+          source-fields: [id, complete_time, creator, handler_user_id, tenant_id, deleted]
+          business-time: crm_work_order.complete_time
+          formula: COUNT(id) GROUP BY calendar day
+          filters: [tenant_id = current tenant, deleted = 0, complete_time is not null, creator or handler when query-all permission is absent]
+          permission: crm:statistics-work-order:query + tenant isolation + creator/handler scope unless query-all granted
   info:
     version: 1.0.0
     base-package: com.meession.etm
   web:
     admin-ui:
-      url: http://dashboard.mitedtsm.iocoder.cn # Admin 管理后台 UI 的地址
+      url: ${MITEDTSM_WEB_ADMIN_UI_URL} # 由运行 YAML 注入用户可访问的管理端公开地址
+    cors:
+      allowed-origin-patterns: [] # 运行环境必须通过显式配置声明可信前端来源
+      allowed-headers: [Authorization, Content-Type, tenant-id, Accept-Language]
+      allowed-methods: [GET, POST, PUT, DELETE, PATCH, OPTIONS]
+      allow-credentials: true
+      max-age: 1h
   xss:
-    enable: false
+    enable: true
     exclude-urls: # 如下两个 url，仅仅是为了演示，去掉配置也没关系
       - ${spring.boot.admin.context-path}/** # 不处理 Spring Boot Admin 的请求
       - ${management.endpoints.web.base-path}/** # 不处理 Actuator 的请求
   security:
+    mock-enable: false
+    password-encoder-length: 10
     permit-all_urls:
       - /admin-api/mp/open/** # 微信公众号开放平台，微信回调接口，不需要登录
   api-encrypt:
-    enable: true # 是否开启 API 加密
+    enable: false # 获得显式密钥和前端协议后再启用，禁止使用仓库示例密钥
     algorithm: AES # 加密算法，支持 AES、RSA 等
-    request-key: 52549111389893486934626385991395 # 【AES 案例】请求加密的秘钥，，必须 16、24、32 位
-    response-key: 96103715984234343991809655248883 # 【AES 案例】响应加密的秘钥，AES 案例，必须 16、24、32 位
-#    request-key: MIICdwIBADANBgkqhkiG9w0BAQEFAASCAmEwggJdAgEAAoGBAKWzasimcZ1icsWDPVdTXcZs1DkOWjI+m9bTQU8aOqflnomkr6QO1WWeSHBHzuJGsTlV/ZY2pFfq/NstKC94hBjx7yioYJvzb2bKN/Uy4j5nM3iCF//u0RiFkkY8j0Bt/EWoFTOb6RHf8cHIAjbYYtP3pYzbpCIwryfe0g//KIuzAgMBAAECgYADDjZrYcpZjR2xr7RbXmGtzYbyUGXwZEAqa3XaWBD51J2iSyOkAlQEDjGmxGQ3vvb4qDHHadWI+3/TKNeDXJUO+xTVJrnismK5BsHyC6dfxlIK/5BAuknryTca/3UoA1yomS9ZlF3Q0wcecaDoEnSmZEaTrp9T3itPAz4KnGjv5QJBAN5mNcfu6iJ5ktNvEdzqcxkKwbXb9Nq1SLnmTvt+d5TPX7eQ9fCwtOfVu5iBLhhZzb5PJ7pSN3Zt6rl5/jPOGv0CQQC+vETX9oe1wbxZSv6/RBGy0Xow6GndbJwvd89PcAJ2h+OJXWtg/rRHB3t9EQm7iis0XbZTapj19E4U6l8EibhvAkEA1CvYpRwmHKu1SqdM+GBnW/2qHlBwwXJvpoK02TOm674HR/4w0+YRQJfkd7LOAgcyxJuJgDTNmtt0MmzS+iNoFQJAMVSUIZ77XoDq69U/qcw7H5qaFcgmiUQr6QL9tTftCyb+LGri+MUnby96OtCLSdvkbLjIDS8GvKYhA7vSM2RDNQJBAKGyVVnFFIrbK3yuwW71yvxQEGoGxlgvZSezZ4vGgqTxrr9HvAtvWLwR6rpe6ybR/x8uUtoW7NRBWgpiIFwjvY4= # 【RSA 案例】请求解密的私钥
-#    response-key: MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDh/CHyBcS/zEfVyINVA7+c9Xxl0CPdxPMK1OIjxaLy/7BLfbkoEpI8onQtjuzfpuxCraDem9bu3BMF0pMH95HytI3Vi0kGjaV+WLIalwgc2w37oA2sbsmKzQOP7SDLO5s2QJNAD7kVwd+Q5rqaLu2MO0xVv+0IUJhn83hClC0L5wIDAQAB # 【RSA 案例】响应加密的公钥
+    request-key: ${MITEDTSM_API_ENCRYPT_REQUEST_KEY:}
+    response-key: ${MITEDTSM_API_ENCRYPT_RESPONSE_KEY:}
+#    request-key: ${MITEDTSM_API_ENCRYPT_RSA_PRIVATE_KEY:} # RSA 模式由运行配置显式提供
+#    response-key: ${MITEDTSM_API_ENCRYPT_RSA_PUBLIC_KEY:} # RSA 模式由运行配置显式提供
   websocket:
     enable: true # websocket的开关
     path: /infra/ws # 路径
@@ -338,14 +863,14 @@ mitedtsm:
       comment-expire-time: 7d # 评论的过期时间
       status-sync-to-wxa-enable: true # 是否同步订单状态到微信小程序
     express:
-      client: kd_100
+      client: ${MITEDTSM_EXPRESS_CLIENT:not_provide}
       kd-niao:
-        api-key: cb022f1e-48f1-4c4a-a723-9001ac9676b8
-        business-id: 1809751
-        request-type: 1002 # 免费版 1002；付费版 8001
+        api-key: ${MITEDTSM_EXPRESS_KDNIAO_API_KEY:not-configured}
+        business-id: ${MITEDTSM_EXPRESS_KDNIAO_BUSINESS_ID:not-configured}
+        request-type: ${MITEDTSM_EXPRESS_KDNIAO_REQUEST_TYPE:1002} # 免费版 1002；付费版 8001
       kd100:
-        key: pLXUGAwK5305
-        customer: E77DF18BE109F454A5CD319E44BF5177
+        key: ${MITEDTSM_EXPRESS_KD100_KEY:not-configured}
+        customer: ${MITEDTSM_EXPRESS_KD100_CUSTOMER:not-configured}
   iot:
     message-bus:
       type: redis # 消息总线的类型

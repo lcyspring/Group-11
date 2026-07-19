@@ -7,7 +7,7 @@
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('account.title')" prop="accountId">
-            <WxAccountSelect @change="onAccountChanged" />
+            <WxAccountSelect @change="onAccountChanged" @unavailable="onAccountUnavailable" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -114,6 +114,14 @@ const onAccountChanged = (id: number) => {
   reply.value.accountId = id
   queryParams.pageNo = 1
   getList()
+}
+
+const onAccountUnavailable = () => {
+  accountId.value = -1
+  reply.value.accountId = -1
+  list.value = []
+  total.value = 0
+  loading.value = false
 }
 
 /** 查询列表 */

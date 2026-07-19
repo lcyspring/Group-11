@@ -75,6 +75,7 @@
   </Dialog>
 </template>
 <script lang="ts" setup>
+import type { FormRules } from 'element-plus'
 import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import { CommonStatusEnum } from '@/utils/constants'
 import { DataSinkApi, DataSinkVO, IotDataSinkTypeEnum } from '@/api/iot/rule/data/sink'
@@ -104,7 +105,7 @@ const formData = ref<DataSinkVO>({
   type: IotDataSinkTypeEnum.HTTP,
   config: {} as any
 })
-const formRules = reactive({
+const formRules = reactive<FormRules>({
   // 通用字段
   name: [{ required: true, message: t('sinkConfig.sinkName') + t('common.required'), trigger: 'blur' }],
   status: [{ required: true, message: t('common.status') + t('common.required'), trigger: 'blur' }],

@@ -3,12 +3,7 @@
 
   <ContentWrap>
     <!-- 搜索工作区 -->
-    <el-form
-      ref="queryFormRef"
-      :model="queryParams"
-      class="-mb-15px"
-      label-width="auto"
-    >
+    <el-form ref="queryFormRef" :model="queryParams" class="-mb-15px" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('combination.name')" prop="name">
@@ -67,7 +62,13 @@
 
   <!-- 列表 -->
   <ContentWrap>
-    <el-table v-loading="loading" :data="list" :show-overflow-tooltip="true" :stripe="true" :table-layout="'auto'">
+    <el-table
+      v-loading="loading"
+      :data="list"
+      :show-overflow-tooltip="true"
+      :stripe="true"
+      :table-layout="'auto'"
+    >
       <el-table-column :label="t('combination.activityId')" min-width="80" prop="id" />
       <el-table-column :label="t('combination.name')" min-width="140" prop="name" />
       <el-table-column :label="t('combination.activeTime')" min-width="210">
@@ -93,15 +94,28 @@
         min-width="100"
         prop="marketPrice"
       />
-      <el-table-column :label="t('combination.combinationPrice')" min-width="100" prop="seckillPrice">
+      <el-table-column
+        :label="t('combination.combinationPrice')"
+        min-width="100"
+        prop="seckillPrice"
+      >
         <template #default="scope">
           {{ formatCombinationPrice(scope.row.products) }}
         </template>
       </el-table-column>
       <el-table-column :label="t('combination.groupCount')" min-width="100" prop="groupCount" />
-      <el-table-column :label="t('combination.groupSuccessCount')" min-width="100" prop="groupSuccessCount" />
+      <el-table-column
+        :label="t('combination.groupSuccessCount')"
+        min-width="100"
+        prop="groupSuccessCount"
+      />
       <el-table-column :label="t('combination.recordCount')" min-width="100" prop="recordCount" />
-      <el-table-column align="center" :label="t('combination.status')" min-width="100" prop="status">
+      <el-table-column
+        align="center"
+        :label="t('combination.status')"
+        min-width="100"
+        prop="status"
+      >
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.COMMON_STATUS" :value="scope.row.status" />
         </template>
@@ -113,34 +127,36 @@
         prop="createTime"
         min-width="180"
       />
-      <el-table-column align="center" fixed="right" :label="t('common.action')" min-width="150">
+      <el-table-column align="center" fixed="right" :label="t('common.action')" width="140">
         <template #default="scope">
-          <el-button
-            v-hasPermi="['promotion:combination-activity:update']"
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            v-if="scope.row.status === 0"
-            v-hasPermi="['promotion:combination-activity:close']"
-            link
-            type="danger"
-            @click="handleClose(scope.row.id)"
-          >
-            {{ t('combination.close') }}
-          </el-button>
-          <el-button
-            v-else
-            v-hasPermi="['promotion:combination-activity:delete']"
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-          >
-            {{ t('common.del') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              v-hasPermi="['promotion:combination-activity:update']"
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              v-if="scope.row.status === 0"
+              v-hasPermi="['promotion:combination-activity:close']"
+              link
+              type="danger"
+              @click="handleClose(scope.row.id)"
+            >
+              {{ t('combination.close') }}
+            </el-button>
+            <el-button
+              v-else
+              v-hasPermi="['promotion:combination-activity:delete']"
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+            >
+              {{ t('common.del') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

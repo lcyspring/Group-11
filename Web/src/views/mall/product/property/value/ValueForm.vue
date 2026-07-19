@@ -10,7 +10,7 @@
       <el-row>
         <el-col :span="12">
           <el-form-item :label="t('property.propertyId')" prop="category">
-            <el-input v-model="formData.propertyId" disabled="" />
+            <el-input v-model="formData.propertyId" disabled />
           </el-form-item>
         </el-col>
         <el-col :span="12">
@@ -45,7 +45,7 @@ const dialogVisible = ref(false) // 弹窗的是否展示
 const dialogTitle = ref('') // 弹窗的标题
 const formLoading = ref(false) // 表单的加载中：1）修改时的数据加载；2）提交的按钮禁用
 const formType = ref('') // 表单的类型：create - 新增；update - 修改
-const formData = ref({
+const formData = ref<PropertyApi.PropertyValueVO>({
   id: undefined,
   propertyId: undefined,
   name: '',

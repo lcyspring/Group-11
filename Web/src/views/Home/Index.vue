@@ -12,15 +12,20 @@
                 <div class="text-20px">
                   {{ t('workplace.welcome') }} {{ username }} {{ t('workplace.happyDay') }}
                 </div>
-                <div class="mt-10px text-14px text-gray-500">
-                  {{ t('workplace.toady') }}，20℃ - 32℃！
-                </div>
+                <div class="mt-10px text-14px text-gray-500">{{ today }}</div>
               </div>
             </div>
           </el-col>
           <el-col :xl="12" :lg="12" :md="12" :sm="24" :xs="24">
             <div class="h-70px flex items-center justify-end lt-sm:mt-10px">
-              <div class="px-8px text-right">
+              <div
+                class="home-summary-link px-8px text-right"
+                :class="{ 'is-disabled': !canQueryTodo }"
+                role="button"
+                :tabindex="canQueryTodo ? 0 : -1"
+                @click="handleTodoClick"
+                @keydown.enter="handleTodoClick"
+              >
                 <div class="mb-16px text-14px text-gray-400">{{ t('workplace.toDo') }}</div>
                 <CountTo
                   class="text-20px"
@@ -30,12 +35,20 @@
                 />
               </div>
               <el-divider direction="vertical" border-style="dashed" />
-              <div class="px-8px text-right">
-                <div class="mb-16px text-14px text-gray-400">{{ t('workplace.access') }}</div>
+              <div
+                class="home-summary-link px-8px text-right"
+                role="button"
+                tabindex="0"
+                @click="handleNoticeMoreClick"
+                @keydown.enter="handleNoticeMoreClick"
+              >
+                <div class="mb-16px text-14px text-gray-400">
+                  {{ t('workplace.noticeCount') }}
+                </div>
                 <CountTo
                   class="text-20px"
                   :start-val="0"
-                  :end-val="totalSate.access"
+                  :end-val="totalSate.notice"
                   :duration="2600"
                 />
               </div>
@@ -93,11 +106,18 @@
         <template #header>
           <div class="h-3 flex justify-between">
             <span>{{ t('workplace.notice') }}</span>
-            <el-link type="primary" :underline="false">{{ t('action.more') }}</el-link>
+            <el-link type="primary" :underline="false" @click="handleNoticeMoreClick">
+              {{ t('action.more') }}
+            </el-link>
           </div>
         </template>
         <el-skeleton :loading="loading" animated>
-          <div v-for="(item, index) in notice" :key="`dynamics-${index}`">
+          <el-empty
+            v-if="notice.length === 0"
+            :description="t('common.noData')"
+            :image-size="64"
+          />
+          <div v-for="(item, index) in notice" :key="item.id || `dynamics-${index}`">
             <div class="flex items-center">
               <el-avatar :src="avatar" :size="35" class="mr-16px">
                 <img src="@/assets/imgs/avatar.gif" alt="" />
@@ -105,7 +125,7 @@
               <div>
                 <div class="text-14px">
                   <Highlight :keys="item.keys.map((v) => t(v))">
-                    {{ item.type }} : {{ item.title }}
+                    {{ t(item.type) }} : {{ item.title }}
                   </Highlight>
                 </div>
                 <div class="mt-16px text-12px text-gray-400">
@@ -127,9 +147,12 @@ import { formatTime } from '@/utils'
 
 import { useUserStore } from '@/store/modules/user'
 // import { useWatermark } from '@/hooks/web/useWatermark'
-import type { WorkplaceTotal, Project, Notice, Shortcut } from './types'
+import type { WorkplaceTotal, Notice, Shortcut } from './types'
 import { pieOptions, barOptions } from './echarts-data'
 import { useRouter } from 'vue-router'
+import * as TaskApi from '@/api/bpm/task'
+import * as NoticeApi from '@/api/system/notice'
+import { checkPermi } from '@/utils/permission'
 
 defineOptions({ name: 'Index' })
 
@@ -140,84 +163,37 @@ const userStore = useUserStore()
 const loading = ref(true)
 const avatar = userStore.getUser.avatar
 const username = userStore.getUser.nickname
+const today = formatTime(new Date(), 'yyyy-MM-dd')
+const canQueryTodo = checkPermi(['bpm:task:query'])
 const pieOptionsData = reactive<EChartsOption>(pieOptions) as EChartsOption
 // 获取统计数
 let totalSate = reactive<WorkplaceTotal>({
-  project: 0,
-  access: 0,
+  notice: 0,
   todo: 0
 })
 
 const getCount = async () => {
-  const data = {
-    project: 40,
-    access: 2340,
-    todo: 10
+  if (!canQueryTodo) {
+    totalSate.todo = 0
+    return
   }
-  totalSate = Object.assign(totalSate, data)
-}
-
-// 获取项目数
-let projects = reactive<Project[]>([])
-const getProject = async () => {
-  const data = [
-    {
-      name: 'ruoyi-vue-pro',
-      icon: 'simple-icons:springboot',
-      message: 'github.com/YunaiV/ruoyi-vue-pro',
-      personal: 'Spring Boot 单体架构',
-      time: new Date('2025-01-02'),
-      color: '#6DB33F'
-    },
-    {
-      name: 'mitedtsm-ui-admin-vue3',
-      icon: 'ep:element-plus',
-      message: 'github.com/mitedtsmcode/mitedtsm-ui-admin-vue3',
-      personal: 'Vue3 + element-plus 管理后台',
-      time: new Date('2025-02-03'),
-      color: '#409EFF'
-    },
-    {
-      name: 'mitedtsm-ui-mall-uniapp',
-      icon: 'icon-park-outline:mall-bag',
-      message: 'github.com/mitedtsmcode/mitedtsm-ui-mall-uniapp',
-      personal: 'Vue3 + uniapp 商城手机端',
-      time: new Date('2025-03-04'),
-      color: '#ff4d4f'
-    },
-    {
-      name: 'mitedtsm-cloud',
-      icon: 'material-symbols:cloud-outline',
-      message: 'github.com/YunaiV/mitedtsm-cloud',
-      personal: 'Spring Cloud 微服务架构',
-      time: new Date('2025-04-05'),
-      color: '#1890ff'
-    },
-    {
-      name: 'mitedtsm-ui-admin-vben',
-      icon: 'devicon:antdesign',
-      message: 'github.com/mitedtsmcode/mitedtsm-ui-admin-vben',
-      personal: 'Vue3 + vben5(antd) 管理后台',
-      time: new Date('2025-05-06'),
-      color: '#e18525'
-    },
-    {
-      name: 'mitedtsm-ui-admin-uniapp',
-      icon: 'ant-design:mobile',
-      message: 'github.com/mitedtsmcode/mitedtsm-ui-admin-uniapp',
-      personal: 'Vue3 + uniapp 管理手机端',
-      time: new Date('2025-06-01'),
-      color: '#2979ff'
-    }
-  ]
-  projects = Object.assign(projects, data)
+  const data = await TaskApi.getTaskTodoPage({ pageNo: 1, pageSize: 1 })
+  totalSate.todo = data.total
 }
 
 // 获取通知公告
 let notice = reactive<Notice[]>([])
 const getNotice = async () => {
-  const data: Notice[] = []
-  notice = Object.assign(notice, data)
+  const page = await NoticeApi.getNoticePage({ pageNo: 1, pageSize: 5 })
+  const data: Notice[] = page.list.map((item) => ({
+    id: item.id,
+    title: item.title,
+    type: 'workplace.noticeItem',
+    keys: [],
+    date: item.createTime
+  }))
+  notice.splice(0, notice.length, ...data)
+  totalSate.notice = page.total
 }
 
 // 获取快捷入口
@@ -314,24 +290,52 @@ const getWeeklyUserActivity = async () => {
 }
 
 const getAllApi = async () => {
-  await Promise.all([
-    getCount(),
-    getProject(),
-    getNotice(),
-    getShortcut(),
-    getUserAccessSource(),
-    getWeeklyUserActivity()
-  ])
-  loading.value = false
-}
-
-const handleProjectClick = (message: string) => {
-  window.open(`https://${message}`, '_blank')
+  try {
+    await Promise.allSettled([
+      getCount(),
+      getNotice(),
+      getShortcut(),
+      getUserAccessSource(),
+      getWeeklyUserActivity()
+    ])
+  } finally {
+    loading.value = false
+  }
 }
 
 const handleShortcutClick = (url: string) => {
   router.push(url)
 }
 
+const handleTodoClick = () => {
+  if (canQueryTodo) router.push('/bpm/task/todo')
+}
+
+const handleNoticeMoreClick = () => {
+  const canOpenNoticeManagement =
+    checkPermi(['system:notice:query']) && router.hasRoute('SystemNotice')
+  router.push({ name: canOpenNoticeManagement ? 'SystemNotice' : 'MyNotifyMessage' })
+}
+
+onActivated(() => {
+  void Promise.allSettled([getCount(), getNotice()])
+})
+
 getAllApi()
 </script>
+
+<style scoped>
+.home-summary-link {
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.home-summary-link:hover {
+  background: var(--el-fill-color-light);
+}
+
+.home-summary-link.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+</style>

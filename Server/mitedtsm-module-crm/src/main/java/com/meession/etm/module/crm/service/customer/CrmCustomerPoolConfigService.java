@@ -20,6 +20,11 @@ public interface CrmCustomerPoolConfigService {
     CrmCustomerPoolConfigDO getCustomerPoolConfig();
 
     /**
+     * 获得客户自动回收单批数量的 YAML 安全上限。
+     */
+    int getAutoPoolMaxBatchSize();
+
+    /**
      * 保存客户公海配置
      *
      * @param saveReqVO 更新信息

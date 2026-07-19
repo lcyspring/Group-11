@@ -101,7 +101,12 @@
               />
             </el-select>
           </el-form-item>
-          <el-form-item :label="t('process.instance.initiatorTime')" class="bold-label" label-position="top" prop="createTime">
+          <el-form-item
+            :label="t('process.instance.initiatorTime')"
+            class="bold-label"
+            label-position="top"
+            prop="createTime"
+          >
             <el-date-picker
               v-model="queryParams.createTime"
               value-format="YYYY-MM-DD HH:mm:ss"
@@ -125,8 +130,17 @@
   <!-- 列表 -->
   <ContentWrap>
     <el-table v-loading="loading" :data="list" :table-layout="'auto'">
-      <el-table-column align="center" :label="t('process.task.processName')" prop="processInstance.name" min-width="180" />
-      <el-table-column :label="t('process.instance.summary')" prop="processInstance.summary" min-width="180">
+      <el-table-column
+        align="center"
+        :label="t('process.task.processName')"
+        prop="processInstance.name"
+        min-width="180"
+      />
+      <el-table-column
+        :label="t('process.instance.summary')"
+        prop="processInstance.summary"
+        min-width="180"
+      >
         <template #default="scope">
           <div
             class="flex flex-col"
@@ -151,7 +165,12 @@
         prop="createTime"
         min-width="180"
       />
-      <el-table-column align="center" :label="t('process.task.currentTask')" prop="name" min-width="180" />
+      <el-table-column
+        align="center"
+        :label="t('process.task.currentTask')"
+        prop="name"
+        min-width="180"
+      />
       <el-table-column
         :formatter="dateFormatter"
         align="center"
@@ -166,13 +185,28 @@
         prop="endTime"
         min-width="180"
       />
-      <el-table-column align="center" :label="t('process.task.approvalStatus')" prop="status" min-width="120">
+      <el-table-column
+        align="center"
+        :label="t('process.task.approvalStatus')"
+        prop="status"
+        min-width="120"
+      >
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.BPM_TASK_STATUS" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column align="center" :label="t('process.task.approvalOpinion')" prop="reason" min-width="180" />
-      <el-table-column align="center" :label="t('process.task.duration')" prop="durationInMillis" min-width="160">
+      <el-table-column
+        align="center"
+        :label="t('process.task.approvalOpinion')"
+        prop="reason"
+        min-width="180"
+      />
+      <el-table-column
+        align="center"
+        :label="t('process.task.duration')"
+        prop="durationInMillis"
+        min-width="160"
+      >
         <template #default="scope">
           {{ formatPast2(scope.row.durationInMillis) }}
         </template>
@@ -183,11 +217,22 @@
         prop="processInstanceId"
         :show-overflow-tooltip="true"
       />
-      <el-table-column align="center" :label="t('process.task.taskId')" prop="id" :show-overflow-tooltip="true" />
-      <el-table-column align="center" :label="t('common.operation')" fixed="right" min-width="150">
+      <el-table-column
+        align="center"
+        :label="t('process.task.taskId')"
+        prop="id"
+        :show-overflow-tooltip="true"
+      />
+      <el-table-column align="center" :label="t('common.operation')" fixed="right" width="220">
         <template #default="scope">
-          <el-button link type="warning" @click="handleWithdraw(scope.row)">{{ t('process.task.withdraw') }}</el-button>
-          <el-button link type="primary" @click="handleAudit(scope.row)">{{ t('process.task.history') }}</el-button>
+          <TableActions>
+            <el-button v-if="scope.row.withdrawable === true" link type="warning" @click="handleWithdraw(scope.row)">{{
+              t('process.task.withdraw')
+            }}</el-button>
+            <el-button link type="primary" @click="handleAudit(scope.row)">{{
+              t('process.task.history')
+            }}</el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>
@@ -229,6 +274,7 @@ const queryParams = reactive({
 const queryFormRef = ref() // 搜索的表单
 const categoryList = ref<CategoryVO[]>([]) // 流程分类列表
 const showPopover = ref(false) // 高级筛选是否展示
+let initialized = false
 
 /** 查询任务列表 */
 const getList = async () => {
@@ -279,5 +325,10 @@ onMounted(async () => {
   categoryList.value = await CategoryApi.getCategorySimpleList()
   // 获取流程定义列表
   processDefinitionList.value = await DefinitionApi.getSimpleProcessDefinitionList()
+  initialized = true
+})
+
+onActivated(() => {
+  if (initialized) getList()
 })
 </script>

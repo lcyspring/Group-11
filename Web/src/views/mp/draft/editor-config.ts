@@ -17,6 +17,8 @@ export const createEditorConfig = (
         maxFileSize: 5 * 1024 * 1024,
         // 最多可上传几个文件，默认为 100
         maxNumberOfFiles: 10,
+        // 小于该阈值时允许以内联 Base64 处理
+        base64LimitSize: 0,
         // 选择文件时的类型限制，默认为 ['image/*'] 。如不想限制，则设置为 []
         allowedFileTypes: ['image/*'],
 
@@ -33,7 +35,7 @@ export const createEditorConfig = (
           Accept: '*',
           Authorization: 'Bearer ' + getAccessToken(),
           'tenant-id': getTenantId()
-        },
+        } as any,
 
         // 跨域是否传递 cookie ，默认为 false
         withCredentials: true,
@@ -45,23 +47,22 @@ export const createEditorConfig = (
         fieldName: 'file',
 
         // 上传之前触发
-        onBeforeUpload(file: File) {
-          console.log(file)
-          return file
+        onBeforeUpload(files: any) {
+          return files
         },
         // 上传进度的回调函数
         onProgress(progress: number) {
           // progress 是 0-100 的数字
           console.log('progress', progress)
         },
-        onSuccess(file: File, res: any) {
+        onSuccess(file: any, res: any) {
           console.log('onSuccess', file, res)
         },
-        onFailed(file: File, res: any) {
+        onFailed(file: any, res: any) {
           message.alertError(res.message)
           console.log('onFailed', file, res)
         },
-        onError(file: File, err: any, res: any) {
+        onError(file: any, err: any, res: any) {
           message.alertError(err.message)
           console.error('onError', file, err, res)
         },

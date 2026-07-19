@@ -7,9 +7,12 @@ import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.framework.common.util.date.LocalDateTimeUtils;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.funnel.*;
 import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessDO;
+import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessStatusDO;
+import com.meession.etm.module.crm.dal.mysql.business.CrmBusinessMapper;
 import com.meession.etm.module.crm.dal.mysql.statistics.CrmStatisticsFunnelMapper;
 import com.meession.etm.module.crm.enums.business.CrmBusinessEndStatusEnum;
 import com.meession.etm.module.crm.service.business.CrmBusinessService;
+import com.meession.etm.module.crm.service.business.CrmBusinessStatusService;
 import com.meession.etm.module.system.api.dept.DeptApi;
 import com.meession.etm.module.system.api.dept.dto.DeptRespDTO;
 import com.meession.etm.module.system.api.user.AdminUserApi;
@@ -18,7 +21,9 @@ import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -34,11 +39,15 @@ public class CrmStatisticsFunnelServiceImpl implements CrmStatisticsFunnelServic
 
     @Resource
     private CrmStatisticsFunnelMapper funnelMapper;
+    @Resource
+    private CrmBusinessMapper businessMapper;
 
     @Resource
     private AdminUserApi adminUserApi;
     @Resource
     private CrmBusinessService businessService;
+    @Resource
+    private CrmBusinessStatusService businessStatusService;
     @Resource
     private DeptApi deptApi;
 
@@ -47,7 +56,7 @@ public class CrmStatisticsFunnelServiceImpl implements CrmStatisticsFunnelServic
         // 1. 获得用户编号数组
         List<Long> userIds = getUserIds(reqVO);
         if (CollUtil.isEmpty(userIds)) {
-            return null;
+            return new CrmStatisticFunnelSummaryRespVO(0L, 0L, 0L);
         }
         reqVO.setUserIds(userIds);
 
@@ -56,6 +65,76 @@ public class CrmStatisticsFunnelServiceImpl implements CrmStatisticsFunnelServic
         Long businessCount = funnelMapper.selectBusinessCountByDateAndEndStatus(reqVO, null);
         Long businessWinCount = funnelMapper.selectBusinessCountByDateAndEndStatus(reqVO, CrmBusinessEndStatusEnum.WIN.getStatus());
         return new CrmStatisticFunnelSummaryRespVO(customerCount, businessCount, businessWinCount);
+    }
+
+    @Override
+    public List<CrmStatisticsBusinessStageSummaryRespVO> getBusinessStageSummary(
+            CrmStatisticsBusinessStageReqVO reqVO) {
+        reqVO.setUserIds(getUserIds(reqVO));
+        if (CollUtil.isEmpty(reqVO.getUserIds())) {
+            return Collections.emptyList();
+        }
+        businessStatusService.validateBusinessStatusType(reqVO.getStatusTypeId());
+        List<CrmStatisticsBusinessStageSummaryRespVO> rows = funnelMapper.selectBusinessStageSummary(reqVO);
+        if (CollUtil.isEmpty(rows)) {
+            return Collections.emptyList();
+        }
+
+        List<CrmStatisticsBusinessStageSummaryRespVO> stageRows = rows.stream()
+                .filter(row -> row.getEndStatus() == null).toList();
+        List<CrmStatisticsBusinessStageSummaryRespVO> outcomeRows = rows.stream()
+                .filter(row -> row.getEndStatus() != null).toList();
+
+        // 每个状态都是互斥的当前状态，必须保留 SQL 按 status_id 得到的独立存量。
+        // 禁止按排序反向累加，否则商机进入某一状态时会错误地同时增加其它同级状态。
+        stageRows.forEach(row -> row.setTotalPrice(row.getTotalPrice().setScale(2, RoundingMode.HALF_UP)));
+        long previousCount = 0L;
+        for (int index = 0; index < stageRows.size(); index++) {
+            CrmStatisticsBusinessStageSummaryRespVO row = stageRows.get(index);
+            row.setConversionRate(index == 0
+                    ? (row.getBusinessCount() == 0L ? BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
+                    : BigDecimal.valueOf(100).setScale(2, RoundingMode.HALF_UP))
+                    : calculatePercentage(row.getBusinessCount(), previousCount));
+            previousCount = row.getBusinessCount();
+        }
+        long endedCount = outcomeRows.stream()
+                .mapToLong(CrmStatisticsBusinessStageSummaryRespVO::getBusinessCount).sum();
+        outcomeRows.forEach(row -> row.setTotalPrice(row.getTotalPrice().setScale(2, RoundingMode.HALF_UP))
+                .setConversionRate(calculatePercentage(row.getBusinessCount(), endedCount)));
+        List<CrmStatisticsBusinessStageSummaryRespVO> result = new ArrayList<>(stageRows.size() + outcomeRows.size());
+        result.addAll(stageRows);
+        result.addAll(outcomeRows);
+        return result;
+    }
+
+    @Override
+    public PageResult<CrmBusinessDO> getBusinessStagePage(CrmStatisticsBusinessStagePageReqVO pageVO) {
+        pageVO.setUserIds(getUserIds(pageVO));
+        if (CollUtil.isEmpty(pageVO.getUserIds())) {
+            return PageResult.empty();
+        }
+        businessStatusService.validateBusinessStatus(pageVO.getStatusTypeId(), pageVO.getStatusId());
+        return businessMapper.selectStagePage(pageVO);
+    }
+
+    @Override
+    public PageResult<CrmBusinessDO> getBusinessWonPage(CrmStatisticsBusinessStageReqVO pageVO) {
+        pageVO.setUserIds(getUserIds(pageVO));
+        if (CollUtil.isEmpty(pageVO.getUserIds())) {
+            return PageResult.empty();
+        }
+        businessStatusService.validateBusinessStatusType(pageVO.getStatusTypeId());
+        return businessMapper.selectWonPage(pageVO);
+    }
+
+    @Override
+    public PageResult<CrmBusinessDO> getBusinessOutcomePage(CrmStatisticsBusinessOutcomePageReqVO pageVO) {
+        pageVO.setUserIds(getUserIds(pageVO));
+        if (CollUtil.isEmpty(pageVO.getUserIds())) {
+            return PageResult.empty();
+        }
+        businessStatusService.validateBusinessStatusType(pageVO.getStatusTypeId());
+        return businessMapper.selectOutcomePage(pageVO);
     }
 
     @Override
@@ -117,8 +196,54 @@ public class CrmStatisticsFunnelServiceImpl implements CrmStatisticsFunnelServic
                     .mapToLong(CrmStatisticsBusinessInversionRateSummaryByDateRespVO::getBusinessWinCount).sum();
             return new CrmStatisticsBusinessInversionRateSummaryByDateRespVO()
                     .setTime(LocalDateTimeUtils.formatDateRange(times[0], times[1], reqVO.getInterval()))
-                    .setBusinessCount(businessCount).setBusinessWinCount(businessWinCount);
+                    .setBusinessCount(businessCount).setBusinessWinCount(businessWinCount)
+                    .setBusinessWinRate(calculatePercentage(businessWinCount, businessCount));
         });
+    }
+
+    @Override
+    public List<CrmStatisticsBusinessForecastByDateRespVO> getBusinessForecastByDate(CrmStatisticsFunnelReqVO reqVO) {
+        reqVO.setUserIds(getUserIds(reqVO));
+        if (CollUtil.isEmpty(reqVO.getUserIds())) {
+            return Collections.emptyList();
+        }
+        List<CrmStatisticsBusinessForecastByDateRespVO> forecastList =
+                funnelMapper.selectBusinessForecastGroupByDate(reqVO);
+        List<LocalDateTime[]> timeRanges = LocalDateTimeUtils.getDateRangeList(
+                reqVO.getTimes()[0], reqVO.getTimes()[1], reqVO.getInterval());
+        return convertList(timeRanges, times -> {
+            List<CrmStatisticsBusinessForecastByDateRespVO> rows = forecastList.stream()
+                    .filter(vo -> LocalDateTimeUtils.isBetween(times[0], times[1], vo.getTime()))
+                    .toList();
+            long forecastBusinessCount = rows.stream()
+                    .mapToLong(CrmStatisticsBusinessForecastByDateRespVO::getForecastBusinessCount).sum();
+            long actualBusinessCount = rows.stream()
+                    .mapToLong(CrmStatisticsBusinessForecastByDateRespVO::getActualBusinessCount).sum();
+            BigDecimal forecastAmount = rows.stream()
+                    .map(CrmStatisticsBusinessForecastByDateRespVO::getForecastAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal actualAmount = rows.stream()
+                    .map(CrmStatisticsBusinessForecastByDateRespVO::getActualAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP);
+            return new CrmStatisticsBusinessForecastByDateRespVO()
+                    .setTime(LocalDateTimeUtils.formatDateRange(times[0], times[1], reqVO.getInterval()))
+                    .setForecastBusinessCount(forecastBusinessCount)
+                    .setActualBusinessCount(actualBusinessCount)
+                    .setForecastAmount(forecastAmount)
+                    .setActualAmount(actualAmount);
+        });
+    }
+
+    /**
+     * 计算百分比指标，统一由后端定义零分母及舍入口径。
+     */
+    private static BigDecimal calculatePercentage(long value, long total) {
+        if (total == 0L) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
+        return BigDecimal.valueOf(value)
+                .multiply(BigDecimal.valueOf(100))
+                .divide(BigDecimal.valueOf(total), 2, RoundingMode.HALF_UP);
     }
 
     @Override
@@ -130,6 +255,15 @@ public class CrmStatisticsFunnelServiceImpl implements CrmStatisticsFunnelServic
         }
         // 2. 执行查询
         return businessService.getBusinessPageByDate(pageVO);
+    }
+
+    @Override
+    public PageResult<CrmBusinessDO> getBusinessForecastPage(CrmStatisticsFunnelReqVO pageVO) {
+        pageVO.setUserIds(getUserIds(pageVO));
+        if (CollUtil.isEmpty(pageVO.getUserIds())) {
+            return PageResult.empty();
+        }
+        return businessService.getBusinessForecastPage(pageVO);
     }
 
     /**

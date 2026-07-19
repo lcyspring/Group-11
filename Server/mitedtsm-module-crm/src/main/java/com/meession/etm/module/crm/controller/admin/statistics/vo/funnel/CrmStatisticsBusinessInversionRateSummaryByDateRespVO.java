@@ -18,4 +18,8 @@ public class CrmStatisticsBusinessInversionRateSummaryByDateRespVO {
     @Schema(description = "赢单商机数", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
     private Long businessWinCount;
 
+    @Schema(description = "赢单转化率（百分比，保留两位小数）", requiredMode = Schema.RequiredMode.REQUIRED,
+            example = "25.00")
+    private BigDecimal businessWinRate;
+
 }

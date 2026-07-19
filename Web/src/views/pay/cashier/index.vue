@@ -148,7 +148,7 @@ const { delView } = useTagsViewStore() // 视图操作
 const id = ref(undefined) // 支付单号
 const returnUrl = ref<string | undefined>(undefined) // 支付完的回调地址
 const loading = ref(false) // 支付信息的 loading
-const payOrder = ref({}) // 支付信息
+const payOrder = ref<Record<string, any>>({}) // 支付信息
 const channelsAlipay = [
   {
     name: t('channel.codeAlipayPc'),
@@ -459,7 +459,10 @@ const goReturnUrl = (payResult) => {
 onMounted(() => {
   id.value = route.query.id
   if (route.query.returnUrl) {
-    returnUrl.value = decodeURIComponent(route.query.returnUrl)
+    const encodedReturnUrl = Array.isArray(route.query.returnUrl)
+      ? route.query.returnUrl[0]
+      : route.query.returnUrl
+    returnUrl.value = decodeURIComponent(encodedReturnUrl || '')
   }
   getDetail()
 })

@@ -1,6 +1,7 @@
 package com.meession.etm.module.system.api.mail;
 
 import com.meession.etm.module.system.api.mail.dto.MailSendSingleToUserReqDTO;
+import com.meession.etm.module.system.api.mail.dto.MailSendStatusRespDTO;
 
 import jakarta.validation.Valid;
 
@@ -30,5 +31,8 @@ public interface MailSendApi {
      * @return 发送日志编号
      */
     Long sendSingleMailToMember(@Valid MailSendSingleToUserReqDTO reqDTO);
+
+    /** 获得邮件异步发送状态；日志不存在时返回 {@code null}。 */
+    MailSendStatusRespDTO getMailSendStatus(Long logId);
 
 }

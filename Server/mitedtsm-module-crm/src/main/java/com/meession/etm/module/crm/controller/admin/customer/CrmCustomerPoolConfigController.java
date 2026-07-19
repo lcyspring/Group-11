@@ -30,7 +30,9 @@ public class CrmCustomerPoolConfigController {
     @PreAuthorize("@ss.hasPermission('crm:customer-pool-config:query')")
     public CommonResult<CrmCustomerPoolConfigRespVO> getCustomerPoolConfig() {
         CrmCustomerPoolConfigDO poolConfig = customerPoolConfigService.getCustomerPoolConfig();
-        return success(BeanUtils.toBean(poolConfig, CrmCustomerPoolConfigRespVO.class));
+        CrmCustomerPoolConfigRespVO response = BeanUtils.toBean(poolConfig, CrmCustomerPoolConfigRespVO.class);
+        response.setAutoPoolMaxBatchSize(customerPoolConfigService.getAutoPoolMaxBatchSize());
+        return success(response);
     }
 
     @PutMapping("/save")

@@ -71,6 +71,7 @@ const formData = ref({
   id: undefined,
   name: '',
   picUrl: '',
+  sort: 0,
   status: CommonStatusEnum.ENABLE,
   description: ''
 })
@@ -131,6 +132,7 @@ const resetForm = () => {
     id: undefined,
     name: '',
     picUrl: '',
+    sort: 0,
     status: CommonStatusEnum.ENABLE,
     description: ''
   }

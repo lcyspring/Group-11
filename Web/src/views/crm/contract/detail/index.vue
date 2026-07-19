@@ -1,14 +1,17 @@
 <!-- 合同详情页面组件-->
 <template>
   <ContractDetailsHeader v-loading="loading" :contract="contract">
-    <el-button v-if="permissionListRef?.validateWrite" @click="openForm('update', contract.id)">
-      {{ t('common.edit') }}
+    <el-button
+      v-if="permissionListRef?.validateWrite && [0, 30, 40].includes(contract.auditStatus)"
+      @click="openForm('update', contract.id)"
+    >
+      {{ contract.auditStatus === 0 ? t('common.edit') : t('crm.contract.revise') }}
     </el-button>
     <el-button v-if="permissionListRef?.validateOwnerUser" type="primary" @click="transferContract">
       {{ t('crm.customer.transfer') }}
     </el-button>
   </ContractDetailsHeader>
-  <el-col>
+  <el-col v-if="contract.id">
     <el-tabs>
       <el-tab-pane :label="t('crm.contract.followUpTab')">
         <FollowUpList :biz-id="contract.id" :biz-type="BizTypeEnum.CRM_CONTRACT" />
@@ -18,6 +21,12 @@
       </el-tab-pane>
       <el-tab-pane :label="t('crm.contract.productTab')">
         <ContractProductList :contract="contract" />
+      </el-tab-pane>
+      <el-tab-pane :label="t('crm.contract.lifecycleTab')">
+        <ContractLifecyclePanel :contract="contract" />
+      </el-tab-pane>
+      <el-tab-pane :label="t('crm.contract.fulfillmentTab')">
+        <ContractFulfillmentPanel :contract-id="contract.id!" />
       </el-tab-pane>
       <el-tab-pane :label="t('crm.contract.receivableTab')">
         <ReceivablePlanList
@@ -57,6 +66,8 @@ import * as ContractApi from '@/api/crm/contract'
 import ContractDetailsInfo from './ContractDetailsInfo.vue'
 import ContractDetailsHeader from './ContractDetailsHeader.vue'
 import ContractProductList from './ContractProductList.vue'
+import ContractLifecyclePanel from './ContractLifecyclePanel.vue'
+import ContractFulfillmentPanel from './ContractFulfillmentPanel.vue'
 import { BizTypeEnum } from '@/api/crm/permission'
 import { getOperateLogPage } from '@/api/crm/operateLog'
 import ContractForm from '@/views/crm/contract/ContractForm.vue'
@@ -69,7 +80,7 @@ import ReceivablePlanList from '@/views/crm/receivable/plan/components/Receivabl
 defineOptions({ name: 'CrmContractDetail' })
 
 const { t } = useI18n() // 国际化
-const props = defineProps<{ id?: number }>()
+const props = defineProps<{ id?: number | string }>()
 
 const route = useRoute()
 const message = useMessage()
@@ -130,12 +141,13 @@ const close = () => {
 /** 初始化 */
 onMounted(async () => {
   const id = props.id || route.params.id
-  if (!id) {
+  const parsedId = Number(id)
+  if (!Number.isSafeInteger(parsedId) || parsedId <= 0) {
     message.warning(t('crm.contract.paramError'))
     close()
     return
   }
-  contractId.value = id as unknown as number
+  contractId.value = parsedId
   await getContractData()
 })
 </script>

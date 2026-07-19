@@ -19,11 +19,13 @@ import org.dromara.hutool.extra.mail.MailAccount;
 import org.dromara.hutool.extra.mail.MailUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.util.HtmlUtils;
 
 import java.io.File;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.net.URI;
 
 import static com.meession.etm.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static com.meession.etm.module.system.enums.ErrorCodeConstants.*;
@@ -38,6 +40,8 @@ import static com.meession.etm.module.system.enums.ErrorCodeConstants.*;
 @Validated
 @Slf4j
 public class MailSendServiceImpl implements MailSendService {
+
+    public static final String TRACKING_PIXEL_URL_PARAM = "__trackingPixelUrl";
 
     @Resource
     private AdminUserService adminUserService;
@@ -90,7 +94,8 @@ public class MailSendServiceImpl implements MailSendService {
         // 创建发送日志。如果模板被禁用，则不发送短信，只记录日志
         Boolean isSend = CommonStatusEnum.ENABLE.getStatus().equals(template.getStatus());
         String title = mailTemplateService.formatMailTemplateContent(template.getTitle(), templateParams);
-        String content = mailTemplateService.formatMailTemplateContent(template.getContent(), templateParams);
+        String content = appendTrackingPixel(
+                mailTemplateService.formatMailTemplateContent(template.getContent(), templateParams), templateParams);
         Long sendLogId = mailLogService.createMailLog(userId, userType, toMailSet, ccMailSet, bccMailSet,
                 account, template, content, templateParams, isSend);
         // 发送 MQ 消息，异步执行发送短信
@@ -99,6 +104,27 @@ public class MailSendServiceImpl implements MailSendService {
                     account.getId(), template.getNickname(), title, content, attachments);
         }
         return sendLogId;
+    }
+
+    @VisibleForTesting
+    String appendTrackingPixel(String content, Map<String, Object> templateParams) {
+        Object rawUrl = templateParams == null ? null : templateParams.get(TRACKING_PIXEL_URL_PARAM);
+        if (!(rawUrl instanceof String url) || url.isBlank()) {
+            return content;
+        }
+        URI uri;
+        try {
+            uri = URI.create(url);
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("Invalid mail tracking pixel URL", ex);
+        }
+        if (!("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme()))
+                || uri.getHost() == null || uri.getRawUserInfo() != null) {
+            throw new IllegalArgumentException("Mail tracking pixel URL must be an HTTP(S) absolute URL");
+        }
+        String escapedUrl = HtmlUtils.htmlEscape(url);
+        return content + "<img src=\"" + escapedUrl
+                + "\" width=\"1\" height=\"1\" alt=\"\" style=\"display:none\" referrerpolicy=\"no-referrer\" />";
     }
 
     private String getUserMail(Long userId, Integer userType) {

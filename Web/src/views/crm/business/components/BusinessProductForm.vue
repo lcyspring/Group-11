@@ -75,6 +75,15 @@
           </el-form-item>
         </template>
       </el-table-column>
+      <el-table-column :label="t('crm.business.taxRate')" fixed="right" min-width="120">
+        <template #default="{ row, $index }">
+          <el-form-item :prop="`${$index}.taxRatePercent`" :rules="formRules.taxRatePercent" class="mb-0px!">
+            <el-select v-model="row.taxRatePercent" class="!w-100%">
+              <el-option v-for="rate in taxRates" :key="rate" :label="`${rate}%`" :value="rate" />
+            </el-select>
+          </el-form-item>
+        </template>
+      </el-table-column>
       <el-table-column :label="t('crm.business.total')" prop="totalPrice" fixed="right" min-width="140">
         <template #default="{ row, $index }">
           <el-form-item :prop="`${$index}.totalPrice`" class="mb-0px!">
@@ -82,9 +91,11 @@
           </el-form-item>
         </template>
       </el-table-column>
-      <el-table-column align="center" fixed="right" :label="t('common.action')" min-width="150">
+      <el-table-column v-if="!disabled" align="center" fixed="right" :label="t('common.action')" min-width="120">
         <template #default="{ $index }">
-          <el-button @click="handleDelete($index)" link/>
+          <el-button @click="handleDelete($index)" link type="danger">
+            <Icon icon="ep:delete" class="mr-5px" />{{ t('common.delete') }}
+          </el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -97,21 +108,25 @@
 import * as ProductApi from '@/api/crm/product'
 import { erpPriceInputFormatter, erpPriceMultiply } from '@/utils'
 import { DICT_TYPE } from '@/utils/dict'
+import type { FormInstance } from 'element-plus'
 
 const { t } = useI18n() // 国际化
 
 const props = defineProps<{
-  products: undefined
-  disabled: false
+  products?: any[]
+  disabled?: boolean
+  taxRates: number[]
+  defaultTaxRate: number
 }>()
 const formLoading = ref(false) // 表单的加载中
 const formData = ref([])
 const formRules = reactive({
   productId: [{ required: true, message: t('crm.business.productRequired'), trigger: 'blur' }],
   businessPrice: [{ required: true, message: t('crm.business.businessPriceRequired'), trigger: 'blur' }],
-  count: [{ required: true, message: t('crm.business.countRequired'), trigger: 'blur' }]
+  count: [{ required: true, message: t('crm.business.countRequired'), trigger: 'blur' }],
+  taxRatePercent: [{ required: true, message: t('crm.business.taxRateRequired'), trigger: 'change' }]
 })
-const formRef = ref([]) // 表单 Ref
+const formRef = ref<FormInstance>() // 表单 Ref
 const productList = ref<ProductApi.ProductVO[]>([]) // 产品列表
 
 /** 初始化设置产品项 */
@@ -151,7 +166,8 @@ const handleAdd = () => {
     productNo: undefined, // 产品条码
     productPrice: undefined, // 产品价格
     businessPrice: undefined,
-    count: 1
+    count: 1,
+    taxRatePercent: props.defaultTaxRate
   }
   formData.value.push(row)
 }
@@ -174,7 +190,7 @@ const onChangeProduct = (productId, row) => {
 
 /** 表单校验 */
 const validate = () => {
-  return formRef.value.validate()
+  return formRef.value?.validate()
 }
 defineExpose({ validate })
 

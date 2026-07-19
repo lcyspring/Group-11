@@ -17,7 +17,6 @@ const include = [
   'lodash-es',
   'nprogress',
   'web-storage-cache',
-  '@iconify/iconify',
   '@vueuse/core',
   '@zxcvbn-ts/core',
   'echarts/core',
@@ -119,6 +118,6 @@ const include = [
   'element-plus/es/components/progress/style/css'
 ]
 
-const exclude = ['@iconify/json']
+const exclude = []
 
 export { include, exclude }

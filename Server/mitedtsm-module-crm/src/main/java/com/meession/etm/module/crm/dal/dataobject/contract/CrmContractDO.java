@@ -55,6 +55,17 @@ public class CrmContractDO extends BaseDO {
     private Long businessId;
 
     /**
+     * 转换来源商机编号。
+     *
+     * 仅由“商机赢单转合同”设置，用于兼容历史上允许一个商机关联多份合同的数据，
+     * 并对新的显式转换建立幂等唯一键。
+     */
+    private Long sourceBusinessId;
+
+    /** 锁定报价来源；仅由商机转换写入。 */
+    private Long sourceQuoteId;
+
+    /**
      * 最后跟进时间
      */
     private LocalDateTime contactLastTime;
@@ -103,6 +114,13 @@ public class CrmContractDO extends BaseDO {
      * 合同总金额，单位：分
      */
     private BigDecimal totalPrice;
+    /** 报价/合同币种快照。 */
+    private String currencyCode;
+    private String baseCurrencyCode;
+    private BigDecimal exchangeRateToBase;
+    private BigDecimal taxAmount;
+    private BigDecimal grossAmount;
+    private BigDecimal baseGrossAmount;
     /**
      * 客户签约人，非必须
      *

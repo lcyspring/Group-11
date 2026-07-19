@@ -6,74 +6,73 @@
 
   <!-- 搜索 -->
   <ContentWrap>
-    <el-form
-      class="-mb-15px"
-      label-width="auto"
-      :model="queryParams"
-      ref="queryFormRef"
-    >
+    <el-form class="-mb-15px" label-width="auto" :model="queryParams" ref="queryFormRef">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('codegen.table.tableName')" prop="tableName">
-        <el-input
-          v-model="queryParams.tableName"
-          class="!w-240px"
-          clearable
-          :placeholder="t('codegen.table.tableNamePlaceholder')"
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
+            <el-input
+              v-model="queryParams.tableName"
+              class="!w-240px"
+              clearable
+              :placeholder="t('codegen.table.tableNamePlaceholder')"
+              @keyup.enter="handleQuery"
+            />
+          </el-form-item>
         </el-col>
         <el-col :span="8">
           <el-form-item :label="t('codegen.table.tableComment')" prop="tableComment">
-        <el-input
-          v-model="queryParams.tableComment"
-          class="!w-240px"
-          clearable
-          :placeholder="t('codegen.tableCommentPlaceholder')"
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
+            <el-input
+              v-model="queryParams.tableComment"
+              class="!w-240px"
+              clearable
+              :placeholder="t('codegen.tableCommentPlaceholder')"
+              @keyup.enter="handleQuery"
+            />
+          </el-form-item>
         </el-col>
         <el-col :span="8">
           <el-form-item :label="t('common.createTime')" prop="createTime">
-        <el-date-picker
-          v-model="queryParams.createTime"
-          :default-time="[new Date('1 00:00:00'), new Date('1 23:59:59')]"
-          class="!w-240px"
-          :end-placeholder="t('common.endTime')"
-          :start-placeholder="t('common.startTime')"
-          type="daterange"
-          value-format="YYYY-MM-DD HH:mm:ss"
-        />
-      </el-form-item>
+            <el-date-picker
+              v-model="queryParams.createTime"
+              :default-time="[new Date('1 00:00:00'), new Date('1 23:59:59')]"
+              class="!w-240px"
+              :end-placeholder="t('common.endTime')"
+              :start-placeholder="t('common.startTime')"
+              type="daterange"
+              value-format="YYYY-MM-DD HH:mm:ss"
+            />
+          </el-form-item>
         </el-col>
       </el-row>
       <el-row>
         <el-col :span="24">
           <el-form-item>
-        <el-button @click="handleQuery">
-          <Icon class="mr-5px" icon="ep:search" />
-          {{ t('common.search') }}
-        </el-button>
-        <el-button @click="resetQuery">
-          <Icon class="mr-5px" icon="ep:refresh" />
-          {{ t('common.reset') }}
-        </el-button>
-        <el-button v-hasPermi="['infra:codegen:create']" type="primary" @click="openImportTable()">
-          <Icon class="mr-5px" icon="ep:zoom-in" />
-          {{ t('action.import') }}
-        </el-button>
-        <el-button
-          v-hasPermi="['infra:codegen:delete']"
-          type="danger"
-          :disabled="checkedIds.length === 0"
-          @click="handleDeleteBatch"
-        >
-          <Icon class="mr-5px" icon="ep:delete" />
-          {{ t('common.batchDelete') }}
-        </el-button>
-      </el-form-item>
+            <el-button @click="handleQuery">
+              <Icon class="mr-5px" icon="ep:search" />
+              {{ t('common.search') }}
+            </el-button>
+            <el-button @click="resetQuery">
+              <Icon class="mr-5px" icon="ep:refresh" />
+              {{ t('common.reset') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['infra:codegen:create']"
+              type="primary"
+              @click="openImportTable()"
+            >
+              <Icon class="mr-5px" icon="ep:zoom-in" />
+              {{ t('action.import') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['infra:codegen:delete']"
+              type="danger"
+              :disabled="checkedIds.length === 0"
+              @click="handleDeleteBatch"
+            >
+              <Icon class="mr-5px" icon="ep:delete" />
+              {{ t('common.batchDelete') }}
+            </el-button>
+          </el-form-item>
         </el-col>
       </el-row>
     </el-form>
@@ -81,7 +80,12 @@
 
   <!-- 列表 -->
   <ContentWrap>
-    <el-table v-loading="loading" :data="list" @selection-change="handleRowCheckboxChange" :table-layout="'auto'">
+    <el-table
+      v-loading="loading"
+      :data="list"
+      @selection-change="handleRowCheckboxChange"
+      :table-layout="'auto'"
+    >
       <el-table-column type="selection" width="55" />
       <el-table-column align="center" :label="t('codegen.dataSource')">
         <template #default="scope">
@@ -90,14 +94,24 @@
           }}
         </template>
       </el-table-column>
-      <el-table-column align="center" :label="t('codegen.table.tableName')" prop="tableName" min-width="200" />
+      <el-table-column
+        align="center"
+        :label="t('codegen.table.tableName')"
+        prop="tableName"
+        min-width="200"
+      />
       <el-table-column
         :show-overflow-tooltip="true"
         align="center"
         :label="t('codegen.table.tableComment')"
         prop="tableComment"
       />
-      <el-table-column align="center" :label="t('codegen.entity')" prop="className" min-width="200" />
+      <el-table-column
+        align="center"
+        :label="t('codegen.entity')"
+        prop="className"
+        min-width="200"
+      />
       <el-table-column
         :formatter="dateFormatter"
         align="center"
@@ -112,48 +126,50 @@
         prop="createTime"
         min-width="180"
       />
-      <el-table-column align="center" fixed="right" :label="t('common.operation')" min-width="300">
+      <el-table-column align="center" fixed="right" :label="t('common.operation')" width="140">
         <template #default="scope">
-          <el-button
-            v-hasPermi="['infra:codegen:preview']"
-            link
-            type="primary"
-            @click="handlePreview(scope.row)"
-          >
-            {{ t('action.preview') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['infra:codegen:update']"
-            link
-            type="primary"
-            @click="handleUpdate(scope.row.id)"
-          >
-            {{ t('action.edit') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['infra:codegen:delete']"
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-          >
-            {{ t('action.delete') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['infra:codegen:update']"
-            link
-            type="primary"
-            @click="handleSyncDB(scope.row)"
-          >
-            {{ t('codegen.sync') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['infra:codegen:download']"
-            link
-            type="primary"
-            @click="handleGenTable(scope.row)"
-          >
-            {{ t('codegen.generateCode') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              v-hasPermi="['infra:codegen:preview']"
+              link
+              type="primary"
+              @click="handlePreview(scope.row)"
+            >
+              {{ t('action.preview') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['infra:codegen:update']"
+              link
+              type="primary"
+              @click="handleUpdate(scope.row.id)"
+            >
+              {{ t('action.edit') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['infra:codegen:delete']"
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+            >
+              {{ t('action.delete') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['infra:codegen:update']"
+              link
+              type="primary"
+              @click="handleSyncDB(scope.row)"
+            >
+              {{ t('codegen.sync') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['infra:codegen:download']"
+              link
+              type="primary"
+              @click="handleGenTable(scope.row)"
+            >
+              {{ t('codegen.generateCode') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

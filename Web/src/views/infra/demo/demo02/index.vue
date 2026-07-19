@@ -85,34 +85,29 @@
         :formatter="dateFormatter"
         min-width="180"
       />
-      <el-table-column :label="t('common.action')" align="center">
+      <el-table-column :label="t('common.action')" align="center" width="220">
         <template #default="scope">
-          <el-button
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-            v-hasPermi="['infra:demo02-category:update']"
-          >
-            {{ t('action.edit') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-            v-hasPermi="['infra:demo02-category:delete']"
-          >
-            {{ t('action.delete') }}
-          </el-button>
+          <TableActions>
+            <el-button
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+              v-hasPermi="['infra:demo02-category:update']"
+            >
+              {{ t('action.edit') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+              v-hasPermi="['infra:demo02-category:delete']"
+            >
+              {{ t('action.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>
-    <!-- 分页 -->
-    <Pagination
-      :total="total"
-      v-model:page="queryParams.pageNo"
-      v-model:limit="queryParams.pageSize"
-      @pagination="getList"
-    />
   </ContentWrap>
 
   <!-- 表单弹窗：添加/修改 -->
@@ -145,7 +140,7 @@ const exportLoading = ref(false) // 导出的加载中
 const getList = async () => {
   loading.value = true
   try {
-    const data = await Demo02CategoryApi.getDemo02CategoryList(queryParams)
+    const data = await Demo02CategoryApi.getDemo02CategoryList()
     list.value = handleTree(data, 'id', 'parentId')
   } finally {
     loading.value = false
@@ -154,7 +149,6 @@ const getList = async () => {
 
 /** 搜索按钮操作 */
 const handleQuery = () => {
-  queryParams.pageNo = 1
   getList()
 }
 

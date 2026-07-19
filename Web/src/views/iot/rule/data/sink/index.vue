@@ -103,24 +103,26 @@
         prop="createTime"
         min-width="180"
       />
-      <el-table-column align="center" fixed="right" :label="t('rule.data.operation')" min-width="120">
+      <el-table-column align="center" fixed="right" :label="t('rule.data.operation')" width="220">
         <template #default="scope">
-          <el-button
-            v-hasPermi="['iot:data-sink:update']"
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['iot:data-sink:delete']"
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-          >
-            {{ t('common.del') }}
-          </el-button>
+          <TableActions>
+            <el-button
+              v-hasPermi="['iot:data-sink:update']"
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['iot:data-sink:delete']"
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+            >
+              {{ t('common.del') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

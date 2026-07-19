@@ -41,9 +41,11 @@ import { DICT_TYPE } from '@/utils/dict'
 import { dateFormatter } from '@/utils/formatTime'
 import * as FavoriteApi from '@/api/mall/product/favorite'
 import { floatToFixed2 } from '@/utils'
+import { createImageViewer } from '@/components/ImageViewer'
 
 const message = useMessage() // 消息弹窗
 const { t } = useI18n() // 国际化
+const imagePreview = (url: string) => createImageViewer({ urlList: [url] })
 
 const loading = ref(true) // 列表的加载中
 const total = ref(0) // 列表的总页数

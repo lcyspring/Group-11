@@ -48,6 +48,8 @@
     </el-form>
   </ContentWrap>
 
+  <StatisticsLineagePanel ref="statisticsLineageRef" scope="rank" :on-refresh="handleQuery" />
+
   <!-- 排行数据 -->
   <el-col>
     <el-tabs v-model="activeTab">
@@ -99,6 +101,7 @@ import { defaultProps, handleTree } from '@/utils/tree'
 import * as DeptApi from '@/api/system/dept'
 import { beginOfDay, defaultShortcuts, endOfDay, formatDate } from '@/utils/formatTime'
 import { useUserStore } from '@/store/modules/user'
+import StatisticsLineagePanel from '../components/StatisticsLineagePanel.vue'
 
 defineOptions({ name: 'CrmStatisticsRank' })
 
@@ -124,40 +127,44 @@ const customerCountRankRef = ref() // CustomerCountRank 组件的引用
 const contactCountRankRef = ref() // ContactCountRank 组件的引用
 const followCountRankRef = ref() // FollowCountRank 组件的引用
 const followCustomerCountRankRef = ref() // FollowCustomerCountRank 组件的引用
+const statisticsLineageRef = ref<InstanceType<typeof StatisticsLineagePanel>>()
 
 /** 搜索按钮操作 */
-const handleQuery = () => {
+const handleQuery = async () => {
+  let query: Promise<unknown> | undefined
   switch (activeTab.value) {
     case 'contractPriceRank': // 合同金额排行
-      contractPriceRankRef.value?.loadData?.()
+      query = contractPriceRankRef.value?.loadData?.()
       break
     case 'receivablePriceRank': // 回款金额排行
-      receivablePriceRankRef.value?.loadData?.()
+      query = receivablePriceRankRef.value?.loadData?.()
       break
     case 'contractCountRank': // 签约合同排行
-      contractCountRankRef.value?.loadData?.()
+      query = contractCountRankRef.value?.loadData?.()
       break
     case 'productSalesRank': // 产品销量排行
-      productSalesRankRef.value?.loadData?.()
+      query = productSalesRankRef.value?.loadData?.()
       break
     case 'customerCountRank': // 新增客户数排行
-      customerCountRankRef.value?.loadData?.()
+      query = customerCountRankRef.value?.loadData?.()
       break
     case 'contactCountRank': // 新增联系人数排行
-      contactCountRankRef.value?.loadData?.()
+      query = contactCountRankRef.value?.loadData?.()
       break
     case 'followCountRank': // 跟进次数排行
-      followCountRankRef.value?.loadData?.()
+      query = followCountRankRef.value?.loadData?.()
       break
     case 'followCustomerCountRank': // 跟进客户数排行
-      followCustomerCountRankRef.value?.loadData?.()
+      query = followCustomerCountRankRef.value?.loadData?.()
       break
   }
+  await query
+  statisticsLineageRef.value?.markRefreshed()
 }
 
 // 当 activeTab 改变时，刷新当前活动的 tab
 watch(activeTab, () => {
-  handleQuery()
+  void handleQuery()
 })
 
 /** 重置按钮操作 */
@@ -169,6 +176,7 @@ const resetQuery = () => {
 // 加载部门树
 onMounted(async () => {
   deptList.value = handleTree(await DeptApi.getSimpleDeptList())
+  await handleQuery()
 })
 </script>
 <style lang="scss" scoped></style>

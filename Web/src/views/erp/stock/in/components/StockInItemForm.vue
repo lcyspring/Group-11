@@ -127,6 +127,7 @@
   </el-row>
 </template>
 <script setup lang="ts">
+import type { FormInstance, SummaryMethod } from 'element-plus'
 import { ProductApi, ProductVO } from '@/api/erp/product/product'
 import { WarehouseApi, WarehouseVO } from '@/api/erp/stock/warehouse'
 import { StockApi } from '@/api/erp/stock/stock'
@@ -140,8 +141,8 @@ import {
 const { t } = useI18n('erp.stock.in')
 
 const props = defineProps<{
-  items: undefined
-  disabled: false
+  items?: any[]
+  disabled?: boolean
 }>()
 const formLoading = ref(false) // 表单的加载中
 const formData = ref([])
@@ -151,7 +152,7 @@ const formRules = reactive({
   productId: [{ required: true, message: t('productRequired'), trigger: 'blur' }],
   count: [{ required: true, message: t('countRequired'), trigger: 'blur' }]
 })
-const formRef = ref([]) // 表单 Ref
+const formRef = ref<FormInstance>() // 表单 Ref
 const productList = ref<ProductVO[]>([]) // 产品列表
 const warehouseList = ref<WarehouseVO[]>([]) // 仓库列表
 const defaultWarehouse = ref<WarehouseVO>(undefined) // 默认仓库
@@ -181,7 +182,7 @@ watch(
 )
 
 /** 合计 */
-const getSummaries = (param: SummaryMethodProps) => {
+const getSummaries = (param: Parameters<SummaryMethod<any>>[0]) => {
   const { columns, data } = param
   const sums: string[] = []
   columns.forEach((column, index) => {
@@ -252,7 +253,7 @@ const setStockCount = async (row) => {
 
 /** 表单校验 */
 const validate = () => {
-  return formRef.value.validate()
+  return formRef.value?.validate()
 }
 defineExpose({ validate })
 

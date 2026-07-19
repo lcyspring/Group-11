@@ -3,12 +3,7 @@
 
   <!-- 搜索工作区 -->
   <ContentWrap>
-    <el-form
-      ref="queryFormRef"
-      :model="queryParams"
-      class="-mb-15px"
-      label-width="auto"
-    >
+    <el-form ref="queryFormRef" :model="queryParams" class="-mb-15px" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('property.name')" prop="name">
@@ -64,9 +59,25 @@
   <!-- 列表 -->
   <ContentWrap>
     <el-table v-loading="loading" :data="list" :table-layout="'auto'">
-      <el-table-column align="center" :label="t('property.id')" min-width="60" prop="id"  fixed="right" />
-      <el-table-column align="center" :label="t('property.propertyName')" prop="name" min-width="150" />
-      <el-table-column :show-overflow-tooltip="true" align="center" :label="t('property.remark')" prop="remark" />
+      <el-table-column
+        align="center"
+        :label="t('property.id')"
+        min-width="60"
+        prop="id"
+        fixed="right"
+      />
+      <el-table-column
+        align="center"
+        :label="t('property.propertyName')"
+        prop="name"
+        min-width="150"
+      />
+      <el-table-column
+        :show-overflow-tooltip="true"
+        align="center"
+        :label="t('property.remark')"
+        prop="remark"
+      />
       <el-table-column
         :formatter="dateFormatter"
         align="center"
@@ -74,25 +85,29 @@
         prop="createTime"
         min-width="180"
       />
-      <el-table-column align="center" :label="t('common.operation')">
+      <el-table-column align="center" :label="t('common.operation')" width="140">
         <template #default="scope">
-          <el-button
-            v-hasPermi="['product:property:update']"
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button link type="primary" @click="goValueList(scope.row.id)">{{ t('property.viewValue') }}</el-button>
-          <el-button
-            v-hasPermi="['product:property:delete']"
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              v-hasPermi="['product:property:update']"
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button link type="primary" @click="goValueList(scope.row.id)">{{
+              t('property.viewValue')
+            }}</el-button>
+            <el-button
+              v-hasPermi="['product:property:delete']"
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

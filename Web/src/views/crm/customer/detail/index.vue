@@ -11,8 +11,8 @@
     <el-button v-if="permissionListRef?.validateOwnerUser" type="primary" @click="transfer">
       {{ t('transfer') }}
     </el-button>
-    <el-button v-if="permissionListRef?.validateWrite" @click="handleUpdateDealStatus">
-      {{ t('changeDealStatus') }}
+    <el-button v-if="permissionListRef?.validateWrite" @click="openLifecycleDialog">
+      {{ t('changeLifecycleStatus') }}
     </el-button>
     <el-button
       v-if="customer.lockStatus && permissionListRef?.validateOwnerUser"
@@ -24,19 +24,34 @@
       v-if="!customer.lockStatus && permissionListRef?.validateOwnerUser"
       @click="handleLock"
     >
-      {{ t('lock') }}
+      {{ t('crm.customer.lock') }}
     </el-button>
-    <el-button v-if="!customer.ownerUserId" type="primary" @click="handleReceive"> {{ t('receive') }}</el-button>
-    <el-button v-if="!customer.ownerUserId" type="primary" @click="handleDistributeForm">
+    <el-button
+      v-if="customer.poolStatus === CustomerApi.CustomerPoolStatus.PUBLIC"
+      type="primary"
+      @click="handleReceive"
+    >
+      {{ t('receive') }}
+    </el-button>
+    <el-button
+      v-if="customer.poolStatus === CustomerApi.CustomerPoolStatus.PUBLIC"
+      type="primary"
+      @click="handleDistributeForm"
+    >
       {{ t('assign') }}
     </el-button>
     <el-button
-      v-if="customer.ownerUserId && permissionListRef?.validateOwnerUser"
+      v-if="
+        customer.poolStatus === CustomerApi.CustomerPoolStatus.OWNED &&
+        customer.ownerUserId &&
+        permissionListRef?.validateOwnerUser
+      "
       @click="handlePutPool"
     >
       {{ t('putPool') }}
     </el-button>
   </CustomerDetailsHeader>
+  <Customer360Summary v-if="customerId" ref="summaryRef" :customer-id="customerId" />
   <el-col>
     <el-tabs>
       <el-tab-pane :label="t('followUpTab')">
@@ -50,6 +65,14 @@
           :biz-id="customer.id!"
           :customer-id="customer.id!"
           :biz-type="BizTypeEnum.CRM_CUSTOMER"
+        />
+      </el-tab-pane>
+      <el-tab-pane :label="t('activityTab')" lazy>
+        <CrmActivityPanel
+          v-if="customerId"
+          :biz-id="customerId"
+          :biz-type="BizTypeEnum.CRM_CUSTOMER"
+          :readonly="customer.poolStatus !== CustomerApi.CustomerPoolStatus.OWNED"
         />
       </el-tab-pane>
       <el-tab-pane :label="t('teamMemberTab')">
@@ -75,16 +98,65 @@
         <ReceivablePlanList :customer-id="customer.id!" @create-receivable="createReceivable" />
         <ReceivableList ref="receivableListRef" :customer-id="customer.id!" />
       </el-tab-pane>
+      <el-tab-pane :label="t('workOrderTab')" lazy>
+        <WorkOrderList :customer-id="customer.id!" />
+      </el-tab-pane>
+      <el-tab-pane v-if="canQueryInvoice" :label="t('invoiceTab')" lazy>
+        <CustomerInvoiceList :customer-id="customer.id!" />
+      </el-tab-pane>
+      <el-tab-pane v-if="canQueryRefund" :label="t('refundTab')" lazy>
+        <CustomerRefundList :customer-id="customer.id!" />
+      </el-tab-pane>
       <el-tab-pane :label="t('operateLogTab')">
         <OperateLogV2 :log-list="logList" />
+      </el-tab-pane>
+      <el-tab-pane :label="t('ownerHistoryTab')" lazy>
+        <CustomerOwnerRecordList ref="ownerRecordListRef" :customer-id="customerId" />
+      </el-tab-pane>
+      <el-tab-pane :label="t('lifecycleHistoryTab')" lazy>
+        <CustomerLifecycleRecordList ref="lifecycleRecordListRef" :customer-id="customerId" />
       </el-tab-pane>
     </el-tabs>
   </el-col>
 
   <!-- 表单弹窗：添加/修改 -->
   <CustomerForm ref="formRef" @success="getCustomer" />
-  <CustomerDistributeForm ref="distributeForm" @success="getCustomer" />
+  <CustomerDistributeForm ref="distributeForm" @success="handleDistributeSuccess" />
   <CrmTransferForm ref="transferFormRef" :biz-type="BizTypeEnum.CRM_CUSTOMER" @success="close" />
+  <el-dialog v-model="lifecycleDialogVisible" :title="t('changeLifecycleStatus')" width="520px">
+    <el-form label-width="120px">
+      <el-form-item :label="t('lifecycleStatus')" required>
+        <el-select v-model="lifecycleForm.lifecycleStatus" class="w-100%">
+          <el-option
+            v-for="item in lifecycleOptions"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+            :disabled="item.value === customer.lifecycleStatus"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item
+        :label="t('lifecycleReason')"
+        :required="lifecycleForm.lifecycleStatus === CustomerApi.CustomerLifecycleStatus.LOST"
+      >
+        <el-input
+          v-model="lifecycleForm.reason"
+          type="textarea"
+          :rows="4"
+          maxlength="500"
+          show-word-limit
+          :placeholder="t('lifecycleReasonPlaceholder')"
+        />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="lifecycleDialogVisible = false">{{ t('common.cancel') }}</el-button>
+      <el-button type="primary" :loading="lifecycleSubmitting" @click="submitLifecycleStatus">
+        {{ t('common.ok') }}
+      </el-button>
+    </template>
+  </el-dialog>
 </template>
 <script lang="ts" setup>
 import { useTagsViewStore } from '@/store/modules/tagsView'
@@ -104,6 +176,14 @@ import { BizTypeEnum } from '@/api/crm/permission'
 import type { OperateLogVO } from '@/api/system/operatelog'
 import { getOperateLogPage } from '@/api/crm/operateLog'
 import CustomerDistributeForm from '@/views/crm/customer/pool/CustomerDistributeForm.vue'
+import CustomerOwnerRecordList from './CustomerOwnerRecordList.vue'
+import CustomerLifecycleRecordList from './CustomerLifecycleRecordList.vue'
+import WorkOrderList from '@/views/crm/workorder/components/WorkOrderList.vue'
+import CustomerInvoiceList from '@/views/crm/invoice/components/CustomerInvoiceList.vue'
+import CustomerRefundList from '@/views/crm/refund/components/CustomerRefundList.vue'
+import Customer360Summary from './Customer360Summary.vue'
+import CrmActivityPanel from '@/views/crm/activity/components/CrmActivityPanel.vue'
+import { checkPermi } from '@/utils/permission'
 
 defineOptions({ name: 'CrmCustomerDetail' })
 
@@ -115,6 +195,11 @@ const { delView } = useTagsViewStore() // 视图操作
 const { push, currentRoute } = useRouter() // 路由
 
 const permissionListRef = ref<InstanceType<typeof PermissionList>>() // 团队成员列表 Ref
+const ownerRecordListRef = ref<InstanceType<typeof CustomerOwnerRecordList>>() // 归属记录 Ref
+const lifecycleRecordListRef = ref<InstanceType<typeof CustomerLifecycleRecordList>>()
+const summaryRef = ref<InstanceType<typeof Customer360Summary>>()
+const canQueryInvoice = checkPermi(['crm:invoice:query'])
+const canQueryRefund = checkPermi(['crm:receivable-refund:query'])
 
 /** 获取详情 */
 const customer = ref<CustomerApi.CustomerVO>({} as CustomerApi.CustomerVO) // 客户详情
@@ -134,18 +219,48 @@ const openForm = () => {
   formRef.value?.open('update', customerId.value)
 }
 
-/** 更新成交状态操作 */
-const handleUpdateDealStatus = async () => {
-  const dealStatus = !customer.value.dealStatus
+/** 更新客户四态生命周期 */
+const lifecycleDialogVisible = ref(false)
+const lifecycleSubmitting = ref(false)
+const lifecycleForm = reactive({
+  lifecycleStatus: CustomerApi.CustomerLifecycleStatus.POTENTIAL,
+  reason: ''
+})
+const lifecycleOptions = computed(() => [
+  { value: CustomerApi.CustomerLifecycleStatus.POTENTIAL, label: t('lifecyclePotential') },
+  { value: CustomerApi.CustomerLifecycleStatus.INTENTIONAL, label: t('lifecycleIntentional') },
+  { value: CustomerApi.CustomerLifecycleStatus.DEAL, label: t('lifecycleDeal') },
+  { value: CustomerApi.CustomerLifecycleStatus.LOST, label: t('lifecycleLost') }
+])
+const openLifecycleDialog = () => {
+  lifecycleForm.lifecycleStatus = customer.value.lifecycleStatus
+  lifecycleForm.reason = ''
+  lifecycleDialogVisible.value = true
+}
+const submitLifecycleStatus = async () => {
+  if (lifecycleForm.lifecycleStatus === customer.value.lifecycleStatus) {
+    message.warning(t('lifecycleSameStatus'))
+    return
+  }
+  if (lifecycleForm.lifecycleStatus === CustomerApi.CustomerLifecycleStatus.LOST && !lifecycleForm.reason.trim()) {
+    message.warning(t('lifecycleLostReasonRequired'))
+    return
+  }
+  lifecycleSubmitting.value = true
   try {
-    // 更新状态的二次确认
-    await message.confirm(t('updateDealStatusConfirm', { status: dealStatus ? t('dealStatusYes') : t('dealStatusNo') }))
-    // 发起更新
-    await CustomerApi.updateCustomerDealStatus(customerId.value, dealStatus)
-    message.success(t('updateDealStatusSuccess'))
-    // 刷新数据
+    await CustomerApi.updateCustomerLifecycleStatus({
+      id: customerId.value,
+      lifecycleStatus: lifecycleForm.lifecycleStatus,
+      reason: lifecycleForm.reason.trim() || undefined
+    })
+    lifecycleDialogVisible.value = false
+    message.success(t('updateLifecycleStatusSuccess'))
     await getCustomer()
-  } catch {}
+    await lifecycleRecordListRef.value?.getList()
+    await summaryRef.value?.loadData()
+  } finally {
+    lifecycleSubmitting.value = false
+  }
 }
 
 /** 客户转移 */
@@ -176,12 +291,18 @@ const handleReceive = async () => {
   await CustomerApi.receiveCustomer([unref(customerId.value)])
   message.success(t('receiveSuccess', { name: customer.value.name }))
   await getCustomer()
+  await ownerRecordListRef.value?.getList()
 }
 
 /** 分配客户 */
 const distributeForm = ref<InstanceType<typeof CustomerDistributeForm>>() // 分配客户表单 Ref
 const handleDistributeForm = async () => {
   distributeForm.value?.open(customerId.value)
+}
+
+const handleDistributeSuccess = async () => {
+  await getCustomer()
+  await ownerRecordListRef.value?.getList()
 }
 
 /** 客户放入公海 */

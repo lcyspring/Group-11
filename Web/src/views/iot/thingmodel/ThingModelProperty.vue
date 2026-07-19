@@ -18,11 +18,7 @@
   <!-- 数值型配置 -->
   <ThingModelNumberDataSpecs
     v-if="
-      [
-        IoTDataSpecsDataTypeEnum.INT,
-        IoTDataSpecsDataTypeEnum.DOUBLE,
-        IoTDataSpecsDataTypeEnum.FLOAT
-      ].includes(property.dataType || '')
+      isNumericDataType(property.dataType)
     "
     v-model="property.dataSpecs"
   />
@@ -115,6 +111,8 @@ import {
 defineOptions({ name: 'ThingModelProperty' })
 
 const { t } = useI18n('iot') // 国际化
+const isNumericDataType = (dataType?: string) =>
+  ([IoTDataSpecsDataTypeEnum.INT, IoTDataSpecsDataTypeEnum.DOUBLE, IoTDataSpecsDataTypeEnum.FLOAT] as string[]).includes(dataType || '')
 
 const props = defineProps<{ modelValue: any; isStructDataSpecs?: boolean; isParams?: boolean }>()
 const emits = defineEmits(['update:modelValue'])

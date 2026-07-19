@@ -1,0 +1,3 @@
+package com.meession.etm.module.bpm.dal.mysql.oa;
+import com.meession.etm.framework.mybatis.core.mapper.BaseMapperX; import com.meession.etm.framework.mybatis.core.query.LambdaQueryWrapperX; import com.meession.etm.module.bpm.dal.dataobject.oa.BpmOAWorkRequestDO; import org.apache.ibatis.annotations.Mapper; import java.util.List;
+@Mapper public interface BpmOAWorkRequestMapper extends BaseMapperX<BpmOAWorkRequestDO> { default List<BpmOAWorkRequestDO> selectByUserId(Long userId){ return selectList(new LambdaQueryWrapperX<BpmOAWorkRequestDO>().eq(BpmOAWorkRequestDO::getUserId,userId).orderByDesc(BpmOAWorkRequestDO::getId)); } }

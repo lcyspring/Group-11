@@ -1,0 +1,933 @@
+#!/usr/bin/env bash
+# Start Mitedtsm directly on the real host with one rootless Podman Pod.
+# Docker Engine, the Docker CLI, and Compose are deliberately not used.
+
+set -Eeuo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+PODMAN=(podman)
+PODMAN_PROXY_ARGS=(--http-proxy=false)
+PROXY_ENV=()
+
+usage() {
+    printf 'Usage: bash ./deploy.sh <config.kdl>\n' >&2
+}
+
+[[ $# -eq 1 ]] || {
+    usage
+    exit 2
+}
+
+# shellcheck source=lib/kdl-config.sh
+source "${SCRIPT_DIR}/lib/kdl-config.sh"
+kdl_config_init "$1"
+
+[[ "$(kdl_require schema_version)" == "1" ]] || {
+    printf 'Unsupported schema_version; expected 1.\n' >&2
+    exit 2
+}
+
+START_MODE="$(kdl_require operation.startup_mode)"
+POD_NAME="$(kdl_require deployment.pod_name)"
+STOP_TIMEOUT="$(kdl_positive_integer deployment.stop_timeout_seconds)"
+HOST_ADDRESS="$(kdl_require network.host_address)"
+SERVER_PORT="$(kdl_port network.server_host_port)"
+SERVER_CONTAINER_PORT="$(kdl_port network.server_container_port)"
+WEB_PORT="$(kdl_port network.web_host_port)"
+WEB_CONTAINER_PORT="$(kdl_port network.web_container_port)"
+MALL_PORT="$(kdl_port network.mall_host_port)"
+MALL_CONTAINER_PORT="$(kdl_port network.mall_container_port)"
+ADMIN_UI_PUBLIC_URL="$(kdl_require network.admin_ui_public_url)"
+USE_HOST_PROXY="$(kdl_bool network.use_host_proxy)"
+HOST_PROXY_NAME="$(kdl_require network.host_proxy_name)"
+HTTP_PROXY_URL="$(kdl_require network.http_proxy)"
+HTTPS_PROXY_URL="$(kdl_require network.https_proxy)"
+ALL_PROXY_URL="$(kdl_require network.all_proxy)"
+NO_PROXY_VALUE="$(kdl_require network.no_proxy)"
+
+IMAGE_SOURCE="$(kdl_require image.source)"
+IMAGE_ARCHIVE_DIR="$(kdl_path image.archive_dir)"
+REDIS_BASE_IMAGE="$(kdl_require image.redis_base)"
+RABBITMQ_BASE_IMAGE="$(kdl_require image.rabbitmq_base)"
+TDENGINE_BASE_IMAGE="$(kdl_require image.tdengine_base)"
+MYSQL_BASE_IMAGE="$(kdl_require image.mysql_base)"
+INIT_IMAGE="$(kdl_require image.init_runtime)"
+SERVER_IMAGE="$(kdl_require image.server_runtime)"
+WEB_IMAGE="$(kdl_require image.web_runtime)"
+MALL_IMAGE="$(kdl_require image.mall_runtime)"
+
+REDIS_ARCHIVE="$(kdl_require archive.redis_base)"
+RABBITMQ_ARCHIVE="$(kdl_require archive.rabbitmq_base)"
+TDENGINE_ARCHIVE="$(kdl_require archive.tdengine_base)"
+MYSQL_BASE_ARCHIVE="$(kdl_require archive.mysql_base)"
+INIT_RUNTIME_ARCHIVE="$(kdl_require archive.init_runtime)"
+SERVER_RUNTIME_ARCHIVE="$(kdl_require archive.server_runtime)"
+WEB_RUNTIME_ARCHIVE="$(kdl_require archive.web_runtime)"
+MALL_RUNTIME_ARCHIVE="$(kdl_require archive.mall_runtime)"
+
+MYSQL_CONTAINER="$(kdl_require container.mysql)"
+REDIS_CONTAINER="$(kdl_require container.redis)"
+RABBITMQ_CONTAINER="$(kdl_require container.rabbitmq)"
+TDENGINE_CONTAINER="$(kdl_require container.tdengine)"
+INIT_CONTAINER="$(kdl_require container.init)"
+SERVER_CONTAINER="$(kdl_require container.server)"
+WEB_CONTAINER="$(kdl_require container.web)"
+MALL_CONTAINER="$(kdl_require container.mall)"
+
+MYSQL_VOLUME="$(kdl_require volume.mysql)"
+REDIS_VOLUME="$(kdl_require volume.redis)"
+RABBITMQ_VOLUME="$(kdl_require volume.rabbitmq)"
+TDENGINE_VOLUME="$(kdl_require volume.tdengine)"
+
+MYSQL_HOST="$(kdl_require mysql.host)"
+MYSQL_PORT="$(kdl_port mysql.port)"
+MYSQL_DATABASE="$(kdl_require mysql.database)"
+MYSQL_ADMIN_USERNAME="$(kdl_require mysql.administration_username)"
+MYSQL_ROOT_PASSWORD="$(kdl_require mysql.root_password)"
+MYSQL_APPLICATION_USERNAME="$(kdl_require mysql.application_username)"
+MYSQL_APPLICATION_PASSWORD="$(kdl_require mysql.application_password)"
+MYSQL_JDBC_PARAMETERS="$(kdl_require mysql.jdbc_parameters)"
+MYSQL_JDBC_URL="jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}?${MYSQL_JDBC_PARAMETERS}"
+MYSQL_APPLICATION_INIT_ENV=()
+if [[ "$MYSQL_APPLICATION_USERNAME" != root ]]; then
+    MYSQL_APPLICATION_INIT_ENV+=(
+        --env "MYSQL_USER=${MYSQL_APPLICATION_USERNAME}"
+        --env "MYSQL_PASSWORD=${MYSQL_APPLICATION_PASSWORD}"
+    )
+fi
+MYSQL_CHARACTER_SET="$(kdl_require mysql.character_set)"
+MYSQL_COLLATION="$(kdl_require mysql.collation)"
+MYSQL_AUTHENTICATION_PLUGIN="$(kdl_require mysql.authentication_plugin)"
+MYSQL_TIMEZONE="$(kdl_require mysql.timezone)"
+RABBITMQ_USERNAME="$(kdl_require rabbitmq.username)"
+RABBITMQ_PASSWORD="$(kdl_require rabbitmq.password)"
+TDENGINE_HOST="$(kdl_require tdengine.host)"
+TDENGINE_PORT="$(kdl_port tdengine.port)"
+TDENGINE_FQDN="$(kdl_require tdengine.fqdn)"
+TDENGINE_USERNAME="$(kdl_require tdengine.username)"
+TDENGINE_PASSWORD="$(kdl_require tdengine.password)"
+TDENGINE_INITIALIZATION_ATTEMPTS="$(kdl_positive_integer tdengine.initialization_attempts)"
+SPRING_PROFILE="$(kdl_require server.spring_profile)"
+SECURITY_MOCK_LOGIN_ENABLED="$(kdl_bool security.mock_login_enabled)"
+SECURITY_MOCK_SECRET="$(kdl_require security.mock_secret)"
+SECURITY_PASSWORD_ENCODER_LENGTH="$(kdl_positive_integer security.password_encoder_length)"
+SECURITY_XSS_ENABLED="$(kdl_bool security.xss_enabled)"
+SECURITY_CORS_ALLOWED_ORIGINS="$(kdl_require security.cors_allowed_origins)"
+SECURITY_CORS_ALLOWED_HEADERS="$(kdl_require security.cors_allowed_headers)"
+SECURITY_CORS_ALLOWED_METHODS="$(kdl_require security.cors_allowed_methods)"
+SECURITY_CORS_ALLOW_CREDENTIALS="$(kdl_bool security.cors_allow_credentials)"
+SECURITY_CORS_MAX_AGE_SECONDS="$(kdl_positive_integer security.cors_max_age_seconds)"
+SECURITY_API_DOCS_ENABLED="$(kdl_bool security.api_docs_enabled)"
+SECURITY_DRUID_CONSOLE_ENABLED="$(kdl_bool security.druid_console_enabled)"
+SECURITY_ACTUATOR_EXPOSURE="$(kdl_require security.actuator_exposure)"
+BPM_PROVISION_AFTER_START="$(kdl_get bpm.provision_after_start)"
+BPM_PROVISION_AFTER_START="${BPM_PROVISION_AFTER_START:-false}"
+case "${BPM_PROVISION_AFTER_START,,}" in
+    true|false) ;;
+    *) printf 'bpm.provision_after_start must be true or false; got: %s\n' "$BPM_PROVISION_AFTER_START" >&2; exit 2 ;;
+esac
+if [[ "${BPM_PROVISION_AFTER_START,,}" == "true" ]]; then
+    BPM_PROVISION_MANIFEST="$(kdl_path bpm.provision_manifest)"
+fi
+BPM_NOTIFICATION_SMS_ENABLED="$(kdl_bool bpm.notification_sms_enabled)"
+BPM_NOTIFICATION_FAIL_FAST="$(kdl_bool bpm.notification_fail_fast)"
+SECURITY_API_ENCRYPTION_ENABLED="$(kdl_bool security.api_encryption_enabled)"
+SECURITY_CAPTCHA_ENABLED="$(kdl_bool security.captcha_enabled)"
+SECURITY_BOOT_ADMIN_CLIENT_ENABLED="$(kdl_bool security.boot_admin_client_enabled)"
+INTEGRATION_JUSTAUTH_ENABLED="$(kdl_bool integration.justauth_enabled)"
+INTEGRATION_WX_MP_APP_ID="$(kdl_require integration.wx_mp_app_id)"
+INTEGRATION_WX_MP_SECRET="$(kdl_require integration.wx_mp_secret)"
+INTEGRATION_WX_MINIAPP_APP_ID="$(kdl_require integration.wx_miniapp_app_id)"
+INTEGRATION_WX_MINIAPP_SECRET="$(kdl_require integration.wx_miniapp_secret)"
+INTEGRATION_TENCENT_LBS_KEY="$(kdl_require integration.tencent_lbs_key)"
+INTEGRATION_PAY_ORDER_NOTIFY_URL="$(kdl_require integration.pay_order_notify_url)"
+INTEGRATION_PAY_REFUND_NOTIFY_URL="$(kdl_require integration.pay_refund_notify_url)"
+INTEGRATION_PAY_TRANSFER_NOTIFY_URL="$(kdl_require integration.pay_transfer_notify_url)"
+INTEGRATION_EXPRESS_CLIENT="$(kdl_require integration.express_client)"
+INTEGRATION_EXPRESS_KDNIAO_API_KEY="$(kdl_require integration.express_kdniao_api_key)"
+INTEGRATION_EXPRESS_KDNIAO_BUSINESS_ID="$(kdl_require integration.express_kdniao_business_id)"
+INTEGRATION_EXPRESS_KDNIAO_REQUEST_TYPE="$(kdl_require integration.express_kdniao_request_type)"
+INTEGRATION_EXPRESS_KD100_KEY="$(kdl_require integration.express_kd100_key)"
+INTEGRATION_EXPRESS_KD100_CUSTOMER="$(kdl_require integration.express_kd100_customer)"
+FILE_STORAGE_MODE="$(kdl_require file.storage_mode)"
+FILE_CLIENT_ID="$(kdl_positive_integer file.client_id)"
+FILE_PUBLIC_BASE_URL="$(kdl_require file.public_base_url)"
+CRM_MARKETING_PROVIDER_MODE="$(kdl_require crm_marketing.provider_mode)"
+CRM_MARKETING_TRACKING_ENABLED="$(kdl_bool crm_marketing.tracking_enabled)"
+CRM_MARKETING_PUBLIC_BASE_URL="$(kdl_require crm_marketing.public_base_url)"
+CRM_MARKETING_DELIVERY_SYNC_BATCH_SIZE="$(kdl_positive_integer crm_marketing.delivery_sync_batch_size)"
+CRM_MARKETING_CLICK_TRACKING_ENABLED="$(kdl_bool crm_marketing.click_tracking_enabled)"
+CRM_MARKETING_CLICK_ALLOWED_HOSTS="$(kdl_require crm_marketing.click_allowed_hosts)"
+CRM_MARKETING_MAX_LINKS_PER_BROADCAST="$(kdl_positive_integer crm_marketing.max_links_per_broadcast)"
+CRM_CUSTOMER_IMPORT_MAX_ROWS="$(kdl_positive_integer crm_customer_import.max_rows)"
+CRM_CUSTOMER_IMPORT_PREVIEW_TTL_MINUTES="$(kdl_positive_integer crm_customer_import.preview_ttl_minutes)"
+CRM_EXPORT_TASK_ENABLED="$(kdl_bool crm_export_task.enabled)"
+CRM_EXPORT_TASK_BATCH_SIZE="$(kdl_positive_integer crm_export_task.batch_size)"
+CRM_EXPORT_TASK_MAX_BATCH_SIZE="$(kdl_positive_integer crm_export_task.max_batch_size)"
+CRM_EXPORT_TASK_MAX_PENDING_PER_USER="$(kdl_positive_integer crm_export_task.max_pending_per_user)"
+CRM_EXPORT_TASK_MAX_ROWS="$(kdl_positive_integer crm_export_task.max_rows)"
+CRM_EXPORT_TASK_RETENTION_HOURS="$(kdl_positive_integer crm_export_task.retention_hours)"
+CRM_EXPORT_TASK_TOKEN_TTL_SECONDS="$(kdl_positive_integer crm_export_task.token_ttl_seconds)"
+CRM_EXPORT_TASK_CRON="$(kdl_require crm_export_task.cron)"
+CRM_EXPORT_TASK_ZONE="$(kdl_require crm_export_task.zone)"
+CRM_EXPORT_TASK_LOCK_KEY="$(kdl_require crm_export_task.lock_key)"
+CRM_EXPORT_TASK_LOCK_LEASE_SECONDS="$(kdl_positive_integer crm_export_task.lock_lease_seconds)"
+
+HEALTH_INTERVAL="$(kdl_positive_integer health.interval_seconds)"
+HEALTH_HTTP_HOST="$(kdl_require health.http_host)"
+MYSQL_ATTEMPTS="$(kdl_positive_integer health.mysql_attempts)"
+MYSQL_SCHEMA_ATTEMPTS="$(kdl_positive_integer health.mysql_schema_attempts)"
+MYSQL_SCHEMA_QUERY="$(kdl_require health.mysql_schema_query)"
+REDIS_ATTEMPTS="$(kdl_positive_integer health.redis_attempts)"
+RABBITMQ_ATTEMPTS="$(kdl_positive_integer health.rabbitmq_attempts)"
+RABBITMQ_OS_USER="$(kdl_require health.rabbitmq_os_user)"
+TDENGINE_ATTEMPTS="$(kdl_positive_integer health.tdengine_attempts)"
+TDENGINE_HEALTH_QUERY="$(kdl_require health.tdengine_query)"
+SERVER_ATTEMPTS="$(kdl_positive_integer health.server_attempts)"
+SERVER_HEALTH_PATH="$(kdl_require health.server_path)"
+WEB_ATTEMPTS="$(kdl_positive_integer health.web_attempts)"
+WEB_HEALTH_PATH="$(kdl_require health.web_path)"
+MALL_ATTEMPTS="$(kdl_positive_integer health.mall_attempts)"
+MALL_HEALTH_PATH="$(kdl_require health.mall_path)"
+
+clear_host_proxy() {
+    unset http_proxy HTTP_PROXY https_proxy HTTPS_PROXY \
+        all_proxy ALL_PROXY no_proxy NO_PROXY || true
+}
+
+podman_cmd() {
+    local subcommand="$1"
+    shift
+    local command=("${PODMAN[@]}" "$subcommand")
+
+    case "$subcommand" in
+        run)
+            command+=("${PODMAN_PROXY_ARGS[@]}")
+            ;;
+    esac
+    command+=("$@")
+
+    "${command[@]}"
+}
+
+host_curl() {
+    curl "$@"
+}
+
+require_command() {
+    local command="$1"
+    command -v "$command" >/dev/null 2>&1 || {
+        printf 'Required command is unavailable: %s\n' "$command" >&2
+        exit 1
+    }
+}
+
+require_file() {
+    local path="$1"
+    [[ -s "$path" ]] || {
+        printf 'Required file is missing or empty: %s\n' "$path" >&2
+        exit 1
+    }
+}
+
+container_proxy_url() {
+    local url="${1:-}"
+    url="${url//127.0.0.1/${HOST_PROXY_NAME}}"
+    url="${url//localhost/${HOST_PROXY_NAME}}"
+    printf '%s' "$url"
+}
+
+image_archive_path() {
+    local filename="$1"
+    printf '%s/%s' "$IMAGE_ARCHIVE_DIR" "$filename"
+}
+
+ensure_image() {
+    local image="$1"
+    local archive="$2"
+
+    if [[ "$IMAGE_SOURCE" != "pull" ]] && podman_cmd image exists "$image"; then
+        return
+    fi
+
+    case "$IMAGE_SOURCE" in
+        auto)
+            if [[ -r "$archive" ]]; then
+                printf 'Loading %s from Podman image archive %s\n' "$image" "$archive"
+                podman_cmd load --input "$archive"
+            else
+                printf 'Archive not found; pulling %s\n' "$image"
+                podman_cmd pull "$image"
+            fi
+            ;;
+        archive)
+            [[ -r "$archive" ]] || {
+                printf 'Missing required Podman image archive: %s\n' "$archive" >&2
+                exit 1
+            }
+            printf 'Loading %s from Podman image archive %s\n' "$image" "$archive"
+            podman_cmd load --input "$archive"
+            ;;
+        pull)
+            printf 'Pulling %s\n' "$image"
+            podman_cmd pull "$image"
+            ;;
+    esac
+
+    podman_cmd image exists "$image" || {
+        printf 'Image is unavailable after %s: %s\n' "$IMAGE_SOURCE" "$image" >&2
+        exit 1
+    }
+}
+
+ensure_volume() {
+    local volume="$1"
+    podman_cmd volume inspect "$volume" >/dev/null 2>&1 || podman_cmd volume create "$volume" >/dev/null
+}
+
+wait_for() {
+    local description="$1"
+    local attempts="$2"
+    local last_output=''
+    shift 2
+
+    for ((attempt = 1; attempt <= attempts; attempt++)); do
+        if last_output="$("$@" 2>&1)"; then
+            printf '%s is ready.\n' "$description"
+            return 0
+        fi
+        sleep "$HEALTH_INTERVAL"
+    done
+
+    printf 'Timed out waiting for %s.\n' "$description" >&2
+    if [[ -n "$last_output" ]]; then
+        printf 'Last %s probe output:\n%s\n' "$description" "${last_output:0:4000}" >&2
+    fi
+    return 1
+}
+
+initialize_tdengine() {
+    local max_attempts="$TDENGINE_INITIALIZATION_ATTEMPTS"
+    local attempt exit_code
+
+    for ((attempt = 1; attempt <= max_attempts; attempt++)); do
+        if ((attempt == 1)); then
+            printf 'Initializing TDengine database.\n'
+        else
+            printf 'TDengine is reachable but not ready to create a database; retrying (%s/%s).\n' \
+                "$attempt" "$max_attempts" >&2
+            sleep "$HEALTH_INTERVAL"
+        fi
+
+        podman_cmd run -d --replace --name "$INIT_CONTAINER" --pod "$POD_NAME" --pull=never \
+            --env "TDENGINE_HOST=${TDENGINE_HOST}" \
+            --env "TDENGINE_PORT=${TDENGINE_PORT}" \
+            "$INIT_IMAGE" >/dev/null
+        exit_code="$(podman_cmd wait "$INIT_CONTAINER")"
+        if [[ "$exit_code" == "0" ]]; then
+            podman_cmd rm "$INIT_CONTAINER" >/dev/null
+            return 0
+        fi
+
+        if ((attempt < max_attempts)); then
+            podman_cmd logs --tail 20 "$INIT_CONTAINER" >&2 || true
+        fi
+    done
+
+    printf 'TDengine initialization failed after %s attempts.\n' "$max_attempts" >&2
+    return 1
+}
+
+start_frontends() {
+    printf 'Starting frontend containers.\n'
+    podman_cmd run -d --replace --name "$WEB_CONTAINER" --pod "$POD_NAME" --pull=never \
+        "$WEB_IMAGE"
+    podman_cmd run -d --replace --name "$MALL_CONTAINER" --pod "$POD_NAME" --pull=never \
+        "$MALL_IMAGE"
+}
+
+start_server() {
+    printf 'Starting Server container.\n'
+    podman_cmd run -d --replace --name "$SERVER_CONTAINER" --pod "$POD_NAME" --pull=never \
+        "${PROXY_ENV[@]}" \
+        --env "SPRING_PROFILES_ACTIVE=${SPRING_PROFILE}" \
+        --env "MYSQL_JDBC_URL=${MYSQL_JDBC_URL}" \
+        --env "MYSQL_USERNAME=${MYSQL_APPLICATION_USERNAME}" \
+        --env "MYSQL_PASSWORD=${MYSQL_APPLICATION_PASSWORD}" \
+        --env "SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_URL=${MYSQL_JDBC_URL}" \
+        --env "SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_USERNAME=${MYSQL_APPLICATION_USERNAME}" \
+        --env "SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_PASSWORD=${MYSQL_APPLICATION_PASSWORD}" \
+        --env "SPRING_RABBITMQ_USERNAME=${RABBITMQ_USERNAME}" \
+        --env "SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}" \
+        --env "MITEDTSM_SECURITY_MOCK_ENABLE=${SECURITY_MOCK_LOGIN_ENABLED}" \
+        --env "MITEDTSM_SECURITY_MOCK_SECRET=${SECURITY_MOCK_SECRET}" \
+        --env "MITEDTSM_SECURITY_PASSWORD_ENCODER_LENGTH=${SECURITY_PASSWORD_ENCODER_LENGTH}" \
+        --env "MITEDTSM_XSS_ENABLE=${SECURITY_XSS_ENABLED}" \
+        --env "MITEDTSM_WEB_CORS_ALLOWED_ORIGIN_PATTERNS=${SECURITY_CORS_ALLOWED_ORIGINS}" \
+        --env "MITEDTSM_WEB_CORS_ALLOWED_HEADERS=${SECURITY_CORS_ALLOWED_HEADERS}" \
+        --env "MITEDTSM_WEB_CORS_ALLOWED_METHODS=${SECURITY_CORS_ALLOWED_METHODS}" \
+        --env "MITEDTSM_WEB_CORS_ALLOW_CREDENTIALS=${SECURITY_CORS_ALLOW_CREDENTIALS}" \
+        --env "MITEDTSM_WEB_CORS_MAX_AGE=${SECURITY_CORS_MAX_AGE_SECONDS}s" \
+        --env "SPRINGDOC_API_DOCS_ENABLED=${SECURITY_API_DOCS_ENABLED}" \
+        --env "SPRINGDOC_SWAGGER_UI_ENABLED=${SECURITY_API_DOCS_ENABLED}" \
+        --env "KNIFE4J_ENABLE=${SECURITY_API_DOCS_ENABLED}" \
+        --env "SPRING_DATASOURCE_DRUID_WEB_STAT_FILTER_ENABLED=${SECURITY_DRUID_CONSOLE_ENABLED}" \
+        --env "SPRING_DATASOURCE_DRUID_STAT_VIEW_SERVLET_ENABLED=${SECURITY_DRUID_CONSOLE_ENABLED}" \
+        --env "MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=${SECURITY_ACTUATOR_EXPOSURE}" \
+        --env "MITEDTSM_API_ENCRYPT_ENABLE=${SECURITY_API_ENCRYPTION_ENABLED}" \
+        --env "MITEDTSM_CAPTCHA_ENABLE=${SECURITY_CAPTCHA_ENABLED}" \
+        --env "SPRING_BOOT_ADMIN_CLIENT_ENABLED=${SECURITY_BOOT_ADMIN_CLIENT_ENABLED}" \
+        --env "MITEDTSM_BPM_NOTIFICATION_SMS_ENABLED=${BPM_NOTIFICATION_SMS_ENABLED}" \
+        --env "MITEDTSM_BPM_NOTIFICATION_FAIL_FAST=${BPM_NOTIFICATION_FAIL_FAST}" \
+        --env "MITEDTSM_WEB_ADMIN_UI_URL=${ADMIN_UI_PUBLIC_URL}" \
+        --env "TDENGINE_USER=${TDENGINE_USERNAME}" \
+        --env "TDENGINE_PASSWORD=${TDENGINE_PASSWORD}" \
+        --env "JUSTAUTH_ENABLED=${INTEGRATION_JUSTAUTH_ENABLED}" \
+        --env "WX_MP_APP_ID=${INTEGRATION_WX_MP_APP_ID}" \
+        --env "WX_MP_SECRET=${INTEGRATION_WX_MP_SECRET}" \
+        --env "WX_MINIAPP_APP_ID=${INTEGRATION_WX_MINIAPP_APP_ID}" \
+        --env "WX_MINIAPP_SECRET=${INTEGRATION_WX_MINIAPP_SECRET}" \
+        --env "MITEDTSM_TENCENT_LBS_KEY=${INTEGRATION_TENCENT_LBS_KEY}" \
+        --env "MITEDTSM_PAY_ORDER_NOTIFY_URL=${INTEGRATION_PAY_ORDER_NOTIFY_URL}" \
+        --env "MITEDTSM_PAY_REFUND_NOTIFY_URL=${INTEGRATION_PAY_REFUND_NOTIFY_URL}" \
+        --env "MITEDTSM_PAY_TRANSFER_NOTIFY_URL=${INTEGRATION_PAY_TRANSFER_NOTIFY_URL}" \
+        --env "MITEDTSM_EXPRESS_CLIENT=${INTEGRATION_EXPRESS_CLIENT}" \
+        --env "MITEDTSM_EXPRESS_KDNIAO_API_KEY=${INTEGRATION_EXPRESS_KDNIAO_API_KEY}" \
+        --env "MITEDTSM_EXPRESS_KDNIAO_BUSINESS_ID=${INTEGRATION_EXPRESS_KDNIAO_BUSINESS_ID}" \
+        --env "MITEDTSM_EXPRESS_KDNIAO_REQUEST_TYPE=${INTEGRATION_EXPRESS_KDNIAO_REQUEST_TYPE}" \
+        --env "MITEDTSM_EXPRESS_KD100_KEY=${INTEGRATION_EXPRESS_KD100_KEY}" \
+        --env "MITEDTSM_EXPRESS_KD100_CUSTOMER=${INTEGRATION_EXPRESS_KD100_CUSTOMER}" \
+        --env "MITEDTSM_CRM_MARKETING_PROVIDER_MODE=${CRM_MARKETING_PROVIDER_MODE}" \
+        --env "MITEDTSM_CRM_MARKETING_TRACKING_ENABLED=${CRM_MARKETING_TRACKING_ENABLED}" \
+        --env "MITEDTSM_CRM_MARKETING_PUBLIC_BASE_URL=${CRM_MARKETING_PUBLIC_BASE_URL}" \
+        --env "MITEDTSM_CRM_MARKETING_DELIVERY_SYNC_BATCH_SIZE=${CRM_MARKETING_DELIVERY_SYNC_BATCH_SIZE}" \
+        --env "MITEDTSM_CRM_MARKETING_CLICK_TRACKING_ENABLED=${CRM_MARKETING_CLICK_TRACKING_ENABLED}" \
+        --env "MITEDTSM_CRM_MARKETING_CLICK_ALLOWED_HOSTS=${CRM_MARKETING_CLICK_ALLOWED_HOSTS}" \
+        --env "MITEDTSM_CRM_MARKETING_MAX_LINKS_PER_BROADCAST=${CRM_MARKETING_MAX_LINKS_PER_BROADCAST}" \
+        --env "MITEDTSM_CRM_CUSTOMER_IMPORT_MAX_ROWS=${CRM_CUSTOMER_IMPORT_MAX_ROWS}" \
+        --env "MITEDTSM_CRM_CUSTOMER_IMPORT_PREVIEW_TTL_MINUTES=${CRM_CUSTOMER_IMPORT_PREVIEW_TTL_MINUTES}" \
+        --env "MITEDTSM_CRM_EXPORT_TASK_ENABLED=${CRM_EXPORT_TASK_ENABLED}" \
+        --env "MITEDTSM_CRM_EXPORT_TASK_BATCH_SIZE=${CRM_EXPORT_TASK_BATCH_SIZE}" \
+        --env "MITEDTSM_CRM_EXPORT_TASK_MAX_BATCH_SIZE=${CRM_EXPORT_TASK_MAX_BATCH_SIZE}" \
+        --env "MITEDTSM_CRM_EXPORT_TASK_MAX_PENDING_PER_USER=${CRM_EXPORT_TASK_MAX_PENDING_PER_USER}" \
+        --env "MITEDTSM_CRM_EXPORT_TASK_MAX_ROWS=${CRM_EXPORT_TASK_MAX_ROWS}" \
+        --env "MITEDTSM_CRM_EXPORT_TASK_RETENTION_HOURS=${CRM_EXPORT_TASK_RETENTION_HOURS}" \
+        --env "MITEDTSM_CRM_EXPORT_TASK_TOKEN_TTL_SECONDS=${CRM_EXPORT_TASK_TOKEN_TTL_SECONDS}" \
+        --env "MITEDTSM_CRM_EXPORT_TASK_CRON=${CRM_EXPORT_TASK_CRON}" \
+        --env "MITEDTSM_CRM_EXPORT_TASK_ZONE=${CRM_EXPORT_TASK_ZONE}" \
+        --env "MITEDTSM_CRM_EXPORT_TASK_LOCK_KEY=${CRM_EXPORT_TASK_LOCK_KEY}" \
+        --env "MITEDTSM_CRM_EXPORT_TASK_LOCK_LEASE_SECONDS=${CRM_EXPORT_TASK_LOCK_LEASE_SECONDS}" \
+        "$SERVER_IMAGE"
+}
+
+start_web_frontend() {
+    printf 'Starting Web frontend container.\n'
+    podman_cmd run -d --replace --name "$WEB_CONTAINER" --pod "$POD_NAME" --pull=never \
+        "$WEB_IMAGE"
+}
+
+start_mall_frontend() {
+    printf 'Starting Mall frontend container.\n'
+    podman_cmd run -d --replace --name "$MALL_CONTAINER" --pod "$POD_NAME" --pull=never \
+        "$MALL_IMAGE"
+}
+
+wait_for_frontends() {
+    wait_for 'Web frontend' "$WEB_ATTEMPTS" host_curl --fail --silent --show-error "http://${HEALTH_HTTP_HOST}:${WEB_PORT}${WEB_HEALTH_PATH}"
+    wait_for 'Mall frontend' "$MALL_ATTEMPTS" host_curl --fail --silent --show-error "http://${HEALTH_HTTP_HOST}:${MALL_PORT}${MALL_HEALTH_PATH}"
+}
+
+container_is_running() {
+    local container="$1"
+    [[ "$(podman_cmd inspect --format '{{.State.Running}}' "$container" 2>/dev/null)" == "true" ]]
+}
+
+fast_start_existing_pod() {
+    podman_cmd pod inspect "$POD_NAME" >/dev/null 2>&1 || {
+        printf 'Pod does not exist: %s. Run deploy.sh with operation.startup_mode=replace first.\n' "$POD_NAME" >&2
+        return 1
+    }
+
+    local pod_state
+    pod_state="$(podman_cmd pod inspect --format '{{.State}}' "$POD_NAME")"
+    case "$pod_state" in
+        Running)
+            ;;
+        Created|Exited|Stopped)
+            printf 'Starting existing Pod %s without rebuilding images.\n' "$POD_NAME"
+            podman_cmd pod start "$POD_NAME"
+            ;;
+        *)
+            printf 'Pod %s is in state %s and cannot use startup_mode=fast. Use startup_mode=replace.\n' \
+                "$POD_NAME" "$pod_state" >&2
+            return 1
+            ;;
+    esac
+
+    podman_cmd container exists "$SERVER_CONTAINER" || {
+        printf 'Server container is missing from Pod %s. Use startup_mode=replace.\n' "$POD_NAME" >&2
+        return 1
+    }
+    if ! container_is_running "$SERVER_CONTAINER"; then
+        printf 'Starting existing server container without rebuilding images.\n'
+        podman_cmd start "$SERVER_CONTAINER"
+    fi
+
+    if ! container_is_running "$WEB_CONTAINER" || ! container_is_running "$MALL_CONTAINER"; then
+        podman_cmd image exists "$WEB_IMAGE" || {
+            printf 'Required Web image is unavailable: %s. Package it before replacement.\n' "$WEB_IMAGE" >&2
+            return 1
+        }
+        podman_cmd image exists "$MALL_IMAGE" || {
+            printf 'Required Mall image is unavailable: %s. Package it before replacement.\n' "$MALL_IMAGE" >&2
+            return 1
+        }
+        start_frontends
+    fi
+
+    wait_for 'Spring Boot server' "$SERVER_ATTEMPTS" host_curl --fail --silent --show-error "http://${HEALTH_HTTP_HOST}:${SERVER_PORT}${SERVER_HEALTH_PATH}" &
+    local server_ready_pid=$!
+    wait_for_frontends &
+    local frontends_ready_pid=$!
+    wait "$server_ready_pid"
+    wait "$frontends_ready_pid"
+}
+
+show_access_urls() {
+    trap - EXIT
+    printf '\nRootless Podman Pod is running on the real host.\n'
+    printf '  Web:    http://%s:%s%s\n' "$HOST_ADDRESS" "$WEB_PORT" "$WEB_HEALTH_PATH"
+    printf '  Mall:   http://%s:%s%s\n' "$HOST_ADDRESS" "$MALL_PORT" "$MALL_HEALTH_PATH"
+    printf '  Server: http://%s:%s%s\n' "$HOST_ADDRESS" "$SERVER_PORT" "$SERVER_HEALTH_PATH"
+    podman_cmd ps --pod --filter "pod=${POD_NAME}" --format 'table {{.PodName}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}'
+}
+
+show_logs_on_error() {
+    local status=$?
+    if ((status != 0)); then
+        local pid active_jobs
+        active_jobs="$(jobs -pr)" || true
+        for pid in $active_jobs; do
+            kill "$pid" 2>/dev/null || true
+        done
+        printf '\nStartup failed; recent container logs follow.\n' >&2
+        local container
+        for container in "$MYSQL_CONTAINER" "$REDIS_CONTAINER" "$RABBITMQ_CONTAINER" "$TDENGINE_CONTAINER" "$INIT_CONTAINER" "$SERVER_CONTAINER" "$WEB_CONTAINER" "$MALL_CONTAINER"; do
+            if podman_cmd container exists "$container" 2>/dev/null; then
+                printf '\n[%s]\n' "$container" >&2
+                podman_cmd logs --tail 80 "$container" >&2 || true
+            fi
+        done
+    fi
+}
+
+validate_configuration() {
+    case "$START_MODE" in
+        replace|check|fast|frontends-only|replace-server|replace-web|replace-mall) ;;
+        *)
+            printf 'operation.startup_mode must be replace, check, fast, frontends-only, replace-server, replace-web, or replace-mall; got: %s\n' "$START_MODE" >&2
+            exit 2
+            ;;
+    esac
+
+    case "$IMAGE_SOURCE" in
+        auto|archive|pull) ;;
+        *)
+            printf 'IMAGE_SOURCE must be auto, archive, or pull; got: %s\n' "$IMAGE_SOURCE" >&2
+            exit 2
+            ;;
+    esac
+
+    [[ "$SERVER_HEALTH_PATH" == /* && "$WEB_HEALTH_PATH" == /* && "$MALL_HEALTH_PATH" == /* ]] || {
+        printf 'All health-check paths must start with /.\n' >&2
+        exit 2
+    }
+
+    if [[ "$HOST_ADDRESS:$SERVER_PORT" == "$HOST_ADDRESS:$WEB_PORT" ||
+          "$HOST_ADDRESS:$SERVER_PORT" == "$HOST_ADDRESS:$MALL_PORT" ||
+          "$HOST_ADDRESS:$WEB_PORT" == "$HOST_ADDRESS:$MALL_PORT" ]]; then
+        printf 'Configured host ports must be unique.\n' >&2
+        exit 2
+    fi
+
+    ((SECURITY_PASSWORD_ENCODER_LENGTH >= 10 && SECURITY_PASSWORD_ENCODER_LENGTH <= 16)) || {
+        printf 'security.password_encoder_length must be between 10 and 16.\n' >&2
+        exit 2
+    }
+    if [[ "$SECURITY_MOCK_LOGIN_ENABLED" == "true" && "$SECURITY_MOCK_SECRET" == "not-enabled" ]]; then
+        printf 'security.mock_secret must be an explicit non-placeholder value when mock login is enabled.\n' >&2
+        exit 2
+    fi
+    [[ "$SECURITY_ACTUATOR_EXPOSURE" == "health,info" || "$SECURITY_ACTUATOR_EXPOSURE" == "info,health" ]] || {
+        printf 'security.actuator_exposure must contain only health and info.\n' >&2
+        exit 2
+    }
+    if [[ "$SECURITY_CORS_ALLOW_CREDENTIALS" == "true" && "$SECURITY_CORS_ALLOWED_ORIGINS" == "*" ]]; then
+        printf 'Credentialed CORS cannot use a wildcard origin.\n' >&2
+        exit 2
+    fi
+    [[ "$INTEGRATION_PAY_ORDER_NOTIFY_URL" =~ ^https?://[^[:space:]]+$ &&
+       "$INTEGRATION_PAY_REFUND_NOTIFY_URL" =~ ^https?://[^[:space:]]+$ &&
+       "$INTEGRATION_PAY_TRANSFER_NOTIFY_URL" =~ ^https?://[^[:space:]]+$ ]] || {
+        printf 'Integration callback URLs must be explicit HTTP(S) URLs.\n' >&2
+        exit 2
+    }
+    [[ "$CRM_MARKETING_CLICK_ALLOWED_HOSTS" =~ ^(\*\.)?[A-Za-z0-9.-]+(,(\*\.)?[A-Za-z0-9.-]+)*$ ]] || {
+        printf 'crm_marketing.click_allowed_hosts must be an explicit comma-separated host list.\n' >&2
+        exit 2
+    }
+    [[ "$MYSQL_HOST" =~ ^[A-Za-z0-9._-]+$ ]] || {
+        printf 'mysql.host must be an explicit hostname or IPv4 address.\n' >&2
+        exit 2
+    }
+    [[ "$MYSQL_ADMIN_USERNAME" == root ]] || {
+        printf 'mysql.administration_username must be root for the official MySQL image.\n' >&2
+        exit 2
+    }
+    [[ "$MYSQL_APPLICATION_USERNAME" =~ ^[A-Za-z0-9_]+$ ]] || {
+        printf 'mysql.application_username contains unsupported characters.\n' >&2
+        exit 2
+    }
+    if [[ "$MYSQL_APPLICATION_USERNAME" == root &&
+          "$MYSQL_APPLICATION_PASSWORD" != "$MYSQL_ROOT_PASSWORD" ]]; then
+        printf 'mysql.application_password must equal mysql.root_password when the application user is root.\n' >&2
+        exit 2
+    fi
+    [[ "$MYSQL_JDBC_PARAMETERS" != *$'\n'* && "$MYSQL_JDBC_PARAMETERS" != *$'\r'* &&
+       "$MYSQL_JDBC_PARAMETERS" != *'#'* ]] || {
+        printf 'mysql.jdbc_parameters must be a single URL query string without a fragment.\n' >&2
+        exit 2
+    }
+
+    if [[ "$USE_HOST_PROXY" == "true" ]]; then
+        PODMAN_PROXY_ARGS=()
+        if [[ "$HTTP_PROXY_URL" == "none" && "$HTTPS_PROXY_URL" == "none" && "$ALL_PROXY_URL" == "none" ]]; then
+            printf 'At least one explicit proxy URL is required when network.use_host_proxy=true.\n' >&2
+            exit 2
+        fi
+    fi
+}
+
+verify_rootless_podman() {
+    require_command podman
+    require_command curl
+
+    local rootless
+    rootless="$(podman_cmd info --format '{{.Host.Security.Rootless}}')" || {
+        printf 'Podman is installed but not usable by this user. Run podman info for details.\n' >&2
+        exit 1
+    }
+    [[ "$rootless" == "true" ]] || {
+        printf 'Run this script as the normal rootless Podman user.\n' >&2
+        exit 1
+    }
+}
+
+configure_proxy() {
+    if [[ "$USE_HOST_PROXY" == "false" ]]; then
+        clear_host_proxy
+        return
+    fi
+
+    # In this shared Pod, 127.0.0.1 is the Pod itself, not the real host.
+    # Pasta's host.containers.internal mapping reaches the host loopback.
+    local container_http_proxy='' container_https_proxy='' container_all_proxy=''
+    [[ "$HTTP_PROXY_URL" == "none" ]] || container_http_proxy="$(container_proxy_url "$HTTP_PROXY_URL")"
+    [[ "$HTTPS_PROXY_URL" == "none" ]] || container_https_proxy="$(container_proxy_url "$HTTPS_PROXY_URL")"
+    [[ "$ALL_PROXY_URL" == "none" ]] || container_all_proxy="$(container_proxy_url "$ALL_PROXY_URL")"
+
+    if [[ -n "$container_http_proxy" ]]; then
+        PROXY_ENV+=(--env "http_proxy=${container_http_proxy}" --env "HTTP_PROXY=${container_http_proxy}")
+    fi
+    if [[ -n "$container_https_proxy" ]]; then
+        PROXY_ENV+=(--env "https_proxy=${container_https_proxy}" --env "HTTPS_PROXY=${container_https_proxy}")
+    fi
+    if [[ -n "$container_all_proxy" ]]; then
+        PROXY_ENV+=(--env "all_proxy=${container_all_proxy}" --env "ALL_PROXY=${container_all_proxy}")
+    fi
+    if ((${#PROXY_ENV[@]})); then
+        PROXY_ENV+=(--env "no_proxy=${NO_PROXY_VALUE}" --env "NO_PROXY=${NO_PROXY_VALUE}")
+    fi
+}
+
+apply_runtime_file_storage() {
+    [[ "$FILE_STORAGE_MODE" == "database" ]] || {
+        printf 'file.storage_mode currently supports only database; got: %s\n' "$FILE_STORAGE_MODE" >&2
+        return 2
+    }
+    [[ "$FILE_PUBLIC_BASE_URL" =~ ^https?://[A-Za-z0-9._:/-]+$ ]] || {
+        printf 'file.public_base_url must be a plain HTTP(S) URL; got: %s\n' "$FILE_PUBLIC_BASE_URL" >&2
+        return 2
+    }
+    [[ "$ADMIN_UI_PUBLIC_URL" =~ ^https?://[A-Za-z0-9._:/-]+$ ]] || {
+        printf 'network.admin_ui_public_url must be a plain HTTP(S) URL; got: %s\n' "$ADMIN_UI_PUBLIC_URL" >&2
+        return 2
+    }
+    printf 'Selecting explicit runtime file client %s (%s storage).\n' "$FILE_CLIENT_ID" "$FILE_STORAGE_MODE"
+    podman_cmd exec --env "MYSQL_PWD=${MYSQL_ROOT_PASSWORD}" "$MYSQL_CONTAINER" \
+        mysql "--default-character-set=${MYSQL_CHARACTER_SET}" --user "${MYSQL_ADMIN_USERNAME}" \
+        "--database=${MYSQL_DATABASE}" -e \
+        "UPDATE infra_file_config SET master=(id=${FILE_CLIENT_ID}), config=CASE WHEN id=${FILE_CLIENT_ID} THEN JSON_SET(config, '$.domain', '${FILE_PUBLIC_BASE_URL}') ELSE config END WHERE deleted=b'0';"
+}
+
+check_archive_mode_prerequisites() {
+    [[ "$IMAGE_SOURCE" == "archive" ]] || return 0
+
+    local image archive
+    local -a images=(
+        "$REDIS_BASE_IMAGE"
+        "$RABBITMQ_BASE_IMAGE"
+        "$TDENGINE_BASE_IMAGE"
+        "$MYSQL_BASE_IMAGE"
+        "$INIT_IMAGE"
+        "$SERVER_IMAGE"
+        "$WEB_IMAGE"
+        "$MALL_IMAGE"
+    )
+    local -a archives=(
+        "$(image_archive_path "$REDIS_ARCHIVE")"
+        "$(image_archive_path "$RABBITMQ_ARCHIVE")"
+        "$(image_archive_path "$TDENGINE_ARCHIVE")"
+        "$(image_archive_path "$MYSQL_BASE_ARCHIVE")"
+        "$(image_archive_path "$INIT_RUNTIME_ARCHIVE")"
+        "$(image_archive_path "$SERVER_RUNTIME_ARCHIVE")"
+        "$(image_archive_path "$WEB_RUNTIME_ARCHIVE")"
+        "$(image_archive_path "$MALL_RUNTIME_ARCHIVE")"
+    )
+
+    for ((index = 0; index < ${#images[@]}; index++)); do
+        image="${images[index]}"
+        archive="${archives[index]}"
+        podman_cmd image exists "$image" || require_file "$archive"
+    done
+}
+
+ensure_deployment_images() {
+    ensure_image "$REDIS_BASE_IMAGE" "$(image_archive_path "$REDIS_ARCHIVE")"
+    ensure_image "$RABBITMQ_BASE_IMAGE" "$(image_archive_path "$RABBITMQ_ARCHIVE")"
+    ensure_image "$TDENGINE_BASE_IMAGE" "$(image_archive_path "$TDENGINE_ARCHIVE")"
+    ensure_image "$MYSQL_BASE_IMAGE" "$(image_archive_path "$MYSQL_BASE_ARCHIVE")"
+    ensure_image "$INIT_IMAGE" "$(image_archive_path "$INIT_RUNTIME_ARCHIVE")"
+    ensure_image "$SERVER_IMAGE" "$(image_archive_path "$SERVER_RUNTIME_ARCHIVE")"
+    ensure_image "$WEB_IMAGE" "$(image_archive_path "$WEB_RUNTIME_ARCHIVE")"
+    ensure_image "$MALL_IMAGE" "$(image_archive_path "$MALL_RUNTIME_ARCHIVE")"
+}
+
+replace_server_only() {
+    podman_cmd pod inspect "$POD_NAME" >/dev/null 2>&1 || {
+        printf 'Pod does not exist: %s. Use startup_mode=replace first.\n' "$POD_NAME" >&2
+        return 1
+    }
+    [[ "$(podman_cmd pod inspect --format '{{.State}}' "$POD_NAME")" == "Running" ]] || {
+        printf 'Pod is not running: %s. Use startup_mode=fast or replace.\n' "$POD_NAME" >&2
+        return 1
+    }
+    ensure_image "$SERVER_IMAGE" "$(image_archive_path "$SERVER_RUNTIME_ARCHIVE")"
+    container_is_running "$MYSQL_CONTAINER" || {
+        printf 'MySQL container is not running: %s. Use startup_mode=replace first.\n' "$MYSQL_CONTAINER" >&2
+        return 1
+    }
+    bash "${SCRIPT_DIR}/internal/provision-database.sh" "$KDL_CONFIG_PATH"
+    bash "${SCRIPT_DIR}/internal/provision-marketing-provider.sh" "$KDL_CONFIG_PATH"
+    bash "${SCRIPT_DIR}/internal/provision-bpm-notifications.sh" "$KDL_CONFIG_PATH"
+    apply_runtime_file_storage
+    if container_is_running "$SERVER_CONTAINER"; then
+        podman_cmd stop --time "$STOP_TIMEOUT" "$SERVER_CONTAINER"
+    fi
+    start_server
+    wait_for 'Spring Boot server' "$SERVER_ATTEMPTS" host_curl --fail --silent --show-error "http://${HEALTH_HTTP_HOST}:${SERVER_PORT}${SERVER_HEALTH_PATH}"
+}
+
+replace_web_only() {
+    podman_cmd pod inspect "$POD_NAME" >/dev/null 2>&1 || {
+        printf 'Pod does not exist: %s. Use startup_mode=replace first.\n' "$POD_NAME" >&2
+        return 1
+    }
+    [[ "$(podman_cmd pod inspect --format '{{.State}}' "$POD_NAME")" == "Running" ]] || {
+        printf 'Pod is not running: %s. Use startup_mode=fast or replace.\n' "$POD_NAME" >&2
+        return 1
+    }
+
+    ensure_image "$WEB_IMAGE" "$(image_archive_path "$WEB_RUNTIME_ARCHIVE")"
+    start_web_frontend
+    wait_for 'Web frontend' "$WEB_ATTEMPTS" host_curl --fail --silent --show-error "http://${HEALTH_HTTP_HOST}:${WEB_PORT}${WEB_HEALTH_PATH}"
+}
+
+replace_mall_only() {
+    podman_cmd pod inspect "$POD_NAME" >/dev/null 2>&1 || {
+        printf 'Pod does not exist: %s. Use startup_mode=replace first.\n' "$POD_NAME" >&2
+        return 1
+    }
+    [[ "$(podman_cmd pod inspect --format '{{.State}}' "$POD_NAME")" == "Running" ]] || {
+        printf 'Pod is not running: %s. Use startup_mode=fast or replace.\n' "$POD_NAME" >&2
+        return 1
+    }
+
+    ensure_image "$MALL_IMAGE" "$(image_archive_path "$MALL_RUNTIME_ARCHIVE")"
+    start_mall_frontend
+    wait_for 'Mall frontend' "$MALL_ATTEMPTS" host_curl --fail --silent --show-error "http://${HEALTH_HTTP_HOST}:${MALL_PORT}${MALL_HEALTH_PATH}"
+}
+
+validate_configuration
+if [[ "$START_MODE" == "check" ]]; then
+    bash "${SCRIPT_DIR}/internal/provision-database.sh" "$KDL_CONFIG_PATH"
+    bash "${SCRIPT_DIR}/internal/provision-marketing-provider.sh" "$KDL_CONFIG_PATH"
+    bash "${SCRIPT_DIR}/internal/provision-bpm-notifications.sh" "$KDL_CONFIG_PATH"
+fi
+verify_rootless_podman
+configure_proxy
+
+if [[ "$START_MODE" == "check" ]]; then
+    check_archive_mode_prerequisites
+fi
+
+if [[ "$START_MODE" == "check" ]]; then
+    printf 'Podman startup/replacement preflight passed. No images were loaded, pulled, built, or started.\n'
+    exit 0
+fi
+
+trap show_logs_on_error EXIT
+
+if [[ "$START_MODE" == "fast" ]]; then
+    fast_start_existing_pod
+    show_access_urls
+    exit 0
+fi
+
+if [[ "$START_MODE" == "frontends-only" ]]; then
+    podman_cmd pod inspect "$POD_NAME" >/dev/null 2>&1 || {
+        printf 'Pod does not exist: %s. Use startup_mode=replace first.\n' "$POD_NAME" >&2
+        exit 1
+    }
+    [[ "$(podman_cmd pod inspect --format '{{.State}}' "$POD_NAME")" == "Running" ]] || {
+        printf 'Pod is not running: %s. Use startup_mode=replace to recreate it.\n' "$POD_NAME" >&2
+        exit 1
+    }
+    ensure_image "$WEB_IMAGE" "$(image_archive_path "$WEB_RUNTIME_ARCHIVE")"
+    ensure_image "$MALL_IMAGE" "$(image_archive_path "$MALL_RUNTIME_ARCHIVE")"
+
+    start_frontends
+    wait_for_frontends
+    show_access_urls
+    exit 0
+fi
+
+if [[ "$START_MODE" == "replace-server" ]]; then
+    replace_server_only
+    show_access_urls
+    exit 0
+fi
+
+if [[ "$START_MODE" == "replace-web" ]]; then
+    replace_web_only
+    show_access_urls
+    exit 0
+fi
+
+if [[ "$START_MODE" == "replace-mall" ]]; then
+    replace_mall_only
+    show_access_urls
+    exit 0
+fi
+
+[[ "$START_MODE" == "replace" ]] || {
+    printf 'Unsupported startup flow after validation: %s\n' "$START_MODE" >&2
+    exit 2
+}
+ensure_deployment_images
+
+ensure_volume "$MYSQL_VOLUME"
+ensure_volume "$REDIS_VOLUME"
+ensure_volume "$RABBITMQ_VOLUME"
+ensure_volume "$TDENGINE_VOLUME"
+
+if podman_cmd pod inspect "$POD_NAME" >/dev/null 2>&1; then
+    printf 'Replacing existing Pod %s gracefully (timeout: %ss).\n' "$POD_NAME" "$STOP_TIMEOUT"
+    # Keep databases and brokers available while Spring executes shutdown hooks.
+    if container_is_running "$SERVER_CONTAINER"; then
+        printf 'Stopping application server before infrastructure.\n'
+        podman_cmd stop --time "$STOP_TIMEOUT" "$SERVER_CONTAINER"
+    fi
+    podman_cmd pod stop --time "$STOP_TIMEOUT" "$POD_NAME" || \
+        printf 'Graceful Pod stop timed out; pod create --replace will remove the old Pod.\n' >&2
+fi
+
+printf 'Creating rootless Podman Pod %s.\n' "$POD_NAME"
+podman_cmd pod create --replace \
+    --name "$POD_NAME" \
+    --publish "${HOST_ADDRESS}:${SERVER_PORT}:${SERVER_CONTAINER_PORT}" \
+    --publish "${HOST_ADDRESS}:${WEB_PORT}:${WEB_CONTAINER_PORT}" \
+    --publish "${HOST_ADDRESS}:${MALL_PORT}:${MALL_CONTAINER_PORT}"
+
+printf 'Starting infrastructure containers.\n'
+podman_cmd run -d --replace --name "$MYSQL_CONTAINER" --pod "$POD_NAME" --pull=never \
+    --volume "${MYSQL_VOLUME}:/var/lib/mysql" \
+    --env "MYSQL_DATABASE=${MYSQL_DATABASE}" \
+    --env "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}" \
+    "${MYSQL_APPLICATION_INIT_ENV[@]}" \
+    --env "TZ=${MYSQL_TIMEZONE}" \
+    "$MYSQL_BASE_IMAGE" \
+    "--character-set-server=${MYSQL_CHARACTER_SET}" \
+    "--collation-server=${MYSQL_COLLATION}" \
+    "--port=${MYSQL_PORT}" \
+    "--default-authentication-plugin=${MYSQL_AUTHENTICATION_PLUGIN}"
+
+podman_cmd run -d --replace --name "$REDIS_CONTAINER" --pod "$POD_NAME" --pull=never \
+    --volume "${REDIS_VOLUME}:/data" \
+    "$REDIS_BASE_IMAGE"
+
+podman_cmd run -d --replace --name "$RABBITMQ_CONTAINER" --pod "$POD_NAME" --pull=never \
+    --volume "${RABBITMQ_VOLUME}:/var/lib/rabbitmq" \
+    --env "RABBITMQ_DEFAULT_USER=${RABBITMQ_USERNAME}" \
+    --env "RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}" \
+    "$RABBITMQ_BASE_IMAGE"
+
+podman_cmd run -d --replace --name "$TDENGINE_CONTAINER" --pod "$POD_NAME" --pull=never \
+    --volume "${TDENGINE_VOLUME}:/var/lib/taos" \
+    --env "TAOS_FQDN=${TDENGINE_FQDN}" \
+    "$TDENGINE_BASE_IMAGE"
+
+wait_for 'MySQL' "$MYSQL_ATTEMPTS" podman_cmd exec --env "MYSQL_PWD=${MYSQL_ROOT_PASSWORD}" \
+    "$MYSQL_CONTAINER" mysql --user "$MYSQL_ADMIN_USERNAME" --host "127.0.0.1" --port "$MYSQL_PORT" \
+    --batch --skip-column-names --execute 'SELECT 1' &
+mysql_ready_pid=$!
+wait_for 'Redis' "$REDIS_ATTEMPTS" podman_cmd exec "$REDIS_CONTAINER" redis-cli ping &
+redis_ready_pid=$!
+# Run the probe as RabbitMQ's own user. Running this Erlang client as root
+# during the broker's first few seconds creates a root-owned cookie and makes
+# the broker's later privilege drop fail.
+wait_for 'RabbitMQ' "$RABBITMQ_ATTEMPTS" podman_cmd exec --user "$RABBITMQ_OS_USER" "$RABBITMQ_CONTAINER" /opt/rabbitmq/sbin/rabbitmq-diagnostics -q ping &
+rabbitmq_ready_pid=$!
+wait_for 'TDengine' "$TDENGINE_ATTEMPTS" podman_cmd exec "$TDENGINE_CONTAINER" taos -s "$TDENGINE_HEALTH_QUERY" &
+tdengine_ready_pid=$!
+
+# The InitService only talks to TDengine, so run it while MySQL, Redis, and
+# RabbitMQ finish their own health checks instead of serializing those waits.
+wait "$tdengine_ready_pid"
+initialize_tdengine &
+tdengine_init_pid=$!
+
+wait "$mysql_ready_pid"
+bash "${SCRIPT_DIR}/internal/provision-database.sh" "$KDL_CONFIG_PATH"
+wait_for 'MySQL schema initialization' "$MYSQL_SCHEMA_ATTEMPTS" podman_cmd exec "$MYSQL_CONTAINER" \
+    mysql "--default-character-set=${MYSQL_CHARACTER_SET}" \
+    "-u${MYSQL_ADMIN_USERNAME}" "-p${MYSQL_ROOT_PASSWORD}" "--database=${MYSQL_DATABASE}" -Nse "$MYSQL_SCHEMA_QUERY"
+bash "${SCRIPT_DIR}/internal/provision-marketing-provider.sh" "$KDL_CONFIG_PATH"
+bash "${SCRIPT_DIR}/internal/provision-bpm-notifications.sh" "$KDL_CONFIG_PATH"
+apply_runtime_file_storage
+wait "$redis_ready_pid"
+wait "$rabbitmq_ready_pid"
+wait "$tdengine_init_pid"
+
+printf 'Starting server and frontends.\n'
+start_server
+# Do not expose a ready-looking Web UI while its API upstream is still booting.
+wait_for 'Spring Boot server' "$SERVER_ATTEMPTS" host_curl --fail --silent --show-error "http://${HEALTH_HTTP_HOST}:${SERVER_PORT}${SERVER_HEALTH_PATH}"
+if [[ "${BPM_PROVISION_AFTER_START,,}" == "true" ]]; then
+    printf 'Provisioning governed BPM models from explicit manifest.\n'
+    bash "${SCRIPT_DIR}/operations/bpm/provision-bpm-models.sh" "$BPM_PROVISION_MANIFEST"
+fi
+start_frontends
+wait_for_frontends
+show_access_urls

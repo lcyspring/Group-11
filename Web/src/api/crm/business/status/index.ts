@@ -8,7 +8,15 @@ export interface BusinessStatusTypeVO {
     id: number
     name: string
     percent: number
+    sort?: number
   }
+}
+
+export interface BusinessStatusVO {
+  id: number
+  name: string
+  percent: number
+  sort: number
 }
 
 export const DEFAULT_STATUSES = [
@@ -64,5 +72,8 @@ export const getBusinessStatusTypeSimpleList = async () => {
 
 // 获得商机阶段列表
 export const getBusinessStatusSimpleList = async (typeId: number) => {
-  return await request.get({ url: `/crm/business-status/status-simple-list`, params: { typeId } })
+  return (await request.get({
+    url: `/crm/business-status/status-simple-list`,
+    params: { typeId }
+  })) as BusinessStatusVO[]
 }

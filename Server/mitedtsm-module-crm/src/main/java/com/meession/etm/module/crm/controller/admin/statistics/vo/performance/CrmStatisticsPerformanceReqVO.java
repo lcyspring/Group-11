@@ -1,11 +1,12 @@
 package com.meession.etm.module.crm.controller.admin.statistics.vo.performance;
 
+import com.meession.etm.module.crm.controller.admin.statistics.vo.CrmStatisticsScopedReqVO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -13,7 +14,7 @@ import static com.meession.etm.framework.common.util.date.DateUtils.FORMAT_YEAR_
 
 @Schema(description = "管理后台 - CRM 员工业绩统计 Request VO")
 @Data
-public class CrmStatisticsPerformanceReqVO {
+public class CrmStatisticsPerformanceReqVO implements CrmStatisticsScopedReqVO {
 
     @Schema(description = "部门 id", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
     @NotNull(message = "部门 id 不能为空")
@@ -35,7 +36,8 @@ public class CrmStatisticsPerformanceReqVO {
 
     @Schema(description = "时间范围", requiredMode = Schema.RequiredMode.REQUIRED)
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
-    @NotEmpty(message = "时间范围不能为空")
+    @NotNull(message = "时间范围不能为空")
+    @Size(min = 2, max = 2, message = "请选择时间范围")
     private LocalDateTime[] times;
 
 }

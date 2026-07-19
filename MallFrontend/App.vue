@@ -28,5 +28,5 @@
 </script>
 
 <style lang="scss">
-  @import '@/sheep/scss/index.scss';
+  @use '@/sheep/scss/index.scss';
 </style>

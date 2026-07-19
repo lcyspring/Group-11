@@ -57,18 +57,20 @@
           <dict-tag :type="DICT_TYPE.IOT_OTA_TASK_STATUS" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column :label="t('common.operation')" align="center" min-width="150" fixed="right">
+      <el-table-column :label="t('common.operation')" align="center" fixed="right" width="220">
         <template #default="scope">
-          <el-button link type="primary" @click="handleTaskDetail(scope.row.id)"> {{ t('common.detail') }} </el-button>
-          <el-button
-            v-if="scope.row.status === IoTOtaTaskStatusEnum.IN_PROGRESS.value"
-            link
-            type="danger"
-            @click="handleCancelTask(scope.row.id)"
-            v-hasPermi="['iot:ota-task:cancel']"
-          >
-            {{ t('common.cancel') }}
-          </el-button>
+          <TableActions>
+            <el-button link type="primary" @click="handleTaskDetail(scope.row.id)"> {{ t('common.detail') }} </el-button>
+            <el-button
+              v-if="scope.row.status === IoTOtaTaskStatusEnum.IN_PROGRESS.value"
+              link
+              type="danger"
+              @click="handleCancelTask(scope.row.id)"
+              v-hasPermi="['iot:ota-task:cancel']"
+            >
+              {{ t('common.cancel') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

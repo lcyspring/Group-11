@@ -10,7 +10,11 @@
       <el-row>
         <el-col :span="12">
           <el-form-item :label="t('receivablePlan.period')" prop="period">
-            <el-input v-model="formData.period" disabled :placeholder="t('contract.noAutoGenerate')" />
+            <el-input
+              v-model="formData.period"
+              disabled
+              :placeholder="t('contract.noAutoGenerate')"
+            />
           </el-form-item>
         </el-col>
         <el-col :span="12">
@@ -38,7 +42,7 @@
               :disabled="formType !== 'create'"
               class="w-1/1"
               filterable
-              :placeholder="t('customer.ownerUserPlaceholder')"
+              :placeholder="t('receivable.customerPlaceholder')"
               @change="handleCustomerChange"
             >
               <el-option
@@ -57,11 +61,12 @@
               :disabled="formType !== 'create' || !formData.customerId"
               class="w-1/1"
               filterable
-              :placeholder="t('contract.namePlaceholder')"
+              :placeholder="t('receivable.contractPlaceholder')"
             >
               <el-option
                 v-for="data in contractList"
                 :key="data.id"
+                :disabled="data.auditStatus !== 20"
                 :label="data.name"
                 :value="data.id!"
               />
@@ -107,7 +112,11 @@
         </el-col>
         <el-col :span="12">
           <el-form-item :label="t('receivable.returnType')" prop="returnType">
-            <el-select v-model="formData.returnType" class="w-1/1" :placeholder="t('common.selectPlaceholder')">
+            <el-select
+              v-model="formData.returnType"
+              class="w-1/1"
+              :placeholder="t('common.selectPlaceholder')"
+            >
               <el-option
                 v-for="dict in getIntDictOptions(DICT_TYPE.CRM_RECEIVABLE_RETURN_TYPE)"
                 :key="dict.value"
@@ -119,14 +128,20 @@
         </el-col>
         <el-col :span="24">
           <el-form-item :label="t('receivablePlan.remark')" prop="remark">
-            <el-input v-model="formData.remark" :placeholder="t('customer.remarkPlaceholder')" type="textarea" />
+            <el-input
+              v-model="formData.remark"
+              :placeholder="t('customer.remarkPlaceholder')"
+              type="textarea"
+            />
           </el-form-item>
         </el-col>
       </el-row>
     </el-form>
     <template #footer>
-      <el-button :disabled="formLoading" type="primary" @click="submitForm">{{ t('dialog.confirm') }}</el-button>
-      <el-button @click="dialogVisible = false">{{ t('dialog.cancel') }}</el-button>
+      <el-button :disabled="formLoading" type="primary" @click="submitForm">{{
+        t('common.confirm')
+      }}</el-button>
+      <el-button @click="dialogVisible = false">{{ t('common.cancel') }}</el-button>
     </template>
   </Dialog>
 </template>

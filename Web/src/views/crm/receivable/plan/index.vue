@@ -4,12 +4,7 @@
 
   <ContentWrap>
     <!-- 搜索工作栏 -->
-    <el-form
-      ref="queryFormRef"
-      :model="queryParams"
-      class="-mb-15px"
-      label-width="auto"
-    >
+    <el-form ref="queryFormRef" :model="queryParams" class="-mb-15px" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('receivablePlan.customerName')" prop="customerId">
@@ -81,9 +76,22 @@
     <el-tabs v-model="activeName" @tab-click="handleTabClick">
       <el-tab-pane :label="t('customer.myResponsible')" name="1" />
       <el-tab-pane :label="t('customer.subordinateResponsible')" name="3" />
+      <el-tab-pane :label="t('customer.organizationScope')" name="4" />
     </el-tabs>
-    <el-table v-loading="loading" :data="list" :show-overflow-tooltip="true" :stripe="true" :table-layout="'auto'">
-      <el-table-column align="center" fixed="left" :label="t('receivablePlan.customerName')" prop="customerName" min-width="150">
+    <el-table
+      v-loading="loading"
+      :data="list"
+      :show-overflow-tooltip="true"
+      :stripe="true"
+      :table-layout="'auto'"
+    >
+      <el-table-column
+        align="center"
+        fixed="left"
+        :label="t('receivablePlan.customerName')"
+        prop="customerName"
+        min-width="150"
+      >
         <template #default="scope">
           <el-link
             :underline="false"
@@ -94,7 +102,12 @@
           </el-link>
         </template>
       </el-table-column>
-      <el-table-column align="center" :label="t('receivablePlan.contractNo')" prop="contractNo" min-width="200" />
+      <el-table-column
+        align="center"
+        :label="t('receivablePlan.contractNo')"
+        prop="contractNo"
+        min-width="200"
+      />
       <el-table-column align="center" :label="t('receivablePlan.period')" prop="period">
         <template #default="scope">
           <el-link :underline="false" type="primary" @click="openDetail(scope.row.id)">
@@ -104,7 +117,7 @@
       </el-table-column>
       <el-table-column
         align="center"
-        :label="t('receivablePlan.price') + '（元）'"
+        :label="t('receivablePlan.amountInCny', { label: t('receivablePlan.price') })"
         prop="price"
         min-width="160"
         :formatter="erpPriceTableColumnFormatter"
@@ -116,7 +129,19 @@
         prop="returnTime"
         min-width="180"
       />
-      <el-table-column align="center" :label="t('receivablePlan.remindDays')" prop="remindDays" min-width="150" />
+      <el-table-column align="center" :label="t('common.status')" prop="status" min-width="110">
+        <template #default="scope">
+          <el-tag :type="getStatusType(scope.row.status)">{{
+            getStatusLabel(scope.row.status)
+          }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column
+        align="center"
+        :label="t('receivablePlan.remindDays')"
+        prop="remindDays"
+        min-width="150"
+      />
       <el-table-column
         align="center"
         :label="t('receivablePlan.remindTime')"
@@ -124,24 +149,30 @@
         min-width="180"
         :formatter="dateFormatter2"
       />
-      <el-table-column align="center" :label="t('receivablePlan.returnType')" prop="returnType" min-width="130">
+      <el-table-column
+        align="center"
+        :label="t('receivablePlan.returnType')"
+        prop="returnType"
+        min-width="130"
+      >
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.CRM_RECEIVABLE_RETURN_TYPE" :value="scope.row.returnType" />
         </template>
       </el-table-column>
       <el-table-column align="center" :label="t('receivablePlan.remark')" prop="remark" />
-      <el-table-column :label="t('receivablePlan.ownerUserName')" prop="ownerUserName" min-width="120" />
+      <el-table-column
+        :label="t('receivablePlan.ownerUserName')"
+        prop="ownerUserName"
+        min-width="120"
+      />
       <el-table-column
         align="center"
-        :label="t('receivablePlan.receivablePrice') + '（元）'"
-        prop="receivable.price"
+        :label="t('receivablePlan.amountInCny', { label: t('receivablePlan.receivablePrice') })"
+        prop="receivedPrice"
         min-width="160"
       >
         <template #default="scope">
-          <el-text v-if="scope.row.receivable">
-            {{ erpPriceInputFormatter(scope.row.receivable.price) }}
-          </el-text>
-          <el-text v-else>{{ erpPriceInputFormatter(0) }}</el-text>
+          <el-text>{{ erpPriceInputFormatter(scope.row.receivedPrice) }}</el-text>
         </template>
       </el-table-column>
       <el-table-column
@@ -149,19 +180,23 @@
         :label="t('receivable.returnTime')"
         prop="receivable.returnTime"
         min-width="180"
-        :formatter="dateFormatter2"
-      />
+      >
+        <template #default="scope">
+          {{
+            scope.row.status === ReceivablePlanApi.ReceivablePlanStatus.RECEIVED
+              ? formatDate(scope.row.receivable?.returnTime, 'YYYY-MM-DD')
+              : '-'
+          }}
+        </template>
+      </el-table-column>
       <el-table-column
         align="center"
-        :label="t('receivablePlan.unreceivedPrice') + '（元）'"
-        prop="receivable.price"
+        :label="t('receivablePlan.amountInCny', { label: t('receivablePlan.unreceivedPrice') })"
+        prop="unreceivedPrice"
         min-width="160"
       >
         <template #default="scope">
-          <el-text v-if="scope.row.receivable">
-            {{ erpPriceInputFormatter(scope.row.price - scope.row.receivable.price) }}
-          </el-text>
-          <el-text v-else>{{ erpPriceInputFormatter(scope.row.price) }}</el-text>
+          <el-text>{{ erpPriceInputFormatter(scope.row.unreceivedPrice) }}</el-text>
         </template>
       </el-table-column>
       <el-table-column
@@ -178,34 +213,43 @@
         prop="createTime"
         min-width="180"
       />
-      <el-table-column align="center" :label="t('receivablePlan.creatorName')" prop="creatorName" min-width="100" />
-      <el-table-column align="center" fixed="right" :label="t('common.action')" min-width="180">
+      <el-table-column
+        align="center"
+        :label="t('receivablePlan.creatorName')"
+        prop="creatorName"
+        min-width="100"
+      />
+      <el-table-column align="center" fixed="right" :label="t('common.action')" width="140">
         <template #default="scope">
-          <el-button
-            v-hasPermi="['crm:receivable:create']"
-            link
-            type="success"
-            @click="openReceivableForm(scope.row)"
-            :disabled="scope.row.receivableId"
-          >
-            {{ t('receivablePlan.createReceivable') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['crm:receivable-plan:update']"
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['crm:receivable-plan:delete']"
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              v-hasPermi="['crm:receivable:create']"
+              link
+              type="success"
+              @click="openReceivableForm(scope.row)"
+              :disabled="scope.row.receivableId"
+            >
+              {{ t('receivablePlan.createReceivable') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['crm:receivable-plan:update']"
+              link
+              type="primary"
+              :disabled="Boolean(scope.row.receivableId)"
+              @click="openForm('update', scope.row.id)"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['crm:receivable-plan:delete']"
+              link
+              type="danger"
+              :disabled="Boolean(scope.row.receivableId)"
+              @click="handleDelete(scope.row.id)"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>
@@ -225,8 +269,9 @@
 
 <script lang="ts" setup>
 import { DICT_TYPE } from '@/utils/dict'
-import { dateFormatter, dateFormatter2 } from '@/utils/formatTime'
+import { dateFormatter, dateFormatter2, formatDate } from '@/utils/formatTime'
 import download from '@/utils/download'
+import { resolveDialogAction } from '@/utils/dialogAction'
 import * as ReceivablePlanApi from '@/api/crm/receivable/plan'
 import ReceivablePlanForm from './ReceivablePlanForm.vue'
 import * as CustomerApi from '@/api/crm/customer'
@@ -253,9 +298,23 @@ const exportLoading = ref(false) // 导出的加载中
 const activeName = ref('1') // 列表 tab
 const customerList = ref<CustomerApi.CustomerVO[]>([]) // 客户列表
 
+const getStatusType = (status: number) => {
+  if (status === ReceivablePlanApi.ReceivablePlanStatus.RECEIVED) return 'success'
+  if (status === ReceivablePlanApi.ReceivablePlanStatus.OVERDUE) return 'danger'
+  return 'warning'
+}
+
+const getStatusLabel = (status: number) => {
+  if (status === ReceivablePlanApi.ReceivablePlanStatus.RECEIVED)
+    return t('receivablePlan.statusReceived')
+  if (status === ReceivablePlanApi.ReceivablePlanStatus.OVERDUE)
+    return t('receivablePlan.statusOverdue')
+  return t('receivablePlan.statusPending')
+}
+
 /** tab 切换 */
 const handleTabClick = (tab: TabsPaneContext) => {
-  queryParams.sceneType = tab.paneName
+  queryParams.sceneType = String(tab.paneName)
   handleQuery()
 }
 
@@ -297,27 +356,19 @@ const openReceivableForm = (row: ReceivablePlanApi.ReceivablePlanVO) => {
 
 /** 删除按钮操作 */
 const handleDelete = async (id: number) => {
-  try {
-    // 删除的二次确认
-    await message.delConfirm()
-    // 发起删除
-    await ReceivablePlanApi.deleteReceivablePlan(id)
-    message.success(t('common.delSuccess'))
-    // 刷新列表
-    await getList()
-  } catch {}
+  if (!(await resolveDialogAction(message.delConfirm()))) return
+  await ReceivablePlanApi.deleteReceivablePlan(id)
+  message.success(t('common.delSuccess'))
+  await getList()
 }
 
 /** 导出按钮操作 */
 const handleExport = async () => {
+  if (!(await resolveDialogAction(message.exportConfirm()))) return
+  exportLoading.value = true
   try {
-    // 导出的二次确认
-    await message.exportConfirm()
-    // 发起导出
-    exportLoading.value = true
     const data = await ReceivablePlanApi.exportReceivablePlan(queryParams)
     download.excel(data, t('receivablePlan.exportFileName') + '.xls')
-  } catch {
   } finally {
     exportLoading.value = false
   }

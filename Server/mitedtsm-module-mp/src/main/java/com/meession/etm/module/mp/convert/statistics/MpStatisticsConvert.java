@@ -21,7 +21,7 @@ import java.util.List;
 
 import static com.meession.etm.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY;
 
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface MpStatisticsConvert {
 
     MpStatisticsConvert INSTANCE = Mappers.getMapper(MpStatisticsConvert.class);

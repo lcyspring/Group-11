@@ -28,7 +28,7 @@
         effect="light"
         placement="top"
       >
-        <Icon icon="ep:question" class="ml-5px" />
+        <Icon icon="ep:question-filled" class="ml-5px" />
       </el-tooltip>
     </el-form-item>
     <el-form-item v-if="modelData.formType === BpmModelFormType.CUSTOM" :label="t('process.model.formViewPath')" prop="formCustomViewPath">
@@ -43,7 +43,7 @@
         effect="light"
         placement="top"
       >
-        <Icon icon="ep:question" class="ml-5px" />
+        <Icon icon="ep:question-filled" class="ml-5px" />
       </el-tooltip>
     </el-form-item>
     <!-- 表单预览 -->
@@ -70,12 +70,7 @@ import * as FormApi from '@/api/bpm/form'
 import { setConfAndFields2 } from '@/utils/formCreate'
 import { BpmModelFormType } from '@/utils/constants'
 
-const props = defineProps({
-  formList: {
-    type: Array,
-    required: true
-  }
-})
+const props = defineProps<{ formList: FormApi.FormVO[] }>()
 
 const { t } = useI18n('bpm') // 国际化
 const formRef = ref()

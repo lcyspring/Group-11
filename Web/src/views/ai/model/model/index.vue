@@ -92,24 +92,26 @@
       <el-table-column :label="tAi('chat.model.temperature')" align="center" prop="temperature" min-width="80" />
       <el-table-column :label="tAi('chat.model.maxTokens')" align="center" prop="maxTokens" min-width="140" />
       <el-table-column :label="tAi('chat.model.maxContexts')" align="center" prop="maxContexts" min-width="100" />
-      <el-table-column :label="t('common.operation')" align="center" min-width="180" fixed="right">
+      <el-table-column :label="t('common.operation')" align="center" fixed="right" width="220">
         <template #default="scope">
-          <el-button
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-            v-hasPermi="['ai:model:update']"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-            v-hasPermi="['ai:model:delete']"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions>
+            <el-button
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+              v-hasPermi="['ai:model:update']"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+              v-hasPermi="['ai:model:delete']"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

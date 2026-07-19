@@ -1,0 +1,30 @@
+-- CRM 通用异步导出任务、权限快照和单次下载令牌。可重复执行。
+
+CREATE TABLE IF NOT EXISTS `crm_export_task` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '导出任务编号',
+  `object_type` varchar(32) NOT NULL COMMENT '导出对象类型',
+  `creator_user_id` bigint NOT NULL COMMENT '任务创建用户',
+  `filter_snapshot` mediumtext NOT NULL COMMENT '提交时筛选条件 JSON',
+  `object_ids_snapshot` mediumtext NOT NULL COMMENT '提交时授权对象编号 JSON',
+  `status` tinyint NOT NULL DEFAULT 10 COMMENT '10排队、20运行、30成功、40失败、50过期',
+  `total_count` int NOT NULL DEFAULT 0 COMMENT '对象数量',
+  `file_url` varchar(1024) NULL COMMENT '受保护结果文件 URL',
+  `file_name` varchar(255) NULL COMMENT '下载文件名',
+  `content_type` varchar(128) NULL COMMENT '文件 MIME 类型',
+  `failure_reason` varchar(1000) NULL COMMENT '失败诊断',
+  `download_token_hash` char(64) NULL COMMENT '单次下载令牌 SHA-256',
+  `download_token_expires_at` datetime NULL COMMENT '令牌过期时间',
+  `downloaded_at` datetime NULL COMMENT '最近下载时间',
+  `started_at` datetime NULL COMMENT '开始生成时间',
+  `finished_at` datetime NULL COMMENT '生成结束时间',
+  `expires_at` datetime NOT NULL COMMENT '任务及结果过期时间',
+  `creator` varchar(64) NULL DEFAULT '',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updater` varchar(64) NULL DEFAULT '',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` bit(1) NOT NULL DEFAULT b'0',
+  `tenant_id` bigint NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_crm_export_task_owner` (`tenant_id`,`creator_user_id`,`status`,`create_time`,`deleted`),
+  KEY `idx_crm_export_task_queue` (`tenant_id`,`status`,`expires_at`,`id`,`deleted`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='CRM 异步导出任务';

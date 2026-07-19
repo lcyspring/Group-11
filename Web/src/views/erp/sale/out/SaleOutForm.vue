@@ -206,7 +206,7 @@ const dialogVisible = ref(false) // 弹窗的是否展示
 const dialogTitle = ref('') // 弹窗的标题
 const formLoading = ref(false) // 表单的加载中：1）修改时的数据加载；2）提交的按钮禁用
 const formType = ref('') // 表单的类型：create - 新增；update - 修改；detail - 详情
-const formData = ref({
+const formData = ref<any>({
   id: undefined,
   customerId: undefined,
   accountId: undefined,
@@ -287,7 +287,7 @@ const openSaleOrderOutEnableList = () => {
   saleOrderOutEnableListRef.value.open()
 }
 
-const handleSaleOrderChange = (order: SaleOrderVO) => {
+const handleSaleOrderChange = (order: any) => {
   // 将订单设置到出库单
   formData.value.orderId = order.id
   formData.value.orderNo = order.no

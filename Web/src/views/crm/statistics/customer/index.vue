@@ -93,6 +93,12 @@
     </el-form>
   </ContentWrap>
 
+  <StatisticsLineagePanel
+    ref="statisticsLineageRef"
+    scope="customer"
+    :on-refresh="handleQuery"
+  />
+
   <!-- 客户统计 -->
   <el-col>
     <el-tabs v-model="activeTab">
@@ -111,6 +117,10 @@
       <!-- 客户转化率分析 -->
       <el-tab-pane :label="t('customer.conversion')" lazy name="conversionStat">
         <CustomerConversionStat ref="conversionStatRef" :query-params="queryParams" />
+      </el-tab-pane>
+      <!-- 客户成交金额 TOP10 -->
+      <el-tab-pane :label="t('customer.dealTop10')" lazy name="dealTop10">
+        <CustomerDealTop10 ref="dealTop10Ref" :query-params="queryParams" />
       </el-tab-pane>
       <!-- 公海客户分析 -->
       <el-tab-pane :label="t('customer.poolSummary')" lazy name="poolSummary">
@@ -138,6 +148,7 @@ import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import { beginOfDay, defaultShortcuts, endOfDay, formatDate } from '@/utils/formatTime'
 import { defaultProps, handleTree } from '@/utils/tree'
 import CustomerConversionStat from './components/CustomerConversionStat.vue'
+import CustomerDealTop10 from './components/CustomerDealTop10.vue'
 import CustomerDealCycleByUser from './components/CustomerDealCycleByUser.vue'
 import CustomerDealCycleByArea from './components/CustomerDealCycleByArea.vue'
 import CustomerDealCycleByProduct from './components/CustomerDealCycleByProduct.vue'
@@ -145,6 +156,7 @@ import CustomerFollowUpSummary from './components/CustomerFollowUpSummary.vue'
 import CustomerFollowUpType from './components/CustomerFollowUpType.vue'
 import CustomerSummary from './components/CustomerSummary.vue'
 import CustomerPoolSummary from './components/CustomerPoolSummary.vue'
+import StatisticsLineagePanel from '../components/StatisticsLineagePanel.vue'
 
 defineOptions({ name: 'CrmStatisticsCustomer' })
 
@@ -177,44 +189,52 @@ const customerSummaryRef = ref() // 1. 客户总量分析
 const followUpSummaryRef = ref() // 2. 客户跟进次数分析
 const followUpTypeRef = ref() // 3. 客户跟进方式分析
 const conversionStatRef = ref() // 4. 客户转化率分析
-const customerPoolSummaryRef = ref() // 5. 客户公海分析
-const dealCycleByUserRef = ref() // 6. 成交周期分析(按员工)
-const dealCycleByAreaRef = ref() // 7. 成交周期分析(按地区)
-const dealCycleByProductRef = ref() // 8. 成交周期分析(按产品)
+const dealTop10Ref = ref() // 5. 客户成交金额 TOP10
+const customerPoolSummaryRef = ref() // 6. 客户公海分析
+const dealCycleByUserRef = ref() // 7. 成交周期分析(按员工)
+const dealCycleByAreaRef = ref() // 8. 成交周期分析(按地区)
+const dealCycleByProductRef = ref() // 9. 成交周期分析(按产品)
+const statisticsLineageRef = ref<InstanceType<typeof StatisticsLineagePanel>>()
 
 /** 搜索按钮操作 */
-const handleQuery = () => {
+const handleQuery = async () => {
+  let query: Promise<unknown> | undefined
   switch (activeTab.value) {
     case 'customerSummary': // 客户总量分析
-      customerSummaryRef.value?.loadData?.()
+      query = customerSummaryRef.value?.loadData?.()
       break
     case 'followUpSummary': // 客户跟进次数分析
-      followUpSummaryRef.value?.loadData?.()
+      query = followUpSummaryRef.value?.loadData?.()
       break
     case 'followUpType': // 客户跟进方式分析
-      followUpTypeRef.value?.loadData?.()
+      query = followUpTypeRef.value?.loadData?.()
       break
     case 'conversionStat': // 客户转化率分析
-      conversionStatRef.value?.loadData?.()
+      query = conversionStatRef.value?.loadData?.()
+      break
+    case 'dealTop10': // 客户成交金额 TOP10
+      query = dealTop10Ref.value?.loadData?.()
       break
     case 'poolSummary': // 公海客户分析
-      customerPoolSummaryRef.value?.loadData?.()
+      query = customerPoolSummaryRef.value?.loadData?.()
       break
     case 'dealCycleByUser': // 成交周期分析
-      dealCycleByUserRef.value?.loadData?.()
+      query = dealCycleByUserRef.value?.loadData?.()
       break
     case 'dealCycleByArea': // 成交周期分析
-      dealCycleByAreaRef.value?.loadData?.()
+      query = dealCycleByAreaRef.value?.loadData?.()
       break
     case 'dealCycleByProduct': // 成交周期分析
-      dealCycleByProductRef.value?.loadData?.()
+      query = dealCycleByProductRef.value?.loadData?.()
       break
   }
+  await query
+  statisticsLineageRef.value?.markRefreshed()
 }
 
 /** 当 activeTab 改变时，刷新当前活动的 tab */
 watch(activeTab, () => {
-  handleQuery()
+  void handleQuery()
 })
 
 /** 重置按钮操作 */
@@ -227,5 +247,6 @@ const resetQuery = () => {
 onMounted(async () => {
   deptList.value = handleTree(await DeptApi.getSimpleDeptList())
   userList.value = handleTree(await UserApi.getSimpleUserList())
+  await handleQuery()
 })
 </script>

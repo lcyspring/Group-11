@@ -416,7 +416,8 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
                     if (ObjUtil.notEqual(mcpClient.getClientInfo().name(), finalMcpClientName)) {
                         return;
                     }
-                    ToolCallback[] mcpToolCallBacks = new SyncMcpToolCallbackProvider(mcpClient).getToolCallbacks();
+                    ToolCallback[] mcpToolCallBacks = SyncMcpToolCallbackProvider.builder()
+                            .addMcpClient(mcpClient).build().getToolCallbacks();
                     CollUtil.addAll(toolCallbacks, mcpToolCallBacks);
                 });
             });

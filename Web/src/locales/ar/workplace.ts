@@ -3,6 +3,8 @@ export default {
   happyDay: 'أتمنى لك يوماً سعيداً!',
   toady: 'اليوم مشمس',
   notice: 'إعلان',
+  noticeCount: 'عدد الإعلانات',
+  noticeItem: 'إعلان',
   access: 'وصول المشروع',
   toDo: 'المهام',
   introduction: 'مقدمة جادة',

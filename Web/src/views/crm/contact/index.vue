@@ -126,6 +126,7 @@
       <el-tab-pane :label="t('crm.customer.myResponsible')" name="1" />
       <el-tab-pane :label="t('crm.customer.myInvolved')" name="2" />
       <el-tab-pane :label="t('crm.customer.subordinateResponsible')" name="3" />
+      <el-tab-pane :label="t('crm.customer.organizationScope')" name="4" />
     </el-tabs>
     <el-table v-loading="loading" :data="list" :show-overflow-tooltip="true" :stripe="true" :table-layout="'auto'">
       <el-table-column align="center" fixed="left" :label="t('crm.contact.name')" prop="name" min-width="160">
@@ -150,10 +151,16 @@
       <el-table-column align="center" :label="t('crm.contact.telephone')" prop="telephone" min-width="130" />
       <el-table-column align="center" :label="t('crm.contact.email')" prop="email" min-width="180" />
       <el-table-column align="center" :label="t('crm.contact.post')" prop="post" min-width="120" />
+      <el-table-column align="center" :label="t('crm.contact.birthday')" prop="birthday" min-width="120" />
       <el-table-column align="center" :label="t('crm.contact.detailAddress')" prop="detailAddress" min-width="120" />
       <el-table-column align="center" :label="t('crm.contact.master')" prop="master" min-width="100">
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.INFRA_BOOLEAN_STRING" :value="scope.row.master" />
+        </template>
+      </el-table-column>
+      <el-table-column align="center" :label="t('crm.contact.primaryContact')" prop="primaryContact" min-width="100">
+        <template #default="scope">
+          <dict-tag :type="DICT_TYPE.INFRA_BOOLEAN_STRING" :value="scope.row.primaryContact" />
         </template>
       </el-table-column>
       <el-table-column align="center" :label="t('crm.contact.parentName')" prop="parentName" min-width="160">
@@ -201,24 +208,26 @@
         min-width="180"
       />
       <el-table-column align="center" :label="t('crm.contact.creatorName')" prop="creatorName" min-width="120" />
-      <el-table-column align="center" fixed="right" :label="t('common.action')" min-width="200">
+      <el-table-column align="center" fixed="right" :label="t('common.action')" width="220">
         <template #default="scope">
-          <el-button
-            v-hasPermi="['crm:contact:update']"
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['crm:contact:delete']"
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-          >
-            {{ t('common.del') }}
-          </el-button>
+          <TableActions>
+            <el-button
+              v-hasPermi="['crm:contact:update']"
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['crm:contact:delete']"
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+            >
+              {{ t('common.del') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>
@@ -238,6 +247,7 @@
 <script lang="ts" setup>
 import { dateFormatter } from '@/utils/formatTime'
 import download from '@/utils/download'
+import { resolveDialogAction } from '@/utils/dialogAction'
 import * as ContactApi from '@/api/crm/contact'
 import ContactForm from './ContactForm.vue'
 import { DICT_TYPE } from '@/utils/dict'
@@ -293,7 +303,7 @@ const resetQuery = () => {
 
 /** tab 切换 */
 const handleTabClick = (tab: TabsPaneContext) => {
-  queryParams.sceneType = tab.paneName
+  queryParams.sceneType = String(tab.paneName)
   handleQuery()
 }
 
@@ -305,27 +315,19 @@ const openForm = (type: string, id?: number) => {
 
 /** 删除按钮操作 */
 const handleDelete = async (id: number) => {
-  try {
-    // 删除的二次确认
-    await message.delConfirm()
-    // 发起删除
-    await ContactApi.deleteContact(id)
-    message.success(t('common.delSuccess'))
-    // 刷新列表
-    await getList()
-  } catch {}
+  if (!(await resolveDialogAction(message.delConfirm()))) return
+  await ContactApi.deleteContact(id)
+  message.success(t('common.delSuccess'))
+  await getList()
 }
 
 /** 导出按钮操作 */
 const handleExport = async () => {
+  if (!(await resolveDialogAction(message.exportConfirm()))) return
+  exportLoading.value = true
   try {
-    // 导出的二次确认
-    await message.exportConfirm()
-    // 发起导出
-    exportLoading.value = true
     const data = await ContactApi.exportContact(queryParams)
     download.excel(data, '联系人.xls')
-  } catch {
   } finally {
     exportLoading.value = false
   }

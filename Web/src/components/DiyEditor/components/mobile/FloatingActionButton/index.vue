@@ -41,13 +41,18 @@ import { FloatingActionButtonProperty } from './config'
 /** 悬浮按钮 */
 defineOptions({ name: 'FloatingActionButton' })
 // 定义属性
-defineProps<{ property: FloatingActionButtonProperty }>()
+const props = defineProps<{ property: FloatingActionButtonProperty }>()
 
 // 是否展开
 const expanded = ref(false)
 // 处理展开/折叠
 const handleToggleFab = () => {
   expanded.value = !expanded.value
+}
+const handleActive = (index: number) => {
+  const url = props.property.list[index]?.url
+  if (url) window.open(url, '_blank', 'noopener,noreferrer')
+  expanded.value = false
 }
 </script>
 

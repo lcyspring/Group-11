@@ -92,12 +92,26 @@
             <BusinessProductForm
               ref="productFormRef"
               :products="formData.products"
-              :disabled="disabled"
+              :disabled="false"
+              :tax-rates="quotePolicy?.allowedTaxRates || []"
+              :default-tax-rate="quotePolicy?.defaultTaxRate || 0"
             />
           </el-tab-pane>
         </el-tabs>
       </ContentWrap>
       <el-row :gutter="20">
+        <el-col :span="12">
+          <el-form-item :label="t('crm.business.currency')" prop="currencyCode">
+            <el-select v-model="formData.currencyCode" class="!w-1/1">
+              <el-option
+                v-for="(_, code) in quotePolicy?.exchangeRatesToBase || {}"
+                :key="code"
+                :label="`${code} · 1 ${code} = ${quotePolicy?.exchangeRatesToBase[code]} ${quotePolicy?.baseCurrency}`"
+                :value="code"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
         <el-col :span="12">
           <el-form-item :label="t('crm.business.totalProductPrice')" prop="totalProductPrice">
             <el-input
@@ -144,6 +158,7 @@ import * as BusinessApi from '@/api/crm/business'
 import * as BusinessStatusApi from '@/api/crm/business/status'
 import * as CustomerApi from '@/api/crm/customer'
 import * as UserApi from '@/api/system/user'
+import * as QuoteApi from '@/api/crm/business/quote'
 import { useUserStore } from '@/store/modules/user'
 import BusinessProductForm from './components/BusinessProductForm.vue'
 import { erpPriceMultiply, erpPriceInputFormatter } from '@/utils'
@@ -163,6 +178,7 @@ const formData = ref({
   statusTypeId: undefined,
   dealTime: undefined,
   discountPercent: 0,
+  currencyCode: 'CNY',
   totalProductPrice: undefined,
   totalPrice: undefined,
   remark: undefined,
@@ -180,6 +196,7 @@ const formRef = ref() // 表单 Ref
 const userOptions = ref<UserApi.UserVO[]>([]) // 用户列表
 const statusTypeList = ref([]) // 商机状态类型列表
 const customerList = ref([]) // 客户列表的数据
+const quotePolicy = ref<QuoteApi.QuotePolicyVO>()
 
 /** 子表的表单 */
 const subTabsName = ref('product')
@@ -192,7 +209,10 @@ watch(
     if (!val) {
       return
     }
-    const totalProductPrice = val.products.reduce((prev, curr) => prev + curr.totalPrice, 0)
+    const totalProductPrice = val.products.reduce(
+      (prev, curr) => prev + Number(curr.totalPrice || 0),
+      0
+    )
     const discountPrice =
       val.discountPercent != null
         ? erpPriceMultiply(totalProductPrice, val.discountPercent / 100.0)
@@ -211,11 +231,17 @@ const open = async (type: string, id?: number, customerId?: number, contactId?: 
   dialogTitle.value = t('action.' + type)
   formType.value = type
   resetForm()
+  quotePolicy.value = await QuoteApi.getQuotePolicy()
+  formData.value.currencyCode = quotePolicy.value.defaultCurrency
   // 修改时，设置数据
   if (id) {
     formLoading.value = true
     try {
-      formData.value = await BusinessApi.getBusiness(id)
+      const [business, quote] = await Promise.all([
+        BusinessApi.getBusiness(id),
+        QuoteApi.getCurrentQuote(id)
+      ])
+      formData.value = { ...business, currencyCode: quote?.currencyCode || quotePolicy.value.defaultCurrency }
     } finally {
       formLoading.value = false
     }
@@ -279,6 +305,7 @@ const resetForm = () => {
     statusTypeId: undefined,
     dealTime: undefined,
     discountPercent: 0,
+    currencyCode: quotePolicy.value?.defaultCurrency || 'CNY',
     totalProductPrice: undefined,
     totalPrice: undefined,
     remark: undefined,

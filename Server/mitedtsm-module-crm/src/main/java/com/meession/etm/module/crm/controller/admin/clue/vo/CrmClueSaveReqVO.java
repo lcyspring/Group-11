@@ -13,7 +13,6 @@ import com.mzt.logapi.starter.annotation.DiffLogField;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -46,7 +45,6 @@ public class CrmClueSaveReqVO {
     private LocalDateTime contactNextTime;
 
     @Schema(description = "负责人编号", example = "2048")
-    @NotNull(message = "负责人编号不能为空")
     private Long ownerUserId;
 
     @Schema(description = "手机号", example = "18000000000")

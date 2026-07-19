@@ -60,6 +60,7 @@
       <el-tab-pane :label="t('crm.customer.myResponsible')" name="1" />
       <el-tab-pane :label="t('crm.customer.myInvolved')" name="2" />
       <el-tab-pane :label="t('crm.customer.subordinateResponsible')" name="3" />
+      <el-tab-pane :label="t('crm.customer.organizationScope')" name="4" />
     </el-tabs>
     <el-table v-loading="loading" :data="list" :show-overflow-tooltip="true" :stripe="true" :table-layout="'auto'">
       <el-table-column align="center" fixed="left" :label="t('crm.business.name')" prop="name" min-width="160">
@@ -140,24 +141,26 @@
         prop="statusName"
         min-width="120"
       />
-      <el-table-column align="center" fixed="right" :label="t('common.action')" min-width="150">
+      <el-table-column align="center" fixed="right" :label="t('common.action')" width="220">
         <template #default="scope">
-          <el-button
-            v-hasPermi="['crm:business:update']"
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['crm:business:delete']"
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-          >
-            {{ t('common.del') }}
-          </el-button>
+          <TableActions>
+            <el-button
+              v-hasPermi="['crm:business:update']"
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['crm:business:delete']"
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+            >
+              {{ t('common.del') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>
@@ -177,6 +180,7 @@
 <script lang="ts" setup>
 import { dateFormatter } from '@/utils/formatTime'
 import download from '@/utils/download'
+import { resolveDialogAction } from '@/utils/dialogAction'
 import * as BusinessApi from '@/api/crm/business'
 import BusinessForm from './BusinessForm.vue'
 import { erpPriceTableColumnFormatter } from '@/utils'
@@ -225,7 +229,7 @@ const resetQuery = () => {
 
 /** tab 切换 */
 const handleTabClick = (tab: TabsPaneContext) => {
-  queryParams.sceneType = tab.paneName
+  queryParams.sceneType = String(tab.paneName)
   handleQuery()
 }
 
@@ -248,27 +252,19 @@ const openForm = (type: string, id?: number) => {
 
 /** 删除按钮操作 */
 const handleDelete = async (id: number) => {
-  try {
-    // 删除的二次确认
-    await message.delConfirm()
-    // 发起删除
-    await BusinessApi.deleteBusiness(id)
-    message.success(t('common.delSuccess'))
-    // 刷新列表
-    await getList()
-  } catch {}
+  if (!(await resolveDialogAction(message.delConfirm()))) return
+  await BusinessApi.deleteBusiness(id)
+  message.success(t('common.delSuccess'))
+  await getList()
 }
 
 /** 导出按钮操作 */
 const handleExport = async () => {
+  if (!(await resolveDialogAction(message.exportConfirm()))) return
+  exportLoading.value = true
   try {
-    // 导出的二次确认
-    await message.exportConfirm()
-    // 发起导出
-    exportLoading.value = true
     const data = await BusinessApi.exportBusiness(queryParams)
     download.excel(data, '商机.xls')
-  } catch {
   } finally {
     exportLoading.value = false
   }

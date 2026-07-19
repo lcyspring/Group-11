@@ -18,7 +18,7 @@ import java.util.List;
  *
  * @author 密讯
  */
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface DiscountActivityConvert {
 
     DiscountActivityConvert INSTANCE = Mappers.getMapper(DiscountActivityConvert.class);

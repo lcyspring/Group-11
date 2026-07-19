@@ -24,8 +24,7 @@ public class AreaExcelColumnSelectFunction implements ExcelColumnSelectFunction 
 
     @Override
     public List<String> getOptions() {
-        // 获取地区下拉数据
-        // TODO @puhui999：嘿嘿，这里改成省份、城市、区域，三个选项，难度大么？
+        // 导出完整地区路径，避免同名区县在 Excel 下拉框中无法区分。
         Area area = AreaUtils.getArea(Area.ID_CHINA);
         return AreaUtils.getAreaNodePathList(area.getChildren());
     }

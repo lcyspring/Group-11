@@ -47,3 +47,28 @@ mybatis-plus:
 mitedtsm:
   info:
     base-package: com.meession.etm
+  crm:
+    marketing:
+      provider-mode: record-only
+      tracking-enabled: true
+      public-base-url: http://127.0.0.1:8080
+      delivery-sync-batch-size: 200
+    work-order-dispatch:
+      enabled: true
+      auto-assign-on-create: true
+      fallback-mode: UNASSIGNED_POOL
+      max-cc-users: 20
+      description-min-length: 20
+      solution-min-length: 20
+    erp-fulfillment:
+      enabled: true
+      version: test
+      source-system: CRM
+      source-type: CONTRACT
+      erp-currency: CNY
+      allowed-source-currencies: [CNY, USD, EUR]
+      currency-mode: CONVERT_TO_ERP_CURRENCY
+      amount-scale: 6
+      rounding-mode: HALF_UP
+      total-tolerance: 0.010000
+      max-error-message-length: 1000

@@ -19,7 +19,7 @@ import static com.meession.etm.framework.common.util.collection.CollectionUtils.
  *
  * @author QingX
  */
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface MemberPointRecordConvert {
 
     MemberPointRecordConvert INSTANCE = Mappers.getMapper(MemberPointRecordConvert.class);

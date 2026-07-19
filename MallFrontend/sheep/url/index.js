@@ -1,8 +1,14 @@
 import $store from '@/sheep/store';
-import { staticUrl } from '@/sheep/config';
+import { legacyMediaFallback, legacyMediaOrigins, staticUrl } from '@/sheep/config';
+import { normalizeLegacyMediaUrl } from './legacy-media.mjs';
 
 const cdn = (url = '', cdnurl = '') => {
   if (!url) return '';
+  url = normalizeLegacyMediaUrl(url, {
+    staticMode: staticUrl,
+    legacyOrigins: legacyMediaOrigins,
+    fallbackUrl: legacyMediaFallback,
+  });
   // 完整的远程资源地址必须保留源站；local 仅用于项目内的相对静态路径。
   if (url.indexOf('http') === 0) {
     return url;

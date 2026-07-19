@@ -82,14 +82,6 @@
         <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> {{ t('common.search') }}</el-button>
         <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> {{ t('common.reset') }}</el-button>
         <el-button
-          type="primary"
-          plain
-          @click="openForm('create')"
-          v-hasPermi="['erp:stock-record:create']"
-        >
-          <Icon icon="ep:plus" class="mr-5px" /> {{ t('common.add') }}
-        </el-button>
-        <el-button
           type="success"
           plain
           @click="handleExport"
@@ -200,25 +192,6 @@ const handleQuery = () => {
 const resetQuery = () => {
   queryFormRef.value.resetFields()
   handleQuery()
-}
-
-/** 添加/修改操作 */
-const formRef = ref()
-const openForm = (type: string, id?: number) => {
-  formRef.value.open(type, id)
-}
-
-/** 删除按钮操作 */
-const handleDelete = async (id: number) => {
-  try {
-    // 删除的二次确认
-    await message.delConfirm()
-    // 发起删除
-    await StockRecordApi.deleteStockRecord(id)
-    message.success(t('common.delSuccess'))
-    // 刷新列表
-    await getList()
-  } catch {}
 }
 
 /** 导出按钮操作 */

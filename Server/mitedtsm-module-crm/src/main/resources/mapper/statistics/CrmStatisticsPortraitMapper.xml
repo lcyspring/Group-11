@@ -58,4 +58,19 @@
         GROUP BY level
     </select>
 
+    <select id="selectCustomerDealStatusList"
+            resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticCustomerDealStatusRespVO">
+        SELECT lifecycle_status AS lifecycleStatus, COUNT(*) AS customerCount
+        FROM crm_customer
+        WHERE deleted = 0 AND lifecycle_status IS NOT NULL
+        AND owner_user_id IN
+        <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+            #{userId}
+        </foreach>
+        AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime}
+        AND #{times[1],javaType=java.time.LocalDateTime}
+        GROUP BY lifecycle_status
+        ORDER BY lifecycle_status
+    </select>
+
 </mapper>

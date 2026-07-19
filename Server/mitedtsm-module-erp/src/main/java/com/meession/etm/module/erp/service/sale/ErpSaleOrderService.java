@@ -3,6 +3,8 @@ package com.meession.etm.module.erp.service.sale;
 import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.module.erp.controller.admin.sale.vo.order.ErpSaleOrderPageReqVO;
 import com.meession.etm.module.erp.controller.admin.sale.vo.order.ErpSaleOrderSaveReqVO;
+import com.meession.etm.module.erp.api.sale.dto.ErpSaleOrderCreateReqDTO;
+import com.meession.etm.module.erp.api.sale.dto.ErpSaleOrderRespDTO;
 import com.meession.etm.module.erp.dal.dataobject.sale.ErpSaleOrderDO;
 import com.meession.etm.module.erp.dal.dataobject.sale.ErpSaleOrderItemDO;
 import jakarta.validation.Valid;
@@ -26,6 +28,10 @@ public interface ErpSaleOrderService {
      * @return 编号
      */
     Long createSaleOrder(@Valid ErpSaleOrderSaveReqVO createReqVO);
+
+    ErpSaleOrderRespDTO createOrGetExternalSaleOrder(@Valid ErpSaleOrderCreateReqDTO request);
+
+    ErpSaleOrderRespDTO toApiResponse(ErpSaleOrderDO order);
 
     /**
      * 更新销售订单

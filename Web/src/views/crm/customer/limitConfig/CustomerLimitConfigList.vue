@@ -51,24 +51,26 @@
       :formatter="dateFormatter"
       min-width="180"
     />
-    <el-table-column :label="t('common.action')" align="center" min-width="150" fixed="right">
+    <el-table-column :label="t('common.action')" align="center" fixed="right" width="220">
       <template #default="scope">
-        <el-button
-          link
-          type="primary"
-          @click="openForm('update', scope.row.id)"
-          v-hasPermi="['crm:customer-limit-config:update']"
-        >
-          {{ t('common.edit') }}
-        </el-button>
-        <el-button
-          link
-          type="danger"
-          @click="handleDelete(scope.row.id)"
-          v-hasPermi="['crm:customer-limit-config:delete']"
-        >
-          {{ t('common.delete') }}
-        </el-button>
+        <TableActions>
+          <el-button
+            link
+            type="primary"
+            @click="openForm('update', scope.row.id)"
+            v-hasPermi="['crm:customer-limit-config:update']"
+          >
+            {{ t('common.edit') }}
+          </el-button>
+          <el-button
+            link
+            type="danger"
+            @click="handleDelete(scope.row.id)"
+            v-hasPermi="['crm:customer-limit-config:delete']"
+          >
+            {{ t('common.delete') }}
+          </el-button>
+        </TableActions>
       </template>
     </el-table-column>
   </el-table>
@@ -85,6 +87,7 @@
 </template>
 <script setup lang="ts">
 import { dateFormatter } from '@/utils/formatTime'
+import { resolveDialogAction } from '@/utils/dialogAction'
 import * as CustomerLimitConfigApi from '@/api/crm/customer/limitConfig'
 import CustomerLimitConfigForm from './CustomerLimitConfigForm.vue'
 import { DICT_TYPE } from '@/utils/dict'
@@ -126,15 +129,10 @@ const openForm = (type: string, id?: number) => {
 
 /** 删除按钮操作 */
 const handleDelete = async (id: number) => {
-  try {
-    // 删除的二次确认
-    await message.delConfirm()
-    // 发起删除
-    await CustomerLimitConfigApi.deleteCustomerLimitConfig(id)
-    message.success(t('common.delSuccess'))
-    // 刷新列表
-    await getList()
-  } catch {}
+  if (!(await resolveDialogAction(message.delConfirm()))) return
+  await CustomerLimitConfigApi.deleteCustomerLimitConfig(id)
+  message.success(t('common.delSuccess'))
+  await getList()
 }
 
 /** 搜索按钮操作 */

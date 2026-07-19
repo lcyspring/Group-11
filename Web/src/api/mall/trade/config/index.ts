@@ -1,6 +1,7 @@
 import request from '@/config/axios'
 
 export interface ConfigVO {
+  deliveryExpressFreePrice: number
   brokerageEnabled: boolean
   brokerageEnabledCondition: number
   brokerageBindMode: number

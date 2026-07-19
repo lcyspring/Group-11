@@ -19,6 +19,7 @@ import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 import static com.meession.etm.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
 import static com.meession.etm.module.crm.enums.DictTypeConstants.CRM_CUSTOMER_INDUSTRY;
@@ -33,7 +34,12 @@ public class CrmCustomerSaveReqVO {
     @Schema(description = "客户名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "赵六")
     @DiffLogField(name = "客户名称")
     @NotEmpty(message = "客户名称不能为空")
+    @Size(max = 100, message = "客户名称长度不能超过 100 个字符")
     private String name;
+
+    @Schema(description = "上级客户编号", example = "1024")
+    @DiffLogField(name = "上级客户")
+    private Long parentCustomerId;
 
     @Schema(description = "下次联系时间")
     @DiffLogField(name = "下次联系时间")
@@ -70,6 +76,11 @@ public class CrmCustomerSaveReqVO {
     @Size(max = 255, message = "邮箱长度不能超过 255 个字符")
     private String email;
 
+    @Schema(description = "客户自身生日")
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    @DiffLogField(name = "生日")
+    private LocalDate birthday;
+
     @Schema(description = "地区编号", example = "20158")
     @DiffLogField(name = "地区编号", function = SysAreaParseFunction.NAME)
     private Integer areaId;
@@ -95,5 +106,8 @@ public class CrmCustomerSaveReqVO {
     @Schema(description = "备注", example = "随便")
     @DiffLogField(name = "备注")
     private String remark;
+
+    @Schema(description = "是否已确认疑似重复客户，仅用于创建审计", example = "true")
+    private Boolean duplicateCheckConfirmed;
 
 }

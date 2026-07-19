@@ -10,12 +10,15 @@
 target/
 
 build/
+!docs/20-CRM-Delivery/build/
+!docs/20-CRM-Delivery/build/**
 .gradle/
 dist/
 dist-*
 *.class
 *.jar
 *.war
+dependency-reduced-pom.xml
 
 # Web/build contains Vite configuration source, not generated output.
 !Web/build/
@@ -24,13 +27,7 @@ dist-*
 # Dependencies
 node_modules/
 unpackage/
-# The current Mall H5 release is distributed through Git so deployment
-# members do not need HBuilderX. Other unpackage outputs remain ignored.
-!MallFrontend/unpackage/
-!MallFrontend/unpackage/dist/
-!MallFrontend/unpackage/dist/build/
-!MallFrontend/unpackage/dist/build/web/
-!MallFrontend/unpackage/dist/build/web/**
+backups/
 
 # Environment
 .env
@@ -52,8 +49,64 @@ Thumbs.db
 # Docker
 docker-images/*.tar
 
+# Legacy Docker/runtime directories removed from the repository. Keep any
+# locally recreated copies out of source control.
+/dev/
+/docker-compose/
+/docker-images/
+
+# Runtime upload data is disposable and recreated by the application.
+/uploads/
+
+# Deterministic demo datasets are reproducible local artifacts. Commit the
+# generator/templates and KDL examples, not rendered SQL batches.
+/database/generated/
+
 # Podman offline OCI image archives
 podman/images/*.tar
+podman/images/*.sha256
+podman/config/build-image-archives-local.kdl
+
+# Reproducible local CLI tools (build scripts and version pins are tracked).
+podman/tools/bin/
+
+# Local source-analysis documents (kept out of product commits)
+docs/01-Existing-System-Analysis/
+docs/02-Prototype-Analysis/
+docs/03-Gap-Analysis/
+docs/04-Requirements-Landing-Analysis/
+docs/05-Requirements-Analysis/
+docs/06-DevSecOps/
+docs/07-Organization/
+docs/08-Project-Planning/
+docs/09-Sprint-Plan/
+docs/10-Testing/
+docs/12-Database/
+docs/12-Traceability/
+docs/13-API/
+docs/14-Frontend/
+docs/17-Templates/
+docs/18-Review/
+docs/Proj-Docs-v-6
+
+# Local daily reports are working notes and are not part of repository delivery.
+docs/20-CRM-Delivery/daily/
+
+# Local stateful runtime configuration may contain deployment credentials.
+podman/config/runtime-local.kdl
+podman/config/runtime-local-replace-server.kdl
+podman/config/database-backup-local.kdl
+podman/config/runtime-local-replace-web.kdl
+podman/config/runtime-local-replace-mall.kdl
+podman/config/runtime-reset-local.kdl
+podman/config/bpm-provision-local.kdl
+podman/config/bpm-provision-*-local.kdl
+podman/config/bpm-provision-all-local.kdl
+podman/config/bpm-notification-templates-local.kdl
+podman/config/verify-*-local.kdl
+podman/config/crm-diagnostics-local.kdl
+podman/config/generate-demo-dataset-local.kdl
+podman/diagnostics/
 
 
 # Config
@@ -63,10 +116,9 @@ podman/images/*.tar
 # Others
 *.swp
 *.xml.versionsBackup
-yarn.lock
-pnpm-lock.yaml
-package-lock.json
 
-# Pin the management Web dependency graph so a fresh clone builds the same
-# assets on every machine.
-!Web/pnpm-lock.yaml
+# Retired one-off i18n scan outputs. Source-controlled locale files and tests
+# are the only translation truth; regenerate ad hoc reports outside the tree.
+MallFrontend/i18n_keys_temp.txt
+MallFrontend/sheep_i18n_keys.txt
+MallFrontend/sheep_js_i18n_keys.txt

@@ -38,7 +38,23 @@
             />
           </el-form-item>
           <el-form-item :label="t('oa.leave.reason')" prop="reason">
-            <el-input v-model="formData.reason" :placeholder="t('oa.leave.reasonPlaceholder')" type="textarea" />
+            <el-input v-model="formData.reason" :placeholder="t('oa.leave.reasonPlaceholder')" type="textarea" maxlength="200" show-word-limit />
+          </el-form-item>
+          <el-form-item :label="t('oa.leave.attachments')" prop="attachmentUrls">
+            <UploadFile v-model="formData.attachmentUrls" :limit="10" />
+          </el-form-item>
+          <el-form-item :label="t('oa.leave.days')">
+            <el-input :model-value="workingDays" disabled />
+          </el-form-item>
+          <el-form-item v-if="leaveBalance?.balanceRequired" :label="t('oa.leave.balance')">
+            <el-alert :closable="false" type="info">
+              {{ t('oa.leave.balanceSummary', {
+                total: leaveBalance.totalDays,
+                reserved: leaveBalance.reservedDays,
+                used: leaveBalance.usedDays,
+                available: leaveBalance.availableDays
+              }) }}
+            </el-alert>
           </el-form-item>
           <el-form-item>
             <el-button :disabled="formLoading" type="primary" @click="submitForm">
@@ -63,6 +79,7 @@
   </el-row>
 </template>
 <script lang="ts" setup>
+import type { FormRules } from 'element-plus'
 import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import * as LeaveApi from '@/api/bpm/leave'
 import { useTagsViewStore } from '@/store/modules/tagsView'
@@ -73,6 +90,7 @@ import ProcessInstanceTimeline from '@/views/bpm/processInstance/detail/ProcessI
 import * as ProcessInstanceApi from '@/api/bpm/processInstance'
 import { CandidateStrategy, NodeId } from '@/components/SimpleProcessDesignerV2/src/consts'
 import { ApprovalNodeInfo } from '@/api/bpm/processInstance'
+import { calculateWorkingDays } from './workingDays.mjs'
 
 defineOptions({ name: 'BpmOALeaveCreate' })
 
@@ -87,15 +105,33 @@ const formData = ref({
   type: undefined,
   reason: undefined,
   startTime: undefined,
-  endTime: undefined
+  endTime: undefined,
+  attachmentUrls: [] as string[]
 })
-const formRules = reactive({
+const formRules = reactive<FormRules>({
   type: [{ required: true, message: t('oa.leave.type') + t('common.notEmpty'), trigger: 'blur' }],
-  reason: [{ required: true, message: t('oa.leave.reason') + t('common.notEmpty'), trigger: 'change' }],
+  reason: [
+    { required: true, message: t('oa.leave.reason') + t('common.notEmpty'), trigger: 'change' },
+    { min: 10, max: 200, message: t('oa.leave.reasonLength'), trigger: 'blur' }
+  ],
   startTime: [{ required: true, message: t('oa.leave.startTime') + t('common.notEmpty'), trigger: 'change' }],
   endTime: [{ required: true, message: t('oa.leave.endTime') + t('common.notEmpty'), trigger: 'change' }]
 })
 const formRef = ref() // 表单 Ref
+const workingDays = computed(() => calculateWorkingDays(formData.value.startTime, formData.value.endTime))
+const leaveBalance = ref<LeaveApi.LeaveBalanceVO>()
+
+const loadBalance = async () => {
+  const type = formData.value.type
+  const startTime = formData.value.startTime
+  if (!type || !startTime) {
+    leaveBalance.value = undefined
+    return
+  }
+  leaveBalance.value = await LeaveApi.getLeaveBalance(type, new Date(Number(startTime)).getFullYear())
+}
+
+watch(() => [formData.value.type, formData.value.startTime], loadBalance)
 
 // 审批相关：变量
 const processDefineKey = 'oa_leave' // 流程定义 Key
@@ -187,9 +223,7 @@ const selectUserConfirm = (id: string, userList: any[]) => {
 // 计算天数差
 // TODO @小北：可以搞到 formatTime 里面去，然后看看 dayjs 里面有没有现成的方法，或者辅助计算的方法。
 const daysDifference = () => {
-  const oneDay = 24 * 60 * 60 * 1000 // 一天的毫秒数
-  const diffTime = Math.abs(Number(formData.value.endTime) - Number(formData.value.startTime))
-  return Math.floor(diffTime / oneDay)
+  return calculateWorkingDays(formData.value.startTime, formData.value.endTime)
 }
 
 /** 获取请假数据，用于重新发起时自动填充 */
@@ -205,7 +239,8 @@ const getDetail = async (id: number) => {
       type: data.type,
       reason: data.reason,
       startTime: data.startTime,
-      endTime: data.endTime
+      endTime: data.endTime,
+      attachmentUrls: data.attachmentUrls || []
     }
   } finally {
     formLoading.value = false

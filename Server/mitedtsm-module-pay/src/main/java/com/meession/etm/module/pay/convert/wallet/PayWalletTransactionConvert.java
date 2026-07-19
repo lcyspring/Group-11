@@ -8,7 +8,7 @@ import com.meession.etm.module.pay.service.wallet.bo.WalletTransactionCreateReqB
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
 
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface PayWalletTransactionConvert {
 
     PayWalletTransactionConvert INSTANCE = Mappers.getMapper(PayWalletTransactionConvert.class);

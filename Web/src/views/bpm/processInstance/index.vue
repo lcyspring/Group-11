@@ -21,7 +21,9 @@
       </el-form-item>
 
       <el-form-item>
-        <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> {{ t('common.search') }}</el-button>
+        <el-button @click="handleQuery"
+          ><Icon icon="ep:search" class="mr-5px" /> {{ t('common.search') }}</el-button
+        >
       </el-form-item>
 
       <el-form-item label="" prop="category" class="absolute right-[300px]">
@@ -92,7 +94,12 @@
               />
             </el-select>
           </el-form-item>
-          <el-form-item :label="t('process.instance.initiatorTime')" class="font-bold" label-position="top" prop="createTime">
+          <el-form-item
+            :label="t('process.instance.initiatorTime')"
+            class="font-bold"
+            label-position="top"
+            prop="createTime"
+          >
             <el-date-picker
               v-model="queryParams.createTime"
               value-format="YYYY-MM-DD HH:mm:ss"
@@ -106,8 +113,12 @@
           <el-form-item class="font-bold" label-position="top">
             <div class="flex justify-end w-full">
               <el-button @click="resetQuery">{{ t('process.instance.clearQuery') }}</el-button>
-              <el-button @click="showPopover = false">{{ t('process.instance.cancelQuery') }}</el-button>
-              <el-button type="primary" @click="handleQuery">{{ t('process.instance.confirmQuery') }}</el-button>
+              <el-button @click="showPopover = false">{{
+                t('process.instance.cancelQuery')
+              }}</el-button>
+              <el-button type="primary" @click="handleQuery">{{
+                t('process.instance.confirmQuery')
+              }}</el-button>
             </div>
           </el-form-item>
         </el-popover>
@@ -118,8 +129,19 @@
   <!-- 列表 -->
   <ContentWrap>
     <el-table v-loading="loading" :data="list" :table-layout="'auto'">
-      <el-table-column :label="t('process.instance.name')" align="center" prop="name" min-width="200px" fixed="left" />
-      <el-table-column :label="t('process.instance.summary')" prop="summary" min-width="180" fixed="left">
+      <el-table-column
+        :label="t('process.instance.name')"
+        align="center"
+        prop="name"
+        min-width="200px"
+        fixed="left"
+      />
+      <el-table-column
+        :label="t('process.instance.summary')"
+        prop="summary"
+        min-width="180"
+        fixed="left"
+      >
         <template #default="scope">
           <div class="flex flex-col" v-if="scope.row.summary && scope.row.summary.length > 0">
             <div v-for="(item, index) in scope.row.summary" :key="index">
@@ -158,7 +180,9 @@
                 <el-button link type="primary" @click="handleDetail(scope.row)">
                   {{ scope.row.tasks[0].assigneeUser?.nickname }}
                 </el-button>
-                {{ t('process.instance.peopleApproving', { count: scope.row.tasks.length }) }} ({{ scope.row.tasks[0].name }})
+                {{ t('process.instance.peopleApproving', { count: scope.row.tasks.length }) }} ({{
+                  scope.row.tasks[0].name
+                }})
               </span>
             </template>
           </template>
@@ -182,28 +206,30 @@
         min-width="180"
         :formatter="dateFormatter"
       />
-      <el-table-column :label="t('common.operation')" align="center" fixed="right" min-width="180">
+      <el-table-column :label="t('common.operation')" align="center" fixed="right" width="140">
         <template #default="scope">
-          <el-button
-            link
-            type="primary"
-            v-hasPermi="['bpm:process-instance:cancel']"
-            @click="handleDetail(scope.row)"
-          >
-            {{ t('process.instance.detail') }}
-          </el-button>
-          <el-button
-            link
-            type="primary"
-            v-if="scope.row.status === 1"
-            v-hasPermi="['bpm:process-instance:query']"
-            @click="handleCancel(scope.row)"
-          >
-            {{ t('process.instance.cancelProcess') }}
-          </el-button>
-          <el-button link type="primary" v-else @click="handleCreate(scope.row)">
-            {{ t('process.instance.restart') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              link
+              type="primary"
+              v-hasPermi="['bpm:process-instance:cancel']"
+              @click="handleDetail(scope.row)"
+            >
+              {{ t('process.instance.detail') }}
+            </el-button>
+            <el-button
+              link
+              type="primary"
+              v-if="scope.row.status === 1"
+              v-hasPermi="['bpm:process-instance:query']"
+              @click="handleCancel(scope.row)"
+            >
+              {{ t('process.instance.cancelProcess') }}
+            </el-button>
+            <el-button link type="primary" v-else @click="handleCreate(scope.row)">
+              {{ t('process.instance.restart') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>
@@ -310,12 +336,16 @@ const handleDetail = (row: ProcessInstanceVO) => {
 /** 取消按钮操作 */
 const handleCancel = async (row: ProcessInstanceVO) => {
   // 二次确认
-  const { value } = await ElMessageBox.prompt(t('process.instance.cancelReason'), t('process.instance.cancelTitle'), {
-    confirmButtonText: t('common.ok'),
-    cancelButtonText: t('common.cancel'),
-    inputPattern: /^[\s\S]*.*\S[\s\S]*$/, // 判断非空，且非空格
-    inputErrorMessage: t('process.instance.cancelReasonRequired')
-  })
+  const { value } = await ElMessageBox.prompt(
+    t('process.instance.cancelReason'),
+    t('process.instance.cancelTitle'),
+    {
+      confirmButtonText: t('common.ok'),
+      cancelButtonText: t('common.cancel'),
+      inputPattern: /^[\s\S]*.*\S[\s\S]*$/, // 判断非空，且非空格
+      inputErrorMessage: t('process.instance.cancelReasonRequired')
+    }
+  )
   // 发起取消
   await ProcessInstanceApi.cancelProcessInstanceByStartUser(row.id, value)
   message.success(t('process.instance.cancelSuccess'))

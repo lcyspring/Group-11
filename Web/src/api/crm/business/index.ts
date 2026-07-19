@@ -16,12 +16,14 @@ export interface BusinessVO {
   statusTypeName?: string
   statusId: number
   statusName?: string
+  statusPercent?: number
   endStatus: number
   endRemark: string
   dealTime: Date
   totalProductPrice: number
   totalPrice: number
   discountPercent: number
+  currencyCode?: string
   remark: string
   creator: string // 创建人
   creatorName?: string // 创建人名称
@@ -38,8 +40,17 @@ export interface BusinessVO {
       businessPrice: number
       count: number
       totalPrice: number
+      taxRatePercent: number
     }
   ]
+}
+
+export interface BusinessUpdateStatusReqVO {
+  id: number
+  statusId?: number
+  endStatus?: number
+  statusRemark?: string
+  endRemark?: string
 }
 
 // 查询 CRM 商机列表
@@ -73,7 +84,7 @@ export const updateBusiness = async (data: BusinessVO) => {
 }
 
 // 修改 CRM 商机状态
-export const updateBusinessStatus = async (data: BusinessVO) => {
+export const updateBusinessStatus = async (data: BusinessUpdateStatusReqVO) => {
   return await request.put({ url: `/crm/business/update-status`, data })
 }
 

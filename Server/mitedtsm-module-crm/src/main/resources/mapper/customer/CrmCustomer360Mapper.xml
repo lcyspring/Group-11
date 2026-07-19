@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.meession.etm.module.crm.dal.mysql.customer.CrmCustomer360Mapper">
+
+    <select id="selectSummary"
+            resultType="com.meession.etm.module.crm.controller.admin.customer.vo.customer.CrmCustomer360SummaryRespVO">
+        SELECT c.id AS customerId,
+               (SELECT COUNT(*) FROM crm_contact item
+                WHERE item.customer_id = c.id AND item.deleted = 0) AS contactCount,
+               (SELECT COUNT(*) FROM crm_business item
+                WHERE item.customer_id = c.id AND item.deleted = 0) AS businessCount,
+               (SELECT COUNT(*) FROM crm_contract item
+                WHERE item.customer_id = c.id AND item.deleted = 0) AS mappedOrderCount,
+               (SELECT COUNT(*) FROM crm_receivable_plan item
+                WHERE item.customer_id = c.id AND item.deleted = 0) AS receivablePlanCount,
+               (SELECT COUNT(*) FROM crm_receivable item
+                WHERE item.customer_id = c.id AND item.deleted = 0) AS receivableCount,
+               (SELECT COUNT(*) FROM crm_receivable_refund item
+                WHERE item.customer_id = c.id AND item.deleted = 0) AS refundCount,
+               (SELECT COUNT(*) FROM crm_invoice item
+                WHERE item.customer_id = c.id AND item.deleted = 0) AS invoiceCount,
+               (SELECT COUNT(*) FROM crm_work_order item
+                WHERE item.customer_id = c.id AND item.deleted = 0
+                <if test="!queryAllWorkOrders">
+                    AND (item.creator = CAST(#{userId} AS CHAR) OR item.handler_user_id = #{userId})
+                </if>) AS workOrderCount,
+               (SELECT COUNT(*) FROM crm_task item
+                WHERE item.biz_type = 2 AND item.biz_id = c.id
+                  AND item.deleted = 0) AS taskCount,
+               (SELECT COUNT(*) FROM crm_contract_attachment attachment
+                INNER JOIN crm_contract contract ON contract.id = attachment.contract_id
+                WHERE contract.customer_id = c.id AND contract.deleted = 0
+                  AND attachment.deleted = 0) AS contractAttachmentCount,
+               (SELECT COALESCE(SUM(item.total_price), 0) FROM crm_contract item
+                WHERE item.customer_id = c.id AND item.audit_status = 20
+                  AND item.deleted = 0) AS contractAmount,
+               (SELECT COALESCE(SUM(item.price), 0) FROM crm_receivable item
+                WHERE item.customer_id = c.id AND item.audit_status = 20
+                  AND item.deleted = 0) AS approvedReceivableAmount,
+               (SELECT COALESCE(SUM(item.amount), 0) FROM crm_receivable_refund item
+                WHERE item.customer_id = c.id AND item.audit_status = 20
+                  AND item.deleted = 0) AS approvedRefundAmount,
+               (SELECT COALESCE(SUM(item.direction * item.amount), 0) FROM crm_invoice item
+                WHERE item.customer_id = c.id AND item.status IN (10, 20, 30)
+                  AND item.deleted = 0) AS effectiveInvoiceAmount
+        FROM crm_customer c
+        WHERE c.id = #{customerId} AND c.deleted = 0
+    </select>
+
+</mapper>

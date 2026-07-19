@@ -54,6 +54,10 @@ public class CrmReceivableRespVO {
     @Schema(description = "合同信息")
     private CrmContractRespVO contract;
 
+    @Schema(description = "客户、合同引用完整性状态：0 完整、10 客户缺失、20 合同缺失或不匹配、30 客户缺失且合同无效",
+            requiredMode = Schema.RequiredMode.REQUIRED, example = "0")
+    private Integer referenceStatus;
+
     @Schema(description = "负责人的用户编号", example = "25682")
     private Long ownerUserId;
     @Schema(description = "负责人名字", example = "25682")

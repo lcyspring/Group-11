@@ -46,10 +46,10 @@
 
     <select id="selectProductSalesRank"
             resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.rank.CrmStatisticsRankRespVO">
-        SELECT COUNT(product.count) AS count, contract.owner_user_id
+        SELECT IFNULL(SUM(product.count), 0) AS count, contract.owner_user_id
         FROM crm_contract_product product
         INNER JOIN crm_contract contract ON product.contract_id = contract.id
-        WHERE contract.deleted = 0 AND contract.deleted = 0
+        WHERE product.deleted = 0 AND contract.deleted = 0
         AND contract.audit_status = ${@com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
         AND contract.owner_user_id in
             <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
@@ -87,32 +87,30 @@
 
     <select id="selectFollowCountRank"
             resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.rank.CrmStatisticsRankRespVO">
-        SELECT COUNT(1) AS count, cc.owner_user_id
-        FROM crm_follow_up_record AS cfur
-        LEFT JOIN crm_contact AS cc ON FIND_IN_SET(cc.id, cfur.contact_ids)
-        WHERE cfur.deleted = 0
-        AND cc.deleted = 0
-        AND cc.owner_user_id in
+        SELECT COUNT(1) AS count, creator AS owner_user_id
+        FROM crm_follow_up_record
+        WHERE deleted = 0
+        AND biz_type = ${@com.meession.etm.module.crm.enums.common.CrmBizTypeEnum@CRM_CUSTOMER.type}
+        AND creator in
             <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                 #{userId}
             </foreach>
-        AND cfur.create_time between #{times[0],javaType=java.time.LocalDateTime} and #{times[1],javaType=java.time.LocalDateTime}
-        GROUP BY cc.owner_user_id
+        AND create_time between #{times[0],javaType=java.time.LocalDateTime} and #{times[1],javaType=java.time.LocalDateTime}
+        GROUP BY creator
     </select>
 
     <select id="selectFollowCustomerCountRank"
             resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.rank.CrmStatisticsRankRespVO">
-        SELECT COUNT(DISTINCT cc.id) AS count, cc.owner_user_id
-        FROM crm_follow_up_record AS cfur
-        LEFT JOIN crm_contact AS cc ON FIND_IN_SET(cc.id, cfur.contact_ids)
-        WHERE cfur.deleted = 0
-        AND cc.deleted = 0
-        AND cc.owner_user_id in
+        SELECT COUNT(DISTINCT biz_id) AS count, creator AS owner_user_id
+        FROM crm_follow_up_record
+        WHERE deleted = 0
+        AND biz_type = ${@com.meession.etm.module.crm.enums.common.CrmBizTypeEnum@CRM_CUSTOMER.type}
+        AND creator in
             <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                 #{userId}
             </foreach>
-        AND cfur.create_time between #{times[0],javaType=java.time.LocalDateTime} and #{times[1],javaType=java.time.LocalDateTime}
-        GROUP BY cc.owner_user_id
+        AND create_time between #{times[0],javaType=java.time.LocalDateTime} and #{times[1],javaType=java.time.LocalDateTime}
+        GROUP BY creator
     </select>
 
 </mapper>

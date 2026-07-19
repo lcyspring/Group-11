@@ -5,6 +5,7 @@ import { Sku, Spu } from '@/api/mall/product/spu' // 积分商城活动 VO
 export interface PointActivityVO {
   id: number // 积分商城活动编号
   spuId: number // 积分商城活动商品
+  name?: string // 活动名称
   status: number // 活动状态
   stock: number // 积分商城活动库存
   totalStock: number // 积分商城活动总库存

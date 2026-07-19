@@ -3,13 +3,13 @@ package com.meession.etm.module.crm.controller.admin.statistics.vo.portrait;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-@Schema(description = "管理后台 - CRM 客户省份分析 VO")
+@Schema(description = "管理后台 - CRM 客户区域维度分析 VO")
 @Data
 public class CrmStatisticCustomerAreaRespVO {
 
-    @Schema(description = "省份编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @Schema(description = "区域编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "110000")
     private Integer areaId;
-    @Schema(description = "省份名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "浙江省")
+    @Schema(description = "区域名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "北京市")
     private String areaName;
 
     @Schema(description = "客户个数", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")

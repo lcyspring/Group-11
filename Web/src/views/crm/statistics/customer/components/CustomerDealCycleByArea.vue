@@ -11,14 +11,37 @@
   <el-card shadow="never" class="mt-16px">
     <el-table v-loading="loading" :data="list" :table-layout="'auto'">
       <el-table-column :label="t('customer.index')" align="center" type="index" width="80" />
-      <el-table-column :label="t('customer.areaName')" align="center" prop="areaName" min-width="200" />
+      <el-table-column
+        :label="t('customer.areaName')"
+        align="center"
+        prop="areaName"
+        min-width="200"
+      />
       <el-table-column
         :label="t('customer.customerDealCycle')"
         align="center"
         prop="customerDealCycle"
         min-width="200"
       />
-      <el-table-column :label="t('customer.customerDealCount')" align="center" prop="customerDealCount" min-width="200" />
+      <el-table-column
+        :label="t('customer.customerDealCount')"
+        align="center"
+        prop="customerDealCount"
+        min-width="200"
+      />
+      <el-table-column :label="t('customer.dataQuality')" align="center" min-width="220">
+        <template #default="{ row }">
+          <el-tooltip
+            v-if="row.negativeSampleCount > 0"
+            :content="t('customer.historicalBackfillAnomalySamples')"
+          >
+            <el-tag type="warning">
+              {{ t('customer.negativeSampleCount') }}: {{ row.negativeSampleCount }}
+            </el-tag>
+          </el-tooltip>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
     </el-table>
   </el-card>
 </template>
@@ -66,7 +89,7 @@ const echartsOption = reactive<EChartsOption>({
       },
       brush: {
         type: ['lineX', 'clear'] // 区域缩放按钮、还原按
-         },
+      },
       saveAsImage: { show: true, name: t('customer.dealCycleByArea') } // 保存为图
     }
   },
@@ -80,7 +103,6 @@ const echartsOption = reactive<EChartsOption>({
     {
       type: 'value',
       name: t('customer.dealCycleDay'),
-      min: 0,
       minInterval: 1 // 显示整数刻度
     },
     {
@@ -112,7 +134,8 @@ const fetchAndFill = async () => {
     return {
       areaName: s.areaName,
       customerDealCycle: s.customerDealCycle,
-      customerDealCount: s.customerDealCount
+      customerDealCount: s.customerDealCount,
+      negativeSampleCount: s.negativeSampleCount
     }
   })
   // 2.1 更新 Echarts 数据

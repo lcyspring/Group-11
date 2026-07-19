@@ -2,6 +2,7 @@ package com.meession.etm.module.crm.controller.admin.statistics.vo.customer;
 
 import com.meession.etm.framework.common.enums.DateIntervalEnum;
 import com.meession.etm.framework.common.validation.InEnum;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.CrmStatisticsScopedReqVO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -15,7 +16,7 @@ import static com.meession.etm.framework.common.util.date.DateUtils.FORMAT_YEAR_
 
 @Schema(description = "管理后台 - CRM 数据统计的员工客户分析 Request VO")
 @Data
-public class CrmStatisticsCustomerReqVO {
+public class CrmStatisticsCustomerReqVO implements CrmStatisticsScopedReqVO {
 
     @Schema(description = "部门 id", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
     @NotNull(message = "部门 id 不能为空")
@@ -35,10 +36,12 @@ public class CrmStatisticsCustomerReqVO {
     private List<Long> userIds;
 
     @Schema(description = "时间间隔类型", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @NotNull(message = "时间间隔类型不能为空")
     @InEnum(value = DateIntervalEnum.class, message = "时间间隔类型，必须是 {value}")
     private Integer interval;
 
-    @Schema(description = "时间范围", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    @Schema(description = "时间范围", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "时间范围不能为空")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
     @Size(min = 2, max = 2, message = "请选择时间范围")
     private LocalDateTime[] times;

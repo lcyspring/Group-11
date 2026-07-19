@@ -1,6 +1,7 @@
-@import 'icon'; //核心图标库
-@import 'coloricon'; //扩展图标库
-@import 'sheepicon';
+@use '../var' as *;
+@use 'icon' as *; //核心图标库
+@use 'coloricon'; //扩展图标库
+@use 'sheepicon';
 .icon-spin {
   animation: icon-spin 2s infinite linear;
 }

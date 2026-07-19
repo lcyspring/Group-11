@@ -192,14 +192,10 @@ public class AuthRequestFactory {
                 return new AuthDingTalkAccountRequest(config, authStateCache);
             case BAIDU:
                 return new AuthBaiduRequest(config, authStateCache);
-            case CSDN:
-                return new AuthCsdnRequest(config, authStateCache);
             case CODING:
                 return new AuthCodingRequest(config, authStateCache);
             case OSCHINA:
                 return new AuthOschinaRequest(config, authStateCache);
-            case ALIPAY:
-                return new AuthAlipayRequest(config, authStateCache);
             case QQ:
                 return new AuthQqRequest(config, authStateCache);
             case WECHAT_OPEN:
@@ -233,8 +229,6 @@ public class AuthRequestFactory {
                 return new AuthPinterestRequest(config, authStateCache);
             case STACK_OVERFLOW:
                 return new AuthStackOverflowRequest(config, authStateCache);
-            case HUAWEI:
-                return new AuthHuaweiRequest(config, authStateCache);
             case HUAWEI_V3:
                 return new AuthHuaweiV3Request(config, authStateCache);
             case WECHAT_ENTERPRISE:

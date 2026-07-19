@@ -10,7 +10,11 @@
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item :label="t('crm.contract.no')" prop="no">
-            <el-input disabled v-model="formData.no" :placeholder="t('crm.contract.noAutoGenerate')" />
+            <el-input
+              disabled
+              v-model="formData.no"
+              :placeholder="t('crm.contract.noAutoGenerate')"
+            />
           </el-form-item>
         </el-col>
         <el-col :span="12">
@@ -24,7 +28,7 @@
           <el-form-item :label="t('crm.contract.ownerUserId')" prop="ownerUserId">
             <el-select
               v-model="formData.ownerUserId"
-              :disabled="formType !== 'create'"
+              :disabled="formType !== 'create' || conversionMode"
               class="w-1/1"
             >
               <el-option
@@ -40,6 +44,7 @@
           <el-form-item :label="t('crm.contract.customerName')" prop="customerId">
             <el-select
               v-model="formData.customerId"
+              :disabled="conversionMode"
               :placeholder="t('crm.contract.customerIdPlaceholder')"
               class="w-1/1"
               @change="handleCustomerChange"
@@ -59,7 +64,7 @@
           <el-form-item :label="t('crm.contract.businessName')" prop="businessId">
             <el-select
               @change="handleBusinessChange"
-              :disabled="!formData.customerId"
+              :disabled="conversionMode || !formData.customerId"
               v-model="formData.businessId"
               class="w-1/1"
             >
@@ -141,7 +146,11 @@
         </el-col>
         <el-col :span="12">
           <el-form-item :label="t('crm.contract.remark')" prop="remark">
-            <el-input v-model="formData.remark" :placeholder="t('crm.contract.remarkPlaceholder')" type="textarea" />
+            <el-input
+              v-model="formData.remark"
+              :placeholder="t('crm.contract.remarkPlaceholder')"
+              type="textarea"
+            />
           </el-form-item>
         </el-col>
       </el-row>
@@ -152,7 +161,7 @@
             <ContractProductForm
               ref="productFormRef"
               :products="formData.products"
-              :disabled="disabled"
+              :disabled="formType !== 'create'"
             />
           </el-tab-pane>
         </el-tabs>
@@ -194,7 +203,9 @@
       </el-row>
     </el-form>
     <template #footer>
-      <el-button :disabled="formLoading" type="primary" @click="submitForm">{{ t('crm.contract.save') }}</el-button>
+      <el-button :disabled="formLoading" type="primary" @click="submitForm">{{
+        t('crm.contract.save')
+      }}</el-button>
       <el-button @click="dialogVisible = false">{{ t('common.cancel') }}</el-button>
     </template>
   </Dialog>
@@ -216,6 +227,7 @@ const dialogVisible = ref(false) // 弹窗的是否展示
 const dialogTitle = ref('') // 弹窗的标题
 const formLoading = ref(false) // 表单的加载中：1）修改时的数据加载；2）提交的按钮禁用
 const formType = ref('') // 表单的类型：create - 新增；update - 修改
+const conversionMode = ref(false) // 是否从赢单商机转换，客户/商机/负责人由服务端继承
 const formData = ref({
   id: undefined,
   no: undefined,
@@ -230,6 +242,7 @@ const formData = ref({
   ownerUserId: undefined,
   discountPercent: 0,
   totalProductPrice: undefined,
+  totalPrice: undefined,
   remark: undefined,
   products: []
 })
@@ -256,7 +269,10 @@ watch(
     if (!val) {
       return
     }
-    const totalProductPrice = val.products.reduce((prev, curr) => prev + curr.totalPrice, 0)
+    const totalProductPrice = val.products.reduce(
+      (prev, curr) => prev + Number(curr.totalPrice || 0),
+      0
+    )
     const discountPrice =
       val.discountPercent != null
         ? erpPriceMultiply(totalProductPrice, val.discountPercent / 100.0)
@@ -270,11 +286,17 @@ watch(
 )
 
 /** 打开弹窗 */
-const open = async (type: string, id?: number) => {
+interface ContractPreset {
+  customerId?: number
+  businessId?: number
+}
+
+const open = async (type: string, id?: number, preset?: ContractPreset) => {
   dialogVisible.value = true
   dialogTitle.value = t('action.' + type)
   formType.value = type
   resetForm()
+  conversionMode.value = Boolean(preset?.businessId)
   // 修改时，设置数据
   if (id) {
     formLoading.value = true
@@ -291,6 +313,13 @@ const open = async (type: string, id?: number) => {
   // 默认新建时选中自己
   if (formType.value === 'create') {
     formData.value.ownerUserId = useUserStore().getUser.id
+    if (preset?.customerId) {
+      formData.value.customerId = preset.customerId
+    }
+    if (preset?.businessId) {
+      formData.value.businessId = preset.businessId
+      await handleBusinessChange(preset.businessId)
+    }
   }
   // 获取联系人
   contactList.value = await ContactApi.getSimpleContactList()
@@ -328,6 +357,7 @@ const submitForm = async () => {
 
 /** 重置表单 */
 const resetForm = () => {
+  conversionMode.value = false
   formData.value = {
     id: undefined,
     no: undefined,
@@ -342,6 +372,7 @@ const resetForm = () => {
     ownerUserId: undefined,
     discountPercent: 0,
     totalProductPrice: undefined,
+    totalPrice: undefined,
     remark: undefined,
     products: []
   }
@@ -358,10 +389,15 @@ const handleCustomerChange = () => {
 /** 处理商机变化 */
 const handleBusinessChange = async (businessId: number) => {
   const business = await BusinessApi.getBusiness(businessId)
-  business.products.forEach((item) => {
-    item.contractPrice = item.businessPrice
-  })
-  formData.value.products = business.products
+  formData.value.name = business.name
+  formData.value.customerId = business.customerId
+  formData.value.ownerUserId = business.ownerUserId
+  formData.value.orderDate = Date.now()
+  formData.value.discountPercent = business.discountPercent ?? 0
+  formData.value.products = (business.products || []).map((item) => ({
+    ...item,
+    contractPrice: item.businessPrice
+  }))
 }
 
 /** 动态获取客户联系人 */

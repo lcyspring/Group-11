@@ -53,19 +53,21 @@
           <span v-else-if="scope.row.payRefundId">{{ t('demo.order.refunding') }}</span>
         </template>
       </el-table-column>
-      <el-table-column :label="t('common.action')" align="center" class-name="small-padding fixed-width" fixed="right">
+      <el-table-column :label="t('common.action')" align="center" class-name="small-padding fixed-width" fixed="right" width="220">
         <template #default="scope">
-          <el-button link type="primary" @click="handlePay(scope.row)" v-if="!scope.row.payStatus">
-            {{ t('demo.order.goToPay') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleRefund(scope.row)"
-            v-if="scope.row.payStatus && !scope.row.payRefundId"
-          >
-            {{ t('demo.order.initiateRefund') }}
-          </el-button>
+          <TableActions>
+            <el-button link type="primary" @click="handlePay(scope.row)" v-if="!scope.row.payStatus">
+              {{ t('demo.order.goToPay') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleRefund(scope.row)"
+              v-if="scope.row.payStatus && !scope.row.payRefundId"
+            >
+              {{ t('demo.order.initiateRefund') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

@@ -153,6 +153,7 @@ export default {
       submitTime: 'وقت التقديم',
       queryError: 'تفاصيل الموافقة غير موجودة!',
       queryProcessError: 'العملية غير موجودة!',
+      customFormRouteInvalid: 'مسار نموذج الأعمال غير صالح. يرجى من المسؤول التحقق من إعداد نموذج العملية.',
       startSuccess: 'بدأت العملية بنجاح',
       selectCandidate: 'الرجاء اختيار المرشح لـ {name}',
       restartFailed: 'فشل إعادة تشغيل العملية',
@@ -243,6 +244,10 @@ export default {
   },
   oa: {
     title: 'موافقة OA',
+    event: { title: 'إدارة التقويم', titleLabel: 'عنوان الحدث', titlePlaceholder: 'أدخل عنوان الحدث', titleRequired: 'عنوان الحدث مطلوب', startTime: 'وقت البدء', endTime: 'وقت الانتهاء', timeRange: 'وقت الحدث', timeRangeRequired: 'حدد وقت البدء والانتهاء', timeRangeInvalid: 'يجب أن يكون وقت الانتهاء بعد وقت البدء', location: 'الموقع', locationPlaceholder: 'أدخل موقع الحدث', description: 'الوصف', allDay: 'حدث طوال اليوم', reminderMinutes: 'التذكير', reminderHint: 'دقائق قبل الحدث؛ 0 عند البدء', create: 'إنشاء حدث', update: 'حفظ التعديلات', updateTitle: 'تعديل الحدث', day: 'يوم', week: 'أسبوع', month: 'شهر', previous: 'السابق', next: 'التالي', today: 'اليوم', empty: 'لا توجد أحداث في هذه الفترة', createFirst: 'إنشاء حدث' },
+    task: { title: 'مساحة المهام', titleLabel: 'عنوان المهمة', create: 'إنشاء مهمة', assignee: 'معرف المسؤول', dueTime: 'وقت الاستحقاق', priority: 'الأولوية', status: 'الحالة', description: 'الوصف', todo: 'لم تبدأ', processing: 'قيد التنفيذ', done: 'مكتملة', start: 'بدء', complete: 'إكمال', empty: 'لا توجد مهام مطابقة', createFirst: 'إنشاء أول مهمة' },
+    workRequest: { title: 'طلب موافقة', id: 'معرف الطلب', titleLabel: 'عنوان الطلب', titleRequired: 'أدخل عنوان الطلب', content: 'المحتوى', contentRequired: 'أدخل محتوى الطلب', contentLength: 'يجب أن يتراوح المحتوى بين 5 و10000 حرف', urgency: 'الأولوية', urgencyNormal: 'عادي', urgencyUrgent: 'عاجل', urgencyCritical: 'حرج', status: 'حالة الموافقة', createTime: 'وقت الإرسال', approvedTime: 'وقت الاكتمال', create: 'طلب جديد', progress: 'تقدم الموافقة', cancel: 'إلغاء الطلب', detailTitle: 'تفاصيل الطلب', empty: 'لا توجد طلبات' },
+    document: { title: 'المستندات المشتركة', name: 'اسم المستند', description: 'الوصف', version: 'الإصدار الحالي', create: 'مستند جديد' },
     leave: {
       title: 'طلب إجازة',
       type: 'نوع الإجازة',
@@ -257,9 +262,14 @@ export default {
       startTime: 'وقت البدء',
       endTime: 'وقت الانتهاء',
       duration: 'المدة',
+      days: 'أيام العمل',
       reason: 'السبب',
       typePlaceholder: 'الرجاء اختيار نوع الإجازة',
       reasonPlaceholder: 'الرجاء إدخال سبب الإجازة',
+      reasonLength: 'يجب أن يتراوح سبب الإجازة بين 10 و200 حرف',
+      attachments: 'المرفقات',
+      balance: 'رصيد الإجازة',
+      balanceSummary: 'الإجمالي السنوي {total}، المحجوز {reserved}، المستخدم {used}، المتاح {available}',
       restartFailed: 'فشل إعادة تشغيل الإجازة',
       dataNotFound: 'بيانات الإجازة غير موجودة',
       processModelNotFound: 'نموذج عملية إجازة OA غير مكون، يرجى التحقق!',
@@ -269,6 +279,47 @@ export default {
       approvalResultPlaceholder: 'الرجاء اختيار نتيجة الموافقة',
       createLeave: 'إنشاء إجازة',
       progress: 'التقدم'
+    },
+    trip: {
+      id: 'معرف الطلب',
+      create: 'إنشاء رحلة عمل',
+      detail: 'تفاصيل رحلة العمل',
+      destination: 'الوجهة',
+      startTime: 'وقت البدء',
+      endTime: 'وقت الانتهاء',
+      days: 'أيام الرحلة',
+      reason: 'سبب الرحلة',
+      estimatedExpense: 'التكلفة المقدرة',
+      companions: 'المرافقون',
+      attachments: 'المرفقات',
+      status: 'حالة الموافقة',
+      progress: 'تقدم الموافقة',
+      startRequired: 'الرجاء اختيار وقت البدء',
+      endRequired: 'الرجاء اختيار وقت الانتهاء',
+      startFuture: 'لا يمكن أن يسبق وقت البدء الوقت الحالي',
+      endAfterStart: 'يجب أن يكون وقت الانتهاء بعد وقت البدء',
+      destinationRequired: 'الرجاء إدخال الوجهة',
+      reasonRequired: 'الرجاء إدخال سبب الرحلة',
+      reasonLength: 'يجب أن يتراوح سبب الرحلة بين 5 و1000 حرف',
+      processModelNotFound: 'نموذج عملية رحلة العمل غير مكوّن'
+    },
+    loan: {
+      id: 'رقم السلفة', create: 'إنشاء سلفة', detail: 'تفاصيل السلفة', type: 'نوع السلفة',
+      typeTravel: 'سلفة سفر', typePurchase: 'سلفة شراء', typeOther: 'سلفة أخرى',
+      amount: 'المبلغ', trip: 'رحلة العمل المرتبطة', reason: 'الغرض', status: 'حالة الموافقة',
+      progress: 'تقدم الموافقة', level: 'مستوى الحد', limit: 'حد الوظيفة',
+      escalated: 'موافقة مصعّدة', outstanding: 'المبلغ المتبقي',
+      currentLimit: 'المستوى الحالي: {level}، حد السلفة: {limit}',
+      limitHint: 'يتجاوز المبلغ حد الوظيفة {limit} وتتطلب المعاملة موافقة مصعّدة',
+      typeRequired: 'الرجاء اختيار نوع السلفة', amountRequired: 'الرجاء إدخال المبلغ',
+      reasonRequired: 'الرجاء إدخال غرض السلفة',
+      reasonLength: 'يجب أن يتراوح غرض السلفة بين 5 و1000 حرف',
+      processModelNotFound: 'نموذج عملية سلفة OA غير مكوّن', repay: 'تسجيل السداد',
+      repaymentAmount: 'مبلغ السداد', repaymentAmountRequired: 'الرجاء إدخال مبلغ السداد',
+      repaidAt: 'وقت السداد', referenceNo: 'مرجع المعاملة', remark: 'ملاحظة السداد',
+      outstandingHint: 'المبلغ المتبقي الحالي: {amount}', repaymentSuccess: 'تم تسجيل السداد',
+      repaymentRecords: 'سجلات السداد',
+      invalidId: 'رقم القرض غير صالح، يرجى فتحه من قائمة القروض'
     },
     bpm: {
       title: 'مركز الموافقة',
@@ -285,6 +336,7 @@ export default {
     }
   },
   approval: {
+    approval: 'موافقة',
     approve: 'موافقة',
     reject: 'رفض',
     cancel: 'إلغاء',
@@ -879,5 +931,17 @@ export default {
       trigger: 'مفعّل',
       end: 'نهاية'
     }
+  },
+  processExpression: {
+    title: 'تعبير العملية',
+    name: 'الاسم',
+    namePlaceholder: 'الرجاء إدخال الاسم',
+    status: 'الحالة',
+    statusPlaceholder: 'الرجاء اختيار الحالة',
+    expression: 'التعبير',
+    expressionPlaceholder: 'الرجاء إدخال التعبير',
+    nameRequired: 'لا يمكن أن يكون الاسم فارغًا',
+    statusRequired: 'لا يمكن أن تكون الحالة فارغة',
+    expressionRequired: 'لا يمكن أن يكون التعبير فارغًا'
   }
 }

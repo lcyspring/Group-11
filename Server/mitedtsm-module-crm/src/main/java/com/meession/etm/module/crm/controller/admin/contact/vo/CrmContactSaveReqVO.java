@@ -6,11 +6,13 @@ import com.meession.etm.module.crm.framework.operatelog.core.*;
 import com.mzt.logapi.starter.annotation.DiffLogField;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 import static com.meession.etm.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY;
 
@@ -41,7 +43,8 @@ public class CrmContactSaveReqVO {
     @DiffLogField(name = "负责人", function = SysAdminUserParseFunction.NAME)
     private Long ownerUserId;
 
-    @Schema(description = "手机号", example = "1387171766")
+    @Schema(description = "手机号", example = "13871717666")
+    @NotBlank(message = "手机号不能为空")
     @Mobile
     @DiffLogField(name = "手机号")
     private String mobile;
@@ -76,9 +79,19 @@ public class CrmContactSaveReqVO {
     @DiffLogField(name = "性别", function = SysSexParseFunction.NAME)
     private Integer sex;
 
+    @Schema(description = "生日，用于客户关怀提醒")
+    @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY)
+    @DiffLogField(name = "生日")
+    private LocalDate birthday;
+
     @Schema(description = "是否关键决策人")
     @DiffLogField(name = "关键决策人", function = SysBooleanParseFunction.NAME)
     private Boolean master;
+
+    @Schema(description = "是否首联系人", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "是否首联系人不能为空")
+    @DiffLogField(name = "首联系人", function = SysBooleanParseFunction.NAME)
+    private Boolean primaryContact;
 
     @Schema(description = "职位")
     @DiffLogField(name = "职位")

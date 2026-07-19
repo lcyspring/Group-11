@@ -4,12 +4,7 @@
 
   <ContentWrap>
     <!-- 搜索工作栏 -->
-    <el-form
-      ref="queryFormRef"
-      :model="queryParams"
-      class="-mb-15px"
-      label-width="auto"
-    >
+    <el-form ref="queryFormRef" :model="queryParams" class="-mb-15px" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('receivable.no')" prop="no">
@@ -20,6 +15,23 @@
               :placeholder="t('receivable.noPlaceholder')"
               @keyup.enter="handleQuery"
             />
+          </el-form-item>
+        </el-col>
+        <el-col :span="8">
+          <el-form-item :label="t('receivable.referenceIntegrity')" prop="referenceStatus">
+            <el-select
+              v-model="queryParams.referenceStatus"
+              class="!w-240px"
+              clearable
+              :placeholder="t('receivable.referenceIntegrityPlaceholder')"
+            >
+              <el-option
+                v-for="option in referenceStatusOptions"
+                :key="option.value"
+                :label="t(option.label)"
+                :value="option.value"
+              />
+            </el-select>
           </el-form-item>
         </el-col>
         <el-col :span="8">
@@ -82,35 +94,79 @@
       <el-tab-pane :label="t('customer.myResponsible')" name="1" />
       <el-tab-pane :label="t('customer.myInvolved')" name="2" />
       <el-tab-pane :label="t('customer.subordinateResponsible')" name="3" />
+      <el-tab-pane :label="t('customer.organizationScope')" name="4" />
     </el-tabs>
-    <el-table v-loading="loading" :data="list" :show-overflow-tooltip="true" :stripe="true" :table-layout="'auto'">
-      <el-table-column align="center" fixed="left" :label="t('receivable.no')" prop="no" min-width="180">
+    <el-table
+      v-loading="loading"
+      :data="list"
+      :show-overflow-tooltip="true"
+      :stripe="true"
+      :table-layout="'auto'"
+    >
+      <el-table-column
+        align="center"
+        fixed="left"
+        :label="t('receivable.no')"
+        prop="no"
+        min-width="180"
+      >
         <template #default="scope">
           <el-link :underline="false" type="primary" @click="openDetail(scope.row.id)">
             {{ scope.row.no }}
           </el-link>
         </template>
       </el-table-column>
-      <el-table-column align="center" :label="t('receivable.customerName')" prop="customerName" min-width="120">
+      <el-table-column
+        align="center"
+        :label="t('receivable.customerName')"
+        prop="customerName"
+        min-width="120"
+      >
         <template #default="scope">
           <el-link
+            v-if="!isCustomerReferenceMissing(scope.row.referenceStatus)"
             :underline="false"
             type="primary"
             @click="openCustomerDetail(scope.row.customerId)"
           >
             {{ scope.row.customerName }}
           </el-link>
+          <el-tag v-else type="danger">
+            {{ t('receivable.missingCustomerReference', { id: scope.row.customerId }) }}
+          </el-tag>
         </template>
       </el-table-column>
-      <el-table-column align="center" :label="t('receivable.contractNo')" prop="contractNo" min-width="180">
+      <el-table-column
+        align="center"
+        :label="t('receivable.contractNo')"
+        prop="contractNo"
+        min-width="180"
+      >
         <template #default="scope">
           <el-link
+            v-if="!isContractReferenceInvalid(scope.row.referenceStatus)"
             :underline="false"
             type="primary"
             @click="openContractDetail(scope.row.contractId)"
           >
-            {{ scope.row.contract.no }}
+            {{ scope.row.contract?.no }}
           </el-link>
+          <el-tag v-else type="danger">
+            {{ t('receivable.missingContractReference', { id: scope.row.contractId }) }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column
+        align="center"
+        :label="t('receivable.referenceIntegrity')"
+        prop="referenceStatus"
+        min-width="180"
+      >
+        <template #default="scope">
+          <el-tag v-if="hasReferenceIssue(scope.row.referenceStatus)" type="warning">
+            {{ t(referenceStatusLocaleKey(scope.row.referenceStatus)) }}
+          </el-tag>
+          <el-tag v-else type="success">{{ t('receivable.referenceValid') }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column
@@ -122,26 +178,46 @@
       />
       <el-table-column
         align="center"
-        :label="t('receivable.price') + '（元）'"
+        :label="t('receivable.amountInCny', { label: t('receivable.price') })"
         prop="price"
         min-width="140"
         :formatter="erpPriceTableColumnFormatter"
       />
-      <el-table-column align="center" :label="t('receivable.returnType')" prop="returnType" min-width="130">
+      <el-table-column
+        align="center"
+        :label="t('receivable.returnType')"
+        prop="returnType"
+        min-width="130"
+      >
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.CRM_RECEIVABLE_RETURN_TYPE" :value="scope.row.returnType" />
         </template>
       </el-table-column>
-      <el-table-column align="center" :label="t('receivable.remark')" prop="remark" min-width="200" />
       <el-table-column
         align="center"
-        :label="t('receivable.contractPrice') + '（元）'"
+        :label="t('receivable.remark')"
+        prop="remark"
+        min-width="200"
+      />
+      <el-table-column
+        align="center"
+        :label="t('receivable.amountInCny', { label: t('receivable.contractPrice') })"
         prop="contract.totalPrice"
         min-width="140"
         :formatter="erpPriceTableColumnFormatter"
       />
-      <el-table-column align="center" :label="t('receivable.ownerUserName')" prop="ownerUserName" min-width="120" />
-      <el-table-column align="center" :label="t('receivable.ownerUserDeptName')" prop="ownerUserDeptName" min-width="100" />
+      <el-table-column
+        align="center"
+        :label="t('receivable.ownerUserName')"
+        prop="ownerUserName"
+        min-width="120"
+      />
+      <el-table-column
+        align="center"
+        :label="t('receivable.ownerUserDeptName')"
+        prop="ownerUserDeptName"
+        min-width="100"
+      />
       <el-table-column
         :formatter="dateFormatter"
         align="center"
@@ -156,48 +232,71 @@
         prop="createTime"
         min-width="180"
       />
-      <el-table-column align="center" :label="t('receivable.creatorName')" prop="creatorName" min-width="120" />
-      <el-table-column align="center" fixed="right" :label="t('receivable.auditStatus')" prop="auditStatus" min-width="120">
+      <el-table-column
+        align="center"
+        :label="t('receivable.creatorName')"
+        prop="creatorName"
+        min-width="120"
+      />
+      <el-table-column
+        align="center"
+        fixed="right"
+        :label="t('receivable.auditStatus')"
+        prop="auditStatus"
+        min-width="120"
+      >
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.CRM_AUDIT_STATUS" :value="scope.row.auditStatus" />
         </template>
       </el-table-column>
-      <el-table-column align="center" fixed="right" :label="t('common.action')" min-width="180">
+      <el-table-column align="center" fixed="right" :label="t('common.action')" width="340">
         <template #default="scope">
-          <el-button
-            v-hasPermi="['crm:receivable:update']"
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            v-if="scope.row.auditStatus === 0"
-            v-hasPermi="['crm:receivable:update']"
-            link
-            type="primary"
-            @click="handleSubmit(scope.row)"
-          >
-            {{ t('contract.submitAudit') }}
-          </el-button>
-          <el-button
-            v-else
-            v-hasPermi="['crm:receivable:update']"
-            link
-            type="primary"
-            @click="handleProcessDetail(scope.row)"
-          >
-            {{ t('contract.viewApproval') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['crm:receivable:delete']"
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions>
+            <el-button
+              v-if="
+                scope.row.referenceStatus === ReceivableReferenceStatus.VALID &&
+                [0, 30, 40].includes(scope.row.auditStatus)
+              "
+              v-hasPermi="['crm:receivable:update']"
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+            >
+              {{ scope.row.auditStatus === 0 ? t('common.edit') : t('receivable.revise') }}
+            </el-button>
+            <el-button
+              v-if="scope.row.auditStatus === 0"
+              v-hasPermi="['crm:receivable:update']"
+              link
+              type="primary"
+              @click="handleSubmit(scope.row)"
+            >
+              {{ t('contract.submitAudit') }}
+            </el-button>
+            <el-button
+              v-if="scope.row.processInstanceId"
+              v-hasPermi="['crm:receivable:update']"
+              link
+              type="primary"
+              @click="handleProcessDetail(scope.row)"
+            >
+              {{ t('contract.viewApproval') }}
+            </el-button>
+            <el-button
+              v-if="scope.row.auditStatus === 20"
+              v-hasPermi="['crm:receivable:write-off']"
+              link type="success" @click="openWriteOff(scope.row)"
+            >{{ t('receivable.writeOff') }}</el-button>
+            <el-button
+              v-if="scope.row.auditStatus === 0 && !scope.row.processInstanceId"
+              v-hasPermi="['crm:receivable:delete']"
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>
@@ -212,16 +311,35 @@
 
   <!-- 表单弹窗：添加/修改 -->
   <ReceivableForm ref="formRef" @success="getList" />
+  <Dialog v-model="writeOffVisible" :title="t('receivable.writeOff')" width="620px">
+    <el-form :model="writeOffForm" label-width="110px">
+      <el-form-item :label="t('receivable.writeOffAmount')"><el-input-number v-model="writeOffForm.amount" :min="0.01" :max="writeOffRemaining" :precision="2" controls-position="right" /></el-form-item>
+      <el-form-item :label="t('receivable.writeOffTime')"><el-date-picker v-model="writeOffForm.writeOffTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" /></el-form-item>
+      <el-form-item :label="t('receivable.writeOffSource')"><el-select v-model="writeOffForm.sourceType"><el-option :label="t('receivable.writeOffManual')" :value="1" /><el-option :label="t('receivable.writeOffBank')" :value="2" /><el-option :label="t('receivable.writeOffImport')" :value="3" /></el-select></el-form-item>
+      <el-form-item :label="t('receivable.writeOffReference')"><el-input v-model="writeOffForm.referenceNo" /></el-form-item>
+      <el-form-item :label="t('receivable.remark')"><el-input v-model="writeOffForm.remark" type="textarea" /></el-form-item>
+    </el-form>
+    <template #footer><el-button @click="writeOffVisible=false">{{ t('common.cancel') }}</el-button><el-button type="primary" :loading="writeOffSaving" @click="saveWriteOff">{{ t('common.confirm') }}</el-button></template>
+  </Dialog>
 </template>
 <script lang="ts" setup>
 import { DICT_TYPE } from '@/utils/dict'
 import { dateFormatter, dateFormatter2 } from '@/utils/formatTime'
 import download from '@/utils/download'
+import { resolveDialogAction } from '@/utils/dialogAction'
 import * as ReceivableApi from '@/api/crm/receivable'
 import ReceivableForm from './ReceivableForm.vue'
+import TableActions from '@/components/TableActions/index.vue'
 import * as CustomerApi from '@/api/crm/customer'
 import { TabsPaneContext } from 'element-plus'
 import { erpPriceTableColumnFormatter } from '@/utils'
+import {
+  ReceivableReferenceStatus,
+  hasReferenceIssue,
+  isContractReferenceInvalid,
+  isCustomerReferenceMissing,
+  referenceStatusLocaleKey
+} from './referenceIntegrity'
 
 defineOptions({ name: 'Receivable' })
 
@@ -229,22 +347,37 @@ const message = useMessage() // 消息弹窗
 const { t } = useI18n('crm') // 国际化
 const loading = ref(true) // 列表的加载中
 const total = ref(0) // 列表的总页数
-const list = ref([]) // 列表的数据
+const list = ref<ReceivableApi.ReceivableVO[]>([]) // 列表的数据
+const referenceStatusOptions = [
+  { value: ReceivableReferenceStatus.VALID, label: 'receivable.referenceValid' },
+  {
+    value: ReceivableReferenceStatus.CUSTOMER_MISSING,
+    label: 'receivable.referenceCustomerMissing'
+  },
+  {
+    value: ReceivableReferenceStatus.CONTRACT_INVALID,
+    label: 'receivable.referenceContractInvalid'
+  },
+  { value: ReceivableReferenceStatus.BOTH_INVALID, label: 'receivable.referenceBothInvalid' }
+]
 const queryParams = reactive({
   pageNo: 1,
   pageSize: 10,
   sceneType: '1', // 默认与 activeName 相等
   no: undefined,
-  customerId: undefined
+  customerId: undefined,
+  referenceStatus: undefined
 })
 const queryFormRef = ref() // 搜索的表单
 const exportLoading = ref(false) // 导出的加载中
 const activeName = ref('1') // 列表 tab
 const customerList = ref<CustomerApi.CustomerVO[]>([]) // 客户列表
+const writeOffVisible = ref(false); const writeOffSaving = ref(false); const writeOffRemaining = ref(0)
+const writeOffForm = reactive<any>({ receivableId: undefined, amount: undefined, writeOffTime: undefined, sourceType: 1, referenceNo: '', remark: '' })
 
 /** tab 切换 */
 const handleTabClick = (tab: TabsPaneContext) => {
-  queryParams.sceneType = tab.paneName
+  queryParams.sceneType = String(tab.paneName)
   handleQuery()
 }
 
@@ -280,15 +413,10 @@ const openForm = (type: string, id?: number) => {
 
 /** 删除按钮操作 */
 const handleDelete = async (id: number) => {
-  try {
-    // 删除的二次确认
-    await message.delConfirm()
-    // 发起删除
-    await ReceivableApi.deleteReceivable(id)
-    message.success(t('common.delSuccess'))
-    // 刷新列表
-    await getList()
-  } catch {}
+  if (!(await resolveDialogAction(message.delConfirm()))) return
+  await ReceivableApi.deleteReceivable(id)
+  message.success(t('common.delSuccess'))
+  await getList()
 }
 
 /** 提交审核 **/
@@ -302,6 +430,18 @@ const handleSubmit = async (row: ReceivableApi.ReceivableVO) => {
 /** 查看审批 */
 const handleProcessDetail = (row: ReceivableApi.ReceivableVO) => {
   push({ name: 'BpmProcessInstanceDetail', query: { id: row.processInstanceId } })
+}
+const openWriteOff = async (row: ReceivableApi.ReceivableVO) => {
+  const rows = await ReceivableApi.getReceivableWriteOffList(row.id)
+  const used = rows.filter(item => item.status === 0).reduce((sum, item) => sum + Number(item.amount), 0)
+  writeOffRemaining.value = Math.max(0, Number(row.price) - used)
+  Object.assign(writeOffForm, { receivableId: row.id, amount: undefined, writeOffTime: new Date(), sourceType: 1, referenceNo: '', remark: '' })
+  writeOffVisible.value = true
+}
+const saveWriteOff = async () => {
+  if (!writeOffForm.amount || writeOffForm.amount > writeOffRemaining.value) return
+  writeOffSaving.value = true
+  try { await ReceivableApi.createReceivableWriteOff(writeOffForm); message.success(t('receivable.writeOffSuccess')); writeOffVisible.value = false } finally { writeOffSaving.value = false }
 }
 
 /** 打开回款详情 */
@@ -322,14 +462,11 @@ const openContractDetail = (id: number) => {
 
 /** 导出按钮操作 */
 const handleExport = async () => {
+  if (!(await resolveDialogAction(message.exportConfirm()))) return
+  exportLoading.value = true
   try {
-    // 导出的二次确认
-    await message.exportConfirm()
-    // 发起导出
-    exportLoading.value = true
     const data = await ReceivableApi.exportReceivable(queryParams)
     download.excel(data, t('receivable.exportFileName') + '.xls')
-  } catch {
   } finally {
     exportLoading.value = false
   }

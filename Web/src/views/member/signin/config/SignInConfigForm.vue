@@ -50,6 +50,7 @@
   </Dialog>
 </template>
 <script lang="ts" setup>
+import type { FormRules } from 'element-plus'
 import * as SignInConfigApi from '@/api/member/signin/config'
 import { CommonStatusEnum } from '@/utils/constants'
 import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
@@ -75,7 +76,7 @@ const awardValidator = (rule: any, _value: any, callback: any) => {
   formRef.value.validateField(otherAwardField, () => null)
   callback()
 }
-const formRules = reactive({
+const formRules = reactive<FormRules>({
   day: [{ required: true, message: t('signIn.config.dayRequired'), trigger: 'blur' }],
   point: [
     { required: true, message: t('signIn.config.pointRequired'), trigger: 'blur' },

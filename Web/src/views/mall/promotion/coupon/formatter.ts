@@ -36,23 +36,23 @@ export const validityTypeFormat = (row: CouponTemplateVO) => {
   if (row.validityType === CouponTemplateValidityTypeEnum.TERM.type) {
     return `${t('mall.promotion.coupon.from')} ${row.fixedStartTerm} - ${row.fixedEndTerm} ${t('mall.promotion.coupon.daysValid')}`
   }
-  return t('mall.promotion.coupon.unknownType', { type: row.validityType })
+  return String(t('mall.promotion.coupon.unknownType', { type: row.validityType }))
 }
 
 // 格式化【totalCount】
 export const totalCountFormat = (row: CouponTemplateVO) => {
   if (row.totalCount === -1) {
-    return t('mall.promotion.coupon.unlimited')
+    return String(t('mall.promotion.coupon.unlimited'))
   }
-  return row.totalCount
+  return String(row.totalCount)
 }
 
 // 格式化【剩余数量】
 export const remainedCountFormat = (row: CouponTemplateVO) => {
   if (row.totalCount === -1) {
-    return t('mall.promotion.coupon.unlimited')
+    return String(t('mall.promotion.coupon.unlimited'))
   }
-  return row.totalCount - row.takeCount
+  return String(row.totalCount - row.takeCount)
 }
 
 // 格式化【最低消费】

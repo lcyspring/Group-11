@@ -2,6 +2,7 @@ package com.meession.etm.module.crm.service.contact;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
+import cn.hutool.core.util.StrUtil;
 import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.framework.common.util.object.BeanUtils;
 import com.meession.etm.module.crm.controller.admin.contact.vo.CrmContactBusinessReqVO;
@@ -10,9 +11,12 @@ import com.meession.etm.module.crm.controller.admin.contact.vo.CrmContactSaveReq
 import com.meession.etm.module.crm.controller.admin.contact.vo.CrmContactTransferReqVO;
 import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactBusinessDO;
 import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.mysql.contact.CrmContactMapper;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
+import com.meession.etm.module.crm.enums.customer.CrmCustomerPoolStatusEnum;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
+import com.meession.etm.module.crm.framework.permission.CrmAuthorizationService;
 import com.meession.etm.module.crm.framework.permission.core.annotations.CrmPermission;
 import com.meession.etm.module.crm.service.business.CrmBusinessService;
 import com.meession.etm.module.crm.service.contract.CrmContractService;
@@ -33,6 +37,7 @@ import org.springframework.validation.annotation.Validated;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 import static com.meession.etm.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static com.meession.etm.framework.common.pojo.PageParam.PAGE_SIZE_NONE;
@@ -57,6 +62,8 @@ public class CrmContactServiceImpl implements CrmContactService {
     @Resource
     private CrmCustomerService customerService;
     @Resource
+    private CrmAuthorizationService authorizationService;
+    @Resource
     private CrmPermissionService permissionService;
     @Resource
     @Lazy
@@ -75,26 +82,33 @@ public class CrmContactServiceImpl implements CrmContactService {
             success = CRM_CONTACT_CREATE_SUCCESS)
     public Long createContact(CrmContactSaveReqVO createReqVO, Long userId) {
         createReqVO.setId(null);
+        normalizeMobile(createReqVO);
         // 1. 校验关联数据
         validateRelationDataExists(createReqVO);
 
-        // 2. 插入联系人
+        // 2. 锁定客户，校验手机号唯一并维护唯一首联系人
+        lockCustomer(createReqVO.getCustomerId());
+        validateMobileUnique(createReqVO.getCustomerId(), createReqVO.getMobile(), null);
+        String primaryContactChange = preparePrimaryContactForCreate(createReqVO);
+
+        // 3. 插入联系人
         CrmContactDO contact = BeanUtils.toBean(createReqVO, CrmContactDO.class);
         contactMapper.insert(contact);
 
-        // 3. 创建数据权限
+        // 4. 创建数据权限
         permissionService.createPermission(new CrmPermissionCreateReqBO().setUserId(userId)
                 .setBizType(CrmBizTypeEnum.CRM_CONTACT.getType()).setBizId(contact.getId())
                 .setLevel(CrmPermissionLevelEnum.OWNER.getLevel()));
 
-        // 4. 如果有关联商机，则需要创建关联
+        // 5. 如果有关联商机，则需要创建关联
         if (createReqVO.getBusinessId() != null) {
             contactBusinessService.createContactBusinessList(new CrmContactBusinessReqVO()
                     .setContactId(contact.getId()).setBusinessIds(singletonList(createReqVO.getBusinessId())));
         }
 
-        // 5. 记录操作日志
+        // 6. 记录操作日志
         LogRecordContext.putVariable("contact", contact);
+        LogRecordContext.putVariable("primaryContactChange", primaryContactChange);
         return contact.getId();
     }
 
@@ -104,10 +118,21 @@ public class CrmContactServiceImpl implements CrmContactService {
             success = CRM_CONTACT_UPDATE_SUCCESS)
     @CrmPermission(bizType = CrmBizTypeEnum.CRM_CONTACT, bizId = "#updateReqVO.id", level = CrmPermissionLevelEnum.WRITE)
     public void updateContact(CrmContactSaveReqVO updateReqVO) {
-        // 1.1 校验存在
+        normalizeMobile(updateReqVO);
+        // 1.1 首次读取并校验存在
         CrmContactDO oldContact = validateContactExists(updateReqVO.getId());
         // 1.2 校验关联数据
         validateRelationDataExists(updateReqVO);
+
+        // 1.3 按客户编号顺序加锁，避免移动联系人时产生死锁；锁后使用当前读重新获取最新状态
+        lockCustomers(oldContact.getCustomerId(), updateReqVO.getCustomerId());
+        CrmContactDO currentContact = validateContactExistsForUpdate(updateReqVO.getId());
+        if (!Objects.equals(oldContact.getCustomerId(), currentContact.getCustomerId())) {
+            throw exception(CONTACT_CONCURRENT_CHANGE);
+        }
+        oldContact = currentContact;
+        validateMobileUnique(updateReqVO.getCustomerId(), updateReqVO.getMobile(), updateReqVO.getId());
+        String primaryContactChange = preparePrimaryContactForUpdate(oldContact, updateReqVO);
 
         // 2. 更新联系人
         CrmContactDO updateObj = BeanUtils.toBean(updateReqVO, CrmContactDO.class);
@@ -117,6 +142,7 @@ public class CrmContactServiceImpl implements CrmContactService {
         updateReqVO.setOwnerUserId(oldContact.getOwnerUserId()); // 避免操作日志出现“删除负责人”的情况
         LogRecordContext.putVariable(DiffParseFunction.OLD_OBJECT, BeanUtils.toBean(oldContact, CrmContactSaveReqVO.class));
         LogRecordContext.putVariable("contactName", oldContact.getName());
+        LogRecordContext.putVariable("primaryContactChange", primaryContactChange);
     }
 
     /**
@@ -148,10 +174,21 @@ public class CrmContactServiceImpl implements CrmContactService {
     @LogRecord(type = CRM_CONTACT_TYPE, subType = CRM_CONTACT_DELETE_SUB_TYPE, bizNo = "{{#id}}",
             success = CRM_CONTACT_DELETE_SUCCESS)
     @CrmPermission(bizType = CrmBizTypeEnum.CRM_CONTACT, bizId = "#id", level = CrmPermissionLevelEnum.OWNER)
-    public void deleteContact(Long id) {
-        // 1.1 校验存在
+    public void deleteContact(Long id, Long userId) {
+        // 1.1 首次读取并校验存在
         CrmContactDO contact = validateContactExists(id);
-        // 1.2 校验是否关联合同
+        // 1.2 锁定客户并使用当前读重新读取，禁止删除最新的首联系人
+        lockCustomer(contact.getCustomerId());
+        CrmContactDO currentContact = validateContactExistsForUpdate(id);
+        if (!Objects.equals(contact.getCustomerId(), currentContact.getCustomerId())) {
+            throw exception(CONTACT_CONCURRENT_CHANGE);
+        }
+        contact = currentContact;
+        if (Boolean.TRUE.equals(contact.getPrimaryContact())
+                && !canDeleteGarbagePrimaryContact(contact.getCustomerId(), userId)) {
+            throw exception(CONTACT_PRIMARY_DELETE_FAIL);
+        }
+        // 1.3 校验是否关联合同
         if (contractService.getContractCountByContactId(id) > 0) {
             throw exception(CONTACT_DELETE_FAIL_CONTRACT_LINK_EXISTS);
         }
@@ -162,14 +199,123 @@ public class CrmContactServiceImpl implements CrmContactService {
         // 4.1 删除商机关联
         contactBusinessService.deleteContactBusinessByContactId(id);
         // 4.2 删除数据权限
-        permissionService.deletePermission(CrmBizTypeEnum.CRM_CONTACT.getType(), id);
+        permissionService.deletePermissionIfPresent(CrmBizTypeEnum.CRM_CONTACT.getType(), id);
 
         // 记录操作日志上下文
         LogRecordContext.putVariable("contactName", contact.getName());
     }
 
+    /**
+     * A garbage customer must first remove aggregate children before permanent deletion. Only a configured CRM
+     * administrator may bypass the normal "a customer always keeps one primary contact" invariant in that
+     * quarantine state; owned and public customers retain the invariant unchanged.
+     */
+    private boolean canDeleteGarbagePrimaryContact(Long customerId, Long userId) {
+        if (!authorizationService.isCrmAdmin(userId)) {
+            return false;
+        }
+        CrmCustomerDO customer = customerService.getCustomer(customerId);
+        return customer != null && Objects.equals(customer.getPoolStatus(),
+                CrmCustomerPoolStatusEnum.GARBAGE.getStatus());
+    }
+
+    /**
+     * 创建联系人前维护首联系人约束。调用方必须已经锁定客户行。
+     */
+    private String preparePrimaryContactForCreate(CrmContactSaveReqVO createReqVO) {
+        CrmContactDO currentPrimary = contactMapper.selectPrimaryContactByCustomerId(createReqVO.getCustomerId());
+        if (currentPrimary == null) {
+            createReqVO.setPrimaryContact(true);
+            return "，并自动设为首联系人";
+        }
+        if (Boolean.TRUE.equals(createReqVO.getPrimaryContact())) {
+            unsetPrimaryContact(currentPrimary.getId());
+            return "，并取消原首联系人【" + currentPrimary.getName() + "】";
+        }
+        return "";
+    }
+
+    /**
+     * 更新联系人前维护首联系人约束。调用方必须已经锁定原客户和目标客户行。
+     */
+    private String preparePrimaryContactForUpdate(CrmContactDO oldContact, CrmContactSaveReqVO updateReqVO) {
+        boolean customerChanged = !Objects.equals(oldContact.getCustomerId(), updateReqVO.getCustomerId());
+        if (Boolean.TRUE.equals(oldContact.getPrimaryContact())) {
+            if (customerChanged) {
+                throw exception(CONTACT_PRIMARY_MOVE_FAIL);
+            }
+            if (!Boolean.TRUE.equals(updateReqVO.getPrimaryContact())) {
+                throw exception(CONTACT_PRIMARY_UNSET_FAIL);
+            }
+        }
+
+        CrmContactDO currentPrimary = contactMapper.selectPrimaryContactByCustomerId(updateReqVO.getCustomerId());
+        if (currentPrimary == null) {
+            updateReqVO.setPrimaryContact(true);
+            return "，并自动设为首联系人";
+        }
+        if (Boolean.TRUE.equals(updateReqVO.getPrimaryContact())
+                && !Objects.equals(currentPrimary.getId(), updateReqVO.getId())) {
+            unsetPrimaryContact(currentPrimary.getId());
+            return "，并取消原首联系人【" + currentPrimary.getName() + "】";
+        }
+        return "";
+    }
+
+    private void unsetPrimaryContact(Long contactId) {
+        if (contactMapper.unsetPrimaryContact(contactId) != 1) {
+            throw exception(CONTACT_PRIMARY_SWITCH_CONFLICT);
+        }
+    }
+
+    private void normalizeMobile(CrmContactSaveReqVO reqVO) {
+        reqVO.setMobile(StrUtil.trim(reqVO.getMobile()));
+    }
+
+    private void validateMobileUnique(Long customerId, String mobile, Long excludeId) {
+        // Controller 的 Bean Validation 负责必填和格式；这里保留空值兼容，避免内部历史调用被误判为重复。
+        if (StrUtil.isBlank(mobile)) {
+            return;
+        }
+        if (contactMapper.selectDuplicateMobileId(customerId, mobile, excludeId) != null) {
+            throw exception(CONTACT_MOBILE_EXISTS, mobile);
+        }
+    }
+
+    private void lockCustomers(Long firstCustomerId, Long secondCustomerId) {
+        if (Objects.equals(firstCustomerId, secondCustomerId)) {
+            lockCustomer(firstCustomerId);
+            return;
+        }
+        if (firstCustomerId == null) {
+            lockCustomer(secondCustomerId);
+        } else if (secondCustomerId == null) {
+            lockCustomer(firstCustomerId);
+        } else if (firstCustomerId < secondCustomerId) {
+            lockCustomer(firstCustomerId);
+            lockCustomer(secondCustomerId);
+        } else {
+            lockCustomer(secondCustomerId);
+            lockCustomer(firstCustomerId);
+        }
+    }
+
+    private void lockCustomer(Long customerId) {
+        if (customerId != null && contactMapper.lockCustomerById(customerId) == null) {
+            throw exception(CUSTOMER_NOT_EXISTS);
+        }
+    }
+
     private CrmContactDO validateContactExists(Long id) {
         CrmContactDO contact = contactMapper.selectById(id);
+        if (contact == null) {
+            throw exception(CONTACT_NOT_EXISTS);
+        }
+        return contact;
+    }
+
+    private CrmContactDO validateContactExistsForUpdate(Long id) {
+        CrmContactDO contact = contactMapper.selectByIdForUpdate(id);
         if (contact == null) {
             throw exception(CONTACT_NOT_EXISTS);
         }
@@ -209,7 +355,12 @@ public class CrmContactServiceImpl implements CrmContactService {
             throw exception(CONTACT_UPDATE_OWNER_USER_FAIL);
         }
 
-        // 2. 记录操作日志
+        // 2. Keep object permissions aligned with the owner column. Team READ/WRITE permissions are preserved.
+        for (CrmContactDO contact : contacts) {
+            permissionService.replaceOwnerPermission(CrmBizTypeEnum.CRM_CONTACT.getType(), contact.getId(), ownerUserId);
+        }
+
+        // 3. 记录操作日志
         for (CrmContactDO contact : contacts) {
             receiveContactLog(contact, ownerUserId);
         }
@@ -267,6 +418,14 @@ public class CrmContactServiceImpl implements CrmContactService {
     }
 
     @Override
+    public List<CrmContactDO> getPrimaryContactListByCustomerIds(Collection<Long> customerIds) {
+        if (CollUtil.isEmpty(customerIds)) {
+            return ListUtil.empty();
+        }
+        return contactMapper.selectPrimaryContactListByCustomerIds(customerIds);
+    }
+
+    @Override
     public List<CrmContactDO> getContactList(Long userId) {
         CrmContactPageReqVO reqVO = new CrmContactPageReqVO();
         reqVO.setPageSize(PAGE_SIZE_NONE); // 不分页
@@ -297,6 +456,11 @@ public class CrmContactServiceImpl implements CrmContactService {
     @Override
     public Long getContactCountByCustomerId(Long customerId) {
         return contactMapper.selectCount(CrmContactDO::getCustomerId, customerId);
+    }
+
+    @Override
+    public List<CrmContactDO> getContactListByCustomerId(Long customerId) {
+        return contactMapper.selectListByCustomerId(customerId);
     }
 
     @Override

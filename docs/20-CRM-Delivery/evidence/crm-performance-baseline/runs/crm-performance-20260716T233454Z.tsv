@@ -1,0 +1,6 @@
+scenario	requests	errors	error_rate_percent	p50_ms	p95_ms	p99_ms	throughput_rps	status
+customer-page	100	0	0.00	61	101	122	93.21	PASS
+business-page	100	0	0.00	47	72	88	109.06	PASS
+customer-summary	100	0	0.00	48	92	98	106.41	PASS
+contract-rank	100	0	0.00	35	49	54	144.38	PASS
+sales-funnel	100	0	0.00	34	50	63	149.52	PASS

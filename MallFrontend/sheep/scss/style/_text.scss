@@ -2,6 +2,7 @@
           文本
  ==================== */
 @use 'sass:math';
+@use '../var' as *;
 .font-0 {
   font-size: 24rpx;
   --textSize: -4rpx;

@@ -96,10 +96,18 @@ public class CrmContactDO extends BaseDO {
      * 枚举 {@link com.meession.etm.module.system.enums.common.SexEnum}
      */
     private Integer sex;
+    /** 生日，用于客户关怀自动祝福。 */
+    private java.time.LocalDate birthday;
     /**
      * 是否关键决策人
      */
     private Boolean master;
+    /**
+     * 是否首联系人
+     *
+     * 同一客户只能有一个首联系人；该字段与 {@link #master} 的关键决策人语义相互独立。
+     */
+    private Boolean primaryContact;
     /**
      * 职位
      */

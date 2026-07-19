@@ -53,12 +53,34 @@
     </el-form>
   </ContentWrap>
 
+  <StatisticsLineagePanel
+    ref="statisticsLineageRef"
+    scope="portrait"
+    :on-refresh="handleQuery"
+  />
+
   <!-- 客户画像统计 -->
   <el-col>
     <el-tabs v-model="activeTab">
       <!-- 城市分布分析 -->
-      <el-tab-pane :label="t('portrait.area')" name="customerArea" lazy>
+      <el-tab-pane :label="t('portrait.city')" name="customerCity" lazy>
+        <PortraitCustomerRegion
+          ref="customerCityRef"
+          :query-params="queryParams"
+          region-type="city"
+        />
+      </el-tab-pane>
+      <!-- 省份分布分析 -->
+      <el-tab-pane :label="t('portrait.province')" name="customerArea" lazy>
         <PortraitCustomerArea ref="customerAreaRef" :query-params="queryParams" />
+      </el-tab-pane>
+      <!-- 国家分布分析 -->
+      <el-tab-pane :label="t('portrait.country')" name="customerCountry" lazy>
+        <PortraitCustomerRegion
+          ref="customerCountryRef"
+          :query-params="queryParams"
+          region-type="country"
+        />
       </el-tab-pane>
       <!-- 客户行业分析 -->
       <el-tab-pane :label="t('portrait.industry')" name="customerIndustry" lazy>
@@ -72,6 +94,10 @@
       <el-tab-pane :label="t('portrait.source')" name="customerSource" lazy>
         <PortraitCustomerSource ref="customerSourceRef" :query-params="queryParams" />
       </el-tab-pane>
+      <!-- 客户成交状态分析 -->
+      <el-tab-pane :label="t('portrait.dealStatus')" name="customerDealStatus" lazy>
+        <PortraitCustomerDealStatus ref="customerDealStatusRef" :query-params="queryParams" />
+      </el-tab-pane>
     </el-tabs>
   </el-col>
 </template>
@@ -81,12 +107,15 @@ import PortraitCustomerArea from './components/PortraitCustomerArea.vue'
 import PortraitCustomerIndustry from './components/PortraitCustomerIndustry.vue'
 import PortraitCustomerLevel from './components/PortraitCustomerLevel.vue'
 import PortraitCustomerSource from './components/PortraitCustomerSource.vue'
+import PortraitCustomerDealStatus from './components/PortraitCustomerDealStatus.vue'
+import PortraitCustomerRegion from './components/PortraitCustomerRegion.vue'
 import { defaultProps, handleTree } from '@/utils/tree'
 import * as DeptApi from '@/api/system/dept'
 import { beginOfDay, defaultShortcuts, endOfDay, formatDate } from '@/utils/formatTime'
 import { useUserStore } from '@/store/modules/user'
 
 import { useI18n } from '@/hooks/web/useI18n'
+import StatisticsLineagePanel from '../components/StatisticsLineagePanel.vue'
 
 defineOptions({ name: 'CrmStatisticsPortrait' })
 
@@ -103,33 +132,49 @@ const queryParams = reactive({
 
 const queryFormRef = ref() // 搜索的表单
 const deptList = ref<Tree[]>([]) // 树形结构
-const activeTab = ref('customerArea')
-const customerAreaRef = ref() // 城市分布分析
+const activeTab = ref('customerCity')
+const customerCityRef = ref() // 城市分布分析
+const customerAreaRef = ref() // 省份分布分析
+const customerCountryRef = ref() // 国家分布分析
 const customerIndustryRef = ref() // 客户行业分析
 const customerLevelRef = ref() // 客户级别分析
 const customerSourceRef = ref() // 客户来源分析
+const customerDealStatusRef = ref() // 客户成交状态分析
+const statisticsLineageRef = ref<InstanceType<typeof StatisticsLineagePanel>>()
 
 /** 搜索按钮操作 */
-const handleQuery = () => {
+const handleQuery = async () => {
+  let query: Promise<unknown> | undefined
   switch (activeTab.value) {
-    case 'customerArea': // 城市分布分析
-      customerAreaRef.value?.loadData?.()
+    case 'customerCity': // 城市分布分析
+      query = customerCityRef.value?.loadData?.()
+      break
+    case 'customerArea': // 省份分布分析
+      query = customerAreaRef.value?.loadData?.()
+      break
+    case 'customerCountry': // 国家分布分析
+      query = customerCountryRef.value?.loadData?.()
       break
     case 'customerIndustry': // 客户行业分析
-      customerIndustryRef.value?.loadData?.()
+      query = customerIndustryRef.value?.loadData?.()
       break
     case 'customerLevel': // 客户级别分析
-      customerLevelRef.value?.loadData?.()
+      query = customerLevelRef.value?.loadData?.()
       break
     case 'customerSource': // 客户来源分析
-      customerSourceRef.value?.loadData?.()
+      query = customerSourceRef.value?.loadData?.()
+      break
+    case 'customerDealStatus': // 客户成交状态分析
+      query = customerDealStatusRef.value?.loadData?.()
       break
   }
+  await query
+  statisticsLineageRef.value?.markRefreshed()
 }
 
 // 当 activeTab 改变时，刷新当前活动的 tab
 watch(activeTab, () => {
-  handleQuery()
+  void handleQuery()
 })
 
 /** 重置按钮操作 */
@@ -141,6 +186,7 @@ const resetQuery = () => {
 // 加载部门树
 onMounted(async () => {
   deptList.value = handleTree(await DeptApi.getSimpleDeptList())
+  await handleQuery()
 })
 </script>
 <style lang="scss" scoped></style>

@@ -3,78 +3,77 @@
 
   <!-- 搜索 -->
   <ContentWrap>
-    <el-form
-      class="-mb-15px"
-      label-width="auto"
-      :model="queryParams"
-      ref="queryFormRef"
-    >
+    <el-form class="-mb-15px" label-width="auto" :model="queryParams" ref="queryFormRef">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('fileConfig.name')" prop="name">
-        <el-input
-          v-model="queryParams.name"
-          :placeholder="t('fileConfig.namePlaceholder')"
-          clearable
-          @keyup.enter="handleQuery"
-          class="!w-240px"
-        />
-      </el-form-item>
+            <el-input
+              v-model="queryParams.name"
+              :placeholder="t('fileConfig.namePlaceholder')"
+              clearable
+              @keyup.enter="handleQuery"
+              class="!w-240px"
+            />
+          </el-form-item>
         </el-col>
         <el-col :span="8">
           <el-form-item :label="t('fileConfig.storage')" prop="storage">
-        <el-select
-          v-model="queryParams.storage"
-          :placeholder="t('common.selectPlaceholder')"
-          clearable
-          class="!w-240px"
-        >
-          <el-option
-            v-for="dict in getIntDictOptions(DICT_TYPE.INFRA_FILE_STORAGE)"
-            :key="dict.value"
-            :label="dict.label"
-            :value="dict.value"
-          />
-        </el-select>
-      </el-form-item>
+            <el-select
+              v-model="queryParams.storage"
+              :placeholder="t('common.selectPlaceholder')"
+              clearable
+              class="!w-240px"
+            >
+              <el-option
+                v-for="dict in getIntDictOptions(DICT_TYPE.INFRA_FILE_STORAGE)"
+                :key="dict.value"
+                :label="dict.label"
+                :value="dict.value"
+              />
+            </el-select>
+          </el-form-item>
         </el-col>
         <el-col :span="8">
           <el-form-item :label="t('common.createTime')" prop="createTime">
-        <el-date-picker
-          v-model="queryParams.createTime"
-          value-format="YYYY-MM-DD HH:mm:ss"
-          type="daterange"
-          :start-placeholder="t('common.startTime')"
-          :end-placeholder="t('common.endTime')"
-          :default-time="[new Date('1 00:00:00'), new Date('1 23:59:59')]"
-          class="!w-240px"
-        />
-      </el-form-item>
+            <el-date-picker
+              v-model="queryParams.createTime"
+              value-format="YYYY-MM-DD HH:mm:ss"
+              type="daterange"
+              :start-placeholder="t('common.startTime')"
+              :end-placeholder="t('common.endTime')"
+              :default-time="[new Date('1 00:00:00'), new Date('1 23:59:59')]"
+              class="!w-240px"
+            />
+          </el-form-item>
         </el-col>
       </el-row>
       <el-row>
         <el-col :span="24">
           <el-form-item>
-        <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> {{ t('common.query') }}</el-button>
-        <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> {{ t('common.reset') }}</el-button>
-        <el-button
-          type="primary"
-          plain
-          @click="openForm('create')"
-          v-hasPermi="['infra:file-config:create']"
-        >
-          <Icon icon="ep:plus" class="mr-5px" /> {{ t('common.add') }}
-        </el-button>
-        <el-button
-          type="danger"
-          plain
-          :disabled="checkedIds.length === 0"
-          @click="handleDeleteBatch"
-          v-hasPermi="['infra:file-config:delete']"
-        >
-          <Icon icon="ep:delete" class="mr-5px" /> {{ t('common.batchDelete') }}
-        </el-button>
-      </el-form-item>
+            <el-button @click="handleQuery"
+              ><Icon icon="ep:search" class="mr-5px" /> {{ t('common.query') }}</el-button
+            >
+            <el-button @click="resetQuery"
+              ><Icon icon="ep:refresh" class="mr-5px" /> {{ t('common.reset') }}</el-button
+            >
+            <el-button
+              type="primary"
+              plain
+              @click="openForm('create')"
+              v-hasPermi="['infra:file-config:create']"
+            >
+              <Icon icon="ep:plus" class="mr-5px" /> {{ t('common.add') }}
+            </el-button>
+            <el-button
+              type="danger"
+              plain
+              :disabled="checkedIds.length === 0"
+              @click="handleDeleteBatch"
+              v-hasPermi="['infra:file-config:delete']"
+            >
+              <Icon icon="ep:delete" class="mr-5px" /> {{ t('common.batchDelete') }}
+            </el-button>
+          </el-form-item>
         </el-col>
       </el-row>
     </el-form>
@@ -82,7 +81,12 @@
 
   <!-- 列表 -->
   <ContentWrap>
-    <el-table v-loading="loading" :data="list" @selection-change="handleRowCheckboxChange" :table-layout="'auto'">
+    <el-table
+      v-loading="loading"
+      :data="list"
+      @selection-change="handleRowCheckboxChange"
+      :table-layout="'auto'"
+    >
       <el-table-column type="selection" width="55" />
       <el-table-column :label="t('common.id')" align="center" prop="id" />
       <el-table-column :label="t('fileConfig.name')" align="center" prop="name" />
@@ -103,35 +107,40 @@
         prop="createTime"
         min-width="180"
         :formatter="dateFormatter"
-       fixed="right" />
-      <el-table-column :label="t('common.operation')" align="center" min-width="240">
+        fixed="right"
+      />
+      <el-table-column :label="t('common.operation')" align="center" width="140">
         <template #default="scope">
-          <el-button
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-            v-hasPermi="['infra:file-config:update']"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            link
-            type="primary"
-            :disabled="scope.row.master"
-            @click="handleMaster(scope.row.id)"
-            v-hasPermi="['infra:file-config:update']"
-          >
-            {{ t('fileConfig.setPrimary') }}
-          </el-button>
-          <el-button link type="primary" @click="handleTest(scope.row.id)"> {{ t('fileConfig.test') }} </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-            v-hasPermi="['infra:file-config:delete']"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+              v-hasPermi="['infra:file-config:update']"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              link
+              type="primary"
+              :disabled="scope.row.master"
+              @click="handleMaster(scope.row.id)"
+              v-hasPermi="['infra:file-config:update']"
+            >
+              {{ t('fileConfig.setPrimary') }}
+            </el-button>
+            <el-button link type="primary" @click="handleTest(scope.row.id)">
+              {{ t('fileConfig.test') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+              v-hasPermi="['infra:file-config:delete']"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

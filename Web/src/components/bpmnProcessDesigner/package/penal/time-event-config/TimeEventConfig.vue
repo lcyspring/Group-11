@@ -3,16 +3,16 @@
     <div style="margin-top: 10px">
       <span>{{ t('designer.timerType') }}：</span>
       <el-button-group>
-        <el-button size="mini" :type="type === 'time' ? 'primary' : ''" @click="setType('time')"
+        <el-button size="small" :type="type === 'time' ? 'primary' : ''" @click="setType('time')"
           >{{ t('designer.time') }}</el-button
         >
         <el-button
-          size="mini"
+          size="small"
           :type="type === 'duration' ? 'primary' : ''"
           @click="setType('duration')"
           >{{ t('designer.duration') }}</el-button
         >
-        <el-button size="mini" :type="type === 'cycle' ? 'primary' : ''" @click="setType('cycle')"
+        <el-button size="small" :type="type === 'cycle' ? 'primary' : ''" @click="setType('cycle')"
           >{{ t('designer.cycle') }}</el-button
         >
       </el-button-group>

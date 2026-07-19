@@ -74,6 +74,7 @@
   />
 </template>
 <script setup lang="ts">
+import type { FormInstance, SummaryMethod } from 'element-plus'
 import { ProductVO } from '@/api/erp/product/product'
 import { erpPriceInputFormatter, getSumValue } from '@/utils'
 import PurchaseInPaymentEnableList from '@/views/erp/purchase/in/components/PurchaseInPaymentEnableList.vue'
@@ -85,9 +86,9 @@ import { PurchaseReturnVO } from '@/api/erp/purchase/return'
 const { t } = useI18n('erp.finance.payment')
 
 const props = defineProps<{
-  items: undefined
-  supplierId: undefined
-  disabled: false
+  items?: any[]
+  supplierId?: number
+  disabled?: boolean
 }>()
 const message = useMessage()
 
@@ -96,7 +97,7 @@ const formData = ref([])
 const formRules = reactive({
   paymentPrice: [{ required: true, message: t('paymentPriceRequired'), trigger: 'blur' }]
 })
-const formRef = ref([]) // 表单 Ref
+const formRef = ref<FormInstance>() // 表单 Ref
 const productList = ref<ProductVO[]>([]) // 产品列表
 
 /** 初始化设置入库项 */
@@ -109,7 +110,7 @@ watch(
 )
 
 /** 合计 */
-const getSummaries = (param: SummaryMethodProps) => {
+const getSummaries = (param: Parameters<SummaryMethod<any>>[0]) => {
   const { columns, data } = param
   const sums: string[] = []
   columns.forEach((column, index: number) => {
@@ -136,7 +137,7 @@ const handleOpenPurchaseIn = () => {
   }
   purchaseInPaymentEnableListRef.value.open(props.supplierId)
 }
-const handleAddPurchaseIn = (rows: PurchaseInVO[]) => {
+const handleAddPurchaseIn = (rows: Array<PurchaseInVO & { paymentPrice: number }>) => {
   rows.forEach((row) => {
     formData.value.push({
       bizId: row.id,
@@ -158,7 +159,7 @@ const handleOpenPurchaseReturn = () => {
   }
   purchaseReturnRefundEnableListRef.value.open(props.supplierId)
 }
-const handleAddPurchaseReturn = (rows: PurchaseReturnVO[]) => {
+const handleAddPurchaseReturn = (rows: Array<PurchaseReturnVO & { refundPrice: number }>) => {
   rows.forEach((row) => {
     formData.value.push({
       bizId: row.id,
@@ -178,7 +179,7 @@ const handleDelete = (index: number) => {
 
 /** 表单校验 */
 const validate = () => {
-  return formRef.value.validate()
+  return formRef.value?.validate()
 }
 defineExpose({ validate })
 </script>

@@ -3,12 +3,7 @@
 
   <!-- 搜索工作区 -->
   <ContentWrap>
-    <el-form
-      ref="queryFormRef"
-      :model="queryParams"
-      class="-mb-15px"
-      label-width="auto"
-    >
+    <el-form ref="queryFormRef" :model="queryParams" class="-mb-15px" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('name')" prop="name">
@@ -80,9 +75,15 @@
 
   <!-- 列表 -->
   <ContentWrap>
-    <el-table v-loading="loading" :data="list" default-expand-all row-key="id" :table-layout="'auto'">
+    <el-table
+      v-loading="loading"
+      :data="list"
+      default-expand-all
+      row-key="id"
+      :table-layout="'auto'"
+    >
       <el-table-column :label="t('name')" prop="name" />
-      <el-table-column :label="t('productScope')" prop="productScope" >
+      <el-table-column :label="t('productScope')" prop="productScope">
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.PROMOTION_PRODUCT_SCOPE" :value="scope.row.productScope" />
         </template>
@@ -110,34 +111,37 @@
         :label="t('common.createTime')"
         prop="createTime"
         min-width="180"
-       fixed="right" />
-      <el-table-column align="center" :label="t('common.operation')">
+        fixed="right"
+      />
+      <el-table-column align="center" :label="t('common.operation')" width="140">
         <template #default="scope">
-          <el-button
-            v-hasPermi="['promotion:reward-activity:update']"
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            v-if="scope.row.status === 0"
-            v-hasPermi="['promotion:reward-activity:close']"
-            link
-            type="danger"
-            @click="handleClose(scope.row.id)"
-          >
-            {{ t('close') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['promotion:reward-activity:delete']"
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              v-hasPermi="['promotion:reward-activity:update']"
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              v-if="scope.row.status === 0"
+              v-hasPermi="['promotion:reward-activity:close']"
+              link
+              type="danger"
+              @click="handleClose(scope.row.id)"
+            >
+              {{ t('close') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['promotion:reward-activity:delete']"
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

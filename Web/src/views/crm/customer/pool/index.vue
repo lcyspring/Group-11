@@ -94,7 +94,7 @@
               <Icon class="mr-5px" icon="ep:search" />
               {{ t('common.search') }}
             </el-button>
-            <el-button @click="resetQuery(undefined)">
+            <el-button @click="resetQuery">
               <Icon class="mr-5px" icon="ep:refresh" />
               {{ t('common.reset') }}
             </el-button>
@@ -137,6 +137,29 @@
           <dict-tag :type="DICT_TYPE.CRM_CUSTOMER_LEVEL" :value="scope.row.level" />
         </template>
       </el-table-column>
+      <el-table-column
+        :formatter="dateFormatter"
+        align="center"
+        :label="t('poolEntryTime')"
+        prop="poolEntryTime"
+        min-width="180"
+      />
+      <el-table-column
+        align="center"
+        :label="t('poolPreviousOwner')"
+        prop="poolPreviousOwnerUserName"
+        min-width="130"
+      >
+        <template #default="scope">
+          {{ scope.row.poolPreviousOwnerUserName || t('unassignedOwner') }}
+        </template>
+      </el-table-column>
+      <el-table-column align="center" :label="t('poolReason')" prop="poolReason" min-width="150">
+        <template #default="scope">
+          {{ poolReasonLabel(scope.row.poolReason) }}
+        </template>
+      </el-table-column>
+      <el-table-column align="center" :label="t('poolCycleCount')" prop="poolCycleCount" min-width="120" />
       <el-table-column align="center" :label="t('industryId')" prop="industryId" min-width="100">
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.CRM_CUSTOMER_INDUSTRY" :value="scope.row.industryId" />
@@ -178,6 +201,18 @@
         min-width="180"
       />
       <el-table-column align="center" :label="t('common.creator')" prop="creatorName" min-width="100" />
+      <el-table-column :label="t('common.action')" align="center" fixed="right" min-width="130">
+        <template #default="scope">
+          <el-button
+            v-hasPermi="['crm:customer-garbage:manage']"
+            link
+            type="danger"
+            @click="handlePutGarbage(scope.row)"
+          >
+            {{ t('putGarbage') }}
+          </el-button>
+        </template>
+      </el-table-column>
     </el-table>
     <!-- 分页 -->
     <Pagination
@@ -193,7 +228,9 @@
 import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import { dateFormatter } from '@/utils/formatTime'
 import download from '@/utils/download'
+import { resolveDialogAction } from '@/utils/dialogAction'
 import * as CustomerApi from '@/api/crm/customer'
+import { invalidateCustomerGarbageList } from '../garbage/refreshSignal'
 
 defineOptions({ name: 'CrmCustomerPool' })
 
@@ -215,6 +252,41 @@ const queryParams = ref({
 })
 const queryFormRef = ref() // 搜索的表单
 const exportLoading = ref(false) // 导出的加载中
+
+const poolReasonLabel = (reason?: string) => {
+  const keyMap: Record<string, string> = {
+    MANUAL_PUT_POOL: 'poolReasonManual',
+    AUTO_NO_FOLLOW_UP: 'poolReasonNoFollowUp',
+    AUTO_NO_DEAL: 'poolReasonNoDeal',
+    IMPORT_UNASSIGNED: 'poolReasonImportUnassigned',
+    LEGACY_PUBLIC: 'poolReasonLegacy',
+    RESTORE_PUBLIC: 'poolReasonRestored'
+  }
+  return reason && keyMap[reason] ? t(keyMap[reason]) : reason || '-'
+}
+
+const handlePutGarbage = async (row: CustomerApi.CustomerVO) => {
+  const result = await resolveDialogAction(
+    ElMessageBox.prompt(
+      t('putGarbageReasonPrompt', { name: row.name }),
+      t('putGarbage'),
+      {
+        inputType: 'textarea',
+        inputValidator: (reason) => {
+          const normalized = String(reason || '').trim()
+          if (!normalized) return t('putGarbageReasonRequired')
+          if (normalized.length > 500) return t('putGarbageReasonTooLong')
+          return true
+        }
+      }
+    )
+  )
+  if (!result) return
+  await CustomerApi.putCustomerGarbage({ customerId: row.id, reason: result.value.trim() })
+  invalidateCustomerGarbageList()
+  message.success(t('putGarbageSuccess'))
+  await getList()
+}
 
 /** 查询列表 */
 const getList = async () => {
@@ -259,14 +331,11 @@ const openDetail = (id: number) => {
 
 /** 导出按钮操作 */
 const handleExport = async () => {
+  if (!(await resolveDialogAction(message.exportConfirm()))) return
+  exportLoading.value = true
   try {
-    // 导出的二次确认
-    await message.exportConfirm()
-    // 发起导出
-    exportLoading.value = true
     const data = await CustomerApi.exportCustomer(queryParams.value)
     download.excel(data, t('poolExportFileName') + '.xls')
-  } catch {
   } finally {
     exportLoading.value = false
   }

@@ -114,19 +114,21 @@
         min-width="180"
         :formatter="dateFormatter"
        fixed="right" />
-      <el-table-column :label="t('common.operation')" align="center">
+      <el-table-column :label="t('common.operation')" align="center" width="220">
         <template #default="scope">
-          <el-button link type="primary" @click="copyToClipboard(scope.row.url)">
-            {{ t('file.copyLink') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-            v-hasPermi="['infra:file:delete']"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions>
+            <el-button link type="primary" @click="copyToClipboard(scope.row.url)">
+              {{ t('file.copyLink') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+              v-hasPermi="['infra:file:delete']"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

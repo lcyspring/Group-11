@@ -1,0 +1,466 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+if [[ $# -ne 0 ]]; then
+    printf 'The Ubuntu build entrypoint does not accept command-line arguments.\n' >&2
+    exit 2
+fi
+
+bool_value() {
+    case "${1,,}" in
+        true|1|yes) printf 'true' ;;
+        false|0|no|'') printf 'false' ;;
+        *)
+            printf 'Invalid boolean value: %s\n' "$1" >&2
+            exit 2
+            ;;
+    esac
+}
+
+require_file() {
+    [[ -s "$1" ]] || {
+        printf 'Expected build output is missing or empty: %s\n' "$1" >&2
+        exit 1
+    }
+}
+
+verify_ubuntu_release() {
+    # shellcheck disable=SC1091
+    source /etc/os-release
+    [[ "${ID:-}" == "ubuntu" && "${VERSION_ID:-}" == "26.04" ]] || {
+        printf 'Build image must be Ubuntu 26.04; found %s %s.\n' "${ID:-unknown}" "${VERSION_ID:-unknown}" >&2
+        exit 1
+    }
+}
+
+run_without_proxy() {
+    if [[ "$(bool_value "${BUILD_USE_HOST_PROXY:-false}")" == "true" ]]; then
+        "$@"
+    else
+        env -u http_proxy -u HTTP_PROXY -u https_proxy -u HTTPS_PROXY \
+            -u all_proxy -u ALL_PROXY -u no_proxy -u NO_PROXY "$@"
+    fi
+}
+
+maven_goal() {
+    local pom="$1"
+    shift
+    local args=(-f "$pom")
+    if [[ -n "${BUILD_MAVEN_THREADS:-}" ]]; then
+        args+=(-T "$BUILD_MAVEN_THREADS")
+    fi
+    run_without_proxy mvn "${args[@]}" "$@"
+}
+
+verify_ubuntu_release
+printf 'Build OS: Ubuntu 26.04\n'
+java -version
+mvn -version
+deno --version
+
+BUILD_SERVER="$(bool_value "${BUILD_SERVER:-true}")"
+BUILD_INIT_SERVICE="$(bool_value "${BUILD_INIT_SERVICE:-true}")"
+BUILD_WEB="$(bool_value "${BUILD_WEB:-true}")"
+BUILD_CLEAN="$(bool_value "${BUILD_CLEAN:-true}")"
+BUILD_CRM_TESTS="$(bool_value "${BUILD_CRM_TESTS:-true}")"
+BUILD_CRM_COVERAGE="$(bool_value "${BUILD_CRM_COVERAGE:-true}")"
+BUILD_ERP_TESTS="$(bool_value "${BUILD_ERP_TESTS:-false}")"
+BUILD_ERP_COVERAGE="$(bool_value "${BUILD_ERP_COVERAGE:-false}")"
+BUILD_INFRA_TESTS="$(bool_value "${BUILD_INFRA_TESTS:-false}")"
+BUILD_INFRA_COVERAGE="$(bool_value "${BUILD_INFRA_COVERAGE:-false}")"
+BUILD_BPM_TESTS="$(bool_value "${BUILD_BPM_TESTS:-false}")"
+BUILD_BPM_COVERAGE="$(bool_value "${BUILD_BPM_COVERAGE:-false}")"
+BUILD_PAY_TESTS="$(bool_value "${BUILD_PAY_TESTS:-false}")"
+BUILD_PAY_COVERAGE="$(bool_value "${BUILD_PAY_COVERAGE:-false}")"
+BUILD_PAY_TEST_PATTERN="${BUILD_PAY_TEST_PATTERN:-}"
+BUILD_COMMON_TESTS="$(bool_value "${BUILD_COMMON_TESTS:-false}")"
+BUILD_COMMON_COVERAGE="$(bool_value "${BUILD_COMMON_COVERAGE:-false}")"
+BUILD_COMMON_TEST_PATTERN="${BUILD_COMMON_TEST_PATTERN:-}"
+BUILD_FRAMEWORK_TESTS="$(bool_value "${BUILD_FRAMEWORK_TESTS:-false}")"
+BUILD_FRAMEWORK_COVERAGE="$(bool_value "${BUILD_FRAMEWORK_COVERAGE:-false}")"
+BUILD_FRAMEWORK_TEST_PATTERN="${BUILD_FRAMEWORK_TEST_PATTERN:-}"
+BUILD_FRAMEWORK_MODULES="${BUILD_FRAMEWORK_MODULES:-mitedtsm-framework/mitedtsm-spring-boot-starter-security,mitedtsm-framework/mitedtsm-spring-boot-starter-web}"
+BUILD_SYSTEM_TESTS="$(bool_value "${BUILD_SYSTEM_TESTS:-false}")"
+BUILD_SYSTEM_COVERAGE="$(bool_value "${BUILD_SYSTEM_COVERAGE:-false}")"
+BUILD_SYSTEM_TEST_PATTERN="${BUILD_SYSTEM_TEST_PATTERN:-}"
+DENO_FROZEN_LOCKFILE="$(bool_value "${DENO_FROZEN_LOCKFILE:-true}")"
+BUILD_CI="$(bool_value "${BUILD_CI:-true}")"
+WEB_COVERAGE_ENABLED="$(bool_value "${WEB_COVERAGE_ENABLED:-false}")"
+WEB_COVERAGE_THRESHOLD="${WEB_COVERAGE_THRESHOLD:-90}"
+
+[[ "$WEB_COVERAGE_THRESHOLD" =~ ^[0-9]+$ && "$WEB_COVERAGE_THRESHOLD" -le 100 ]] || {
+    printf 'WEB_COVERAGE_THRESHOLD must be an integer from 0 to 100.\n' >&2
+    exit 2
+}
+if [[ "$WEB_COVERAGE_ENABLED" == "true" && -z "${WEB_TEST_SCRIPT:-}" ]]; then
+    printf 'WEB_COVERAGE_ENABLED requires WEB_TEST_SCRIPT to be set.\n' >&2
+    exit 2
+fi
+
+if [[ "$BUILD_CRM_COVERAGE" == "true" && "$BUILD_CRM_TESTS" != "true" ]]; then
+    printf 'CRM coverage requires CRM tests to be enabled.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_ERP_COVERAGE" == "true" && "$BUILD_ERP_TESTS" != "true" ]]; then
+    printf 'ERP coverage requires ERP tests to be enabled.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_INFRA_COVERAGE" == "true" && "$BUILD_INFRA_TESTS" != "true" ]]; then
+    printf 'Infra coverage requires Infra tests to be enabled.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_BPM_COVERAGE" == "true" && "$BUILD_BPM_TESTS" != "true" ]]; then
+    printf 'BPM coverage requires BPM tests to be enabled.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_PAY_COVERAGE" == "true" && "$BUILD_PAY_TESTS" != "true" ]]; then
+    printf 'Pay coverage requires Pay tests to be enabled.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_PAY_TESTS" == "true" && ! "$BUILD_PAY_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?!,]+$ ]]; then
+    printf 'BUILD_PAY_TEST_PATTERN is required for Pay tests and contains unsupported characters.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_COMMON_COVERAGE" == "true" && "$BUILD_COMMON_TESTS" != "true" ]]; then
+    printf 'Common coverage requires common tests to be enabled.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_COMMON_TESTS" == "true" && ! "$BUILD_COMMON_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?,]+$ ]]; then
+    printf 'BUILD_COMMON_TEST_PATTERN is required for common tests and contains unsupported characters.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_FRAMEWORK_COVERAGE" == "true" && "$BUILD_FRAMEWORK_TESTS" != "true" ]]; then
+    printf 'Framework coverage requires framework tests to be enabled.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_FRAMEWORK_TESTS" == "true" && ! "$BUILD_FRAMEWORK_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?,]+$ ]]; then
+    printf 'BUILD_FRAMEWORK_TEST_PATTERN is required for framework tests and contains unsupported characters.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_FRAMEWORK_TESTS" == "true" &&
+      ! "$BUILD_FRAMEWORK_MODULES" =~ ^[A-Za-z0-9_./-]+(,[A-Za-z0-9_./-]+)*$ ]]; then
+    printf 'BUILD_FRAMEWORK_MODULES must be a comma-separated Maven module path list.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_SYSTEM_COVERAGE" == "true" && "$BUILD_SYSTEM_TESTS" != "true" ]]; then
+    printf 'System coverage requires system tests to be enabled.\n' >&2
+    exit 2
+fi
+if [[ "$BUILD_SYSTEM_TESTS" == "true" && ! "$BUILD_SYSTEM_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?!,]+$ ]]; then
+    printf 'BUILD_SYSTEM_TEST_PATTERN is required for system tests and contains unsupported characters.\n' >&2
+    exit 2
+fi
+
+package_goal=(package -DskipTests)
+if [[ "$BUILD_CLEAN" == "true" ]]; then
+    package_goal=(clean "${package_goal[@]}")
+fi
+
+if [[ "$BUILD_SERVER" == "true" ]]; then
+    printf 'Building Server inside Ubuntu 26.04.\n'
+    maven_goal /workspace/Server/pom.xml -pl mitedtsm-server -am "${package_goal[@]}"
+    require_file /workspace/Server/mitedtsm-server/target/mitedtsm-server.jar
+fi
+
+if [[ "$BUILD_INIT_SERVICE" == "true" ]]; then
+    printf 'Building InitService inside Ubuntu 26.04.\n'
+    maven_goal /workspace/InitService/pom.xml "${package_goal[@]}"
+    require_file /workspace/InitService/target/mitedtsm-init-service.jar
+fi
+
+# Run module tests after the clean Server package. Otherwise Server clean removes
+# the JaCoCo and Surefire evidence that this build is expected to preserve.
+if [[ "$BUILD_COMMON_TESTS" == "true" ]]; then
+    printf 'Running framework common tests%s inside Ubuntu 26.04.\n' \
+        "$([[ "$BUILD_COMMON_COVERAGE" == "true" ]] && printf ' with JaCoCo' || true)"
+    rm -f /workspace/Server/mitedtsm-framework/mitedtsm-common/target/jacoco.exec
+    rm -rf /workspace/Server/mitedtsm-framework/mitedtsm-common/target/site/jacoco
+    common_test_args=(
+        -pl mitedtsm-framework/mitedtsm-common
+        -am
+        "-Dtest=${BUILD_COMMON_TEST_PATTERN}"
+        -Dsurefire.failIfNoSpecifiedTests=false
+    )
+    if [[ "$BUILD_COMMON_COVERAGE" == "true" ]]; then
+        common_test_args+=(
+            -Djacoco.propertyName=unusedJacocoArgLine
+            '-DargLine=-Xshare:off -javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.13/org.jacoco.agent-0.8.13-runtime.jar=destfile=/workspace/Server/mitedtsm-framework/mitedtsm-common/target/jacoco.exec,excludes=net/sf/jsqlparser/**'
+            org.jacoco:jacoco-maven-plugin:0.8.13:prepare-agent
+            test
+            org.jacoco:jacoco-maven-plugin:0.8.13:report
+        )
+    else
+        common_test_args+=(test)
+    fi
+    maven_goal /workspace/Server/pom.xml "${common_test_args[@]}"
+    if [[ "$BUILD_COMMON_COVERAGE" == "true" ]]; then
+        require_file /workspace/Server/mitedtsm-framework/mitedtsm-common/target/site/jacoco/jacoco.csv
+    fi
+fi
+
+if [[ "$BUILD_FRAMEWORK_TESTS" == "true" ]]; then
+    printf 'Running configured framework module tests%s inside Ubuntu 26.04.\n' \
+        "$([[ "$BUILD_FRAMEWORK_COVERAGE" == "true" ]] && printf ' with JaCoCo' || true)"
+    framework_modules="$BUILD_FRAMEWORK_MODULES"
+    framework_coverage_file=/workspace/Server/target/framework-jacoco.exec
+    rm -f -- "$framework_coverage_file"
+    framework_test_args=(
+        -pl "$framework_modules"
+        -am
+        "-Dtest=${BUILD_FRAMEWORK_TEST_PATTERN}"
+        -Dsurefire.failIfNoSpecifiedTests=false
+    )
+    if [[ "$BUILD_FRAMEWORK_COVERAGE" == "true" ]]; then
+        framework_test_args+=(
+            -Djacoco.propertyName=unusedJacocoArgLine
+            "-DargLine=-Xshare:off -javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.13/org.jacoco.agent-0.8.13-runtime.jar=destfile=${framework_coverage_file},excludes=net/sf/jsqlparser/**"
+            "-Djacoco.dataFile=${framework_coverage_file}"
+            org.jacoco:jacoco-maven-plugin:0.8.13:prepare-agent
+            test
+            org.jacoco:jacoco-maven-plugin:0.8.13:report
+        )
+    else
+        framework_test_args+=(test)
+    fi
+    maven_goal /workspace/Server/pom.xml "${framework_test_args[@]}"
+    if [[ "$BUILD_FRAMEWORK_COVERAGE" == "true" ]]; then
+        IFS=',' read -r -a framework_module_list <<< "$framework_modules"
+        for framework_module in "${framework_module_list[@]}"; do
+            require_file "/workspace/Server/${framework_module}/target/site/jacoco/jacoco.csv"
+        done
+    fi
+fi
+
+if [[ "$BUILD_SYSTEM_TESTS" == "true" ]]; then
+    printf 'Running System module tests%s inside Ubuntu 26.04.\n' \
+        "$([[ "$BUILD_SYSTEM_COVERAGE" == "true" ]] && printf ' with JaCoCo' || true)"
+    rm -f /workspace/Server/mitedtsm-module-system/target/jacoco.exec
+    rm -rf /workspace/Server/mitedtsm-module-system/target/site/jacoco
+    system_test_args=(
+        -pl mitedtsm-module-system
+        -am
+        "-Dtest=${BUILD_SYSTEM_TEST_PATTERN}"
+        -Dsurefire.failIfNoSpecifiedTests=false
+    )
+    if [[ "$BUILD_SYSTEM_COVERAGE" == "true" ]]; then
+        system_test_args+=(
+            -Djacoco.propertyName=unusedJacocoArgLine
+            '-DargLine=-Xshare:off -javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.13/org.jacoco.agent-0.8.13-runtime.jar=destfile=/workspace/Server/mitedtsm-module-system/target/jacoco.exec,excludes=net/sf/jsqlparser/**'
+            org.jacoco:jacoco-maven-plugin:0.8.13:prepare-agent
+            test
+            org.jacoco:jacoco-maven-plugin:0.8.13:report
+        )
+    else
+        system_test_args+=(test)
+    fi
+    maven_goal /workspace/Server/pom.xml "${system_test_args[@]}"
+    if [[ "$BUILD_SYSTEM_COVERAGE" == "true" ]]; then
+        require_file /workspace/Server/mitedtsm-module-system/target/site/jacoco/jacoco.csv
+    fi
+fi
+
+if [[ "$BUILD_INFRA_TESTS" == "true" ]]; then
+    printf 'Running Infra file tests%s inside Ubuntu 26.04.\n' \
+        "$([[ "$BUILD_INFRA_COVERAGE" == "true" ]] && printf ' with JaCoCo' || true)"
+    infra_test_args=(
+        -pl mitedtsm-module-infra
+        -am
+        '-Dtest=File*Test,!FtpFileClientTest,!LocalFileClientTest,!S3FileClientTest,!SftpFileClientTest'
+        -Dsurefire.failIfNoSpecifiedTests=false
+    )
+    if [[ "$BUILD_INFRA_COVERAGE" == "true" ]]; then
+        infra_test_args+=(
+            -Djacoco.propertyName=unusedJacocoArgLine
+            '-DargLine=-Xshare:off -javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.13/org.jacoco.agent-0.8.13-runtime.jar=destfile=/workspace/Server/mitedtsm-module-infra/target/jacoco.exec,excludes=net/sf/jsqlparser/**'
+            org.jacoco:jacoco-maven-plugin:0.8.13:prepare-agent
+            test
+            org.jacoco:jacoco-maven-plugin:0.8.13:report
+        )
+    else
+        infra_test_args+=(test)
+    fi
+    maven_goal /workspace/Server/pom.xml "${infra_test_args[@]}"
+    if [[ "$BUILD_INFRA_COVERAGE" == "true" ]]; then
+        require_file /workspace/Server/mitedtsm-module-infra/target/site/jacoco/jacoco.csv
+    fi
+fi
+
+if [[ "$BUILD_BPM_TESTS" == "true" ]]; then
+    printf 'Running BPM tests%s inside Ubuntu 26.04.\n' \
+        "$([[ "$BUILD_BPM_COVERAGE" == "true" ]] && printf ' with JaCoCo' || true)"
+    bpm_test_args=(
+        -pl mitedtsm-module-bpm
+        -am
+        '-Dtest=Bpm*Test,!BpmTaskCandidateExpressionStrategyTest,!BpmTaskCandidateGroupStrategyTest,!BpmTaskCandidatePostStrategyTest,!BpmTaskCandidateRoleStrategyTest,!BpmTaskCandidateUserStrategyTest'
+        -Dsurefire.failIfNoSpecifiedTests=false
+    )
+    if [[ "$BUILD_BPM_COVERAGE" == "true" ]]; then
+        bpm_test_args+=(
+            -Djacoco.propertyName=unusedJacocoArgLine
+            '-DargLine=-Xshare:off -javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.13/org.jacoco.agent-0.8.13-runtime.jar=destfile=/workspace/Server/mitedtsm-module-bpm/target/jacoco.exec,excludes=net/sf/jsqlparser/**'
+            org.jacoco:jacoco-maven-plugin:0.8.13:prepare-agent
+            test
+            org.jacoco:jacoco-maven-plugin:0.8.13:report
+        )
+    else
+        bpm_test_args+=(test)
+    fi
+    maven_goal /workspace/Server/pom.xml "${bpm_test_args[@]}"
+    if [[ "$BUILD_BPM_COVERAGE" == "true" ]]; then
+        require_file /workspace/Server/mitedtsm-module-bpm/target/site/jacoco/jacoco.csv
+    fi
+fi
+
+if [[ "$BUILD_PAY_TESTS" == "true" ]]; then
+    printf 'Running Pay tests%s inside Ubuntu 26.04.\n' \
+        "$([[ "$BUILD_PAY_COVERAGE" == "true" ]] && printf ' with JaCoCo' || true)"
+    rm -f /workspace/Server/mitedtsm-module-pay/target/jacoco.exec
+    rm -rf /workspace/Server/mitedtsm-module-pay/target/site/jacoco
+    pay_test_args=(
+        -pl mitedtsm-module-pay
+        -am
+        "-Dtest=${BUILD_PAY_TEST_PATTERN}"
+        -Dsurefire.failIfNoSpecifiedTests=false
+    )
+    if [[ "$BUILD_PAY_COVERAGE" == "true" ]]; then
+        pay_test_args+=(
+            -Djacoco.propertyName=unusedJacocoArgLine
+            '-DargLine=-Xshare:off -javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.13/org.jacoco.agent-0.8.13-runtime.jar=destfile=/workspace/Server/mitedtsm-module-pay/target/jacoco.exec,excludes=net/sf/jsqlparser/**'
+            org.jacoco:jacoco-maven-plugin:0.8.13:prepare-agent
+            test
+            org.jacoco:jacoco-maven-plugin:0.8.13:report
+        )
+    else
+        pay_test_args+=(test)
+    fi
+    maven_goal /workspace/Server/pom.xml "${pay_test_args[@]}"
+    if [[ "$BUILD_PAY_COVERAGE" == "true" ]]; then
+        require_file /workspace/Server/mitedtsm-module-pay/target/site/jacoco/jacoco.csv
+    fi
+fi
+
+if [[ "$BUILD_CRM_TESTS" == "true" ]]; then
+    printf 'Running CRM tests%s inside Ubuntu 26.04.\n' \
+        "$([[ "$BUILD_CRM_COVERAGE" == "true" ]] && printf ' with JaCoCo' || true)"
+    crm_test_args=(
+        -pl mitedtsm-module-crm
+        -am
+        '-Dtest=Crm*Test'
+        -Dsurefire.failIfNoSpecifiedTests=false
+    )
+    if [[ "$BUILD_CRM_COVERAGE" == "true" ]]; then
+        crm_test_args+=(
+            -Djacoco.propertyName=unusedJacocoArgLine
+            '-DargLine=-Xshare:off -javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.13/org.jacoco.agent-0.8.13-runtime.jar=destfile=/workspace/Server/mitedtsm-module-crm/target/jacoco.exec,excludes=net/sf/jsqlparser/**'
+            org.jacoco:jacoco-maven-plugin:0.8.13:prepare-agent
+            test
+            org.jacoco:jacoco-maven-plugin:0.8.13:report
+        )
+    else
+        crm_test_args+=(test)
+    fi
+    maven_goal /workspace/Server/pom.xml "${crm_test_args[@]}"
+    if [[ "$BUILD_CRM_COVERAGE" == "true" ]]; then
+        require_file /workspace/Server/mitedtsm-module-crm/target/site/jacoco/jacoco.csv
+    fi
+fi
+
+if [[ "$BUILD_ERP_TESTS" == "true" ]]; then
+    printf 'Running ERP tests%s inside Ubuntu 26.04.\n' \
+        "$([[ "$BUILD_ERP_COVERAGE" == "true" ]] && printf ' with JaCoCo' || true)"
+    erp_test_args=(
+        -pl mitedtsm-module-erp
+        -am
+        '-Dtest=Erp*Test'
+        -Dsurefire.failIfNoSpecifiedTests=false
+    )
+    if [[ "$BUILD_ERP_COVERAGE" == "true" ]]; then
+        erp_test_args+=(
+            -Djacoco.propertyName=unusedJacocoArgLine
+            '-DargLine=-Xshare:off -javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.13/org.jacoco.agent-0.8.13-runtime.jar=destfile=/workspace/Server/mitedtsm-module-erp/target/jacoco.exec,excludes=net/sf/jsqlparser/**'
+            org.jacoco:jacoco-maven-plugin:0.8.13:prepare-agent
+            test
+            org.jacoco:jacoco-maven-plugin:0.8.13:report
+        )
+    else
+        erp_test_args+=(test)
+    fi
+    maven_goal /workspace/Server/pom.xml "${erp_test_args[@]}"
+    if [[ "$BUILD_ERP_COVERAGE" == "true" ]]; then
+        require_file /workspace/Server/mitedtsm-module-erp/target/site/jacoco/jacoco.csv
+    fi
+fi
+
+if [[ "$BUILD_WEB" == "true" || -n "${WEB_TEST_SCRIPT:-}" ]]; then
+    if [[ "$BUILD_WEB" == "true" ]]; then
+        printf 'Building Web inside Ubuntu 26.04.\n'
+        rm -rf /workspace/Web/dist-prod
+    else
+        printf 'Testing Web inside Ubuntu 26.04.\n'
+    fi
+    install_args=(install --node-modules-dir=auto --quiet)
+    if [[ "$DENO_FROZEN_LOCKFILE" == "true" ]]; then
+        install_args+=(--frozen)
+    fi
+    pushd /workspace/Web >/dev/null
+    if [[ -d node_modules/.pnpm ]]; then
+        printf 'Removing retired pnpm layout from the Web dependency cache volume.\n'
+        find node_modules -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
+    fi
+    coverage_dir=''
+    if [[ "$WEB_COVERAGE_ENABLED" == "true" ]]; then
+        coverage_name="${WEB_TEST_SCRIPT//:/-}"
+        coverage_dir="/workspace/Web/coverage/${coverage_name}"
+        rm -rf -- "$coverage_dir" "${coverage_dir}.lcov"
+        mkdir -p -- "$coverage_dir"
+    fi
+    if [[ "$BUILD_CI" == "true" ]]; then
+        run_without_proxy env CI=true deno "${install_args[@]}"
+        if [[ -n "${WEB_TEST_SCRIPT:-}" ]]; then
+            if [[ "$WEB_COVERAGE_ENABLED" == "true" ]]; then
+                run_without_proxy env CI=true DENO_COVERAGE_DIR="$coverage_dir" \
+                    deno task --node-modules-dir=auto "$WEB_TEST_SCRIPT"
+            else
+                run_without_proxy env CI=true deno task --node-modules-dir=auto "$WEB_TEST_SCRIPT"
+            fi
+        fi
+        if [[ "$BUILD_WEB" == "true" ]]; then
+            run_without_proxy env -u VITE_BASE_URL CI=true deno task --node-modules-dir=auto build:prod
+            deno task --node-modules-dir=auto verify:locale-bundles
+        fi
+    else
+        run_without_proxy deno "${install_args[@]}"
+        if [[ -n "${WEB_TEST_SCRIPT:-}" ]]; then
+            if [[ "$WEB_COVERAGE_ENABLED" == "true" ]]; then
+                run_without_proxy env DENO_COVERAGE_DIR="$coverage_dir" \
+                    deno task --node-modules-dir=auto "$WEB_TEST_SCRIPT"
+            else
+                run_without_proxy deno task --node-modules-dir=auto "$WEB_TEST_SCRIPT"
+            fi
+        fi
+        if [[ "$BUILD_WEB" == "true" ]]; then
+            run_without_proxy env -u VITE_BASE_URL deno task --node-modules-dir=auto build:prod
+            deno task --node-modules-dir=auto verify:locale-bundles
+        fi
+    fi
+    if [[ -n "$coverage_dir" ]]; then
+        # Deno may leave a zero-byte profile when a task launches short-lived
+        # subprocesses (for example ESLint). Such a file contains no coverage
+        # data and makes `deno coverage` abort before reading the valid profiles.
+        find "$coverage_dir" -maxdepth 1 -type f -name '*.json' -empty -delete
+        find "$coverage_dir" -maxdepth 1 -type f -name '*.json' -print -quit | grep -q . || {
+            printf 'No valid Web coverage profiles were produced for task: %s\n' "$WEB_TEST_SCRIPT" >&2
+            exit 1
+        }
+        deno coverage --threshold="$WEB_COVERAGE_THRESHOLD" "$coverage_dir"
+        deno coverage --lcov --output="${coverage_dir}.lcov" "$coverage_dir"
+        require_file "${coverage_dir}.lcov"
+    fi
+    popd >/dev/null
+    if [[ "$BUILD_WEB" == "true" ]]; then
+        require_file /workspace/Web/dist-prod/index.html
+    fi
+fi
+
+printf 'Ubuntu 26.04 build completed successfully.\n'

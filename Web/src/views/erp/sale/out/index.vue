@@ -132,7 +132,12 @@
         </el-select>
       </el-form-item>
       <el-form-item :label="t('common.auditStatus')" prop="status">
-        <el-select v-model="queryParams.status" :placeholder="t('common.selectStatus')" clearable class="!w-240px">
+        <el-select
+          v-model="queryParams.status"
+          :placeholder="t('common.selectStatus')"
+          clearable
+          class="!w-240px"
+        >
           <el-option
             v-for="dict in getIntDictOptions(DICT_TYPE.ERP_AUDIT_STATUS)"
             :key="dict.value"
@@ -151,8 +156,12 @@
         />
       </el-form-item>
       <el-form-item>
-        <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> {{ t('common.search') }}</el-button>
-        <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> {{ t('common.reset') }}</el-button>
+        <el-button @click="handleQuery"
+          ><Icon icon="ep:search" class="mr-5px" /> {{ t('common.search') }}</el-button
+        >
+        <el-button @click="resetQuery"
+          ><Icon icon="ep:refresh" class="mr-5px" /> {{ t('common.reset') }}</el-button
+        >
         <el-button
           type="primary"
           plain
@@ -191,10 +200,16 @@
       :stripe="true"
       :show-overflow-tooltip="true"
       @selection-change="handleSelectionChange"
-     :table-layout="'auto'">
+      :table-layout="'auto'"
+    >
       <el-table-column width="30" :label="t('sale.out.select')" type="selection" />
       <el-table-column min-width="180" :label="t('sale.out.no')" align="center" prop="no" />
-      <el-table-column :label="t('sale.out.productInfo')" align="center" prop="productNames" min-width="200" />
+      <el-table-column
+        :label="t('sale.out.productInfo')"
+        align="center"
+        prop="productNames"
+        min-width="200"
+      />
       <el-table-column :label="t('sale.out.customerId')" align="center" prop="customerName" />
       <el-table-column
         :label="t('sale.out.outTime')"
@@ -230,55 +245,63 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column :label="t('common.auditStatus')" align="center" fixed="right" min-width="90" prop="status">
+      <el-table-column
+        :label="t('common.auditStatus')"
+        align="center"
+        fixed="right"
+        min-width="90"
+        prop="status"
+      >
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.ERP_AUDIT_STATUS" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column :label="t('common.action')" align="center" fixed="right" min-width="220">
+      <el-table-column :label="t('common.action')" align="center" fixed="right" width="140">
         <template #default="scope">
-          <el-button
-            link
-            @click="openForm('detail', scope.row.id)"
-            v-hasPermi="['erp:sale-out:query']"
-          >
-            {{ t('common.detail') }}
-          </el-button>
-          <el-button
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-            v-hasPermi="['erp:sale-out:update']"
-            :disabled="scope.row.status === 20"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            link
-            type="primary"
-            @click="handleUpdateStatus(scope.row.id, 20)"
-            v-hasPermi="['erp:sale-out:update-status']"
-            v-if="scope.row.status === 10"
-          >
-            {{ t('sale.out.approve') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleUpdateStatus(scope.row.id, 10)"
-            v-hasPermi="['erp:sale-out:update-status']"
-            v-else
-          >
-            {{ t('sale.out.unapprove') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete([scope.row.id])"
-            v-hasPermi="['erp:sale-out:delete']"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              link
+              @click="openForm('detail', scope.row.id)"
+              v-hasPermi="['erp:sale-out:query']"
+            >
+              {{ t('common.detail') }}
+            </el-button>
+            <el-button
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+              v-hasPermi="['erp:sale-out:update']"
+              :disabled="scope.row.status === 20"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              link
+              type="primary"
+              @click="handleUpdateStatus(scope.row.id, 20)"
+              v-hasPermi="['erp:sale-out:update-status']"
+              v-if="scope.row.status === 10"
+            >
+              {{ t('sale.out.approve') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleUpdateStatus(scope.row.id, 10)"
+              v-hasPermi="['erp:sale-out:update-status']"
+              v-else
+            >
+              {{ t('sale.out.unapprove') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleDelete([scope.row.id])"
+              v-hasPermi="['erp:sale-out:delete']"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

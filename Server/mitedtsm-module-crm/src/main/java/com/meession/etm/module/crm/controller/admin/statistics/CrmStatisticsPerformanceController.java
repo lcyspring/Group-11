@@ -3,7 +3,10 @@ package com.meession.etm.module.crm.controller.admin.statistics;
 import com.meession.etm.framework.common.pojo.CommonResult;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.performance.CrmStatisticsPerformanceReqVO;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.performance.CrmStatisticsPerformanceRespVO;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.performance.CrmStatisticsTargetCompletionReqVO;
+import com.meession.etm.module.crm.controller.admin.statistics.vo.performance.CrmStatisticsTargetCompletionSummaryRespVO;
 import com.meession.etm.module.crm.service.statistics.CrmStatisticsPerformanceService;
+import com.meession.etm.module.crm.framework.permission.core.annotations.CrmStatisticsDataScope;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,6 +26,7 @@ import static com.meession.etm.framework.common.pojo.CommonResult.success;
 @RestController
 @RequestMapping("/crm/statistics-performance")
 @Validated
+@CrmStatisticsDataScope
 public class CrmStatisticsPerformanceController {
 
     @Resource
@@ -47,6 +51,14 @@ public class CrmStatisticsPerformanceController {
     @PreAuthorize("@ss.hasPermission('crm:statistics-performance:query')")
     public CommonResult<List<CrmStatisticsPerformanceRespVO>> getReceivablePriceStaffPerformance(@Valid CrmStatisticsPerformanceReqVO performanceReqVO) {
         return success(performanceService.getReceivablePricePerformance(performanceReqVO));
+    }
+
+    @GetMapping("/get-target-completion")
+    @Operation(summary = "业绩目标完成度", description = "按月返回目标值、实际值和完成率")
+    @PreAuthorize("@ss.hasPermission('crm:statistics-performance:query')")
+    public CommonResult<CrmStatisticsTargetCompletionSummaryRespVO> getTargetCompletion(
+            @Valid CrmStatisticsTargetCompletionReqVO reqVO) {
+        return success(performanceService.getTargetCompletion(reqVO));
     }
 
 }

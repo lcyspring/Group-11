@@ -23,12 +23,18 @@ public interface LogRecordConstants {
     String CRM_CLUE_TRANSLATE_SUCCESS = "将线索【{{#clueName}}】转化为客户";
     String CRM_CLUE_FOLLOW_UP_SUB_TYPE = "线索跟进";
     String CRM_CLUE_FOLLOW_UP_SUCCESS = "线索跟进【{{#clueName}}】";
+    String CRM_CLUE_PUT_PUBLIC_SUB_TYPE = "线索放入公共池";
+    String CRM_CLUE_PUT_PUBLIC_SUCCESS = "将线索【{{#clueName}}】放入了公共线索池";
+    String CRM_CLUE_CLAIM_PUBLIC_SUB_TYPE = "领取公共线索";
+    String CRM_CLUE_CLAIM_PUBLIC_SUCCESS = "领取了公共线索【{{#clueName}}】";
+    String CRM_CLUE_ASSIGN_PUBLIC_SUB_TYPE = "分配公共线索";
+    String CRM_CLUE_ASSIGN_PUBLIC_SUCCESS = "将公共线索【{{#clueName}}】分配给了【{{#ownerUserName}}】";
 
     // ======================= CRM_CUSTOMER 客户 =======================
 
     String CRM_CUSTOMER_TYPE = "CRM 客户";
     String CRM_CUSTOMER_CREATE_SUB_TYPE = "创建客户";
-    String CRM_CUSTOMER_CREATE_SUCCESS = "创建了客户{{#customer.name}}";
+    String CRM_CUSTOMER_CREATE_SUCCESS = "创建了客户【{{#customer.name}}】{{#duplicateCheckDecision}}";
     String CRM_CUSTOMER_UPDATE_SUB_TYPE = "更新客户";
     String CRM_CUSTOMER_UPDATE_SUCCESS = "更新了客户【{{#customerName}}】: {_DIFF{#updateReqVO}}";
     String CRM_CUSTOMER_DELETE_SUB_TYPE = "删除客户";
@@ -39,12 +45,20 @@ public interface LogRecordConstants {
     String CRM_CUSTOMER_LOCK_SUCCESS = "{{#customer.lockStatus ? '将客户【' + #customer.name + '】解锁' : '将客户【' + #customer.name + '】锁定'}}";
     String CRM_CUSTOMER_POOL_SUB_TYPE = "客户放入公海";
     String CRM_CUSTOMER_POOL_SUCCESS = "将客户【{{#customerName}}】放入了公海";
+    String CRM_CUSTOMER_GARBAGE_SUB_TYPE = "客户转入垃圾池";
+    String CRM_CUSTOMER_GARBAGE_SUCCESS = "将客户【{{#customerName}}】转入了垃圾池";
+    String CRM_CUSTOMER_GARBAGE_RESTORE_SUB_TYPE = "垃圾客户恢复";
+    String CRM_CUSTOMER_GARBAGE_RESTORE_SUCCESS = "将垃圾客户【{{#customerName}}】恢复到了公海";
+    String CRM_CUSTOMER_GARBAGE_DELETE_SUB_TYPE = "垃圾客户永久删除";
+    String CRM_CUSTOMER_GARBAGE_DELETE_SUCCESS = "永久删除了垃圾客户【{{#customerName}}】";
     String CRM_CUSTOMER_RECEIVE_SUB_TYPE = "{{#ownerUserName != null ? '分配客户' : '领取客户'}}";
     String CRM_CUSTOMER_RECEIVE_SUCCESS = "{{#ownerUserName != null ? '将客户【' + #customer.name + '】分配给【' + #ownerUserName + '】' : '领取客户【' + #customer.name + '】'}}";
     String CRM_CUSTOMER_IMPORT_SUB_TYPE = "{{#isUpdate ? '导入并更新客户' : '导入客户'}}";
     String CRM_CUSTOMER_IMPORT_SUCCESS = "{{#isUpdate ? '导入并更新了客户【'+ #customer.name +'】' : '导入了客户【'+ #customer.name +'】'}}";
     String CRM_CUSTOMER_UPDATE_DEAL_STATUS_SUB_TYPE = "更新客户成交状态";
     String CRM_CUSTOMER_UPDATE_DEAL_STATUS_SUCCESS = "更新了客户【{{#customerName}}】的成交状态为【{{#dealStatus ? '已成交' : '未成交'}}】";
+    String CRM_CUSTOMER_UPDATE_LIFECYCLE_STATUS_SUB_TYPE = "更新客户生命周期状态";
+    String CRM_CUSTOMER_UPDATE_LIFECYCLE_STATUS_SUCCESS = "更新了客户【{{#customerName}}】的生命周期状态为【{{#lifecycleStatusName}}】";
     String CRM_CUSTOMER_FOLLOW_UP_SUB_TYPE = "客户跟进";
     String CRM_CUSTOMER_FOLLOW_UP_SUCCESS = "客户跟进【{{#customerName}}】";
 
@@ -68,9 +82,9 @@ public interface LogRecordConstants {
 
     String CRM_CONTACT_TYPE = "CRM 联系人";
     String CRM_CONTACT_CREATE_SUB_TYPE = "创建联系人";
-    String CRM_CONTACT_CREATE_SUCCESS = "创建了联系人{{#contact.name}}";
+    String CRM_CONTACT_CREATE_SUCCESS = "创建了联系人{{#contact.name}}{{#primaryContactChange}}";
     String CRM_CONTACT_UPDATE_SUB_TYPE = "更新联系人";
-    String CRM_CONTACT_UPDATE_SUCCESS = "更新了联系人【{{#contactName}}】: {_DIFF{#updateReqVO}}";
+    String CRM_CONTACT_UPDATE_SUCCESS = "更新了联系人【{{#contactName}}】: {_DIFF{#updateReqVO}}{{#primaryContactChange}}";
     String CRM_CONTACT_DELETE_SUB_TYPE = "删除联系人";
     String CRM_CONTACT_DELETE_SUCCESS = "删除了联系人【{{#contactName}}】";
     String CRM_CONTACT_TRANSFER_SUB_TYPE = "转移联系人";
@@ -94,7 +108,7 @@ public interface LogRecordConstants {
     String CRM_BUSINESS_FOLLOW_UP_SUB_TYPE = "商机跟进";
     String CRM_BUSINESS_FOLLOW_UP_SUCCESS = "商机跟进【{{#businessName}}】";
     String CRM_BUSINESS_UPDATE_STATUS_SUB_TYPE = "更新商机状态";
-    String CRM_BUSINESS_UPDATE_STATUS_SUCCESS = "更新了商机【{{#businessName}}】的状态从【{{#oldStatusName}}】变更为了【{{#newStatusName}}】";
+    String CRM_BUSINESS_UPDATE_STATUS_SUCCESS = "更新了商机【{{#businessName}}】的状态从【{{#oldStatusName}}】变更为了【{{#newStatusName}}】{{#statusChangeRemark != null ? '，说明：【' + #statusChangeRemark + '】' : ''}}";
 
     // ======================= CRM_CONTRACT_CONFIG 合同配置 =======================
 
@@ -159,5 +173,21 @@ public interface LogRecordConstants {
     String CRM_RECEIVABLE_PLAN_UPDATE_SUCCESS = "更新了合同【{getContractById{#receivablePlan.contractId}}】的第【{{#receivablePlan.period}}】期回款计划: {_DIFF{#updateReqVO}}";
     String CRM_RECEIVABLE_PLAN_DELETE_SUB_TYPE = "删除回款计划";
     String CRM_RECEIVABLE_PLAN_DELETE_SUCCESS = "删除了合同【{getContractById{#receivablePlan.contractId}}】的第【{{#receivablePlan.period}}】期回款计划";
+
+    // ======================= CRM_INVOICE 发票 =======================
+
+    String CRM_INVOICE_TYPE = "CRM 发票";
+    String CRM_INVOICE_CREATE_SUB_TYPE = "创建发票草稿";
+    String CRM_INVOICE_CREATE_SUCCESS = "创建了发票申请【{{#invoice.no}}】";
+    String CRM_INVOICE_UPDATE_SUB_TYPE = "修改发票草稿";
+    String CRM_INVOICE_UPDATE_SUCCESS = "修改了发票申请【{{#invoiceNo}}】";
+    String CRM_INVOICE_DELETE_SUB_TYPE = "删除发票草稿";
+    String CRM_INVOICE_DELETE_SUCCESS = "删除了发票申请【{{#invoiceNo}}】";
+    String CRM_INVOICE_ISSUE_SUB_TYPE = "正式开具发票";
+    String CRM_INVOICE_ISSUE_SUCCESS = "正式开具发票【{{#invoiceNo}}】";
+    String CRM_INVOICE_VOID_SUB_TYPE = "作废发票";
+    String CRM_INVOICE_VOID_SUCCESS = "作废发票【{{#invoiceNo}}】";
+    String CRM_INVOICE_RED_SUB_TYPE = "红冲发票";
+    String CRM_INVOICE_RED_SUCCESS = "为发票【{{#invoiceNo}}】创建红票";
 
 }

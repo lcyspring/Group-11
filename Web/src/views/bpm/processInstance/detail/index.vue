@@ -186,11 +186,15 @@ const detailForm = ref({
 const writableFields: Array<string> = [] // 表单可以编辑的字段
 
 /** 获得详情 */
-const getDetail = () => {
-  // 获得审批详情
-  getApprovalDetail()
-  // 获得流程模型视图
-  getProcessModelView()
+const getDetail = async () => {
+  if (!props.id) {
+    message.error(t('process.instance.queryProcessError'))
+    return
+  }
+  const loaded = await getApprovalDetail()
+  if (loaded) {
+    await getProcessModelView()
+  }
 }
 
 /** 加载流程实例 */
@@ -208,11 +212,11 @@ const getApprovalDetail = async () => {
     const data = await ProcessInstanceApi.getApprovalDetail(param)
     if (!data) {
       message.error(t('process.instance.queryError') || '查询不到审批详情信息！')
-      return
+      return false
     }
     if (!data.processDefinition || !data.processInstance) {
       message.error(t('process.instance.queryProcessError') || '查询不到流程信息！')
-      return
+      return false
     }
     processInstance.value = data.processInstance
     processDefinition.value = data.processDefinition
@@ -256,6 +260,14 @@ const getApprovalDetail = async () => {
 
     // 获取待办任务显示操作按钮
     operationButtonRef.value?.loadTodoTask(data.todoTask)
+    return true
+  } catch {
+    processInstance.value = {}
+    processDefinition.value = {}
+    processModelView.value = {}
+    activityNodes.value = []
+    message.error(t('process.instance.queryProcessError'))
+    return false
   } finally {
     processInstanceLoading.value = false
   }
@@ -263,15 +275,20 @@ const getApprovalDetail = async () => {
 
 /** 获取流程模型视图*/
 const getProcessModelView = async () => {
-  if (BpmModelType.BPMN === processDefinition.value?.modelType) {
-    // 重置，解决 BPMN 流程图刷新不会重新渲染问题
-    processModelView.value = {
-      bpmnXml: ''
+  try {
+    if (BpmModelType.BPMN === processDefinition.value?.modelType) {
+      // 重置，解决 BPMN 流程图刷新不会重新渲染问题
+      processModelView.value = {
+        bpmnXml: ''
+      }
     }
-  }
-  const data = await ProcessInstanceApi.getProcessInstanceBpmnModelView(props.id)
-  if (data) {
-    processModelView.value = data
+    const data = await ProcessInstanceApi.getProcessInstanceBpmnModelView(props.id)
+    if (data) {
+      processModelView.value = data
+    }
+  } catch {
+    processModelView.value = {}
+    message.error(t('process.instance.queryProcessError'))
   }
 }
 
@@ -296,7 +313,7 @@ const setFieldPermission = (field: string, permission: string) => {
 /** 操作成功后刷新 */
 const refresh = () => {
   // 重新获取详情
-  getDetail()
+  void getDetail()
 }
 
 /** 处理打印 */
@@ -311,9 +328,12 @@ const activeTab = ref('form')
 /** 初始化 */
 const userOptions = ref<UserApi.UserVO[]>([]) // 用户列表
 onMounted(async () => {
-  getDetail()
-  // 获得用户列表
-  userOptions.value = await UserApi.getSimpleUserList()
+  await getDetail()
+  try {
+    userOptions.value = await UserApi.getSimpleUserList()
+  } catch {
+    userOptions.value = []
+  }
 })
 </script>
 

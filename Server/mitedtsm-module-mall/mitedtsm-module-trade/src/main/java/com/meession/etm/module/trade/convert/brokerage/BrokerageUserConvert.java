@@ -24,7 +24,7 @@ import java.util.Optional;
  *
  * @author owen
  */
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface BrokerageUserConvert {
 
     BrokerageUserConvert INSTANCE = Mappers.getMapper(BrokerageUserConvert.class);
@@ -33,14 +33,14 @@ public interface BrokerageUserConvert {
 
     List<BrokerageUserRespVO> convertList(List<BrokerageUserDO> list);
 
-    PageResult<BrokerageUserRespVO> convertPage(PageResult<BrokerageUserDO> page, Map<Long, MemberUserRespDTO> userMap, Map<Long, Long> brokerageUserCountMap, Map<Long, UserBrokerageSummaryRespBO> userOrderSummaryMap);
+    PageResult<BrokerageUserRespVO> convertPage(PageResult<BrokerageUserDO> page);
 
     default PageResult<BrokerageUserRespVO> convertPage(PageResult<BrokerageUserDO> pageResult,
                                                         Map<Long, MemberUserRespDTO> userMap,
                                                         Map<Long, Long> brokerageUserCountMap,
                                                         Map<Long, UserBrokerageSummaryRespBO> userOrderSummaryMap,
                                                         Map<Long, BrokerageWithdrawSummaryRespBO> withdrawMap) {
-        PageResult<BrokerageUserRespVO> result = convertPage(pageResult, userMap, brokerageUserCountMap, userOrderSummaryMap);
+        PageResult<BrokerageUserRespVO> result = convertPage(pageResult);
         for (BrokerageUserRespVO userVO : result.getList()) {
             // 用户信息
             copyTo(userMap.get(userVO.getId()), userVO);

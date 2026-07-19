@@ -51,7 +51,7 @@ import static com.meession.etm.framework.common.util.collection.CollectionUtils.
 import static com.meession.etm.framework.common.util.collection.CollectionUtils.convertMultiMap;
 import static com.meession.etm.framework.common.util.date.LocalDateTimeUtils.addTime;
 
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface TradeOrderConvert {
 
     TradeOrderConvert INSTANCE = Mappers.getMapper(TradeOrderConvert.class);

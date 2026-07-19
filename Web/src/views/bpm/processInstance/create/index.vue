@@ -33,12 +33,11 @@
           </div>
         </el-col>
         <el-col :span="19">
-          <el-scrollbar ref="scrollWrapper" height="700" @scroll="handleScroll">
+          <el-scrollbar height="700">
             <div
               class="mb-20px pl-10px"
               v-for="(definitions, categoryCode) in processDefinitionGroup"
               :key="categoryCode"
-              :ref="`category-${categoryCode}`"
             >
               <h3 class="text-18px font-bold mb-10px mt-5px">
                 {{ getCategoryName(categoryCode as any) }}
@@ -98,10 +97,10 @@ import { CategoryApi, CategoryVO } from '@/api/bpm/category'
 import ProcessDefinitionDetail from './ProcessDefinitionDetail.vue'
 import { groupBy } from 'lodash-es'
 import { subString } from '@/utils/index'
+import { filterProcessDefinitions } from '@/utils/processDefinitionFilter.mjs'
 
 defineOptions({ name: 'BpmProcessInstanceCreate' })
 
-const { proxy } = getCurrentInstance() as any
 const route = useRoute() // 路由
 const message = useMessage() // 消息
 const { t } = useI18n('bpm') // 国际化
@@ -159,9 +158,6 @@ const getProcessDefinitionList = async () => {
     processDefinitionList.value = await DefinitionApi.getProcessDefinitionList({
       suspensionState: 1
     })
-    // 初始化过滤列表为全部流程定义
-    filteredProcessDefinitionList.value = processDefinitionList.value
-
     // 在获取完所有数据后，设置第一个有效分类为激活状态
     if (availableCategories.value.length > 0 && !categoryActive.value?.code) {
       categoryActive.value = availableCategories.value[0]
@@ -171,18 +167,23 @@ const getProcessDefinitionList = async () => {
 }
 
 /** 搜索流程 */
-const filteredProcessDefinitionList = ref([]) // 用于存储搜索过滤后的流程定义
 const handleQuery = () => {
-  if (searchName.value.trim()) {
-    // 如果有搜索关键字，进行过滤
-    filteredProcessDefinitionList.value = processDefinitionList.value.filter(
-      (definition: any) => definition.name.toLowerCase().includes(searchName.value.toLowerCase()) // 假设搜索依据是流程定义的名称
-    )
-  } else {
-    // 如果没有搜索关键字，恢复所有数据
-    filteredProcessDefinitionList.value = processDefinitionList.value
+  if (!availableCategories.value.some((category: CategoryVO) => category.code === categoryActive.value?.code)) {
+    categoryActive.value = availableCategories.value[0] ?? {}
   }
 }
+
+const searchFilteredProcessDefinitionList: any = computed(() =>
+  filterProcessDefinitions(processDefinitionList.value, searchName.value)
+)
+
+const filteredProcessDefinitionList: any = computed(() =>
+  filterProcessDefinitions(
+    processDefinitionList.value,
+    searchName.value,
+    categoryActive.value?.code
+  )
+)
 
 /** 流程定义的分组 */
 const processDefinitionGroup: any = computed(() => {
@@ -204,14 +205,6 @@ const processDefinitionGroup: any = computed(() => {
 /** 左侧分类切换 */
 const handleCategoryClick = (category: any) => {
   categoryActive.value = category
-  const categoryRef = proxy.$refs[`category-${category.code}`] // 获取点击分类对应的 DOM 元素
-  if (categoryRef?.length) {
-    const scrollWrapper = proxy.$refs.scrollWrapper // 获取右侧滚动容器
-    const categoryOffsetTop = categoryRef[0].offsetTop
-
-    // 滚动到对应位置
-    scrollWrapper.scrollTo({ top: categoryOffsetTop, behavior: 'smooth' })
-  }
 }
 
 /** 通过分类 code 获取对应的名称 */
@@ -232,57 +225,20 @@ const handleSelect = async (row, formVariables?) => {
   processDefinitionDetailRef.value?.initProcessInfo(row, formVariables)
 }
 
-/** 处理滚动事件，和左侧分类联动 */
-const handleScroll = (e: any) => {
-  // 直接使用事件对象获取滚动位置
-  const scrollTop = e.scrollTop
-
-  // 获取所有分类区域的位置信息
-  const categoryPositions = categoryList.value
-    .map((category: CategoryVO) => {
-      const categoryRef = proxy.$refs[`category-${category.code}`]
-      if (categoryRef?.[0]) {
-        return {
-          code: category.code,
-          offsetTop: categoryRef[0].offsetTop,
-          height: categoryRef[0].offsetHeight
-        }
-      }
-      return null
-    })
-    .filter(Boolean)
-
-  // 查找当前滚动位置对应的分类
-  let currentCategory = categoryPositions[0]
-  for (const position of categoryPositions) {
-    // 为了更好的用户体验，可以添加一个缓冲区域（比如 50px）
-    if (scrollTop >= position.offsetTop - 50) {
-      currentCategory = position
-    } else {
-      break
-    }
-  }
-
-  // 更新当前 active 的分类
-  if (currentCategory && categoryActive.value.code !== currentCategory.code) {
-    categoryActive.value = categoryList.value.find(
-      (c: CategoryVO) => c.code === currentCategory.code
-    )
-  }
-}
-
 /** 过滤出有流程的分类列表。目的：只展示有流程的分类 */
 const availableCategories = computed(() => {
-  if (!categoryList.value?.length || !processDefinitionGroup.value) {
+  if (!categoryList.value?.length) {
     return []
   }
 
   // 获取所有有流程的分类代码
-  const availableCategoryCodes = Object.keys(processDefinitionGroup.value)
+  const availableCategoryCodes = new Set(
+    searchFilteredProcessDefinitionList.value.map((definition: any) => definition.category)
+  )
 
   // 过滤出有流程的分类
   return categoryList.value.filter((category: CategoryVO) =>
-    availableCategoryCodes.includes(category.code)
+    availableCategoryCodes.has(category.code)
   )
 })
 

@@ -25,7 +25,7 @@ defineOptions({ name: 'CrmProductDetail' })
 const { t } = useI18n('crm.product') // 国际化
 const route = useRoute()
 const message = useMessage()
-const id = route.params.id // 编号
+const id = Number(route.params.id) // 编号
 const loading = ref(true) // 加载中
 const product = ref<ProductApi.ProductVO>({} as ProductApi.ProductVO) // 详情
 
@@ -33,7 +33,7 @@ const product = ref<ProductApi.ProductVO>({} as ProductApi.ProductVO) // 详情
 const getProductData = async (id: number) => {
   loading.value = true
   try {
-    value = await ProductApi.getProduct(id)
+    product.value = await ProductApi.getProduct(id)
     await getOperateLog(id)
   } finally {
     loading.value = false
@@ -57,7 +57,7 @@ const getOperateLog = async (productId: number) => {
 const { delView } = useTagsViewStore() // 视图操作
 const { currentRoute } = useRouter() // 路由
 onMounted(async () => {
-  if (!id) {
+  if (!Number.isSafeInteger(id) || id <= 0) {
     message.warning(t('paramError'))
     delView(unref(currentRoute))
     return

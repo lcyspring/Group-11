@@ -34,12 +34,14 @@ public class SiliconFlowImageOptions implements ImageOptions {
      * The number of images to generate. Must be between 1 and 4.
      */
     @JsonProperty("batch_size")
+    @Builder.Default
     private Integer batchSize = 1;
 
     /**
      * number of inference steps
      */
     @JsonProperty("num_inference_steps")
+    @Builder.Default
     private Integer numInferenceSteps = 25;
 
     /**
@@ -48,6 +50,7 @@ public class SiliconFlowImageOptions implements ImageOptions {
      * Required range: 0 <= x <= 20
      */
     @JsonProperty("guidance_scale")
+    @Builder.Default
     private Float guidanceScale = 0.75F;
 
     /**
@@ -55,6 +58,7 @@ public class SiliconFlowImageOptions implements ImageOptions {
      *
      */
     @JsonProperty("seed")
+    @Builder.Default
     private Integer seed =  (int)(Math.random() * 1_000_000_000);
 
     /**

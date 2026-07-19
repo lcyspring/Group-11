@@ -10,7 +10,7 @@
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('account.title')" prop="accountId">
-            <WxAccountSelect @change="onAccountChanged" />
+            <WxAccountSelect @change="onAccountChanged" @unavailable="onAccountUnavailable" />
           </el-form-item>
         </el-col>
         <el-col :span="8">
@@ -48,7 +48,7 @@
               range-separator="-"
               :start-placeholder="t('common.startTime')"
               :end-placeholder="t('common.endTime')"
-              :default-time="['00:00:00', '23:59:59']"
+              :default-time="[new Date('1 00:00:00'), new Date('1 23:59:59')]"
               class="!w-240px"
             />
           </el-form-item>
@@ -133,6 +133,13 @@ const onAccountChanged = (id: number) => {
   queryParams.accountId = id
   queryParams.pageNo = 1
   handleQuery()
+}
+
+const onAccountUnavailable = () => {
+  queryParams.accountId = -1
+  list.value = []
+  total.value = 0
+  loading.value = false
 }
 
 /** 查询列表 */

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Dialog v-model="dialogVisible" :title="dialogTitle" width="830px" @closed="close">
+    <Dialog v-model="dialogVisible" :title="dialogTitle" width="830px">
       <el-form
         ref="formRef"
         v-loading="formLoading"
@@ -325,7 +325,7 @@ const fileBeforeUpload = (file) => {
   return isRightSize
 }
 
-const appCertUpload = (event) => {
+const appCertUpload = async (event) => {
   const readFile = new FileReader()
   readFile.onload = (e: any) => {
     formData.value.config.appCertContent = e.target.result
@@ -333,7 +333,7 @@ const appCertUpload = (event) => {
   readFile.readAsText(event.file)
 }
 
-const alipayPublicCertUpload = (event) => {
+const alipayPublicCertUpload = async (event) => {
   const readFile = new FileReader()
   readFile.onload = (e: any) => {
     formData.value.config.alipayPublicCertContent = e.target.result
@@ -341,7 +341,7 @@ const alipayPublicCertUpload = (event) => {
   readFile.readAsText(event.file)
 }
 
-const rootCertUpload = (event) => {
+const rootCertUpload = async (event) => {
   const readFile = new FileReader()
   readFile.onload = (e: any) => {
     formData.value.config.rootCertContent = e.target.result

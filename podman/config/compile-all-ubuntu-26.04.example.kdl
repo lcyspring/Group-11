@@ -1,0 +1,100 @@
+schema_version 1
+
+
+image {
+  base "docker.io/library/ubuntu:26.04"
+  standard "ghcr.io/elel-code/group-11-build-ubuntu:26.04-deno-2.9.3"
+  hbuilderx "ghcr.io/elel-code/group-11-hbuilderx-ubuntu:26.04-5.05"
+  dependency "ghcr.io/elel-code/group-11-build-ubuntu:26.04-deno-2.9.3"
+  rebuild #false
+
+}
+
+toolchain {
+  deno_version "2.9.3"
+  deno_binary_image "docker.io/denoland/deno:bin-2.9.3@sha256:b35d3898bc8b5e2ebcfc7c760578f635f0162cda02e4f8359056c44ea3cb9670"
+
+}
+
+hbuilderx {
+  source_dir "/opt/HBuilderX"
+
+}
+
+build {
+  include_targets "all"
+  exclude_targets "none"
+  platform "h5"
+  clean #true
+  clean_output #true
+  crm_tests #true
+  crm_coverage #true
+  erp_tests #true
+  erp_coverage #true
+  infra_tests #true
+  infra_coverage #true
+  bpm_tests #true
+  bpm_coverage #true
+  pay_tests #true
+  pay_coverage #true
+  pay_test_pattern "*Test,!FtpFileClientTest,!LocalFileClientTest,!S3FileClientTest,!SftpFileClientTest,!CodegenEngineVue2Test,!CodegenEngineVue3Test,!PayAppServiceTest,!PayNotifyServiceTest,!PayClientFactoryImplIntegrationTest,!WxNativePayClientIntegrationTest,!WxBarPayClientIntegrationTest"
+  common_tests #true
+  common_coverage #true
+  common_test_pattern "*Test"
+  framework_tests #true
+  framework_coverage #true
+  framework_test_pattern "*Test"
+  framework_modules "mitedtsm-framework/mitedtsm-spring-boot-starter-security,mitedtsm-framework/mitedtsm-spring-boot-starter-web"
+  system_tests #true
+  system_coverage #true
+  system_test_pattern "*Test,!FtpFileClientTest,!LocalFileClientTest,!S3FileClientTest,!SftpFileClientTest,!CodegenEngineVue2Test,!CodegenEngineVue3Test"
+  ci #true
+  maven_threads 4
+  deno_frozen_lockfile #true
+
+}
+
+dependency {
+  mall_deno_frozen_lockfile #true
+
+}
+
+network {
+  use_host_proxy #false
+  mall_mode "none"
+  mall_dependency_mode "pasta"
+
+}
+
+web {
+  baidu_analytics_code "disabled"
+  legacy_media_origins "http://test.yudao.iocoder.cn"
+  test_script "verify:web-media"
+  coverage_enabled #true
+  coverage_threshold 90
+
+}
+
+media {
+  legacy_origins "http://test.yudao.iocoder.cn"
+  legacy_fallback "/static/goods-empty.png"
+
+}
+
+cache {
+  maven_volume "mitedtsm-build-maven-cache"
+  deno_cache_volume "mitedtsm-build-deno-cache"
+  deno_cache_path "/deno-cache"
+  web_node_modules_volume "mitedtsm-build-web-node-modules"
+  mall_deno_cache_volume "mitedtsm-mall-h5-deno-cache"
+  mall_deno_cache_path "/deno-cache"
+  mall_node_modules_volume "mitedtsm-mall-h5-node-modules"
+
+}
+
+runtime {
+  memory "8g"
+  cpus 4
+  mall_memory "4g"
+  mall_cpus 4
+}

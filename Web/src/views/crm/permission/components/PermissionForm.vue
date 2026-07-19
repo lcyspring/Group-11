@@ -7,7 +7,7 @@
       :rules="formRules"
       label-width="auto"
     >
-      <el-form-item v-if="formType === 'create'" :label="t('permission.userName')" prop="userId">
+      <el-form-item v-if="formType === 'create'" :label="t('crm.permission.userName')" prop="userId">
         <el-select v-model="formData.userId">
           <el-option
             v-for="item in userOptions"
@@ -17,7 +17,7 @@
           />
         </el-select>
       </el-form-item>
-      <el-form-item :label="t('permission.level')" prop="level">
+      <el-form-item :label="t('crm.permission.level')" prop="level">
         <el-radio-group v-model="formData.level">
           <template
             v-for="dict in getIntDictOptions(DICT_TYPE.CRM_PERMISSION_LEVEL)"
@@ -31,7 +31,7 @@
       </el-form-item>
       <el-form-item
         v-if="formType === 'create' && formData.bizType === BizTypeEnum.CRM_CUSTOMER"
-        :label="t('permission.addTo')"
+        :label="t('crm.permission.addTo')"
       >
         <el-checkbox-group v-model="formData.toBizTypes">
           <el-checkbox :value="BizTypeEnum.CRM_CONTACT">{{ t('contact.title') }}</el-checkbox>
@@ -41,8 +41,8 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button :disabled="formLoading" type="primary" @click="submitForm">{{ t('dialog.confirm') }}</el-button>
-      <el-button @click="dialogVisible = false">{{ t('dialog.cancel') }}</el-button>
+      <el-button :disabled="formLoading" type="primary" @click="submitForm">{{ t('common.confirm') }}</el-button>
+      <el-button @click="dialogVisible = false">{{ t('common.cancel') }}</el-button>
     </template>
   </Dialog>
 </template>
@@ -64,15 +64,15 @@ const formType = ref('') // 表单的类型：create - 新增；update - 修改
 const userOptions = ref<UserApi.UserVO[]>([]) // 用户列表
 const formData = ref<PermissionApi.PermissionVO>({} as PermissionApi.PermissionVO)
 const formRules = reactive({
-  userId: [{ required: true, message: t('permission.userRequired'), trigger: 'blur' }],
-  level: [{ required: true, message: t('permission.levelRequired'), trigger: 'blur' }]
+  userId: [{ required: true, message: t('crm.permission.userRequired'), trigger: 'blur' }],
+  level: [{ required: true, message: t('crm.permission.levelRequired'), trigger: 'blur' }]
 })
 const formRef = ref() // 表单 Ref
 
 /** 打开弹窗 */
 const open = async (type: 'create' | 'update', bizType: number, bizId: number, ids?: number[]) => {
   dialogVisible.value = true
-  dialogTitle.value = t('action.' + type, { scope: 'common' }) + t('permission.title')
+  dialogTitle.value = t('action.' + type, { scope: 'common' }) + t('crm.permission.title')
   formType.value = type
   resetForm(bizType, bizId)
   // 修改时，设置数据
@@ -89,7 +89,7 @@ const open0 = async (
   level: number
 ) => {
   dialogVisible.value = true
-  dialogTitle.value = t('action.' + type, { scope: 'common' }) + t('permission.title')
+  dialogTitle.value = t('action.' + type, { scope: 'common' }) + t('crm.permission.title')
   formType.value = type
   resetForm(bizType, bizId)
   // 修改时，设置数据

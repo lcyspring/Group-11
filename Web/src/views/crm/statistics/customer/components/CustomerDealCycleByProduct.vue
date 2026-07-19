@@ -11,14 +11,37 @@
   <el-card shadow="never" class="mt-16px">
     <el-table v-loading="loading" :data="list" :table-layout="'auto'">
       <el-table-column :label="t('customer.index')" align="center" type="index" width="80" />
-      <el-table-column :label="t('customer.productName')" align="center" prop="productName" min-width="200" />
+      <el-table-column
+        :label="t('customer.productName')"
+        align="center"
+        prop="productName"
+        min-width="200"
+      />
       <el-table-column
         :label="t('customer.customerDealCycle')"
         align="center"
         prop="customerDealCycle"
         min-width="200"
       />
-      <el-table-column :label="t('customer.customerDealCount')" align="center" prop="customerDealCount" min-width="200" />
+      <el-table-column
+        :label="t('customer.customerDealCount')"
+        align="center"
+        prop="customerDealCount"
+        min-width="200"
+      />
+      <el-table-column :label="t('customer.dataQuality')" align="center" min-width="220">
+        <template #default="{ row }">
+          <el-tooltip
+            v-if="row.negativeSampleCount > 0"
+            :content="t('customer.historicalBackfillAnomalySamples')"
+          >
+            <el-tag type="warning">
+              {{ t('customer.negativeSampleCount') }}: {{ row.negativeSampleCount }}
+            </el-tag>
+          </el-tooltip>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
     </el-table>
   </el-card>
 </template>
@@ -28,6 +51,7 @@ import {
   CrmStatisticsCustomerDealCycleByProductRespVO
 } from '@/api/crm/statistics/customer'
 import { EChartsOption } from 'echarts'
+import { normalizeProductDealCycles } from '../dealCycle'
 
 defineOptions({ name: 'CustomerDealCycleByProduct' })
 
@@ -66,9 +90,9 @@ const echartsOption = reactive<EChartsOption>({
       },
       brush: {
         type: ['lineX', 'clear'] // 区域缩放按钮、还原按
-        },
+      },
       saveAsImage: { show: true, name: t('customer.dealCycleByProduct') } // 保存为图
-      }
+    }
   },
   tooltip: {
     trigger: 'axis',
@@ -80,7 +104,6 @@ const echartsOption = reactive<EChartsOption>({
     {
       type: 'value',
       name: t('customer.dealCycleDay'),
-      min: 0,
       minInterval: 1 // 显示整数刻度
     },
     {
@@ -106,15 +129,10 @@ const echartsOption = reactive<EChartsOption>({
 /** 获取数据并填充图*/
 const fetchAndFill = async () => {
   // 1. 加载统计数据
-  const customerDealCycleByProduct = (
-    await StatisticsCustomerApi.getCustomerDealCycleByProduct(props.queryParams)
-  ).map((s: CrmStatisticsCustomerDealCycleByProductRespVO) => {
-    return {
-      productName: s.productName ?? t('common.unknown'),
-      customerDealCycle: s.customerDealCount,
-      customerDealCount: s.customerDealCount
-    }
-  })
+  const customerDealCycleByProduct = normalizeProductDealCycles(
+    await StatisticsCustomerApi.getCustomerDealCycleByProduct(props.queryParams),
+    t('common.unknown')
+  )
   // 2.1 更新 Echarts 数据
   if (echartsOption.xAxis && echartsOption.xAxis['data']) {
     echartsOption.xAxis['data'] = customerDealCycleByProduct.map(

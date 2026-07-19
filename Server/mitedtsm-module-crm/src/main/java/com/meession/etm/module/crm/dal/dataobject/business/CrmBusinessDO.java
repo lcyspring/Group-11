@@ -85,6 +85,9 @@ public class CrmBusinessDO extends BaseDO {
      */
     private String endRemark;
 
+    /** 实际进入赢单、输单或无效终态的时间。 */
+    private LocalDateTime endTime;
+
     /**
      * 预计成交日期
      */

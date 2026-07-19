@@ -41,7 +41,7 @@ import static org.mockito.Mockito.when;
 public abstract class AbstractAlipayClientTest extends BaseMockitoUnitTest {
 
     protected AlipayPayClientConfig config = randomPojo(AlipayPayClientConfig.class, o -> {
-        o.setServerUrl(randomURL());
+        o.setServerUrl(randomHttpUrl());
         o.setPrivateKey(randomString());
         o.setMode(MODE_PUBLIC_KEY);
         o.setSignType(AlipayPayClientConfig.SIGN_TYPE_DEFAULT);
@@ -78,7 +78,7 @@ public abstract class AbstractAlipayClientTest extends BaseMockitoUnitTest {
     @DisplayName("支付宝 Client 统一退款：成功")
     public void testUnifiedRefund_success() throws AlipayApiException {
         // mock 方法
-        String notifyUrl = randomURL();
+        String notifyUrl = randomHttpUrl();
         Date refundTime = randomDate();
         String outRefundNo = randomString();
         String outTradeNo = randomString();
@@ -119,7 +119,7 @@ public abstract class AbstractAlipayClientTest extends BaseMockitoUnitTest {
     @DisplayName("支付宝 Client 统一退款：渠道返回失败")
     public void test_unified_refund_channel_failed() throws AlipayApiException {
         // mock 方法
-        String notifyUrl = randomURL();
+        String notifyUrl = randomHttpUrl();
         String subCode = randomString();
         String subMsg = randomString();
         AlipayTradeRefundResponse response = randomPojo(AlipayTradeRefundResponse.class, o -> {
@@ -155,7 +155,7 @@ public abstract class AbstractAlipayClientTest extends BaseMockitoUnitTest {
     @DisplayName("支付宝 Client 统一退款：参数校验不通过")
     public void testUnifiedRefund_paramInvalidate() {
         // 准备请求参数
-        String notifyUrl = randomURL();
+        String notifyUrl = randomHttpUrl();
         PayRefundUnifiedReqDTO refundReqDTO = randomPojo(PayRefundUnifiedReqDTO.class, o -> {
             o.setOutTradeNo("");
             o.setNotifyUrl(notifyUrl);
@@ -172,7 +172,7 @@ public abstract class AbstractAlipayClientTest extends BaseMockitoUnitTest {
         when(defaultAlipayClient.execute(argThat((ArgumentMatcher<AlipayTradeRefundRequest>) request -> true)))
                 .thenThrow(ServiceExceptionUtil.exception(GlobalErrorCodeConstants.INTERNAL_SERVER_ERROR));
         // 准备请求参数
-        String notifyUrl = randomURL();
+        String notifyUrl = randomHttpUrl();
         PayRefundUnifiedReqDTO refundReqDTO = randomPojo(PayRefundUnifiedReqDTO.class, o -> o.setNotifyUrl(notifyUrl));
 
         // 调用，并断言
@@ -186,7 +186,7 @@ public abstract class AbstractAlipayClientTest extends BaseMockitoUnitTest {
         when(defaultAlipayClient.execute(argThat((ArgumentMatcher<AlipayTradeRefundRequest>) request -> true)))
                 .thenThrow(new RuntimeException("系统异常"));
         // 准备请求参数
-        String notifyUrl = randomURL();
+        String notifyUrl = randomHttpUrl();
         PayRefundUnifiedReqDTO refundReqDTO = randomPojo(PayRefundUnifiedReqDTO.class, o -> o.setNotifyUrl(notifyUrl));
 
         // 调用，并断言
@@ -198,7 +198,7 @@ public abstract class AbstractAlipayClientTest extends BaseMockitoUnitTest {
     public void testUnifiedOrder_paramInvalidate() {
         // 准备请求参数
         String outTradeNo = randomString();
-        String notifyUrl = randomURL();
+        String notifyUrl = randomHttpUrl();
         PayOrderUnifiedReqDTO reqDTO = randomPojo(PayOrderUnifiedReqDTO.class, o -> {
             o.setOutTradeNo(outTradeNo);
             o.setNotifyUrl(notifyUrl);
@@ -212,10 +212,15 @@ public abstract class AbstractAlipayClientTest extends BaseMockitoUnitTest {
         return randomPojo(PayOrderUnifiedReqDTO.class, o -> {
             o.setOutTradeNo(outTradeNo);
             o.setNotifyUrl(notifyUrl);
+            o.setReturnUrl(null);
             o.setPrice(price);
             o.setSubject(RandomUtil.randomString(32));
             o.setBody(RandomUtil.randomString(32));
         });
+    }
+
+    protected static String randomHttpUrl() {
+        return "https://callback.example.test/" + randomString();
     }
 
 }

@@ -1,15 +1,10 @@
 package com.meession.etm.module.crm.dal.mysql.statistics;
 
-import cn.hutool.core.date.LocalDateTimeUtil;
-import cn.hutool.core.util.RandomUtil;
 import com.meession.etm.module.crm.controller.admin.statistics.vo.customer.*;
+import com.meession.etm.module.crm.service.statistics.bo.CrmStatisticsFollowUpCustomerByDateBO;
 import org.apache.ibatis.annotations.Mapper;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
-
-import static com.meession.etm.framework.common.util.collection.CollectionUtils.convertList;
 
 /**
  * CRM 客户分析 Mapper
@@ -81,7 +76,7 @@ public interface CrmStatisticsCustomerMapper {
      * @param reqVO 请求参数
      * @return 统计数据
      */
-    List<CrmStatisticsFollowUpSummaryByDateRespVO> selectFollowUpCustomerCountGroupByDate(CrmStatisticsCustomerReqVO reqVO);
+    List<CrmStatisticsFollowUpCustomerByDateBO> selectFollowUpCustomerListByDate(CrmStatisticsCustomerReqVO reqVO);
 
     /**
      * 跟进次数(按用户)
@@ -109,6 +104,11 @@ public interface CrmStatisticsCustomerMapper {
     List<CrmStatisticsCustomerContractSummaryRespVO> selectContractSummary(CrmStatisticsCustomerReqVO reqVO);
 
     /**
+     * 客户成交金额 TOP10。
+     */
+    List<CrmStatisticsCustomerDealTopRespVO> selectCustomerDealTop10(CrmStatisticsCustomerReqVO reqVO);
+
+    /**
      * 跟进次数(按类型)
      *
      * @param reqVO 请求参数
@@ -123,21 +123,7 @@ public interface CrmStatisticsCustomerMapper {
      * @param reqVO 请求参数
      * @return 统计数据
      */
-    // TODO: @芋艿 模拟数据, 需要增加 crm_owner_record 表
-    default List<CrmStatisticsPoolSummaryByDateRespVO> selectPoolCustomerPutCountByDate(CrmStatisticsCustomerReqVO reqVO) {
-        LocalDateTime currrentDate = LocalDateTimeUtil.beginOfDay(reqVO.getTimes()[0]);
-        LocalDateTime endDate = LocalDateTimeUtil.endOfDay(reqVO.getTimes()[1]);
-        List<CrmStatisticsPoolSummaryByDateRespVO> voList = new ArrayList<>();
-        while (currrentDate.isBefore(endDate)) {
-            voList.add(new CrmStatisticsPoolSummaryByDateRespVO()
-                .setTime(LocalDateTimeUtil.format(currrentDate, "yyyy-MM-dd"))
-                .setCustomerPutCount(RandomUtil.randomInt(0, 10))
-                .setCustomerTakeCount(RandomUtil.randomInt(0, 10)));
-            currrentDate = currrentDate.plusDays(1);
-        }
-
-        return voList;
-    }
+    List<CrmStatisticsPoolSummaryByDateRespVO> selectPoolCustomerPutCountByDate(CrmStatisticsCustomerReqVO reqVO);
 
     /**
      * 公海领取客户数(按日期)
@@ -145,10 +131,7 @@ public interface CrmStatisticsCustomerMapper {
      * @param reqVO 请求参数
      * @return 统计数据
      */
-    // TODO: @芋艿 模拟数据, 需要增加 crm_owner_record 表
-    default List<CrmStatisticsPoolSummaryByDateRespVO> selectPoolCustomerTakeCountByDate(CrmStatisticsCustomerReqVO reqVO) {
-        return selectPoolCustomerPutCountByDate(reqVO);
-    }
+    List<CrmStatisticsPoolSummaryByDateRespVO> selectPoolCustomerTakeCountByDate(CrmStatisticsCustomerReqVO reqVO);
 
     /**
      * 进入公海客户数(按用户)
@@ -156,14 +139,7 @@ public interface CrmStatisticsCustomerMapper {
      * @param reqVO 请求参数
      * @return 统计数据
      */
-    // TODO: @芋艿 模拟数据, 需要增加 crm_owner_record 表
-    default List<CrmStatisticsPoolSummaryByUserRespVO> selectPoolCustomerPutCountByUser(CrmStatisticsCustomerReqVO reqVO) {
-        return convertList(reqVO.getUserIds(), userId ->
-            (CrmStatisticsPoolSummaryByUserRespVO) new CrmStatisticsPoolSummaryByUserRespVO()
-                .setCustomerPutCount(RandomUtil.randomInt(0, 10))
-                .setCustomerTakeCount(RandomUtil.randomInt(0, 10))
-                .setOwnerUserId(userId));
-    }
+    List<CrmStatisticsPoolSummaryByUserRespVO> selectPoolCustomerPutCountByUser(CrmStatisticsCustomerReqVO reqVO);
 
     /**
      * 公海领取客户数(按用户)
@@ -171,10 +147,7 @@ public interface CrmStatisticsCustomerMapper {
      * @param reqVO 请求参数
      * @return 统计数据
      */
-    // TODO: @芋艿 模拟数据, 需要增加 crm_owner_record 表
-    default List<CrmStatisticsPoolSummaryByUserRespVO> selectPoolCustomerTakeCountByUser(CrmStatisticsCustomerReqVO reqVO) {
-        return selectPoolCustomerPutCountByUser(reqVO);
-    }
+    List<CrmStatisticsPoolSummaryByUserRespVO> selectPoolCustomerTakeCountByUser(CrmStatisticsCustomerReqVO reqVO);
 
     /**
      * 客户成交周期(按日期)

@@ -1,5 +1,6 @@
-@import 'tools';
-@import 'ui';
+@use 'var' as *;
+@use 'tools';
+@use 'ui';
 
 /* 字体文件 */
 @font-face {

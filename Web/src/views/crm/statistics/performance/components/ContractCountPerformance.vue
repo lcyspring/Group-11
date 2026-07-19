@@ -30,6 +30,7 @@ import {
   StatisticsPerformanceApi,
   StatisticsPerformanceRespVO
 } from '@/api/crm/statistics/performance'
+import { formatGrowthRate } from '../growthRate'
 
 defineOptions({ name: 'ContractCountPerformance' })
 
@@ -121,7 +122,6 @@ const echartsOption = reactive<EChartsOption>({
       type: 'value',
       name: '',
       axisTick: {
-        alignWithLabel: true,
         lineStyle: {
           width: 0
         }
@@ -152,9 +152,7 @@ const echartsOption = reactive<EChartsOption>({
 }) as EChartsOption
 
 /** 获取统计数据 */
-const loadData = async () => {
-  // 1. 加载统计数据
-  loading.value = true
+const fetchAndFill = async () => {
   const performanceList = await StatisticsPerformanceApi.getContractCountPerformance(
     props.queryParams
   )
@@ -172,32 +170,41 @@ const loadData = async () => {
     echartsOption.series[1]['data'] = performanceList.map(
       (s: StatisticsPerformanceRespVO) => s.lastMonthCount
     )
-    echartsOption.series[3]['data'] = performanceList.map((s: StatisticsPerformanceRespVO) =>
-      s.lastMonthCount !== 0
-        ? (((s.currentMonthCount - s.lastMonthCount) / s.lastMonthCount) * 100).toFixed(2)
-        : 'NULL'
+    echartsOption.series[3]['data'] = performanceList.map(
+      (s: StatisticsPerformanceRespVO) => s.monthOnMonthRate ?? null
     )
   }
   if (echartsOption.series && echartsOption.series[2] && echartsOption.series[2]['data']) {
     echartsOption.series[2]['data'] = performanceList.map(
       (s: StatisticsPerformanceRespVO) => s.lastYearCount
     )
-    echartsOption.series[4]['data'] = performanceList.map((s: StatisticsPerformanceRespVO) =>
-      s.lastYearCount !== 0
-        ? (((s.currentMonthCount - s.lastYearCount) / s.lastYearCount) * 100).toFixed(2)
-        : 'NULL'
+    echartsOption.series[4]['data'] = performanceList.map(
+      (s: StatisticsPerformanceRespVO) => s.yearOnYearRate ?? null
     )
   }
 
   // 2.2 更新列表数据
   list.value = performanceList
   convertListData()
-  loading.value = false
+}
+
+/** 获取统计数据 */
+const loadData = async () => {
+  loading.value = true
+  try {
+    await fetchAndFill()
+  } finally {
+    loading.value = false
+  }
 }
 
 // 初始化数据
-const columnsData = reactive([])
-const tableData = reactive([
+interface StatisticsTableRow {
+  title: string
+  [key: string]: string | number
+}
+const columnsData = reactive<Array<{ label: string; prop: string }>>([])
+const tableData = reactive<StatisticsTableRow[]>([
   { title: t('performance.currentMonthCount') },
   { title: t('performance.lastMonthCount') },
   { title: t('performance.lastYearCount') },
@@ -217,14 +224,8 @@ const convertListData = () => {
     tableData[0]['prop' + index] = item.currentMonthCount
     tableData[1]['prop' + index] = item.lastMonthCount
     tableData[2]['prop' + index] = item.lastYearCount
-    tableData[3]['prop' + index] =
-      item.lastMonthCount !== 0
-        ? (((item.currentMonthCount - item.lastMonthCount) / item.lastMonthCount) * 100).toFixed(2)
-        : 'NULL'
-    tableData[4]['prop' + index] =
-      item.lastYearCount !== 0
-        ? (((item.currentMonthCount - item.lastYearCount) / item.lastYearCount) * 100).toFixed(2)
-        : 'NULL'
+    tableData[3]['prop' + index] = formatGrowthRate(item.monthOnMonthRate)
+    tableData[4]['prop' + index] = formatGrowthRate(item.yearOnYearRate)
   })
 }
 

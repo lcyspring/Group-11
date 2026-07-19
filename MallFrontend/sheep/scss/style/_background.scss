@@ -1,8 +1,12 @@
+@use 'sass:map';
+@use 'sass:color';
+@use '../var' as *;
+
 /* ==================
           背景
  ==================== */
 /* -- 基础色 -- */
-@each $color, $value in map-merge($colors, $darks) {
+@each $color, $value in map.merge($colors, $darks) {
   .bg-#{$color} {
     background-color: $value !important;
     @if $color == 'yellow' {
@@ -16,7 +20,7 @@
 /* -- 浅色 -- */
 @each $color, $value in $colors {
   .bg-#{$color}-light {
-    background-image: linear-gradient(45deg, white, mix(white, $value, 85%)) !important;
+    background-image: linear-gradient(45deg, white, color.mix(white, $value, 85%)) !important;
     color: $value !important;
   }
 

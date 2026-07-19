@@ -3,6 +3,7 @@ import { createRouter, createWebHashHistory, RouteRecordRaw } from 'vue-router'
 import { isUrl } from '@/utils/is'
 import { cloneDeep, omit } from 'lodash-es'
 import qs from 'qs'
+import { resolveBusinessFormComponentPath } from '@/utils/bpmBusinessFormComponent.mjs'
 
 const modules = import.meta.glob('../views/**/*.{vue,tsx}')
 /**
@@ -10,13 +11,11 @@ const modules = import.meta.glob('../views/**/*.{vue,tsx}')
  * @param componentPath 例:/bpm/oa/leave/detail
  */
 export const registerComponent = (componentPath: string) => {
-  for (const item in modules) {
-    if (item.includes(componentPath)) {
-      // 使用异步组件的方式来动态加载组件
-      // @ts-ignore
-      return defineAsyncComponent(modules[item])
-    }
-  }
+  const resolvedPath = resolveBusinessFormComponentPath(componentPath)
+  const loader = resolvedPath ? modules[`../views${resolvedPath}`] : undefined
+  if (!loader) return undefined
+  // 使用异步组件的方式来动态加载组件
+  return defineAsyncComponent(loader)
 }
 /* Layout */
 export const Layout = () => import('@/layout/Layout.vue')

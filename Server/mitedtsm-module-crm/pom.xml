@@ -33,6 +33,12 @@
             <artifactId>mitedtsm-module-bpm</artifactId>
             <version>${revision}</version>
         </dependency>
+        <!-- CRM 仅通过 ERP api 包发起履约；ERP 不反向依赖 CRM。 -->
+        <dependency>
+            <groupId>com.meession.etm</groupId>
+            <artifactId>mitedtsm-module-erp</artifactId>
+            <version>${revision}</version>
+        </dependency>
 
         <!-- 业务组件 -->
         <dependency>

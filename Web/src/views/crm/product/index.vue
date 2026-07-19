@@ -104,24 +104,26 @@
         :formatter="dateFormatter"
         min-width="180"
       />
-      <el-table-column :label="t('common.action')" align="center" fixed="right" min-width="160">
+      <el-table-column :label="t('common.action')" align="center" fixed="right" width="220">
         <template #default="scope">
-          <el-button
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-            v-hasPermi="['crm:product:update']"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-            v-hasPermi="['crm:product:delete']"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions>
+            <el-button
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+              v-hasPermi="['crm:product:update']"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+              v-hasPermi="['crm:product:delete']"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>
@@ -142,6 +144,7 @@
 import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import { dateFormatter } from '@/utils/formatTime'
 import download from '@/utils/download'
+import { resolveDialogAction } from '@/utils/dialogAction'
 import * as ProductApi from '@/api/crm/product'
 import ProductForm from './ProductForm.vue'
 import { erpPriceTableColumnFormatter } from '@/utils'
@@ -200,27 +203,19 @@ const openDetail = (id: number) => {
 
 /** 删除按钮操作 */
 const handleDelete = async (id: number) => {
-  try {
-    // 删除的二次确认
-    await message.delConfirm()
-    // 发起删除
-    await ProductApi.deleteProduct(id)
-    message.success(t('common.delSuccess'))
-    // 刷新列表
-    await getList()
-  } catch {}
+  if (!(await resolveDialogAction(message.delConfirm()))) return
+  await ProductApi.deleteProduct(id)
+  message.success(t('common.delSuccess'))
+  await getList()
 }
 
 /** 导出按钮操作 */
 const handleExport = async () => {
+  if (!(await resolveDialogAction(message.exportConfirm()))) return
+  exportLoading.value = true
   try {
-    // 导出的二次确认
-    await message.exportConfirm()
-    // 发起导出
-    exportLoading.value = true
     const data = await ProductApi.exportProduct(queryParams)
     download.excel(data, t('exportFileName') + '.xls')
-  } catch {
   } finally {
     exportLoading.value = false
   }

@@ -52,11 +52,10 @@ watch(
   }
 )
 
-const dialogStyle = computed(() => {
-  return {
-    height: unref(dialogHeight)
-  }
-})
+// 普通弹窗只限制最大高度，让少量内容按实际高度收缩；全屏模式才需要固定可滚动高度。
+// 旧实现始终写入 height，导致所有 scroll 弹窗即使内容很少也留下大片空白。
+const scrollbarHeight = computed(() => (unref(isFullscreen) ? unref(dialogHeight) : undefined))
+const scrollbarMaxHeight = computed(() => (unref(isFullscreen) ? undefined : unref(dialogHeight)))
 
 const closing = ref(false)
 
@@ -111,7 +110,11 @@ function closedHandler() {
       </div>
     </template>
 
-    <ElScrollbar v-if="scroll" :style="dialogStyle">
+    <ElScrollbar
+      v-if="scroll"
+      :height="scrollbarHeight"
+      :max-height="scrollbarMaxHeight"
+    >
       <slot></slot>
     </ElScrollbar>
     <slot v-else></slot>
@@ -133,8 +136,16 @@ function closedHandler() {
 
   .#{$elNamespace}-dialog {
     margin: 0 !important;
+    max-height: calc(100vh - 32px);
+    display: flex;
+    flex-direction: column;
+
+    &.is-fullscreen {
+      max-height: 100vh;
+    }
 
     &__header {
+      flex: 0 0 auto;
       height: 54px;
       padding: 0;
       margin-right: 0 !important;
@@ -142,10 +153,14 @@ function closedHandler() {
     }
 
     &__body {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: auto;
       padding: 15px !important;
     }
 
     &__footer {
+      flex: 0 0 auto;
       border-top: 1px solid var(--el-border-color);
     }
 

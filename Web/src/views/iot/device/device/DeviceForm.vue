@@ -81,6 +81,7 @@
   <MapDialog ref="mapDialogRef" @confirm="handleMapConfirm" />
 </template>
 <script setup lang="ts">
+import type { FormRules } from 'element-plus'
 import { DeviceApi, DeviceVO } from '@/api/iot/device/device'
 import { DeviceGroupApi } from '@/api/iot/device/group'
 import { DeviceTypeEnum, ProductApi, ProductVO } from '@/api/iot/product/product'
@@ -127,7 +128,7 @@ const handleMapConfirm = (data: { longitude: string; latitude: string; address: 
   formData.value.latitude = data.latitude
 }
 
-const formRules = reactive({
+const formRules = reactive<FormRules>({
   productId: [{ required: true, message: t('common.productRequired'), trigger: 'blur' }],
   deviceName: [
     { required: true, message: t('common.deviceNameRequired'), trigger: 'blur' },

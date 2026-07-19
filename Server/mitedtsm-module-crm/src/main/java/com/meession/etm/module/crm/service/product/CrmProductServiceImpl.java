@@ -65,7 +65,7 @@ public class CrmProductServiceImpl implements CrmProductService {
         validateProductCategoryExists(createReqVO.getCategoryId());
 
         // 2. 插入产品
-        CrmProductDO product = BeanUtils.toBean(createReqVO, CrmProductDO.class);
+        CrmProductDO product = BeanUtils.toBean(createReqVO, CrmProductDO.class).setVersion(1);
         productMapper.insert(product);
 
         // 3. 插入数据权限
@@ -79,18 +79,23 @@ public class CrmProductServiceImpl implements CrmProductService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     @LogRecord(type = CRM_PRODUCT_TYPE, subType = CRM_PRODUCT_UPDATE_SUB_TYPE, bizNo = "{{#updateReqVO.id}}",
             success = CRM_PRODUCT_UPDATE_SUCCESS)
     @CrmPermission(bizType = CrmBizTypeEnum.CRM_PRODUCT, bizId = "#updateReqVO.id", level = CrmPermissionLevelEnum.WRITE)
     public void updateProduct(CrmProductSaveReqVO updateReqVO) {
         // 1. 校验产品
         updateReqVO.setOwnerUserId(null); // 不修改负责人
-        CrmProductDO crmProductDO = validateProductExists(updateReqVO.getId());
+        CrmProductDO crmProductDO = productMapper.selectByIdForUpdate(updateReqVO.getId());
+        if (crmProductDO == null) {
+            throw exception(PRODUCT_NOT_EXISTS);
+        }
         validateProductNoDuplicate(updateReqVO.getId(), updateReqVO.getNo());
         validateProductCategoryExists(updateReqVO.getCategoryId());
 
         // 2. 更新产品
-        CrmProductDO updateObj = BeanUtils.toBean(updateReqVO, CrmProductDO.class);
+        CrmProductDO updateObj = BeanUtils.toBean(updateReqVO, CrmProductDO.class)
+                .setVersion((crmProductDO.getVersion() == null ? 1 : crmProductDO.getVersion()) + 1);
         productMapper.updateById(updateObj);
 
         // 3. 记录操作日志上下文

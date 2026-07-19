@@ -12,7 +12,7 @@
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('account.title')" prop="accountId">
-            <WxAccountSelect @change="onAccountChanged" />
+            <WxAccountSelect @change="onAccountChanged" @unavailable="onAccountUnavailable" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -56,24 +56,26 @@
         min-width="180"
         :formatter="dateFormatter"
       />
-      <el-table-column :label="t('common.operation')" align="center">
+      <el-table-column :label="t('common.operation')" align="center" width="220">
         <template #default="scope">
-          <el-button
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-            v-hasPermi="['mp:tag:update']"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-            v-hasPermi="['mp:tag:delete']"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions>
+            <el-button
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+              v-hasPermi="['mp:tag:update']"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+              v-hasPermi="['mp:tag:delete']"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>
@@ -117,6 +119,13 @@ const onAccountChanged = (id: number) => {
   queryParams.accountId = id
   queryParams.pageNo = 1
   getList()
+}
+
+const onAccountUnavailable = () => {
+  queryParams.accountId = -1
+  list.value = []
+  total.value = 0
+  loading.value = false
 }
 
 /** 查询列表 */

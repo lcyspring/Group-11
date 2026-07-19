@@ -1,12 +1,7 @@
 ﻿<template>
   <ContentWrap>
     <!-- 搜索工作栏 -->
-    <el-form
-      class="-mb-15px"
-      :model="queryParams"
-      ref="queryFormRef"
-      label-width="auto"
-    >
+    <el-form class="-mb-15px" :model="queryParams" ref="queryFormRef" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('common.product')" prop="productId">
@@ -130,7 +125,12 @@
             >
               <Icon icon="ep:download" class="mr-5px" /> {{ t('common.export') }}
             </el-button>
-            <el-button type="warning" plain @click="handleImport" v-hasPermi="['iot:device:import']">
+            <el-button
+              type="warning"
+              plain
+              @click="handleImport"
+              v-hasPermi="['iot:device:import']"
+            >
               <Icon icon="ep:upload" /> {{ t('common.import') }}
             </el-button>
             <el-button
@@ -152,10 +152,16 @@
               <Icon icon="ep:delete" class="mr-5px" /> {{ t('common.batchDelete') }}
             </el-button>
             <el-button-group class="ml-10px">
-              <el-button :type="viewMode === 'card' ? 'primary' : 'default'" @click="viewMode = 'card'">
+              <el-button
+                :type="viewMode === 'card' ? 'primary' : 'default'"
+                @click="viewMode = 'card'"
+              >
                 <Icon icon="ep:grid" />
               </el-button>
-              <el-button :type="viewMode === 'list' ? 'primary' : 'default'" @click="viewMode = 'list'">
+              <el-button
+                :type="viewMode === 'list' ? 'primary' : 'default'"
+                @click="viewMode = 'list'"
+              >
                 <Icon icon="ep:list" />
               </el-button>
             </el-button-group>
@@ -190,7 +196,10 @@
                 <div class="mr-2.5 flex items-center">
                   <el-image :src="defaultIconUrl" class="w-[18px] h-[18px]" />
                 </div>
-                <div class="text-[16px] font-600 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{{ item.deviceName }}</div>
+                <div
+                  class="text-[16px] font-600 flex-1 overflow-hidden text-ellipsis whitespace-nowrap"
+                  >{{ item.deviceName }}</div
+                >
                 <!-- 添加设备状态标签 -->
                 <div class="inline-flex items-center">
                   <div
@@ -296,7 +305,8 @@
       :stripe="true"
       :show-overflow-tooltip="true"
       @selection-change="handleSelectionChange"
-     :table-layout="'auto'">
+      :table-layout="'auto'"
+    >
       <el-table-column type="selection" width="55" />
       <el-table-column label="DeviceName" align="center" prop="deviceName">
         <template #default="scope">
@@ -336,34 +346,39 @@
         prop="onlineTime"
         :formatter="dateFormatter"
         min-width="180"
-       fixed="right" />
-      <el-table-column :label="t('common.operation')" align="center" min-width="120px">
+        fixed="right"
+      />
+      <el-table-column :label="t('common.operation')" align="center" width="140">
         <template #default="scope">
-          <el-button
-            link
-            type="primary"
-            @click="openDetail(scope.row.id)"
-            v-hasPermi="['iot:product:query']"
-          >
-            {{ t('common.view') }}
-          </el-button>
-          <el-button link type="primary" @click="openModel(scope.row.id)"> {{ t('common.log') }} </el-button>
-          <el-button
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-            v-hasPermi="['iot:device:update']"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-            v-hasPermi="['iot:device:delete']"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              link
+              type="primary"
+              @click="openDetail(scope.row.id)"
+              v-hasPermi="['iot:product:query']"
+            >
+              {{ t('common.view') }}
+            </el-button>
+            <el-button link type="primary" @click="openModel(scope.row.id)">
+              {{ t('common.log') }}
+            </el-button>
+            <el-button
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+              v-hasPermi="['iot:device:update']"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+              v-hasPermi="['iot:device:delete']"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

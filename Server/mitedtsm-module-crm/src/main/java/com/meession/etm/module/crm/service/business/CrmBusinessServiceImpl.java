@@ -15,8 +15,10 @@ import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessDO;
 import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessProductDO;
 import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessStatusDO;
 import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactBusinessDO;
+import com.meession.etm.module.crm.dal.dataobject.product.CrmProductDO;
 import com.meession.etm.module.crm.dal.mysql.business.CrmBusinessMapper;
 import com.meession.etm.module.crm.dal.mysql.business.CrmBusinessProductMapper;
+import com.meession.etm.module.crm.enums.business.CrmBusinessEndStatusEnum;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
 import com.meession.etm.module.crm.framework.permission.core.annotations.CrmPermission;
@@ -28,6 +30,7 @@ import com.meession.etm.module.crm.service.permission.CrmPermissionService;
 import com.meession.etm.module.crm.service.permission.bo.CrmPermissionCreateReqBO;
 import com.meession.etm.module.crm.service.permission.bo.CrmPermissionTransferReqBO;
 import com.meession.etm.module.crm.service.product.CrmProductService;
+import com.meession.etm.module.crm.service.quote.CrmBusinessQuoteService;
 import com.meession.etm.module.system.api.user.AdminUserApi;
 import com.mzt.logapi.context.LogRecordContext;
 import com.mzt.logapi.service.impl.DiffParseFunction;
@@ -43,9 +46,11 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static com.meession.etm.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static com.meession.etm.framework.common.util.collection.CollectionUtils.*;
+import static com.meession.etm.framework.security.core.util.SecurityFrameworkUtils.getLoginUserId;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.*;
 import static com.meession.etm.module.crm.enums.LogRecordConstants.*;
 
@@ -79,6 +84,8 @@ public class CrmBusinessServiceImpl implements CrmBusinessService {
     private CrmContactBusinessService contactBusinessService;
     @Resource
     private CrmProductService productService;
+    @Resource
+    private CrmBusinessQuoteService quoteService;
 
     @Resource
     private AdminUserApi adminUserApi;
@@ -115,6 +122,9 @@ public class CrmBusinessServiceImpl implements CrmBusinessService {
                     .setBusinessIds(Collections.singletonList(business.getId())));
         }
 
+        // 4.1 为当前可编辑产品行建立第一个可追溯报价草稿；失败时回滚整个商机创建。
+        quoteService.createInitialDraft(business.getId(), createReqVO, userId);
+
         // 5. 记录操作日志上下文
         LogRecordContext.putVariable("business", business);
         return business.getId();
@@ -127,8 +137,11 @@ public class CrmBusinessServiceImpl implements CrmBusinessService {
     @CrmPermission(bizType = CrmBizTypeEnum.CRM_BUSINESS, bizId = "#updateReqVO.id", level = CrmPermissionLevelEnum.WRITE)
     public void updateBusiness(CrmBusinessSaveReqVO updateReqVO) {
         updateReqVO.setOwnerUserId(null).setStatusTypeId(null); // 不允许更新的字段
-        // 1.1 校验存在
-        CrmBusinessDO oldBusiness = validateBusinessExists(updateReqVO.getId());
+        // 1.1 锁定商机和当前报价；锁定报价不可通过通用商机编辑接口改写。
+        CrmBusinessDO oldBusiness = businessMapper.selectByIdForUpdate(updateReqVO.getId());
+        if (oldBusiness == null) throw exception(BUSINESS_NOT_EXISTS);
+        if (oldBusiness.getEndStatus() != null) throw exception(BUSINESS_UPDATE_FAIL_END_STATUS);
+        Long quoteId = quoteService.requireDraftForUpdate(updateReqVO.getId());
         // 1.2 校验产品项的有效性
         List<CrmBusinessProductDO> businessProducts = validateBusinessProducts(updateReqVO.getProducts());
         // 1.3 校验关联字段
@@ -140,6 +153,7 @@ public class CrmBusinessServiceImpl implements CrmBusinessService {
         businessMapper.updateById(updateObj);
         // 2.2 更新商机关联商品
         updateBusinessProduct(updateObj.getId(), businessProducts);
+        quoteService.syncDraft(quoteId, updateReqVO, getLoginUserId());
 
         // 3. 记录操作日志上下文
         updateReqVO.setOwnerUserId(oldBusiness.getOwnerUserId()); // 避免操作日志出现“删除负责人”的情况
@@ -206,10 +220,13 @@ public class CrmBusinessServiceImpl implements CrmBusinessService {
 
     private List<CrmBusinessProductDO> validateBusinessProducts(List<CrmBusinessSaveReqVO.BusinessProduct> list) {
         // 1. 校验产品存在
-        productService.validProductList(convertSet(list, CrmBusinessSaveReqVO.BusinessProduct::getProductId));
+        Map<Long, CrmProductDO> productMap = convertMap(
+                productService.validProductList(convertSet(list, CrmBusinessSaveReqVO.BusinessProduct::getProductId)),
+                CrmProductDO::getId);
         // 2. 转化为 CrmBusinessProductDO 列表
         return convertList(list, o -> BeanUtils.toBean(o, CrmBusinessProductDO.class,
-                item -> item.setTotalPrice(MoneyUtils.priceMultiply(item.getBusinessPrice(), item.getCount()))));
+                item -> item.setProductPrice(productMap.get(item.getProductId()).getPrice())
+                        .setTotalPrice(MoneyUtils.priceMultiply(item.getBusinessPrice(), item.getCount()))));
     }
 
     private void calculateTotalPrice(CrmBusinessDO business, List<CrmBusinessProductDO> businessProducts) {
@@ -222,33 +239,54 @@ public class CrmBusinessServiceImpl implements CrmBusinessService {
     @LogRecord(type = CRM_BUSINESS_TYPE, subType = CRM_BUSINESS_UPDATE_STATUS_SUB_TYPE, bizNo = "{{#reqVO.id}}",
             success = CRM_BUSINESS_UPDATE_STATUS_SUCCESS)
     @CrmPermission(bizType = CrmBizTypeEnum.CRM_BUSINESS, bizId = "#reqVO.id", level = CrmPermissionLevelEnum.WRITE)
+    @Transactional(rollbackFor = Exception.class)
     public void updateBusinessStatus(CrmBusinessUpdateStatusReqVO reqVO) {
         // 1.1 校验存在
-        CrmBusinessDO business = validateBusinessExists(reqVO.getId());
+        CrmBusinessDO business = businessMapper.selectByIdForUpdate(reqVO.getId());
+        if (business == null) throw exception(BUSINESS_NOT_EXISTS);
         // 1.2 校验商机未结束
         if (business.getEndStatus() != null) {
             throw exception(BUSINESS_UPDATE_STATUS_FAIL_END_STATUS);
         }
-        // 1.3 校验商机状态
-        CrmBusinessStatusDO status = null;
-        if (reqVO.getStatusId() != null) {
-            status = businessStatusService.validateBusinessStatus(business.getStatusTypeId(), reqVO.getStatusId());
+        if (CrmBusinessEndStatusEnum.WIN.getStatus().equals(reqVO.getEndStatus())) {
+            quoteService.requireCurrentLocked(reqVO.getId());
         }
-        // 1.4 校验是不是状态没变更
+        // 1.3 校验是不是状态没变更
         if ((reqVO.getStatusId() != null && reqVO.getStatusId().equals(business.getStatusId()))
                 || (reqVO.getEndStatus() != null && reqVO.getEndStatus().equals(business.getEndStatus()))) {
             throw exception(BUSINESS_UPDATE_STATUS_FAIL_STATUS_EQUALS);
         }
-
+        // 1.4 校验商机状态和前向流转
+        CrmBusinessStatusDO status = null;
+        if (reqVO.getStatusId() != null) {
+            status = businessStatusService.validateBusinessStatus(business.getStatusTypeId(), reqVO.getStatusId());
+            CrmBusinessStatusDO oldStatus = businessStatusService.validateBusinessStatus(
+                    business.getStatusTypeId(), business.getStatusId());
+            if (status.getSort() <= oldStatus.getSort()) {
+                throw exception(BUSINESS_UPDATE_STATUS_BACKWARD);
+            }
+        }
         // 2. 更新商机状态
-        businessMapper.updateById(new CrmBusinessDO().setId(reqVO.getId()).setStatusId(reqVO.getStatusId())
-                .setEndStatus(reqVO.getEndStatus()));
+        String statusRemark = reqVO.getStatusId() != null ? reqVO.getStatusRemark().trim() : null;
+        String endRemark = reqVO.getEndStatus() != null && !CrmBusinessEndStatusEnum.WIN.getStatus().equals(reqVO.getEndStatus())
+                ? reqVO.getEndRemark().trim() : null;
+        if (endRemark != null) {
+            quoteService.terminateCurrent(reqVO.getId(), endRemark, getLoginUserId());
+        }
+        Long newStatusId = reqVO.getStatusId() != null ? reqVO.getStatusId() : business.getStatusId();
+        int updated = businessMapper.updateStatusIfUnchanged(reqVO.getId(), business.getStatusId(), business.getEndStatus(),
+                newStatusId, reqVO.getEndStatus(), endRemark,
+                reqVO.getEndStatus() != null ? LocalDateTime.now() : null);
+        if (updated == 0) {
+            throw exception(BUSINESS_UPDATE_STATUS_CONCURRENT);
+        }
 
         // 3. 记录操作日志上下文
         LogRecordContext.putVariable("businessName", business.getName());
         LogRecordContext.putVariable("oldStatusName", getBusinessStatusName(business.getEndStatus(),
                 businessStatusService.getBusinessStatus(business.getStatusId())));
         LogRecordContext.putVariable("newStatusName", getBusinessStatusName(reqVO.getEndStatus(), status));
+        LogRecordContext.putVariable("statusChangeRemark", statusRemark != null ? statusRemark : endRemark);
     }
 
     @Override
@@ -380,6 +418,11 @@ public class CrmBusinessServiceImpl implements CrmBusinessService {
     @Override
     public PageResult<CrmBusinessDO> getBusinessPageByDate(CrmStatisticsFunnelReqVO pageVO) {
         return businessMapper.selectPage(pageVO);
+    }
+
+    @Override
+    public PageResult<CrmBusinessDO> getBusinessForecastPage(CrmStatisticsFunnelReqVO pageVO) {
+        return businessMapper.selectForecastPage(pageVO);
     }
 
 }

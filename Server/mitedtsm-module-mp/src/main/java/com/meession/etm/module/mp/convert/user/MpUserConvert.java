@@ -16,7 +16,7 @@ import org.mapstruct.factory.Mappers;
 
 import java.util.List;
 
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface MpUserConvert {
 
     MpUserConvert INSTANCE = Mappers.getMapper(MpUserConvert.class);
@@ -30,7 +30,9 @@ public interface MpUserConvert {
     @Mappings(value = {
             @Mapping(source = "openId", target = "openid"),
             @Mapping(source = "unionId", target = "unionId"),
-            @Mapping(source = "headImgUrl", target = "headImageUrl"),
+            // WeChat no longer returns nickname/avatar for ordinary subscriptions.
+            @Mapping(target = "nickname", ignore = true),
+            @Mapping(target = "headImageUrl", ignore = true),
             @Mapping(target = "subscribeTime", ignore = true), // 单独转换
     })
     MpUserDO convert(WxMpUser wxMpUser);

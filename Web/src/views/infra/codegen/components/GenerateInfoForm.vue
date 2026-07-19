@@ -362,7 +362,7 @@ watch(
     formData.value = table as any
     // 加载表列表
     if (table.dataSourceConfigId >= 0) {
-      tables.value = await CodegenApi.getCodegenTableList(formData.value.dataSourceConfigId)
+      tables.value = await CodegenApi.getCodegenTableList(table.dataSourceConfigId)
     }
   },
   {

@@ -106,6 +106,17 @@ public class ErpSaleOrderDO extends BaseDO {
      */
     private String remark;
 
+    // ========== 外部履约来源 ==========
+    private String externalSourceSystem;
+    private String externalSourceType;
+    private Long externalSourceId;
+    private String externalRequestId;
+    private String externalRequestHash;
+    private String currencyCode;
+    private String sourceCurrencyCode;
+    private BigDecimal sourceExchangeRate;
+    private BigDecimal sourceGrossAmount;
+
     // ========== 销售出库 ==========
     /**
      * 销售出库数量

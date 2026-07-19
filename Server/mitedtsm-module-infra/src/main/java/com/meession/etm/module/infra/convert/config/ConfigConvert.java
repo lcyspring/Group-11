@@ -10,7 +10,7 @@ import org.mapstruct.factory.Mappers;
 
 import java.util.List;
 
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface ConfigConvert {
 
     ConfigConvert INSTANCE = Mappers.getMapper(ConfigConvert.class);

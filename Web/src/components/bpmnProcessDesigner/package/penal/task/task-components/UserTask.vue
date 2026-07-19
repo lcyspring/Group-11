@@ -231,7 +231,11 @@ const props = defineProps({
   type: String
 })
 const prefix = inject('prefix')
-const userTaskForm = ref({
+const userTaskForm = ref<{
+  candidateStrategy?: number
+  candidateParam: any[] | string | number
+  skipExpression: string
+}>({
   candidateStrategy: undefined, // 分配规则
   candidateParam: [], // 分配选项
   skipExpression: '' // 跳过表达式
@@ -404,12 +408,6 @@ const updateElementTask = () => {
     extensionElements: extensions
   })
 
-  // 改用通过extensionElements来存储数据
-  return
-  bpmnInstances().modeling.updateProperties(toRaw(bpmnElement.value), {
-    candidateStrategy: userTaskForm.value.candidateStrategy,
-    candidateParam: userTaskForm.value.candidateParam.join(',')
-  })
 }
 
 const updateSkipExpression = () => {

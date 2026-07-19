@@ -1,6 +1,7 @@
 package com.meession.etm.module.system.api.sms;
 
 import com.meession.etm.module.system.api.sms.dto.send.SmsSendSingleToUserReqDTO;
+import com.meession.etm.module.system.api.sms.dto.SmsSendStatusRespDTO;
 
 import jakarta.validation.Valid;
 
@@ -30,5 +31,13 @@ public interface SmsSendApi {
      * @return 发送日志编号
      */
     Long sendSingleSmsToMember(@Valid SmsSendSingleToUserReqDTO reqDTO);
+
+    /**
+     * 获得短信发送及回执状态，仅供内部业务按发送日志编号回收结果。
+     *
+     * @param logId 发送日志编号
+     * @return 状态快照；日志不存在时返回 {@code null}
+     */
+    SmsSendStatusRespDTO getSmsSendStatus(Long logId);
 
 }

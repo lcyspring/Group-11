@@ -4,6 +4,10 @@ import { TransferReqVO } from '@/api/crm/permission'
 export interface CustomerVO {
   id: number // 编号
   name: string // 客户名称
+  parentCustomerId?: number // 上级客户编号
+  parentCustomerName?: string // 上级客户名称
+  primaryContactName?: string // 首联系人姓名
+  primaryContactMobile?: string // 首联系人手机
   followUpStatus: boolean // 跟进状态
   contactLastTime: Date // 最后跟进时间
   contactLastContent: string // 最后跟进内容
@@ -11,13 +15,25 @@ export interface CustomerVO {
   ownerUserId: number // 负责人的用户编号
   ownerUserName?: string // 负责人的用户名称
   ownerUserDept?: string // 负责人的部门名称
+  poolStatus?: number // 0 在管、1 公海、2 垃圾池
+  poolEntryTime?: Date // 本次进入公海时间
+  poolPreviousOwnerUserId?: number // 本次入池前负责人
+  poolPreviousOwnerUserName?: string // 本次入池前负责人名称
+  poolReason?: string // 本次入池原因编码
+  poolCycleCount?: number // 累计进入公海次数
+  garbageTime?: Date // 进入垃圾池时间
+  garbageReason?: string // 进入垃圾池原因
   lockStatus?: boolean
   dealStatus?: boolean
+  lifecycleStatus: CustomerLifecycleStatus
+  lifecycleStatusChangeTime?: Date
+  lifecycleLostReason?: string
   mobile: string // 手机号
   telephone: string // 电话
   qq: string // QQ
   wechat: string // wechat
   email: string // email
+  birthday?: string // 客户自身生日
   areaId: number // 所在地
   areaName?: string // 所在地名称
   detailAddress: string // 详细地址
@@ -29,11 +45,158 @@ export interface CustomerVO {
   creatorName?: string // 创建人名称
   createTime: Date // 创建时间
   updateTime: Date // 更新时间
+  duplicateCheckConfirmed?: boolean // 是否已确认疑似重复客户
+}
+
+export interface CustomerImportPreviewFieldVO {
+  key: string
+  label: string
+  required: boolean
+}
+
+export interface CustomerImportPreviewRowVO {
+  rowNumber: number
+  action: 'CREATE' | 'UPDATE' | 'FAILURE'
+  existingCustomerId?: number
+  errors: string[]
+  customer: Partial<CustomerVO>
+}
+
+export interface CustomerImportPreviewVO {
+  id: number
+  fileName: string
+  status: number
+  expiresAt: string | number
+  totalCount: number
+  createCount: number
+  updateCount: number
+  failureCount: number
+  fieldMapping: Record<string, string>
+  headers: string[]
+  fields: CustomerImportPreviewFieldVO[]
+  rows: CustomerImportPreviewRowVO[]
+}
+
+export interface CustomerImportResultVO {
+  createCustomerNames: string[]
+  updateCustomerNames: string[]
+  failureCustomerNames: Record<string, string>
+}
+
+export enum ExportTaskStatus {
+  QUEUED = 10,
+  RUNNING = 20,
+  SUCCESS = 30,
+  FAILED = 40,
+  EXPIRED = 50
+}
+
+export interface ExportTaskVO {
+  id: number
+  objectType: 'CUSTOMER' | string
+  status: ExportTaskStatus
+  totalCount: number
+  fileName?: string
+  failureReason?: string
+  downloadAvailable: boolean
+  startedAt?: string | number
+  finishedAt?: string | number
+  downloadedAt?: string | number
+  expiresAt: string | number
+  createTime: string | number
+}
+
+export interface ExportDownloadTokenVO {
+  token: string
+  expiresAt: string | number
+}
+
+export enum CustomerLifecycleStatus {
+  POTENTIAL = 10,
+  INTENTIONAL = 20,
+  DEAL = 30,
+  LOST = 40
+}
+
+export enum CustomerPoolStatus {
+  OWNED = 0,
+  PUBLIC = 1,
+  GARBAGE = 2
+}
+
+export interface CustomerLifecycleRecordVO {
+  id: number
+  customerId: number
+  fromStatus: CustomerLifecycleStatus
+  toStatus: CustomerLifecycleStatus
+  reason?: string
+  operatorUserId?: number
+  operatorUserName?: string
+  changeTime: Date
+}
+
+export interface Customer360SummaryVO {
+  customerId: number
+  contactCount: number
+  businessCount: number
+  mappedOrderCount: number
+  receivablePlanCount: number
+  receivableCount: number
+  refundCount: number
+  invoiceCount: number
+  workOrderCount: number
+  taskCount: number
+  contractAttachmentCount: number
+  contractAmount: number
+  approvedReceivableAmount: number
+  approvedRefundAmount: number
+  netReceivableAmount: number
+  effectiveInvoiceAmount: number
+  outstandingReceivableAmount: number
+  uninvoicedAmount: number
+}
+
+export interface CustomerDuplicateVO {
+  id: number
+  name: string
+  mobile?: string
+}
+
+export interface CustomerOwnerRecordVO {
+  id: number
+  customerId: number
+  type: number
+  previousOwnerUserId?: number
+  previousOwnerUserName?: string
+  newOwnerUserId?: number
+  newOwnerUserName?: string
+  operatorUserId?: number
+  operatorUserName?: string
+  createTime: Date
 }
 
 // 查询客户列表
 export const getCustomerPage = async (params) => {
   return await request.get({ url: `/crm/customer/page`, params })
+}
+
+export const getCustomerGarbagePage = async (params) => {
+  return await request.get({ url: '/crm/customer-garbage/page', params })
+}
+
+export const putCustomerGarbage = async (data: { customerId: number; reason: string }) => {
+  return await request.put({ url: '/crm/customer-garbage/put', data })
+}
+
+export const restoreCustomerFromGarbage = async (customerId: number) => {
+  return await request.put({ url: '/crm/customer-garbage/restore', params: { customerId } })
+}
+
+export const permanentlyDeleteGarbageCustomer = async (customerId: number) => {
+  return await request.delete({
+    url: '/crm/customer-garbage/delete-permanently',
+    params: { customerId }
+  })
 }
 
 // 进入公海客户提醒的客户列表
@@ -61,6 +224,37 @@ export const getCustomer = async (id: number) => {
   return await request.get({ url: `/crm/customer/get?id=` + id })
 }
 
+export const getCustomer360Summary = async (customerId: number) => {
+  return await request.get<Customer360SummaryVO>({
+    url: '/crm/customer/360-summary',
+    params: { customerId }
+  })
+}
+
+// 查询当前用户可见的疑似重复客户
+export const getDuplicateCustomerList = async (params: {
+  name?: string
+  mobile?: string
+  excludeId?: number
+}) => {
+  return await request.get<CustomerDuplicateVO[]>({ url: `/crm/customer/duplicate-check`, params })
+}
+
+// 查询客户归属变更记录
+export const getCustomerOwnerRecordList = async (customerId: number) => {
+  return await request.get<CustomerOwnerRecordVO[]>({
+    url: '/crm/customer/owner-record-list',
+    params: { customerId }
+  })
+}
+
+export const getCustomerLifecycleRecordList = async (customerId: number) => {
+  return await request.get<CustomerLifecycleRecordVO[]>({
+    url: '/crm/customer/lifecycle-record-list',
+    params: { customerId }
+  })
+}
+
 // 新增客户
 export const createCustomer = async (data: CustomerVO) => {
   return await request.post({ url: `/crm/customer/create`, data })
@@ -76,6 +270,14 @@ export const updateCustomerDealStatus = async (id: number, dealStatus: boolean) 
   return await request.put({ url: `/crm/customer/update-deal-status`, params: { id, dealStatus } })
 }
 
+export const updateCustomerLifecycleStatus = async (data: {
+  id: number
+  lifecycleStatus: CustomerLifecycleStatus
+  reason?: string
+}) => {
+  return await request.put({ url: '/crm/customer/update-lifecycle-status', data })
+}
+
 // 删除客户
 export const deleteCustomer = async (id: number) => {
   return await request.delete({ url: `/crm/customer/delete?id=` + id })
@@ -84,6 +286,41 @@ export const deleteCustomer = async (id: number) => {
 // 导出客户 Excel
 export const exportCustomer = async (params: any) => {
   return await request.download({ url: `/crm/customer/export-excel`, params })
+}
+
+// 创建客户异步导出任务。服务端会冻结筛选条件和对象权限快照。
+export const createCustomerExportTask = async (data: Record<string, unknown>) => {
+  return await request.post<number>({ url: '/crm/export-task/customer', data })
+}
+
+export const getExportTaskPage = async (params: {
+  pageNo: number
+  pageSize: number
+  objectType?: string
+  status?: ExportTaskStatus
+}) => {
+  return await request.get<{ list: ExportTaskVO[]; total: number }>({
+    url: '/crm/export-task/page',
+    params
+  })
+}
+
+export const getExportTask = async (id: number) => {
+  return await request.get<ExportTaskVO>({ url: '/crm/export-task/get', params: { id } })
+}
+
+export const issueExportDownloadToken = async (id: number) => {
+  return await request.post<ExportDownloadTokenVO>({
+    url: '/crm/export-task/download-token',
+    data: { id }
+  })
+}
+
+export const downloadExportTask = async (id: number, token: string) => {
+  return await request.download<Blob>({
+    url: '/crm/export-task/download',
+    params: { id, token }
+  })
 }
 
 // 下载客户导入模板
@@ -96,9 +333,25 @@ export const handleImport = async (formData) => {
   return await request.upload({ url: `/crm/customer/import`, data: formData })
 }
 
+export const previewImport = async (formData: FormData) => {
+  return await request.upload({ url: '/crm/customer/import-preview', data: formData })
+}
+
+export const getImportPreview = async (id: number) => {
+  return await request.get<CustomerImportPreviewVO>({
+    url: '/crm/customer/import-preview/get', params: { id }
+  })
+}
+
+export const confirmImportPreview = async (id: number) => {
+  return await request.post<CustomerImportResultVO>({
+    url: '/crm/customer/import-preview/confirm', data: { id }
+  })
+}
+
 // 客户列表
 export const getCustomerSimpleList = async () => {
-  return await request.get({ url: `/crm/customer/simple-list` })
+  return await request.get<CustomerVO[]>({ url: `/crm/customer/simple-list` })
 }
 
 // ======================= 业务操作 =======================

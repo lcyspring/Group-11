@@ -138,24 +138,26 @@
         prop="createTime"
         min-width="180"
       />
-      <el-table-column align="center" :label="t('common.operation')">
+      <el-table-column align="center" :label="t('common.operation')" width="220">
         <template #default="scope">
-          <el-button
-            v-hasPermi="['system:social-client:update']"
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-          >
-            {{ t('action.edit') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['system:social-client:delete']"
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-          >
-            {{ t('action.delete') }}
-          </el-button>
+          <TableActions>
+            <el-button
+              v-hasPermi="['system:social-client:update']"
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+            >
+              {{ t('action.edit') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['system:social-client:delete']"
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+            >
+              {{ t('action.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

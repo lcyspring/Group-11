@@ -52,7 +52,7 @@
             <el-radio-group v-model="formData.sslEnable">
               <el-radio
                 v-for="dict in getBoolDictOptions(DICT_TYPE.INFRA_BOOLEAN_STRING)"
-                :key="dict.value"
+                :key="String(dict.value)"
                 :value="dict.value"
               >
                 {{ dict.label }}
@@ -67,7 +67,7 @@
             <el-radio-group v-model="formData.starttlsEnable">
               <el-radio
                 v-for="dict in getBoolDictOptions(DICT_TYPE.INFRA_BOOLEAN_STRING)"
-                :key="dict.value"
+                :key="String(dict.value)"
                 :value="dict.value"
               >
                 {{ dict.label }}
@@ -84,6 +84,7 @@
   </Dialog>
 </template>
 <script lang="ts" setup>
+import type { FormRules } from 'element-plus'
 import { DICT_TYPE, getBoolDictOptions } from '@/utils/dict'
 import * as MailAccountApi from '@/api/system/mail/account'
 
@@ -106,7 +107,7 @@ const formData = ref({
   sslEnable: true,
   starttlsEnable: false
 })
-const formRules = reactive({
+const formRules = reactive<FormRules>({
   mail: [
     { required: true, message: t('system.mail.mailRequired'), trigger: 'blur' },
     { type: 'email', message: t('system.mail.mailFormat'), trigger: ['blur', 'change'] }

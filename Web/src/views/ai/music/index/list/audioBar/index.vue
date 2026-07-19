@@ -39,15 +39,15 @@ import audioUrl from '@/assets/audio/response.mp3'
 
 defineOptions({ name: 'Index' })
 
-const currentSong = inject('currentSong', {})
+const currentSong = inject<Ref<Recordable>>('currentSong', ref({}))
 
-const audioRef = ref<Nullable<HTMLElement>>(null)
+const audioRef = ref<HTMLAudioElement | null>(null)
   // 音频相关属性https://www.runoob.com/tags/ref-av-dom.html
 const audioProps = reactive({
   autoplay: true,
   paused: false,
   currentTime: '00:00',
-  duration: '00:00',
+  duration: 0,
   muted:  false,
   volume: 50,
 })

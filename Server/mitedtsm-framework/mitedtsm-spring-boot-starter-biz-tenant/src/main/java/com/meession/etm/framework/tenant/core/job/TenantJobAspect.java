@@ -41,17 +41,28 @@ public class TenantJobAspect {
 
         // 逐个租户，执行 Job
         Map<Long, String> results = new ConcurrentHashMap<>();
+        // ForkJoinPool.commonPool 的工作线程不会可靠继承 Spring Boot LaunchedClassLoader。
+        // 租户任务若从嵌套 JAR 读取资源（例如 area.csv），使用工作线程原有的上下文类加载器会
+        // 错误报告资源不存在，因此在每个并行任务中显式传播并在结束后恢复。
+        ClassLoader applicationClassLoader = Thread.currentThread().getContextClassLoader();
         tenantIds.parallelStream().forEach(tenantId -> {
-            // TODO 芋艿：先通过 parallel 实现并行；1）多个租户，是一条执行日志；2）异常的情况
-            TenantUtils.execute(tenantId, () -> {
-                try {
-                    Object result = joinPoint.proceed();
-                    results.put(tenantId, StrUtil.toStringOrEmpty(result));
-                } catch (Throwable e) {
-                    log.error("[execute][租户({}) 执行 Job 发生异常", tenantId, e);
-                    results.put(tenantId, ExceptionUtil.getRootCauseMessage(e));
-                }
-            });
+            Thread worker = Thread.currentThread();
+            ClassLoader previousClassLoader = worker.getContextClassLoader();
+            worker.setContextClassLoader(applicationClassLoader);
+            try {
+                // TODO 芋艿：先通过 parallel 实现并行；1）多个租户，是一条执行日志；2）异常的情况
+                TenantUtils.execute(tenantId, () -> {
+                    try {
+                        Object result = joinPoint.proceed();
+                        results.put(tenantId, StrUtil.toStringOrEmpty(result));
+                    } catch (Throwable e) {
+                        log.error("[execute][租户({}) 执行 Job 发生异常", tenantId, e);
+                        results.put(tenantId, ExceptionUtil.getRootCauseMessage(e));
+                    }
+                });
+            } finally {
+                worker.setContextClassLoader(previousClassLoader);
+            }
         });
         return JsonUtils.toJsonString(results);
     }

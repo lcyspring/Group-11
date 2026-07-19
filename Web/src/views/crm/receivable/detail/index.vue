@@ -1,7 +1,14 @@
 <template>
   <ReceivableDetailsHeader v-loading="loading" :receivable="receivable">
-    <el-button v-if="permissionListRef?.validateWrite" @click="openForm('update', receivable.id)">
-      {{ t('common.edit') }}
+    <el-button
+      v-if="
+        permissionListRef?.validateWrite &&
+        receivable.referenceStatus === ReceivableReferenceStatus.VALID &&
+        [0, 30, 40].includes(receivable.auditStatus)
+      "
+      @click="openForm('update', receivable.id)"
+    >
+      {{ receivable.auditStatus === 0 ? t('common.edit') : t('receivable.revise') }}
     </el-button>
   </ReceivableDetailsHeader>
   <el-col>
@@ -37,9 +44,10 @@ import { BizTypeEnum } from '@/api/crm/permission'
 import { OperateLogVO } from '@/api/system/operatelog'
 import { getOperateLogPage } from '@/api/crm/operateLog'
 import ReceivableForm from '@/views/crm/receivable/ReceivableForm.vue'
+import { ReceivableReferenceStatus } from '../referenceIntegrity'
 
 defineOptions({ name: 'CrmReceivablePlanDetail' })
-const props = defineProps<{ id?: number }>()
+const props = defineProps<{ id?: number | string }>()
 
 const { t } = useI18n('crm') // 国际化
 const route = useRoute()
@@ -89,8 +97,8 @@ const close = () => {
 /** 初始化 */
 const { params } = useRoute()
 onMounted(async () => {
-  const id = props.id || route.params.id
-  if (!id) {
+  const id = Number(props.id || route.params.id)
+  if (!Number.isSafeInteger(id) || id <= 0) {
     message.warning(t('receivable.paramError'))
     close()
     return

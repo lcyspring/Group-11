@@ -1,0 +1,30 @@
+schema_version 1
+
+
+endpoint {
+  base_url "http://127.0.0.1:8080/admin-api"
+  tenant_id 1
+  foreign_tenant_id 118
+
+}
+
+account {
+  admin_username "admin"
+  password "CHANGE_ME"
+
+}
+
+acceptance {
+  department_id 103
+  customer_id 12
+  handler_user_id 1
+  query_denied_code 1020015008
+
+}
+
+mysql {
+  container "mitedtsm-rootless-mysql"
+  user "root"
+  password "CHANGE_ME"
+  database "mitedtsm_database"
+}

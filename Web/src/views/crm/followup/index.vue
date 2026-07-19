@@ -1,7 +1,7 @@
 <!-- 某个记录的跟进记录列表，目前主要用于 CRM 客户、商机等详情界面 -->
 <template>
   <!-- 操作栏 -->
-  <el-row class="mb-10px" justify="end">
+  <el-row v-if="!readonly" class="mb-10px" justify="end">
     <el-button @click="openForm">
       <Icon class="mr-5px" icon="ep:edit" />
       {{ t('followUp.createFollowUp') }}
@@ -101,7 +101,7 @@
           </el-link>
         </template>
       </el-table-column>
-      <el-table-column align="center" :label="t('common.action')" fixed="right">
+      <el-table-column v-if="!readonly" align="center" :label="t('common.action')" fixed="right">
         <template #default="scope">
           <el-button link type="danger" @click="handleDelete(scope.row.id)"> {{ t('common.delete') }} </el-button>
         </template>
@@ -122,6 +122,7 @@
 
 <script lang="ts" setup>
 import { dateFormatter } from '@/utils/formatTime'
+import { resolveDialogAction } from '@/utils/dialogAction'
 import { DICT_TYPE } from '@/utils/dict'
 import { FollowUpRecordApi, FollowUpRecordVO } from '@/api/crm/followup'
 import FollowUpRecordForm from './FollowUpRecordForm.vue'
@@ -137,10 +138,14 @@ const getFileName = (url: string) => {
   return url.substring(url.lastIndexOf('/') + 1)
 }
 
-const props = defineProps<{
-  bizType: number
-  bizId: number
-}>()
+const props = withDefaults(
+  defineProps<{
+    bizType: number
+    bizId: number
+    readonly?: boolean
+  }>(),
+  { readonly: false }
+)
 const message = useMessage() // 消息弹窗
 const { t } = useI18n('crm') // 国际化
 const loading = ref(true) // 列表的加载中
@@ -155,6 +160,14 @@ const queryParams = reactive({
 
 /** 查询列表 */
 const getList = async () => {
+  // Detail panels mount before their asynchronous parent has resolved the business id.
+  // Do not issue an invalid (0, 0) request; the permission aspect cannot scope it.
+  if (queryParams.bizType <= 0 || queryParams.bizId <= 0) {
+    list.value = []
+    total.value = 0
+    loading.value = false
+    return
+  }
   loading.value = true
   try {
     const data = await FollowUpRecordApi.getFollowUpRecordPage(queryParams)
@@ -173,15 +186,10 @@ const openForm = () => {
 
 /** 删除按钮操作 */
 const handleDelete = async (id: number) => {
-  try {
-    // 删除的二次确认
-    await message.delConfirm()
-    // 发起删除
-    await FollowUpRecordApi.deleteFollowUpRecord(id)
-    message.success(t('common.delSuccess'))
-    // 刷新列表
-    await getList()
-  } catch {}
+  if (!(await resolveDialogAction(message.delConfirm()))) return
+  await FollowUpRecordApi.deleteFollowUpRecord(id)
+  message.success(t('common.delSuccess'))
+  await getList()
 }
 
 /** 打开联系人详情 */
@@ -196,11 +204,12 @@ const openBusinessDetail = (id: number) => {
 }
 
 watch(
-  () => props.bizId,
-  () => {
-    queryParams.bizType = props.bizType
-    queryParams.bizId = props.bizId
-    getList()
-  }
+  [() => props.bizType, () => props.bizId],
+  ([bizType, bizId]) => {
+    queryParams.bizType = bizType
+    queryParams.bizId = bizId
+    void getList()
+  },
+  { immediate: true }
 )
 </script>

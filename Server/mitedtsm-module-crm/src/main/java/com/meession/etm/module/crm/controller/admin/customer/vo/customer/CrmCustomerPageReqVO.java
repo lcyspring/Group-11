@@ -3,6 +3,7 @@ package com.meession.etm.module.crm.controller.admin.customer.vo.customer;
 import com.meession.etm.framework.common.pojo.PageParam;
 import com.meession.etm.framework.common.validation.InEnum;
 import com.meession.etm.module.crm.enums.common.CrmSceneTypeEnum;
+import com.meession.etm.module.crm.enums.customer.CrmCustomerLifecycleStatusEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -30,8 +31,17 @@ public class CrmCustomerPageReqVO extends PageParam {
     @Schema(description = "客户名称", example = "赵六")
     private String name;
 
+    @Schema(description = "上级客户编号；用于查询直接下级客户", example = "1024")
+    private Long parentCustomerId;
+
     @Schema(description = "手机", example = "18000000000")
     private String mobile;
+
+    @Schema(description = "联系人姓名", example = "张三")
+    private String contactName;
+
+    @Schema(description = "首联系人姓名", example = "李四")
+    private String primaryContactName;
 
     @Schema(description = "所属行业", example = "1")
     private Integer industryId;
@@ -44,7 +54,7 @@ public class CrmCustomerPageReqVO extends PageParam {
 
     @Schema(description = "场景类型", example = "1")
     @InEnum(CrmSceneTypeEnum.class)
-    private Integer sceneType; // 场景类型，为 null 时则表示全部
+    private Integer sceneType; // 普通用户为 null 时默认本人负责，CRM 管理员为 null 时表示全部
 
     @Schema(description = "是否为公海数据", requiredMode = Schema.RequiredMode.REQUIRED, example = "false")
     private Boolean pool; // null 则表示为不是公海数据
@@ -54,5 +64,9 @@ public class CrmCustomerPageReqVO extends PageParam {
 
     @Schema(description = "跟进状态", example = "true")
     private Boolean followUpStatus;
+
+    @Schema(description = "客户生命周期状态：10 潜在、20 意向、30 成交、40 流失", example = "20")
+    @InEnum(CrmCustomerLifecycleStatusEnum.class)
+    private Integer lifecycleStatus;
 
 }

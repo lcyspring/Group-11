@@ -6,6 +6,16 @@ export interface CrmStatisticFunnelRespVO {
   businessWinCount: number // 赢单数
 }
 
+export interface CrmStatisticsBusinessStageSummaryRespVO {
+  statusId?: number
+  statusName?: string
+  sort: number
+  endStatus?: number
+  businessCount: number
+  totalPrice: number | string
+  conversionRate: number
+}
+
 export interface CrmStatisticsBusinessSummaryByDateRespVO {
   time: string // 时间
   businessCreateCount: number // 商机数
@@ -16,6 +26,15 @@ export interface CrmStatisticsBusinessInversionRateSummaryByDateRespVO {
   time: string // 时间
   businessCount: number // 商机数量
   businessWinCount: number // 赢单商机数
+  businessWinRate: number // 赢单转化率（百分比）
+}
+
+export interface CrmStatisticsBusinessForecastByDateRespVO {
+  time: string
+  forecastBusinessCount: number
+  actualBusinessCount: number
+  forecastAmount: number | string
+  actualAmount: number | string
 }
 
 // 客户分析 API
@@ -24,6 +43,34 @@ export const StatisticFunnelApi = {
   getFunnelSummary: (params: any) => {
     return request.get({
       url: '/crm/statistics-funnel/get-funnel-summary',
+      params
+    })
+  },
+  // 1.1 获取按状态组计算的商机阶段漏斗
+  getBusinessStageSummary: (params: any) => {
+    return request.get({
+      url: '/crm/statistics-funnel/get-business-stage-summary',
+      params
+    })
+  },
+  // 1.2 获取所选阶段及后续阶段的活跃、赢单商机明细
+  getBusinessStagePage: (params: any) => {
+    return request.get({
+      url: '/crm/statistics-funnel/get-business-stage-page',
+      params
+    })
+  },
+  // 1.3 获取赢单商机明细
+  getBusinessWonPage: (params: any) => {
+    return request.get({
+      url: '/crm/statistics-funnel/get-business-won-page',
+      params
+    })
+  },
+  // 1.4 获取赢单、输单或无效商机明细
+  getBusinessOutcomePage: (params: any) => {
+    return request.get({
+      url: '/crm/statistics-funnel/get-business-outcome-page',
       params
     })
   },
@@ -48,7 +95,21 @@ export const StatisticFunnelApi = {
       params
     })
   },
-  // 5. 获取商机列表(按日期)
+  // 5. 获取销售预测汇总
+  getBusinessForecastByDate: (params: any) => {
+    return request.get({
+      url: '/crm/statistics-funnel/get-business-forecast-by-date',
+      params
+    })
+  },
+  // 6. 获取销售预测商机明细
+  getBusinessForecastPage: (params: any) => {
+    return request.get({
+      url: '/crm/statistics-funnel/get-business-forecast-page',
+      params
+    })
+  },
+  // 7. 获取商机列表(按日期)
   getBusinessPageByDate: (params: any) => {
     return request.get({
       url: '/crm/statistics-funnel/get-business-page-by-date',

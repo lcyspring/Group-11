@@ -1,12 +1,7 @@
 <template>
   <ContentWrap>
     <!-- 搜索 -->
-    <el-form
-      class="-mb-15px"
-      label-width="auto"
-      :model="queryParams"
-      ref="queryFormRef"
-    >
+    <el-form class="-mb-15px" label-width="auto" :model="queryParams" ref="queryFormRef">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('infra.largeFile.filename')" prop="filename">
@@ -28,7 +23,10 @@
               :placeholder="t('common.selectText')"
             >
               <el-option :label="t('infra.largeFile.statusUploading')" value="uploading" />
-              <el-option :label="t('infra.largeFile.statusUploadFailed')" value="uploading_failed" />
+              <el-option
+                :label="t('infra.largeFile.statusUploadFailed')"
+                value="uploading_failed"
+              />
               <el-option :label="t('infra.largeFile.statusMerging')" value="merging" />
               <el-option :label="t('infra.largeFile.statusMergeFailed')" value="merging_failed" />
               <el-option :label="t('infra.largeFile.statusCompleted')" value="completed" />
@@ -63,14 +61,34 @@
     </div>
 
     <el-table v-loading="loading" :data="list" :show-overflow-tooltip="true" :table-layout="'auto'">
-      <el-table-column align="center" :label="t('infra.largeFile.taskId')" prop="id" min-width="80" />
-      <el-table-column align="center" :label="t('infra.largeFile.filename')" prop="filename" min-width="200" />
-      <el-table-column align="center" :label="t('infra.largeFile.fileSize')" prop="fileSize" min-width="120">
+      <el-table-column
+        align="center"
+        :label="t('infra.largeFile.taskId')"
+        prop="id"
+        min-width="80"
+      />
+      <el-table-column
+        align="center"
+        :label="t('infra.largeFile.filename')"
+        prop="filename"
+        min-width="200"
+      />
+      <el-table-column
+        align="center"
+        :label="t('infra.largeFile.fileSize')"
+        prop="fileSize"
+        min-width="120"
+      >
         <template #default="scope">
           {{ formatFileSize(scope.row.fileSize) }}
         </template>
       </el-table-column>
-      <el-table-column align="center" :label="t('infra.largeFile.chunkSize')" prop="chunkSize" min-width="100">
+      <el-table-column
+        align="center"
+        :label="t('infra.largeFile.chunkSize')"
+        prop="chunkSize"
+        min-width="100"
+      >
         <template #default="scope">
           {{ formatFileSize(scope.row.chunkSize) }}
         </template>
@@ -85,7 +103,12 @@
           />
         </template>
       </el-table-column>
-      <el-table-column align="center" :label="t('infra.largeFile.status')" prop="statusName" min-width="100">
+      <el-table-column
+        align="center"
+        :label="t('infra.largeFile.status')"
+        prop="statusName"
+        min-width="100"
+      >
         <template #default="scope">
           <el-tag :type="getStatusType(scope.row.status)">
             {{ scope.row.statusName }}
@@ -106,7 +129,12 @@
         prop="updateTime"
         min-width="180"
       />
-      <el-table-column align="center" :label="t('infra.largeFile.errorMessage')" prop="errorMessage" min-width="150">
+      <el-table-column
+        align="center"
+        :label="t('infra.largeFile.errorMessage')"
+        prop="errorMessage"
+        min-width="150"
+      >
         <template #default="scope">
           <el-tooltip
             v-if="scope.row.errorMessage"
@@ -120,34 +148,40 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column align="center" fixed="right" :label="t('common.operation')" min-width="150">
+      <el-table-column align="center" fixed="right" :label="t('common.operation')" width="140">
         <template #default="scope">
-          <el-button
-            v-if="scope.row.status === 'completed'"
-            v-hasPermi="['infra:large-file:query']"
-            link
-            type="primary"
-            @click="handleDownload(scope.row)"
-          >
-            {{ t('infra.largeFile.download') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['infra:large-file:update']"
-            v-if="scope.row.status === 'uploading_failed' || scope.row.status === 'merging_failed' || scope.row.status === 'interrupted'"
-            link
-            type="primary"
-            @click="handleReset(scope.row.id)"
-          >
-            {{ t('infra.largeFile.retry') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['infra:large-file:delete']"
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              v-if="scope.row.status === 'completed'"
+              v-hasPermi="['infra:large-file:query']"
+              link
+              type="primary"
+              @click="handleDownload(scope.row)"
+            >
+              {{ t('infra.largeFile.download') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['infra:large-file:update']"
+              v-if="
+                scope.row.status === 'uploading_failed' ||
+                scope.row.status === 'merging_failed' ||
+                scope.row.status === 'interrupted'
+              "
+              link
+              type="primary"
+              @click="handleReset(scope.row.id)"
+            >
+              {{ t('infra.largeFile.retry') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['infra:large-file:delete']"
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>
@@ -393,11 +427,13 @@ const startUpload = async () => {
 
     // 3. 合并文件
     await mergeFile(file.name, currentFileId, totalChunks)
-
   } catch (error: any) {
     console.error('Upload failed:', error)
     uploadStatus.value = 'exception'
-    uploadStatusText.value = t('infra.largeFile.uploadFailed').replace('{error}', error.message || 'Unknown error')
+    uploadStatusText.value = t('infra.largeFile.uploadFailed').replace(
+      '{error}',
+      error.message || 'Unknown error'
+    )
     message.error(uploadStatusText.value)
   }
 }
@@ -414,11 +450,13 @@ const mergeFile = async (filename: string, fileId: string, chunks: number) => {
 
     // 轮询任务状态，等待合并完成
     await pollTaskStatus(fileId)
-
   } catch (error: any) {
     console.error('Merge failed:', error)
     uploadStatus.value = 'exception'
-    uploadStatusText.value = t('infra.largeFile.mergeFailed').replace('{error}', error.message || 'Unknown error')
+    uploadStatusText.value = t('infra.largeFile.mergeFailed').replace(
+      '{error}',
+      error.message || 'Unknown error'
+    )
     message.error(uploadStatusText.value)
   }
 }
@@ -465,17 +503,19 @@ const pollTaskStatus = async (fileId: string) => {
 
       if (task.status === 'merging_failed') {
         uploadStatus.value = 'exception'
-        uploadStatusText.value = t('infra.largeFile.mergeFailed').replace('{error}', task.errorMessage || 'Unknown')
+        uploadStatusText.value = t('infra.largeFile.mergeFailed').replace(
+          '{error}',
+          task.errorMessage || 'Unknown'
+        )
         message.error(uploadStatusText.value)
         return
       }
-
     } catch (error) {
       console.error('Poll task status failed:', error)
     }
 
     // 等待 1 秒后继续轮询
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await new Promise((resolve) => setTimeout(resolve, 1000))
     attempts++
   }
 
@@ -490,15 +530,15 @@ const cancelUpload = async () => {
   try {
     await message.confirm(t('infra.largeFile.confirmCancel'))
     cancelRequested = true
-    
+
     if (currentFileId) {
       await LargeFileApi.interruptFileUpload(currentFileId)
     }
-    
+
     uploadStatusText.value = t('infra.largeFile.uploadInterrupted')
     uploadStatus.value = 'warning'
     uploading.value = false
-    
+
     // 刷新列表
     getList()
   } catch {
@@ -585,9 +625,7 @@ const getStatusType = (status: string): 'success' | 'warning' | 'danger' | 'info
 }
 
 /** 获取进度条状态 */
-const getProgressStatus = (
-  status: string
-): 'success' | 'warning' | 'exception' | undefined => {
+const getProgressStatus = (status: string): 'success' | 'warning' | 'exception' | undefined => {
   switch (status) {
     case 'uploading_failed':
     case 'merging_failed':

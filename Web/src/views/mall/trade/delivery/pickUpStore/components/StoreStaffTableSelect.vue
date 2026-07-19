@@ -140,16 +140,19 @@ import * as UserApi from '@/api/system/user'
 import DeptTree from '@/views/system/user/DeptTree.vue'
 
 const { t } = useI18n('mall.trade') // 国际�?
-// 是否全�?const isCheckAll = ref(false)
+// 是否全选
+const isCheckAll = ref(false)
 // 全选框是否处于中间状态：不是全部选中 && 任意一个选中
 const isIndeterminate = ref(false)
-// 选中的活�?const checkedUsers = ref([])
+// 选中的用户
+const checkedUsers = ref<UserApi.UserVO[]>([])
 // 选中状态：key为用户ID，value为是否选中
 const checkedStatus = ref<Record<string, boolean>>({})
 
 const dialogVisible = ref(false)
 const loading = ref(true) // 列表的加载中
-const total = ref(0) // 列表的总页�?const list = ref([]) // 列表的数
+const total = ref(0) // 列表的总页数
+const list = ref<UserApi.UserVO[]>([]) // 列表的数据
 const queryParams = reactive({
   pageNo: 1,
   pageSize: 10,

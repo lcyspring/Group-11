@@ -64,12 +64,19 @@ public class CrmBusinessRespVO {
     @ExcelProperty("商机状态")
     private String statusName;
 
+    @Schema(description = "当前阶段赢单率", example = "30")
+    private Integer statusPercent;
+
     @Schema
     @ExcelProperty("结束状态")
     private Integer endStatus;
 
     @ExcelProperty("结束时的备注")
     private String endRemark;
+
+    @Schema(description = "实际结单时间")
+    @ExcelProperty("实际结单时间")
+    private LocalDateTime endTime;
 
     @Schema(description = "预计成交日期")
     @ExcelProperty("预计成交日期")
@@ -138,6 +145,9 @@ public class CrmBusinessRespVO {
 
         @Schema(description = "总计价格", requiredMode = Schema.RequiredMode.REQUIRED, example = "123.00")
         private BigDecimal totalPrice;
+
+        @Schema(description = "税率百分比")
+        private BigDecimal taxRatePercent;
 
     }
 

@@ -46,13 +46,13 @@
       </el-descriptions-item>
       <el-descriptions-item :label="t('order.userIp')">{{ detailData.userIp }}</el-descriptions-item>
       <el-descriptions-item :label="t('order.channelOrderNo')">
-        <el-tag size="mini" type="success" v-if="detailData.channelOrderNo">
+        <el-tag size="small" type="success" v-if="detailData.channelOrderNo">
           {{ detailData.channelOrderNo }}
         </el-tag>
       </el-descriptions-item>
       <el-descriptions-item :label="t('order.channelUserId')">{{ detailData.channelUserId }}</el-descriptions-item>
       <el-descriptions-item :label="t('order.refundPrice')">
-        <el-tag size="mini" type="danger">
+        <el-tag size="small" type="danger">
           ￥{{ ((detailData.refundPrice || 0) / 100.0).toFixed(2) }}
         </el-tag>
       </el-descriptions-item>
@@ -81,9 +81,7 @@ defineOptions({ name: 'PayOrderDetail' })
 
 const dialogVisible = ref(false) // 弹窗的是否展示
 const detailLoading = ref(false) // 表单的加载中
-const detailData = ref({
-  extension: {}
-})
+const detailData = ref<Record<string, any>>({ extension: {} })
 
 /** 打开弹窗 */
 const open = async (id: number) => {

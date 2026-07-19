@@ -93,24 +93,26 @@
         min-width="180"
         :formatter="dateFormatter"
       />
-      <el-table-column :label="t('common.operation')" align="center" class-name="small-padding fixed-width">
+      <el-table-column :label="t('common.operation')" align="center" class-name="small-padding fixed-width" width="220">
         <template #default="scope">
-          <el-button
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-            v-hasPermi="['system:tenant-package:update']"
-          >
-            {{ t('action.edit') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-            v-hasPermi="['system:tenant-package:delete']"
-          >
-            {{ t('action.del') }}
-          </el-button>
+          <TableActions>
+            <el-button
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+              v-hasPermi="['system:tenant-package:update']"
+            >
+              {{ t('action.edit') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+              v-hasPermi="['system:tenant-package:delete']"
+            >
+              {{ t('action.del') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

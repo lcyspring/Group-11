@@ -2,7 +2,9 @@ package com.meession.etm.module.crm.dal.dataobject.customer;
 
 import com.meession.etm.framework.mybatis.core.dataobject.BaseDO;
 import com.meession.etm.module.crm.enums.DictTypeConstants;
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.KeySequence;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.*;
@@ -33,6 +35,12 @@ public class CrmCustomerDO extends BaseDO {
      * 客户名称
      */
     private String name;
+    /**
+     * 上级客户编号
+     *
+     * 关联 {@link CrmCustomerDO#getId()} 字段
+     */
+    private Long parentCustomerId;
 
     /**
      * 跟进状态
@@ -62,6 +70,26 @@ public class CrmCustomerDO extends BaseDO {
      */
     private LocalDateTime ownerTime;
 
+    /** Current pool state: 0 owned, 1 public pool, 2 garbage pool. */
+    private Integer poolStatus;
+    /** Time of the current public/garbage pool entry. */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private LocalDateTime poolEntryTime;
+    /** Owner immediately before the current pool entry. */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Long poolPreviousOwnerUserId;
+    /** Machine-readable reason for the current pool entry. */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String poolReason;
+    /** Number of times the customer has entered the public pool. */
+    private Integer poolCycleCount;
+    /** Time at which the customer entered the garbage pool. */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private LocalDateTime garbageTime;
+    /** Required reason for the current garbage-pool state. */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String garbageReason;
+
     /**
      * 锁定状态
      */
@@ -70,6 +98,14 @@ public class CrmCustomerDO extends BaseDO {
      * 成交状态
      */
     private Boolean dealStatus;
+    /**
+     * 客户生命周期状态：10 潜在、20 意向、30 成交、40 流失。
+     */
+    private Integer lifecycleStatus;
+    /** 生命周期状态最后变更时间。 */
+    private LocalDateTime lifecycleStatusChangeTime;
+    /** 当前为流失客户时的流失原因。 */
+    private String lifecycleLostReason;
 
     /**
      * 手机
@@ -91,6 +127,9 @@ public class CrmCustomerDO extends BaseDO {
      * email
      */
     private String email;
+
+    /** 客户自身生日；联系人生日保存在 crm_contact.birthday。 */
+    private java.time.LocalDate birthday;
     /**
      * 所在地
      *

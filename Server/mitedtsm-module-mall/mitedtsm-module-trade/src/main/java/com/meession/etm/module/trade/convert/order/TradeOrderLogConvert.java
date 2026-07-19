@@ -5,7 +5,7 @@ import com.meession.etm.module.trade.service.order.bo.TradeOrderLogCreateReqBO;
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
 
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface TradeOrderLogConvert {
 
     TradeOrderLogConvert INSTANCE = Mappers.getMapper(TradeOrderLogConvert.class);

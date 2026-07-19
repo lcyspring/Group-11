@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.meession.etm.module.crm.dal.mysql.statistics.CrmStatisticsWorkOrderMapper">
+    <sql id="scope">
+        tenant_id = #{tenantId}
+        AND deleted = 0
+        AND (#{queryAll} = true OR creator = CAST(#{userId} AS CHAR) OR handler_user_id = #{userId})
+    </sql>
+
+    <select id="selectSummary" resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.workorder.CrmStatisticsWorkOrderSummaryRespVO">
+        SELECT COUNT(*) AS total_count,
+               COALESCE(SUM(status = 10), 0) AS pending_count,
+               COALESCE(SUM(status = 20), 0) AS processing_count,
+               COALESCE(SUM(status = 30), 0) AS completed_count,
+               COALESCE(SUM(status = 40), 0) AS returned_count
+          FROM crm_work_order
+         WHERE <include refid="scope"/>
+           AND create_time BETWEEN #{times[0]} AND #{times[1]}
+    </select>
+
+    <select id="selectByStatus" resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.workorder.CrmStatisticsWorkOrderStatusRespVO">
+        SELECT status, COUNT(*) AS count
+          FROM crm_work_order
+         WHERE <include refid="scope"/>
+           AND create_time BETWEEN #{times[0]} AND #{times[1]}
+         GROUP BY status ORDER BY status
+    </select>
+
+    <select id="selectByType" resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.workorder.CrmStatisticsWorkOrderTypeRespVO">
+        SELECT type, COUNT(*) AS count
+          FROM crm_work_order
+         WHERE <include refid="scope"/>
+           AND create_time BETWEEN #{times[0]} AND #{times[1]}
+         GROUP BY type ORDER BY type
+    </select>
+
+    <select id="selectByHandler" resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.workorder.CrmStatisticsWorkOrderHandlerRespVO">
+        SELECT handler_user_id, COUNT(*) AS count
+          FROM crm_work_order
+         WHERE <include refid="scope"/>
+           AND create_time BETWEEN #{times[0]} AND #{times[1]}
+         GROUP BY handler_user_id ORDER BY count DESC, handler_user_id
+    </select>
+
+    <select id="selectTrend" resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.workorder.CrmStatisticsWorkOrderTrendRespVO">
+        SELECT time, SUM(created_count) AS created_count, SUM(completed_count) AS completed_count
+          FROM (
+                SELECT DATE_FORMAT(create_time, '%Y-%m-%dT00:00:00') AS time,
+                       COUNT(*) AS created_count, 0 AS completed_count
+                  FROM crm_work_order
+                 WHERE <include refid="scope"/>
+                   AND create_time BETWEEN #{times[0]} AND #{times[1]}
+                 GROUP BY DATE_FORMAT(create_time, '%Y-%m-%dT00:00:00')
+                UNION ALL
+                SELECT DATE_FORMAT(complete_time, '%Y-%m-%dT00:00:00') AS time,
+                       0 AS created_count, COUNT(*) AS completed_count
+                  FROM crm_work_order
+                 WHERE <include refid="scope"/>
+                   AND complete_time IS NOT NULL
+                   AND complete_time BETWEEN #{times[0]} AND #{times[1]}
+                 GROUP BY DATE_FORMAT(complete_time, '%Y-%m-%dT00:00:00')
+          ) trend
+         GROUP BY time ORDER BY time
+    </select>
+</mapper>

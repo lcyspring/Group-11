@@ -21,7 +21,9 @@ export interface ContactVO {
   areaName?: string // 所在地名称
   detailAddress: string // 详细地址
   sex: number // 性别
-  master: boolean // 是否主联系人
+  birthday?: string // 生日，客户关怀使用联系人真源
+  master: boolean // 是否关键决策人
+  primaryContact: boolean // 是否首联系人
   post: string // 职务
   parentId: number // 上级联系人编号
   parentName?: string // 上级联系人名称

@@ -83,7 +83,7 @@ const submit = (data: AiMindMapGenerateReqVO) => {
       console.error(tAi('mindMap.generateFailed'), err)
       stopStream()
       // 需要抛出异常，禁止重试
-      throw error
+      throw err
     },
     ctrl: ctrl.value
   })

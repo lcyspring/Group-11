@@ -32,6 +32,7 @@
 </template>
 
 <script setup lang="ts">
+import type { FormRules } from 'element-plus'
 import { useVModel } from '@vueuse/core'
 import BasicInfoSection from './sections/BasicInfoSection.vue'
 import TriggerSection from './sections/TriggerSection.vue'
@@ -215,7 +216,7 @@ const validateActions = (_rule: any, value: any, callback: any) => {
   callback()
 }
 
-const formRules = reactive({
+const formRules = reactive<FormRules>({
   name: [
     { required: true, message: t('rule.scene.nameRequired'), trigger: 'blur' },
     { type: 'string', min: 1, max: 50, message: t('rule.scene.nameLengthLimit'), trigger: 'blur' }

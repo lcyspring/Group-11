@@ -6,6 +6,8 @@ import com.meession.etm.framework.mybatis.core.query.MPJLambdaWrapperX;
 import com.meession.etm.module.crm.controller.admin.product.vo.product.CrmProductPageReqVO;
 import com.meession.etm.module.crm.dal.dataobject.product.CrmProductDO;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
@@ -16,6 +18,9 @@ import java.util.List;
  */
 @Mapper
 public interface CrmProductMapper extends BaseMapperX<CrmProductDO> {
+
+    @Select("SELECT * FROM crm_product WHERE id=#{id} AND deleted=0 FOR UPDATE")
+    CrmProductDO selectByIdForUpdate(@Param("id") Long id);
 
     default PageResult<CrmProductDO> selectPage(CrmProductPageReqVO reqVO) {
         return selectPage(reqVO, new MPJLambdaWrapperX<CrmProductDO>()

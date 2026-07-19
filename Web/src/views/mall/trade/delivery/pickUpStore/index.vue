@@ -29,7 +29,12 @@
         </el-col>
         <el-col :span="8">
           <el-form-item :label="t('mall.trade.delivery.storeStatus')" prop="status">
-            <el-select v-model="queryParams.status" class="!w-240px" clearable :placeholder="t('mall.trade.delivery.storeStatusPlaceholder')">
+            <el-select
+              v-model="queryParams.status"
+              class="!w-240px"
+              clearable
+              :placeholder="t('mall.trade.delivery.storeStatusPlaceholder')"
+            >
               <el-option
                 v-for="dict in getIntDictOptions(DICT_TYPE.COMMON_STATUS)"
                 :key="dict.value"
@@ -86,18 +91,39 @@
       <el-table-column :label="t('common.index')" min-width="80" prop="id" />
       <el-table-column :label="t('mall.trade.delivery.storeLogo')" min-width="100" prop="logo">
         <template #default="scope">
-          <img v-if="scope.row.logo" :src="scope.row.logo" :alt="t('mall.trade.delivery.storeLogoAlt')" class="h-50px" />
+          <img
+            v-if="scope.row.logo"
+            :src="scope.row.logo"
+            :alt="t('mall.trade.delivery.storeLogoAlt')"
+            class="h-50px"
+          />
         </template>
       </el-table-column>
       <el-table-column :label="t('mall.trade.delivery.storeName')" min-width="150" prop="name" />
       <el-table-column :label="t('mall.trade.delivery.storePhone')" min-width="100" prop="phone" />
-      <el-table-column :label="t('mall.trade.delivery.storeDetailAddress')" min-width="100" prop="detailAddress" />
-      <el-table-column :label="t('mall.trade.delivery.businessStartTime') + ' ~ ' + t('mall.trade.delivery.businessEndTime')" min-width="180">
+      <el-table-column
+        :label="t('mall.trade.delivery.storeDetailAddress')"
+        min-width="100"
+        prop="detailAddress"
+      />
+      <el-table-column
+        :label="
+          t('mall.trade.delivery.businessStartTime') +
+          ' ~ ' +
+          t('mall.trade.delivery.businessEndTime')
+        "
+        min-width="180"
+      >
         <template #default="scope">
           {{ scope.row.openingTime }} ~ {{ scope.row.closingTime }}
         </template>
       </el-table-column>
-      <el-table-column align="center" :label="t('mall.trade.delivery.storeStatus')" min-width="100" prop="status">
+      <el-table-column
+        align="center"
+        :label="t('mall.trade.delivery.storeStatus')"
+        min-width="100"
+        prop="status"
+      >
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.COMMON_STATUS" :value="scope.row.status" />
         </template>
@@ -108,33 +134,36 @@
         :label="t('common.createTime')"
         prop="createTime"
         min-width="180"
-       fixed="right" />
-      <el-table-column align="center" :label="t('common.operation')" min-width="150">
+        fixed="right"
+      />
+      <el-table-column align="center" :label="t('common.operation')" width="140">
         <template #default="scope">
-          <el-button
-            v-hasPermi="['trade:delivery:pick-up-store:update']"
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['trade:delivery:pick-up-store:update']"
-            link
-            type="primary"
-            @click="openFormBind(scope.row.id)"
-          >
-            {{ t('mall.trade.delivery.bindStoreStaff') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['trade:delivery:pick-up-store:delete']"
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              v-hasPermi="['trade:delivery:pick-up-store:update']"
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['trade:delivery:pick-up-store:update']"
+              link
+              type="primary"
+              @click="openFormBind(scope.row.id)"
+            >
+              {{ t('mall.trade.delivery.bindStoreStaff') }}
+            </el-button>
+            <el-button
+              v-hasPermi="['trade:delivery:pick-up-store:delete']"
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

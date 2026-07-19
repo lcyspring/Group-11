@@ -15,7 +15,7 @@ import java.util.List;
  *
  * @author QingX
  */
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface MemberSignInConfigConvert {
 
     MemberSignInConfigConvert INSTANCE = Mappers.getMapper(MemberSignInConfigConvert.class);

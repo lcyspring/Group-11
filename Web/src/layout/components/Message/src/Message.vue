@@ -3,6 +3,7 @@ import { formatDate } from '@/utils/formatTime'
 import * as NotifyMessageApi from '@/api/system/notify/message'
 import { useUserStoreWithOut } from '@/store/modules/user'
 import { propTypes } from '@/utils/propTypes'
+import { createNotificationLoader } from './notificationLoader'
 
 defineOptions({ name: 'Message' })
 
@@ -11,79 +12,134 @@ defineProps({
 })
 
 const { push } = useRouter()
+const { t } = useI18n()
 const userStore = useUserStoreWithOut()
 const activeName = ref('notice')
 const unreadCount = ref(0) // 未读消息数量
-const list = ref<any[]>([]) // 消息列表
+const list = ref<NotifyMessageApi.NotifyMessageVO[]>([]) // 消息列表
+const loading = ref(false)
+const loadFailed = ref(false)
+const popoverVisible = ref(false)
 
-// 获得消息列表
-const getList = async () => {
-  list.value = await NotifyMessageApi.getUnreadNotifyMessageList()
-  // 强制设置 unreadCount 为 0，避免小红点因为轮询太慢，不消除
-  unreadCount.value = 0
+const listLoader = createNotificationLoader(NotifyMessageApi.getUnreadNotifyMessageList)
+const countLoader = createNotificationLoader(NotifyMessageApi.getUnreadNotifyMessageCount)
+
+// 获得消息列表：先展示最近一次成功结果，再在后台刷新；快速重复点击只发一个请求。
+const getList = async (refresh = false) => {
+  const cached = listLoader.peek()
+  if (cached) {
+    list.value = cached
+  }
+  if (!cached) {
+    loading.value = true
+  }
+  loadFailed.value = false
+  try {
+    list.value = await listLoader.load(refresh)
+  } catch {
+    loadFailed.value = true
+  } finally {
+    loading.value = false
+  }
 }
 
 // 获得未读消息数
 const getUnreadCount = async () => {
-  NotifyMessageApi.getUnreadNotifyMessageCount().then((data) => {
-    unreadCount.value = data
-  })
+  try {
+    unreadCount.value = await countLoader.load(true)
+  } catch {
+    // 计数刷新失败时保留上一次成功值，避免网络抖动造成红点闪烁。
+  }
 }
 
 // 跳转我的站内信
 const goMyList = () => {
+  popoverVisible.value = false
   push({
     name: 'MyNotifyMessage'
   })
 }
 
 // ========== 初始化 =========
+let unreadCountTimer: ReturnType<typeof setInterval> | undefined
 onMounted(() => {
-  // 首次加载小红点
-  getUnreadCount()
+  // 同时预取列表和小红点，首次打开立即有缓存或明确的加载状态。
+  void getUnreadCount()
+  void getList()
   // 轮询刷新小红点
-  setInterval(
+  unreadCountTimer = setInterval(
     () => {
       if (userStore.getIsSetUser) {
-        getUnreadCount()
+        void getUnreadCount()
       } else {
         unreadCount.value = 0
+        list.value = []
+        listLoader.clear()
+        countLoader.clear()
       }
     },
     1000 * 60 * 2
   )
 })
+
+onBeforeUnmount(() => {
+  if (unreadCountTimer) {
+    clearInterval(unreadCountTimer)
+  }
+})
 </script>
 <template>
   <div class="message">
-    <ElPopover :width="400" placement="bottom" trigger="click">
+    <ElPopover
+      v-model:visible="popoverVisible"
+      :width="400"
+      placement="bottom"
+      trigger="click"
+      @show="getList(true)"
+    >
       <template #reference>
-        <ElBadge :is-dot="unreadCount > 0" class="item">
-          <Icon :size="18" class="cursor-pointer" icon="ep:bell" :color="color" @click="getList" />
-        </ElBadge>
+        <button
+          :aria-label="t('system.notify.my')"
+          class="message-trigger"
+          type="button"
+          @focus="getList()"
+          @mouseenter="getList()"
+        >
+          <ElBadge :is-dot="unreadCount > 0" class="item">
+            <Icon :size="18" icon="ep:bell" :color="color" />
+          </ElBadge>
+        </button>
       </template>
       <ElTabs v-model="activeName">
-        <ElTabPane label="我的站内信" name="notice">
+        <ElTabPane :label="t('system.notify.my')" name="notice">
           <el-scrollbar class="message-list">
-            <template v-for="item in list" :key="item.id">
-              <div class="message-item">
-                <img alt="" class="message-icon" src="@/assets/imgs/avatar.gif" />
-                <div class="message-content">
-                  <span class="message-title">
-                    {{ item.templateNickname }}：{{ item.templateContent }}
-                  </span>
-                  <span class="message-date">
-                    {{ formatDate(item.createTime) }}
-                  </span>
+            <ElSkeleton v-if="loading && list.length === 0" :rows="4" animated class="p-10px" />
+            <div v-else-if="loadFailed && list.length === 0" class="message-empty">
+              <span>{{ t('common.error') }}</span>
+              <XButton :title="t('common.reload')" type="primary" @click="getList(true)" />
+            </div>
+            <ElEmpty v-else-if="list.length === 0" :description="t('common.noData')" />
+            <template v-else>
+              <template v-for="item in list" :key="item.id">
+                <div class="message-item">
+                  <img alt="" class="message-icon" src="@/assets/imgs/avatar.gif" />
+                  <div class="message-content">
+                    <span class="message-title">
+                      {{ item.templateNickname }}：{{ item.templateContent }}
+                    </span>
+                    <span class="message-date">
+                      {{ formatDate(item.createTime) }}
+                    </span>
+                  </div>
                 </div>
-              </div>
+              </template>
             </template>
           </el-scrollbar>
         </ElTabPane>
       </ElTabs>
       <!-- 更多 -->
       <div style="margin-top: 10px; text-align: right">
-        <XButton preIcon="ep:view" title="查看全部" type="primary" @click="goMyList" />
+        <XButton preIcon="ep:view" :title="t('common.more')" type="primary" @click="goMyList" />
       </div>
     </ElPopover>
   </div>
@@ -96,6 +152,25 @@ onMounted(() => {
   justify-content: center;
   height: 260px;
   line-height: 45px;
+}
+
+.message-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0 10px;
+  margin: 0 -10px;
+  color: inherit;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+}
+
+.message {
+  display: flex;
+  height: 100%;
+  align-items: center;
 }
 
 .message-list {

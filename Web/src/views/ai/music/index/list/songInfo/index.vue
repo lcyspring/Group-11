@@ -19,6 +19,6 @@ defineOptions({ name: 'Index' })
 
 const { t } = useI18n('ai')
 
-const currentSong = inject('currentSong', {})
+const currentSong = inject<Ref<Recordable>>('currentSong', ref({}))
 
 </script>

@@ -1,15 +1,25 @@
 <template>
   <!-- 操作栏 -->
   <el-row justify="end">
-    <el-button @click="openForm">
+    <el-button v-if="canCreateContract" v-hasPermi="['crm:contract:create']" @click="openForm">
       <Icon class="mr-5px" icon="clarity:contract-line" />
-      {{ t('crm.contract.createContract') }}
+      {{
+        props.bizType === BizTypeEnum.CRM_BUSINESS
+          ? t('crm.contract.createFromBusiness')
+          : t('crm.contract.createContract')
+      }}
     </el-button>
   </el-row>
 
   <!-- 列表 -->
   <ContentWrap class="mt-10px">
-    <el-table v-loading="loading" :data="list" :stripe="true" :show-overflow-tooltip="true" :table-layout="'auto'">
+    <el-table
+      v-loading="loading"
+      :data="list"
+      :stripe="true"
+      :show-overflow-tooltip="true"
+      :table-layout="'auto'"
+    >
       <el-table-column :label="t('crm.contract.name')" fixed="left" align="center" prop="name">
         <template #default="scope">
           <el-link type="primary" :underline="false" @click="openDetail(scope.row.id)">
@@ -59,6 +69,7 @@
 </template>
 <script setup lang="ts">
 import * as ContractApi from '@/api/crm/contract'
+import * as BusinessApi from '@/api/crm/business'
 import ContractForm from './../ContractForm.vue'
 import { BizTypeEnum } from '@/api/crm/permission'
 import { dateFormatter } from '@/utils/formatTime'
@@ -71,15 +82,23 @@ const { t } = useI18n() // 国际化
 const props = defineProps<{
   bizType: number // 业务类型
   bizId: number // 业务编号
+  business?: BusinessApi.BusinessVO
 }>()
-
 const loading = ref(true) // 列表的加载中
 const total = ref(0) // 列表的总页数
 const list = ref([]) // 列表的数据
+const canCreateContract = computed(
+  () =>
+    props.bizType === BizTypeEnum.CRM_CUSTOMER ||
+    (props.bizType === BizTypeEnum.CRM_BUSINESS &&
+      props.business?.endStatus === 1 &&
+      total.value === 0)
+)
 const queryParams = reactive({
   pageNo: 1,
   pageSize: 10,
-  customerId: undefined as unknown // 允许 undefined + number
+  customerId: undefined as number | undefined,
+  businessId: undefined as number | undefined
 })
 
 /** 查询列表 */
@@ -118,7 +137,11 @@ const handleQuery = () => {
 /** 添加 */
 const formRef = ref()
 const openForm = () => {
-  formRef.value.open('create')
+  formRef.value.open('create', undefined, {
+    customerId:
+      props.bizType === BizTypeEnum.CRM_CUSTOMER ? props.bizId : props.business?.customerId,
+    businessId: props.bizType === BizTypeEnum.CRM_BUSINESS ? props.bizId : undefined
+  })
 }
 
 /** 打开合同详情 */

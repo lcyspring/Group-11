@@ -8,10 +8,18 @@
         <el-descriptions :column="4">
           <el-descriptions-item :label="t('receivable.no')">{{ receivable.no }}</el-descriptions-item>
           <el-descriptions-item :label="t('receivable.customerName')">
-            {{ receivable.customerName }}
+            {{
+              isCustomerReferenceMissing(receivable.referenceStatus)
+                ? t('receivable.missingCustomerReference', { id: receivable.customerId })
+                : receivable.customerName
+            }}
           </el-descriptions-item>
           <el-descriptions-item :label="t('receivable.contractNo')">
-            {{ receivable.contract?.no }}
+            {{
+              isContractReferenceInvalid(receivable.referenceStatus)
+                ? t('receivable.missingContractReference', { id: receivable.contractId })
+                : receivable.contract?.no
+            }}
           </el-descriptions-item>
           <el-descriptions-item :label="t('receivable.returnTime')">
             {{ formatDate(receivable.returnTime, 'YYYY-MM-DD') }}
@@ -52,6 +60,10 @@ import * as ReceivableApi from '@/api/crm/receivable'
 import { DICT_TYPE } from '@/utils/dict'
 import { formatDate } from '@/utils/formatTime'
 import { erpPriceInputFormatter } from '@/utils'
+import {
+  isContractReferenceInvalid,
+  isCustomerReferenceMissing
+} from '../referenceIntegrity'
 
 const { t } = useI18n('crm') // 国际化
 

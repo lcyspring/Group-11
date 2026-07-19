@@ -15,10 +15,12 @@ import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessStatusDO;
 import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessStatusTypeDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.product.CrmProductDO;
+import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.service.business.CrmBusinessService;
 import com.meession.etm.module.crm.service.business.CrmBusinessStatusService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
 import com.meession.etm.module.crm.service.product.CrmProductService;
+import com.meession.etm.module.crm.service.permission.CrmPermissionService;
 import com.meession.etm.module.system.api.dept.DeptApi;
 import com.meession.etm.module.system.api.dept.dto.DeptRespDTO;
 import com.meession.etm.module.system.api.user.AdminUserApi;
@@ -63,6 +65,8 @@ public class CrmBusinessController {
     private CrmBusinessStatusService businessStatusService;
     @Resource
     private CrmProductService productService;
+    @Resource
+    private CrmPermissionService permissionService;
 
     @Resource
     private AdminUserApi adminUserApi;
@@ -171,7 +175,10 @@ public class CrmBusinessController {
     public void exportBusinessExcel(@Valid CrmBusinessPageReqVO exportReqVO,
                                     HttpServletResponse response) throws IOException {
         exportReqVO.setPageSize(PAGE_SIZE_NONE);
-        List<CrmBusinessDO> list = businessService.getBusinessPage(exportReqVO, getLoginUserId()).getList();
+        Long userId = getLoginUserId();
+        List<CrmBusinessDO> list = businessService.getBusinessPage(exportReqVO, userId).getList();
+        permissionService.validateExportPermission(CrmBizTypeEnum.CRM_BUSINESS.getType(),
+                convertSet(list, CrmBusinessDO::getId), userId);
         // 导出 Excel
         ExcelUtils.write(response, "商机.xls", "数据", CrmBusinessRespVO.class,
                 buildBusinessDetailList(list));
@@ -206,8 +213,9 @@ public class CrmBusinessController {
             });
             // 2.3 设置商机状态
             MapUtils.findAndThen(statusTypeMap, businessVO.getStatusTypeId(), statusType -> businessVO.setStatusTypeName(statusType.getName()));
-            MapUtils.findAndThen(statusMap, businessVO.getStatusId(), status -> businessVO.setStatusName(
-                    businessService.getBusinessStatusName(businessVO.getEndStatus(), status)));
+            MapUtils.findAndThen(statusMap, businessVO.getStatusId(), status -> businessVO
+                    .setStatusName(businessService.getBusinessStatusName(businessVO.getEndStatus(), status))
+                    .setStatusPercent(status.getPercent()));
         });
     }
 

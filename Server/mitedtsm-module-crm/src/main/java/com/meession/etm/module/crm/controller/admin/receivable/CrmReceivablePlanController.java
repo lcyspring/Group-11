@@ -16,10 +16,14 @@ import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.receivable.CrmReceivableDO;
 import com.meession.etm.module.crm.dal.dataobject.receivable.CrmReceivablePlanDO;
+import com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum;
+import com.meession.etm.module.crm.enums.receivable.CrmReceivablePlanStatusEnum;
+import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.service.contract.CrmContractService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
 import com.meession.etm.module.crm.service.receivable.CrmReceivablePlanService;
 import com.meession.etm.module.crm.service.receivable.CrmReceivableService;
+import com.meession.etm.module.crm.service.permission.CrmPermissionService;
 import com.meession.etm.module.system.api.user.AdminUserApi;
 import com.meession.etm.module.system.api.user.dto.AdminUserRespDTO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,6 +38,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -60,6 +66,8 @@ public class CrmReceivablePlanController {
     private CrmContractService contractService;
     @Resource
     private CrmCustomerService customerService;
+    @Resource
+    private CrmPermissionService permissionService;
 
     @Resource
     private AdminUserApi adminUserApi;
@@ -127,7 +135,10 @@ public class CrmReceivablePlanController {
     public void exportReceivablePlanExcel(@Valid CrmReceivablePlanPageReqVO exportReqVO,
                                           HttpServletResponse response) throws IOException {
         exportReqVO.setPageSize(PAGE_SIZE_NONE);
-        List<CrmReceivablePlanDO> list = receivablePlanService.getReceivablePlanPage(exportReqVO, getLoginUserId()).getList();
+        Long userId = getLoginUserId();
+        List<CrmReceivablePlanDO> list = receivablePlanService.getReceivablePlanPage(exportReqVO, userId).getList();
+        permissionService.validateExportPermission(CrmBizTypeEnum.CRM_RECEIVABLE_PLAN.getType(),
+                convertSet(list, CrmReceivablePlanDO::getId), userId);
         // 导出 Excel
         ExcelUtils.write(response, "回款计划.xls", "数据", CrmReceivablePlanRespVO.class,
                 buildReceivableDetailList(list));
@@ -149,6 +160,7 @@ public class CrmReceivablePlanController {
         // 1.4 获得回款 Map
         Map<Long, CrmReceivableDO> receivableMap = receivableService.getReceivableMap(
                 convertSet(receivablePlanList, CrmReceivablePlanDO::getReceivableId));
+        LocalDateTime beginOfToday = LocalDateTime.now().toLocalDate().atStartOfDay();
         // 2. 拼接数据
         return BeanUtils.toBean(receivablePlanList, CrmReceivablePlanRespVO.class, (receivablePlanVO) -> {
             // 2.1 拼接客户信息
@@ -158,8 +170,22 @@ public class CrmReceivablePlanController {
             findAndThen(userMap, Long.parseLong(receivablePlanVO.getCreator()), user -> receivablePlanVO.setCreatorName(user.getNickname()));
             // 2.3 拼接合同信息
             findAndThen(contractMap, receivablePlanVO.getContractId(), contract -> receivablePlanVO.setContractNo(contract.getNo()));
-            // 2.4 拼接回款信息
-            receivablePlanVO.setReceivable(BeanUtils.toBean(receivableMap.get(receivablePlanVO.getReceivableId()), CrmReceivableRespVO.class));
+            // 2.4 只有审批通过的回款才完成计划；草稿、审批中、驳回和取消仍是待回款
+            CrmReceivableDO receivable = receivableMap.get(receivablePlanVO.getReceivableId());
+            receivablePlanVO.setReceivable(BeanUtils.toBean(receivable, CrmReceivableRespVO.class));
+            boolean received = receivable != null
+                    && CrmAuditStatusEnum.APPROVE.getStatus().equals(receivable.getAuditStatus());
+            BigDecimal receivedPrice = received ? receivable.getPrice() : BigDecimal.ZERO;
+            receivablePlanVO.setReceivedPrice(receivedPrice)
+                    .setUnreceivedPrice(receivablePlanVO.getPrice().subtract(receivedPrice).max(BigDecimal.ZERO));
+            if (received) {
+                receivablePlanVO.setStatus(CrmReceivablePlanStatusEnum.RECEIVED.getStatus());
+            } else if (receivablePlanVO.getReturnTime() != null
+                    && receivablePlanVO.getReturnTime().isBefore(beginOfToday)) {
+                receivablePlanVO.setStatus(CrmReceivablePlanStatusEnum.OVERDUE.getStatus());
+            } else {
+                receivablePlanVO.setStatus(CrmReceivablePlanStatusEnum.PENDING.getStatus());
+            }
         });
     }
 

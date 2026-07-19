@@ -1,5 +1,6 @@
 package com.meession.etm.module.crm.controller.admin.customer.vo.customer;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.meession.etm.framework.excel.core.annotations.DictFormat;
 import com.meession.etm.framework.excel.core.convert.DictConvert;
 import com.meession.etm.module.infra.enums.DictTypeConstants;
@@ -9,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Schema(description = "管理后台 - CRM 客户 Response VO")
 @Data
@@ -22,6 +24,22 @@ public class CrmCustomerRespVO {
     @Schema(description = "客户名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "13563")
     @ExcelProperty("客户名称")
     private String name;
+
+    @Schema(description = "上级客户编号", example = "1024")
+    @ExcelProperty("上级客户编号")
+    private Long parentCustomerId;
+
+    @Schema(description = "上级客户名称", example = "集团总部")
+    @ExcelProperty("上级客户名称")
+    private String parentCustomerName;
+
+    @Schema(description = "首联系人姓名", example = "张三")
+    @ExcelProperty("首联系人")
+    private String primaryContactName;
+
+    @Schema(description = "首联系人手机", example = "18000000000")
+    @ExcelProperty("首联系人手机")
+    private String primaryContactMobile;
 
     @Schema(description = "跟进状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "13563")
     @ExcelProperty(value = "跟进状态", converter = DictConvert.class)
@@ -50,6 +68,23 @@ public class CrmCustomerRespVO {
     @ExcelProperty("负责人部门")
     private String ownerUserDeptName;
 
+    @Schema(description = "池状态：0 在管、1 公海、2 垃圾池")
+    private Integer poolStatus;
+    @Schema(description = "本次进入公海时间")
+    private LocalDateTime poolEntryTime;
+    @Schema(description = "本次入池前负责人编号")
+    private Long poolPreviousOwnerUserId;
+    @Schema(description = "本次入池前负责人名称")
+    private String poolPreviousOwnerUserName;
+    @Schema(description = "本次入池原因编码")
+    private String poolReason;
+    @Schema(description = "累计进入公海次数")
+    private Integer poolCycleCount;
+    @Schema(description = "进入垃圾池时间")
+    private LocalDateTime garbageTime;
+    @Schema(description = "垃圾池原因")
+    private String garbageReason;
+
     @Schema(description = "锁定状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "13563")
     @ExcelProperty(value = "锁定状态", converter = DictConvert.class)
     @DictFormat(DictTypeConstants.BOOLEAN_STRING)
@@ -59,6 +94,18 @@ public class CrmCustomerRespVO {
     @ExcelProperty(value = "成交状态", converter = DictConvert.class)
     @DictFormat(DictTypeConstants.BOOLEAN_STRING)
     private Boolean dealStatus;
+
+    @Schema(description = "客户生命周期状态：10 潜在、20 意向、30 成交、40 流失", example = "20")
+    @ExcelProperty("客户生命周期状态")
+    private Integer lifecycleStatus;
+
+    @Schema(description = "生命周期状态最后变更时间")
+    @ExcelProperty("生命周期状态变更时间")
+    private LocalDateTime lifecycleStatusChangeTime;
+
+    @Schema(description = "流失原因")
+    @ExcelProperty("流失原因")
+    private String lifecycleLostReason;
 
     @Schema(description = "手机", example = "25682")
     @ExcelProperty("手机")
@@ -79,6 +126,11 @@ public class CrmCustomerRespVO {
     @Schema(description = "email", example = "25682")
     @ExcelProperty("email")
     private String email;
+
+    @Schema(description = "客户自身生日")
+    @ExcelProperty("生日")
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate birthday;
 
     @Schema(description = "地区编号", example = "1024")
     @ExcelProperty("地区编号")

@@ -66,7 +66,7 @@ public interface CrmBusinessService {
      *
      * @param reqVO 更新请求
      */
-    void updateBusinessStatus(CrmBusinessUpdateStatusReqVO reqVO);
+    void updateBusinessStatus(@Valid CrmBusinessUpdateStatusReqVO reqVO);
 
     /**
      * 删除商机
@@ -202,5 +202,13 @@ public interface CrmBusinessService {
      * @return 商机分页
      */
     PageResult<CrmBusinessDO> getBusinessPageByDate(CrmStatisticsFunnelReqVO pageVO);
+
+    /**
+     * 获得预计成交时间范围内的活跃商机分页，用于销售预测。
+     *
+     * @param pageVO 请求
+     * @return 商机分页
+     */
+    PageResult<CrmBusinessDO> getBusinessForecastPage(CrmStatisticsFunnelReqVO pageVO);
 
 }

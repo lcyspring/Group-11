@@ -98,7 +98,12 @@
         </el-select>
       </el-form-item>
       <el-form-item :label="t('common.status')" prop="status">
-        <el-select v-model="queryParams.status" :placeholder="t('finance.payment.selectStatus')" clearable class="!w-240px">
+        <el-select
+          v-model="queryParams.status"
+          :placeholder="t('finance.payment.selectStatus')"
+          clearable
+          class="!w-240px"
+        >
           <el-option
             v-for="dict in getIntDictOptions(DICT_TYPE.ERP_AUDIT_STATUS)"
             :key="dict.value"
@@ -126,8 +131,12 @@
         />
       </el-form-item>
       <el-form-item>
-        <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> {{ t('common.search') }}</el-button>
-        <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> {{ t('common.reset') }}</el-button>
+        <el-button @click="handleQuery"
+          ><Icon icon="ep:search" class="mr-5px" /> {{ t('common.search') }}</el-button
+        >
+        <el-button @click="resetQuery"
+          ><Icon icon="ep:refresh" class="mr-5px" /> {{ t('common.reset') }}</el-button
+        >
         <el-button
           type="primary"
           plain
@@ -166,83 +175,112 @@
       :stripe="true"
       :show-overflow-tooltip="true"
       @selection-change="handleSelectionChange"
-     :table-layout="'auto'">
+      :table-layout="'auto'"
+    >
       <el-table-column width="30" :label="t('finance.payment.select')" type="selection" />
       <el-table-column min-width="180" :label="t('finance.payment.no')" align="center" prop="no" />
-      <el-table-column :label="t('finance.payment.supplierName')" align="center" prop="supplierName" />
+      <el-table-column
+        :label="t('finance.payment.supplierName')"
+        align="center"
+        prop="supplierName"
+      />
       <el-table-column
         :label="t('finance.payment.paymentTime')"
         align="center"
         prop="paymentTime"
         :formatter="dateFormatter2"
-        width="120px" />
-      <el-table-column :label="t('finance.payment.creatorName')" align="center" prop="creatorName" />
-      <el-table-column :label="t('finance.payment.financeUserName')" align="center" prop="financeUserName" />
-      <el-table-column :label="t('finance.payment.accountName')" align="center" prop="accountName" />
+        width="120px"
+      />
+      <el-table-column
+        :label="t('finance.payment.creatorName')"
+        align="center"
+        prop="creatorName"
+      />
+      <el-table-column
+        :label="t('finance.payment.financeUserName')"
+        align="center"
+        prop="financeUserName"
+      />
+      <el-table-column
+        :label="t('finance.payment.accountName')"
+        align="center"
+        prop="accountName"
+      />
       <el-table-column
         :label="t('finance.payment.totalPayment')"
         align="center"
         prop="totalPrice"
-        :formatter="erpPriceTableColumnFormatter" />
+        :formatter="erpPriceTableColumnFormatter"
+      />
       <el-table-column
         :label="t('finance.payment.discountPrice')"
         align="center"
         prop="discountPrice"
-        :formatter="erpPriceTableColumnFormatter" />
+        :formatter="erpPriceTableColumnFormatter"
+      />
       <el-table-column
         :label="t('finance.payment.paymentPrice')"
         align="center"
         prop="paymentPrice"
-        :formatter="erpPriceTableColumnFormatter" />
-      <el-table-column :label="t('common.status')" align="center" fixed="right" min-width="90" prop="status">
+        :formatter="erpPriceTableColumnFormatter"
+      />
+      <el-table-column
+        :label="t('common.status')"
+        align="center"
+        fixed="right"
+        min-width="90"
+        prop="status"
+      >
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.ERP_AUDIT_STATUS" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column :label="t('common.operation')" align="center" fixed="right" min-width="220">
+      <el-table-column :label="t('common.operation')" align="center" fixed="right" width="140">
         <template #default="scope">
-          <el-button
-            link
-            @click="openForm('detail', scope.row.id)"
-            v-hasPermi="['erp:finance-payment:query']"
-          >
-            {{ t('common.detail') }}
-          </el-button>
-          <el-button
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-            v-hasPermi="['erp:finance-payment:update']"
-            :disabled="scope.row.status === 20"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            link
-            type="primary"
-            @click="handleUpdateStatus(scope.row.id, 20)"
-            v-hasPermi="['erp:finance-payment:update-status']"
-            v-if="scope.row.status === 10"
-          >
-            {{ t('finance.payment.approve') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleUpdateStatus(scope.row.id, 10)"
-            v-hasPermi="['erp:finance-payment:update-status']"
-            v-else
-          >
-            {{ t('finance.payment.unapprove') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete([scope.row.id])"
-            v-hasPermi="['erp:finance-payment:delete']"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions mode="menu">
+            <el-button
+              link
+              @click="openForm('detail', scope.row.id)"
+              v-hasPermi="['erp:finance-payment:query']"
+            >
+              {{ t('common.detail') }}
+            </el-button>
+            <el-button
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+              v-hasPermi="['erp:finance-payment:update']"
+              :disabled="scope.row.status === 20"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              link
+              type="primary"
+              @click="handleUpdateStatus(scope.row.id, 20)"
+              v-hasPermi="['erp:finance-payment:update-status']"
+              v-if="scope.row.status === 10"
+            >
+              {{ t('finance.payment.approve') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleUpdateStatus(scope.row.id, 10)"
+              v-hasPermi="['erp:finance-payment:update-status']"
+              v-else
+            >
+              {{ t('finance.payment.unapprove') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleDelete([scope.row.id])"
+              v-hasPermi="['erp:finance-payment:delete']"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>

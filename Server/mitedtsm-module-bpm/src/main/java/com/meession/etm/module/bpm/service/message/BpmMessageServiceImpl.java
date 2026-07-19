@@ -3,6 +3,7 @@ package com.meession.etm.module.bpm.service.message;
 import com.meession.etm.framework.web.config.WebProperties;
 import com.meession.etm.module.bpm.convert.message.BpmMessageConvert;
 import com.meession.etm.module.bpm.enums.message.BpmMessageEnum;
+import com.meession.etm.module.bpm.framework.message.BpmNotificationProperties;
 import com.meession.etm.module.bpm.service.message.dto.BpmMessageSendWhenProcessInstanceApproveReqDTO;
 import com.meession.etm.module.bpm.service.message.dto.BpmMessageSendWhenProcessInstanceRejectReqDTO;
 import com.meession.etm.module.bpm.service.message.dto.BpmMessageSendWhenTaskCreatedReqDTO;
@@ -32,13 +33,15 @@ public class BpmMessageServiceImpl implements BpmMessageService {
     @Resource
     private WebProperties webProperties;
 
+    @Resource
+    private BpmNotificationProperties notificationProperties;
+
     @Override
     public void sendMessageWhenProcessInstanceApprove(BpmMessageSendWhenProcessInstanceApproveReqDTO reqDTO) {
         Map<String, Object> templateParams = new HashMap<>();
         templateParams.put("processInstanceName", reqDTO.getProcessInstanceName());
         templateParams.put("detailUrl", getProcessInstanceDetailUrl(reqDTO.getProcessInstanceId()));
-        smsSendApi.sendSingleSmsToAdmin(BpmMessageConvert.INSTANCE.convert(reqDTO.getStartUserId(),
-                BpmMessageEnum.PROCESS_INSTANCE_APPROVE.getSmsTemplateCode(), templateParams));
+        sendSmsSafely(reqDTO.getStartUserId(), BpmMessageEnum.PROCESS_INSTANCE_APPROVE, templateParams);
     }
 
     @Override
@@ -47,8 +50,7 @@ public class BpmMessageServiceImpl implements BpmMessageService {
         templateParams.put("processInstanceName", reqDTO.getProcessInstanceName());
         templateParams.put("reason", reqDTO.getReason());
         templateParams.put("detailUrl", getProcessInstanceDetailUrl(reqDTO.getProcessInstanceId()));
-        smsSendApi.sendSingleSmsToAdmin(BpmMessageConvert.INSTANCE.convert(reqDTO.getStartUserId(),
-                BpmMessageEnum.PROCESS_INSTANCE_REJECT.getSmsTemplateCode(), templateParams));
+        sendSmsSafely(reqDTO.getStartUserId(), BpmMessageEnum.PROCESS_INSTANCE_REJECT, templateParams);
     }
 
     @Override
@@ -58,8 +60,7 @@ public class BpmMessageServiceImpl implements BpmMessageService {
         templateParams.put("taskName", reqDTO.getTaskName());
         templateParams.put("startUserNickname", reqDTO.getStartUserNickname());
         templateParams.put("detailUrl", getProcessInstanceDetailUrl(reqDTO.getProcessInstanceId()));
-        smsSendApi.sendSingleSmsToAdmin(BpmMessageConvert.INSTANCE.convert(reqDTO.getAssigneeUserId(),
-                BpmMessageEnum.TASK_ASSIGNED.getSmsTemplateCode(), templateParams));
+        sendSmsSafely(reqDTO.getAssigneeUserId(), BpmMessageEnum.TASK_ASSIGNED, templateParams);
     }
 
     @Override
@@ -68,8 +69,25 @@ public class BpmMessageServiceImpl implements BpmMessageService {
         templateParams.put("processInstanceName", reqDTO.getProcessInstanceName());
         templateParams.put("taskName", reqDTO.getTaskName());
         templateParams.put("detailUrl", getProcessInstanceDetailUrl(reqDTO.getProcessInstanceId()));
-        smsSendApi.sendSingleSmsToAdmin(BpmMessageConvert.INSTANCE.convert(reqDTO.getAssigneeUserId(),
-                BpmMessageEnum.TASK_TIMEOUT.getSmsTemplateCode(), templateParams));
+        sendSmsSafely(reqDTO.getAssigneeUserId(), BpmMessageEnum.TASK_TIMEOUT, templateParams);
+    }
+
+    private void sendSmsSafely(Long userId, BpmMessageEnum messageType, Map<String, Object> templateParams) {
+        if (!notificationProperties.isSmsEnabled()) {
+            log.debug("[sendSmsSafely][BPM 短信通知未启用，跳过发送 templateCode={} userId={}]",
+                    messageType.getSmsTemplateCode(), userId);
+            return;
+        }
+        try {
+            smsSendApi.sendSingleSmsToAdmin(BpmMessageConvert.INSTANCE.convert(userId,
+                    messageType.getSmsTemplateCode(), templateParams));
+        } catch (RuntimeException ex) {
+            if (notificationProperties.isFailFast()) {
+                throw ex;
+            }
+            log.warn("[sendSmsSafely][BPM 短信通知失败但不回滚审批 templateCode={} userId={} cause={}]",
+                    messageType.getSmsTemplateCode(), userId, ex.getMessage(), ex);
+        }
     }
 
     private String getProcessInstanceDetailUrl(String taskId) {

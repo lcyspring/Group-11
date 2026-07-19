@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+# Stop the rootless Podman Pod started by deploy.sh.
+
+set -Eeuo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+usage() {
+    printf 'Usage: bash ./stop.sh <config.kdl>\n' >&2
+}
+
+[[ $# -eq 1 ]] || {
+    usage
+    exit 2
+}
+
+# shellcheck source=lib/kdl-config.sh
+source "${SCRIPT_DIR}/lib/kdl-config.sh"
+kdl_config_init "$1"
+
+[[ "$(kdl_require schema_version)" == "1" ]] || {
+    printf 'Unsupported schema_version; expected 1.\n' >&2
+    exit 2
+}
+
+POD_NAME="$(kdl_require deployment.pod_name)"
+STOP_TIMEOUT="$(kdl_positive_integer deployment.stop_timeout_seconds)"
+SERVER_CONTAINER="$(kdl_require container.server)"
+SHUTDOWN_MODE="$(kdl_require operation.shutdown_mode)"
+REMOVE_VOLUMES="$(kdl_bool operation.remove_volumes_on_down)"
+CONFIRM_DATA_RESET="$(kdl_bool operation.confirm_persistent_data_reset)"
+VOLUMES=(
+    "$(kdl_require volume.mysql)"
+    "$(kdl_require volume.redis)"
+    "$(kdl_require volume.rabbitmq)"
+    "$(kdl_require volume.tdengine)"
+)
+
+command -v podman >/dev/null 2>&1 || {
+    printf 'Podman is required.\n' >&2
+    exit 1
+}
+
+rootless="$(podman info --format '{{.Host.Security.Rootless}}')" || {
+    printf 'Podman is installed but not usable by this user. Run podman info for details.\n' >&2
+    exit 1
+}
+[[ "$rootless" == "true" ]] || {
+    printf 'Run this script as the normal rootless Podman user.\n' >&2
+    exit 1
+}
+
+case "$SHUTDOWN_MODE" in
+    check) ;;
+    stop) ;;
+    *)
+        printf 'operation.shutdown_mode must be check or stop; got: %s\n' "$SHUTDOWN_MODE" >&2
+        exit 2
+        ;;
+esac
+
+if [[ "$REMOVE_VOLUMES" == true && "$CONFIRM_DATA_RESET" != true ]]; then
+    printf 'Removing persistent volumes requires operation.confirm_persistent_data_reset=true.\n' >&2
+    exit 2
+fi
+if [[ "$REMOVE_VOLUMES" == false && "$CONFIRM_DATA_RESET" == true ]]; then
+    printf 'operation.confirm_persistent_data_reset must be false when volume removal is disabled.\n' >&2
+    exit 2
+fi
+
+if [[ "$SHUTDOWN_MODE" == check ]]; then
+    printf 'Podman shutdown preflight passed. No Pod or volume was stopped or removed.\n'
+    exit 0
+fi
+
+if podman pod inspect "$POD_NAME" >/dev/null 2>&1; then
+    printf 'Stopping Pod %s gracefully (timeout: %ss).\n' "$POD_NAME" "$STOP_TIMEOUT"
+    # Spring shutdown hooks may require MySQL/RabbitMQ, so stop the app first.
+    if [[ "$(podman inspect --format '{{.State.Running}}' "$SERVER_CONTAINER" 2>/dev/null)" == "true" ]]; then
+        printf 'Stopping application server before infrastructure.\n'
+        podman stop --time "$STOP_TIMEOUT" "$SERVER_CONTAINER"
+    fi
+    if ! podman pod stop --time "$STOP_TIMEOUT" "$POD_NAME"; then
+        printf 'Graceful stop failed; forcibly removing Pod %s.\n' "$POD_NAME" >&2
+        podman pod rm --force "$POD_NAME"
+    else
+        podman pod rm "$POD_NAME"
+    fi
+else
+    printf 'Pod does not exist: %s\n' "$POD_NAME"
+fi
+
+if [[ "$REMOVE_VOLUMES" == true ]]; then
+    printf 'Persistent-data reset is enabled. The following named volumes will be permanently removed:\n'
+    printf '  - %s\n' "${VOLUMES[@]}"
+    for volume in "${VOLUMES[@]}"; do
+        if podman volume inspect "$volume" >/dev/null 2>&1; then
+            printf 'Removing persistent volume: %s\n' "$volume"
+            podman volume rm "$volume"
+        else
+            printf 'Persistent volume is already absent: %s\n' "$volume"
+        fi
+    done
+else
+    printf 'Persistent volumes were preserved (operation.remove_volumes_on_down=false).\n'
+fi

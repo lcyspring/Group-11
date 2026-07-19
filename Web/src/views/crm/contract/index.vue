@@ -4,12 +4,7 @@
 
   <ContentWrap>
     <!-- 搜索工作栏 -->
-    <el-form
-      ref="queryFormRef"
-      :model="queryParams"
-      class="-mb-15px"
-      label-width="auto"
-    >
+    <el-form ref="queryFormRef" :model="queryParams" class="-mb-15px" label-width="auto">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('crm.contract.no')" prop="no">
@@ -65,7 +60,11 @@
               <Icon class="mr-5px" icon="ep:refresh" />
               {{ t('common.reset') }}
             </el-button>
-            <el-button v-hasPermi="['crm:contract:create']" type="primary" @click="openForm('create')">
+            <el-button
+              v-hasPermi="['crm:contract:create']"
+              type="primary"
+              @click="openForm('create')"
+            >
               <Icon class="mr-5px" icon="ep:plus" />
               {{ t('common.add') }}
             </el-button>
@@ -91,17 +90,41 @@
       <el-tab-pane :label="t('crm.customer.myResponsible')" name="1" />
       <el-tab-pane :label="t('crm.customer.myInvolved')" name="2" />
       <el-tab-pane :label="t('crm.customer.subordinateResponsible')" name="3" />
+      <el-tab-pane :label="t('crm.customer.organizationScope')" name="4" />
     </el-tabs>
-    <el-table v-loading="loading" :data="list" :show-overflow-tooltip="true" :stripe="true" :table-layout="'auto'">
-      <el-table-column align="center" fixed="left" :label="t('crm.contract.no')" prop="no" min-width="180" />
-      <el-table-column align="center" fixed="left" :label="t('crm.contract.name')" prop="name" min-width="160">
+    <el-table
+      v-loading="loading"
+      :data="list"
+      :show-overflow-tooltip="true"
+      :stripe="true"
+      :table-layout="'auto'"
+    >
+      <el-table-column
+        align="center"
+        fixed="left"
+        :label="t('crm.contract.no')"
+        prop="no"
+        min-width="180"
+      />
+      <el-table-column
+        align="center"
+        fixed="left"
+        :label="t('crm.contract.name')"
+        prop="name"
+        min-width="160"
+      >
         <template #default="scope">
           <el-link :underline="false" type="primary" @click="openDetail(scope.row.id)">
             {{ scope.row.name }}
           </el-link>
         </template>
       </el-table-column>
-      <el-table-column align="center" :label="t('crm.contract.customerName')" prop="customerName" min-width="120">
+      <el-table-column
+        align="center"
+        :label="t('crm.contract.customerName')"
+        prop="customerName"
+        min-width="120"
+      >
         <template #default="scope">
           <el-link
             :underline="false"
@@ -112,7 +135,12 @@
           </el-link>
         </template>
       </el-table-column>
-      <el-table-column align="center" :label="t('crm.contract.businessName')" prop="businessName" min-width="130">
+      <el-table-column
+        align="center"
+        :label="t('crm.contract.businessName')"
+        prop="businessName"
+        min-width="130"
+      >
         <template #default="scope">
           <el-link
             :underline="false"
@@ -151,7 +179,12 @@
         min-width="120"
         :formatter="dateFormatter2"
       />
-      <el-table-column align="center" :label="t('crm.contract.contactName')" prop="contactName" min-width="130">
+      <el-table-column
+        align="center"
+        :label="t('crm.contract.contactName')"
+        prop="contactName"
+        min-width="130"
+      >
         <template #default="scope">
           <el-link
             :underline="false"
@@ -162,8 +195,18 @@
           </el-link>
         </template>
       </el-table-column>
-      <el-table-column align="center" :label="t('crm.contract.signUserName')" prop="signUserName" min-width="130" />
-      <el-table-column align="center" :label="t('crm.contract.remark')" prop="remark" min-width="200" />
+      <el-table-column
+        align="center"
+        :label="t('crm.contract.signUserName')"
+        prop="signUserName"
+        min-width="130"
+      />
+      <el-table-column
+        align="center"
+        :label="t('crm.contract.remark')"
+        prop="remark"
+        min-width="200"
+      />
       <el-table-column
         align="center"
         :label="t('crm.contract.totalReceivablePrice') + '（元）'"
@@ -189,8 +232,18 @@
         prop="contactLastTime"
         min-width="180"
       />
-      <el-table-column align="center" :label="t('crm.contract.ownerUserName')" prop="ownerUserName" min-width="120" />
-      <el-table-column align="center" :label="t('crm.contract.ownerUserDeptName')" prop="ownerUserDeptName" min-width="100" />
+      <el-table-column
+        align="center"
+        :label="t('crm.contract.ownerUserName')"
+        prop="ownerUserName"
+        min-width="120"
+      />
+      <el-table-column
+        align="center"
+        :label="t('crm.contract.ownerUserDeptName')"
+        prop="ownerUserDeptName"
+        min-width="100"
+      />
       <el-table-column
         :formatter="dateFormatter"
         align="center"
@@ -205,57 +258,66 @@
         prop="createTime"
         min-width="180"
       />
-      <el-table-column align="center" :label="t('crm.contract.creatorName')" prop="creatorName" min-width="120" />
-      <el-table-column align="center" fixed="right" :label="t('crm.contract.auditStatus')" prop="auditStatus" min-width="120">
+      <el-table-column
+        align="center"
+        :label="t('crm.contract.creatorName')"
+        prop="creatorName"
+        min-width="120"
+      />
+      <el-table-column
+        align="center"
+        fixed="right"
+        :label="t('crm.contract.auditStatus')"
+        prop="auditStatus"
+        min-width="120"
+      >
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.CRM_AUDIT_STATUS" :value="scope.row.auditStatus" />
         </template>
       </el-table-column>
-      <el-table-column fixed="right" :label="t('common.action')" min-width="250">
+      <el-table-column fixed="right" :label="t('common.action')" width="220">
         <template #default="scope">
-          <el-button
-            v-if="scope.row.auditStatus === 0"
-            v-hasPermi="['crm:contract:update']"
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            v-if="scope.row.auditStatus === 0"
-            v-hasPermi="['crm:contract:update']"
-            link
-            type="primary"
-            @click="handleSubmit(scope.row)"
-          >
-            {{ t('crm.contract.submitAudit') }}
-          </el-button>
-          <el-button
-            v-else
-            link
-            v-hasPermi="['crm:contract:update']"
-            type="primary"
-            @click="handleProcessDetail(scope.row)"
-          >
-            {{ t('crm.contract.viewApproval') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['crm:contract:query']"
-            link
-            type="primary"
-            @click="openDetail(scope.row.id)"
-          >
-            {{ t('common.detail') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['crm:contract:delete']"
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-          >
-            {{ t('common.del') }}
-          </el-button>
+          <TableActions :show-more="hasContractMoreActions(scope.row)">
+            <el-button
+              v-hasPermi="['crm:contract:query']"
+              link
+              type="primary"
+              @click="openDetail(scope.row.id)"
+            >
+              {{ t('common.detail') }}
+            </el-button>
+            <template #more>
+              <el-dropdown-item
+                v-if="[0, 30, 40].includes(scope.row.auditStatus)"
+                v-hasPermi="['crm:contract:update']"
+                @click="openForm('update', scope.row.id)"
+              >
+                {{ scope.row.auditStatus === 0 ? t('common.edit') : t('crm.contract.revise') }}
+              </el-dropdown-item>
+              <el-dropdown-item
+                v-if="scope.row.auditStatus === 0"
+                v-hasPermi="['crm:contract:update']"
+                @click="handleSubmit(scope.row)"
+              >
+                {{ t('crm.contract.submitAudit') }}
+              </el-dropdown-item>
+              <el-dropdown-item
+                v-if="scope.row.processInstanceId"
+                v-hasPermi="['crm:contract:update']"
+                @click="handleProcessDetail(scope.row)"
+              >
+                {{ t('crm.contract.viewApproval') }}
+              </el-dropdown-item>
+              <el-dropdown-item
+                v-if="scope.row.auditStatus === 0 && !scope.row.processInstanceId"
+                v-hasPermi="['crm:contract:delete']"
+                divided
+                @click="handleDelete(scope.row.id)"
+              >
+                {{ t('common.del') }}
+              </el-dropdown-item>
+            </template>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>
@@ -274,12 +336,15 @@
 <script lang="ts" setup>
 import { dateFormatter, dateFormatter2 } from '@/utils/formatTime'
 import download from '@/utils/download'
+import { resolveDialogAction } from '@/utils/dialogAction'
 import * as ContractApi from '@/api/crm/contract'
 import ContractForm from './ContractForm.vue'
+import TableActions from '@/components/TableActions/index.vue'
 import { DICT_TYPE } from '@/utils/dict'
 import { erpPriceInputFormatter, erpPriceTableColumnFormatter } from '@/utils'
 import * as CustomerApi from '@/api/crm/customer'
 import { TabsPaneContext } from 'element-plus'
+import { checkPermi } from '@/utils/permission'
 
 defineOptions({ name: 'CrmContract' })
 
@@ -302,9 +367,21 @@ const exportLoading = ref(false) // 导出的加载中
 const activeName = ref('1') // 列表 tab
 const customerList = ref<CustomerApi.CustomerVO[]>([]) // 客户列表
 
+/** 只在当前合同至少存在一个有权限的扩展操作时展示“更多”，避免空菜单无响应。 */
+const hasContractMoreActions = (row: ContractApi.ContractVO) => {
+  const canUpdate = checkPermi(['crm:contract:update'])
+  const canDelete = checkPermi(['crm:contract:delete'])
+  return (
+    (canUpdate && [0, 30, 40].includes(row.auditStatus)) ||
+    (canUpdate && row.auditStatus === 0) ||
+    (canUpdate && Boolean(row.processInstanceId)) ||
+    (canDelete && row.auditStatus === 0 && !row.processInstanceId)
+  )
+}
+
 /** tab 切换 */
 const handleTabClick = (tab: TabsPaneContext) => {
-  queryParams.sceneType = tab.paneName
+  queryParams.sceneType = String(tab.paneName)
   handleQuery()
 }
 
@@ -340,27 +417,19 @@ const openForm = (type: string, id?: number) => {
 
 /** 删除按钮操作 */
 const handleDelete = async (id: number) => {
-  try {
-    // 删除的二次确认
-    await message.delConfirm()
-    // 发起删除
-    await ContractApi.deleteContract(id)
-    message.success(t('common.delSuccess'))
-    // 刷新列表
-    await getList()
-  } catch {}
+  if (!(await resolveDialogAction(message.delConfirm()))) return
+  await ContractApi.deleteContract(id)
+  message.success(t('common.delSuccess'))
+  await getList()
 }
 
 /** 导出按钮操作 */
 const handleExport = async () => {
+  if (!(await resolveDialogAction(message.exportConfirm()))) return
+  exportLoading.value = true
   try {
-    // 导出的二次确认
-    await message.exportConfirm()
-    // 发起导出
-    exportLoading.value = true
     const data = await ContractApi.exportContract(queryParams)
     download.excel(data, '合同.xls')
-  } catch {
   } finally {
     exportLoading.value = false
   }

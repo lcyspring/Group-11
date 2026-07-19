@@ -16,7 +16,7 @@ import java.util.List;
  *
  * @author HUIHUI
  */
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface ArticleConvert {
 
     ArticleConvert INSTANCE = Mappers.getMapper(ArticleConvert.class);

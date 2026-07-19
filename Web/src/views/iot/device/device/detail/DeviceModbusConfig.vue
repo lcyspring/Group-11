@@ -126,24 +126,26 @@
             <dict-tag :type="DICT_TYPE.COMMON_STATUS" :value="scope.row.status" />
           </template>
         </el-table-column>
-        <el-table-column :label="t('common.operation')" align="center" fixed="right" min-width="150">
+        <el-table-column :label="t('common.operation')" align="center" fixed="right" width="220">
           <template #default="scope">
-            <el-button
-              link
-              type="primary"
-              @click="handleEditPoint(scope.row)"
-              v-hasPermi="['iot:device:update']"
-            >
-              {{ t('common.edit') }}
-            </el-button>
-            <el-button
-              link
-              type="danger"
-              @click="handleDeletePoint(scope.row.id, scope.row.name)"
-              v-hasPermi="['iot:device:delete']"
-            >
-              {{ t('common.delete') }}
-            </el-button>
+            <TableActions>
+              <el-button
+                link
+                type="primary"
+                @click="handleEditPoint(scope.row)"
+                v-hasPermi="['iot:device:update']"
+              >
+                {{ t('common.edit') }}
+              </el-button>
+              <el-button
+                link
+                type="danger"
+                @click="handleDeletePoint(scope.row.id, scope.row.name)"
+                v-hasPermi="['iot:device:delete']"
+              >
+                {{ t('common.delete') }}
+              </el-button>
+            </TableActions>
           </template>
         </el-table-column>
       </el-table>

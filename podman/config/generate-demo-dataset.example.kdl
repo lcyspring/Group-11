@@ -1,0 +1,45 @@
+schema_version 1
+
+
+operation {
+  mode "check"
+
+}
+
+dataset_generation {
+  dataset_name "crm-demo-v2"
+  random_seed 20260718
+  tenant_id 1
+  owner_user_id 1
+  // replace 会清空该租户的 CRM/OA 演示业务事实，但保留管理员和业务策略配置。
+  replacement_cleanup_scope "tenant-crm-demo"
+  demo_user_count 8
+  demo_user_password_source "owner"
+  time_start "2025-07-01"
+  time_end "2026-07-18"
+  customer_count 160
+  customer_public_pool_count 32
+  contact_count 240
+  clue_count 160
+  clue_public_pool_count 32
+  follow_up_count 300
+  business_count 180
+  business_stage_count 5
+  product_count 80
+  competitor_count 50
+  work_order_group_count 4
+  erp_customer_mapping_count 50
+  erp_product_mapping_count 50
+  contract_count 72
+  receivable_plan_count 144
+  receivable_count 90
+  invoice_count 60
+  reimbursement_count 60
+  refund_count 30
+  marketing_campaign_count 36
+  customer_care_record_count 120
+  oa_event_count 100
+  oa_task_count 150
+  work_order_count 160
+  output_dir "../../database/generated/crm-demo-v2"
+}

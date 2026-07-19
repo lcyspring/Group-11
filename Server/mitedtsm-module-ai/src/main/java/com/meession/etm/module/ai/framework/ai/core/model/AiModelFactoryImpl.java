@@ -348,8 +348,8 @@ public class AiModelFactoryImpl implements AiModelFactory {
      */
     private static DashScopeChatModel buildTongYiChatModel(String key) {
         DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(key).build();
-        DashScopeChatOptions options = DashScopeChatOptions.builder().withModel(DashScopeApi.DEFAULT_CHAT_MODEL)
-                .withTemperature(0.7).build();
+        DashScopeChatOptions options = DashScopeChatOptions.builder().model(DashScopeApi.DEFAULT_CHAT_MODEL)
+                .temperature(0.7).build();
         return DashScopeChatModel.builder()
                 .dashScopeApi(dashScopeApi)
                 .defaultOptions(options)
@@ -604,7 +604,7 @@ public class AiModelFactoryImpl implements AiModelFactory {
      */
     private DashScopeEmbeddingModel buildTongYiEmbeddingModel(String apiKey, String model) {
         DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(apiKey).build();
-        DashScopeEmbeddingOptions dashScopeEmbeddingOptions = DashScopeEmbeddingOptions.builder().withModel(model).build();
+        DashScopeEmbeddingOptions dashScopeEmbeddingOptions = DashScopeEmbeddingOptions.builder().model(model).build();
         return new DashScopeEmbeddingModel(dashScopeApi, MetadataMode.EMBED, dashScopeEmbeddingOptions);
     }
 

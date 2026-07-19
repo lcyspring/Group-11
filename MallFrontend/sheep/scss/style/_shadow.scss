@@ -1,3 +1,6 @@
+@use 'sass:color';
+@use '../var' as *;
+
 /* ==================
           阴影
  ==================== */
@@ -78,13 +81,13 @@
   }
   @each $color, $value in $colors {
     @at-root .drop-shadow-#{$color} {
-      filter: drop-shadow(0 15rpx 15rpx rgba(darken($value, 10%), 0.3));
+      filter: drop-shadow(0 15rpx 15rpx rgba(color.adjust($value, $lightness: -10%), 0.3));
     }
     &-sm.drop-shadow-#{$color} {
-      filter: drop-shadow(0 4rpx 4rpx rgba(darken($value, 10%), 0.3));
+      filter: drop-shadow(0 4rpx 4rpx rgba(color.adjust($value, $lightness: -10%), 0.3));
     }
     &-lg.drop-shadow-#{$color} {
-      filter: drop-shadow(0 50rpx 100rpx rgba(darken($value, 10%), 0.2));
+      filter: drop-shadow(0 50rpx 100rpx rgba(color.adjust($value, $lightness: -10%), 0.2));
     }
   }
 }

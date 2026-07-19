@@ -10,7 +10,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Excel 工具类
@@ -44,12 +46,38 @@ public class ExcelUtils {
         response.setContentType("application/vnd.ms-excel;charset=UTF-8");
     }
 
+    /** 将 Excel 写入内存，供异步任务保存到受管文件存储。 */
+    public static <T> byte[] writeBytes(String sheetName, Class<T> head, List<T> data) {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        FastExcelFactory.write(output, head)
+                .autoCloseStream(false)
+                .registerWriteHandler(new ColumnWidthMatchStyleStrategy())
+                .registerConverter(new LongStringConverter())
+                .sheet(sheetName).doWrite(data);
+        return output.toByteArray();
+    }
+
     public static <T> List<T> read(MultipartFile file, Class<T> head) throws IOException {
         // 参考 https://t.zsxq.com/zM77F 帖子，增加 try 处理，兼容 windows 场景
         try (InputStream inputStream = file.getInputStream()) {
             return FastExcelFactory.read(inputStream, head, null)
                     .autoCloseStream(false) // 不要自动关闭，交给 Servlet 自己处理
                     .doReadAllSync();
+        }
+    }
+
+    /**
+     * 按原始单元格读取 Excel，首行也作为普通数据返回。
+     *
+     * <p>用于需要先识别并映射用户表头的导入预检场景，调用方负责校验表头和业务字段。</p>
+     */
+    public static List<Map<Integer, String>> readRows(MultipartFile file) throws IOException {
+        try (InputStream inputStream = file.getInputStream()) {
+            return FastExcelFactory.read(inputStream, null, null)
+                    .headRowNumber(0)
+                    .autoCloseStream(false)
+                    .sheet(0)
+                    .doReadSync();
         }
     }
 

@@ -1,0 +1,3 @@
+package com.meession.etm.module.bpm.dal.mysql.oa;
+import com.meession.etm.framework.mybatis.core.mapper.BaseMapperX; import com.meession.etm.framework.mybatis.core.query.LambdaQueryWrapperX; import com.meession.etm.module.bpm.dal.dataobject.oa.BpmOADocumentDO; import org.apache.ibatis.annotations.Mapper; import java.util.List;
+@Mapper public interface BpmOADocumentMapper extends BaseMapperX<BpmOADocumentDO> { default List<BpmOADocumentDO> selectVisible(Long userId,Long parentId){ return selectList(new LambdaQueryWrapperX<BpmOADocumentDO>().eq(BpmOADocumentDO::getParentId,parentId).and(w->w.eq(BpmOADocumentDO::getVisibility,0).or().eq(BpmOADocumentDO::getOwnerUserId,userId)).eq(BpmOADocumentDO::getStatus,0).orderByAsc(BpmOADocumentDO::getName)); } }

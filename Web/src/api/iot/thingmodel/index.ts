@@ -70,11 +70,11 @@ export interface IotThingModelTSLResp {
 
 /** 物模型属性 */
 export interface ThingModelProperty {
-  identifier: string
-  name: string
-  accessMode: string
+  identifier?: string
+  name?: string
+  accessMode?: string
   required?: boolean
-  dataType: string
+  dataType?: string
   description?: string
   dataSpecs?: ThingModelProperty
   dataSpecsList?: ThingModelProperty[]
@@ -82,10 +82,10 @@ export interface ThingModelProperty {
 
 /** 物模型事件 */
 export interface ThingModelEvent {
-  identifier: string
-  name: string
+  identifier?: string
+  name?: string
   required?: boolean
-  type: string
+  type?: string
   description?: string
   outputParams?: ThingModelParam[]
   method?: string
@@ -93,10 +93,10 @@ export interface ThingModelEvent {
 
 /** 物模型服务 */
 export interface ThingModelService {
-  identifier: string
-  name: string
+  identifier?: string
+  name?: string
   required?: boolean
-  callType: string
+  callType?: string
   description?: string
   inputParams?: ThingModelParam[]
   outputParams?: ThingModelParam[]

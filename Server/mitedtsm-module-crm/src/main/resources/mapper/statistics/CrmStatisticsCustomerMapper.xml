@@ -2,6 +2,22 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.meession.etm.module.crm.dal.mysql.statistics.CrmStatisticsCustomerMapper">
 
+    <!-- 每个客户只取下单日期最早的审批通过合同；同日按合同编号稳定选择。 -->
+    <sql id="firstApprovedContractJoin">
+        INNER JOIN crm_contract AS contract ON customer.id = contract.customer_id
+            AND contract.id = (
+                SELECT first_contract.id
+                  FROM crm_contract AS first_contract
+                 WHERE first_contract.customer_id = customer.id
+                   AND first_contract.deleted = 0
+                   AND first_contract.audit_status = ${@com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
+                 ORDER BY first_contract.order_date IS NULL,
+                          first_contract.order_date,
+                          first_contract.id
+                 LIMIT 1
+            )
+    </sql>
+
     <select id="selectCustomerCreateCountGroupByDate"
             resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerSummaryByDateRespVO">
         SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS time,
@@ -81,17 +97,22 @@
 
     <select id="selectReceivablePriceGroupByUser"
             resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerSummaryByUserRespVO">
-        SELECT owner_user_id,
-               IFNULL(SUM(price), 0) AS receivable_price
-          FROM crm_receivable
-         WHERE deleted = 0
-           AND audit_status = ${@com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
-           AND owner_user_id IN
+        SELECT receivable.owner_user_id,
+               IFNULL(SUM(receivable.price), 0) AS receivable_price
+          FROM crm_receivable AS receivable
+               INNER JOIN crm_customer AS customer ON customer.id = receivable.customer_id
+                    AND customer.deleted = 0
+               INNER JOIN crm_contract AS contract ON contract.id = receivable.contract_id
+                    AND contract.customer_id = receivable.customer_id
+                    AND contract.deleted = 0
+         WHERE receivable.deleted = 0
+           AND receivable.audit_status = ${@com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
+           AND receivable.owner_user_id IN
                 <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                     #{userId}
                 </foreach>
-           AND return_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND #{times[1],javaType=java.time.LocalDateTime}
-         GROUP BY owner_user_id
+           AND receivable.return_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND #{times[1],javaType=java.time.LocalDateTime}
+         GROUP BY receivable.owner_user_id
     </select>
 
     <select id="selectFollowUpRecordCountGroupByDate"
@@ -99,7 +120,8 @@
         SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS time,
                COUNT(*) AS follow_up_record_count
           FROM crm_follow_up_record
-         WHERE creator IN
+         WHERE deleted = 0
+           AND creator IN
                 <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                     #{userId}
                 </foreach>
@@ -108,18 +130,19 @@
          GROUP BY time
     </select>
 
-    <select id="selectFollowUpCustomerCountGroupByDate"
-            resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsFollowUpSummaryByDateRespVO">
-        SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS time,
-               COUNT(DISTINCT biz_id) AS follow_up_customer_count
+    <select id="selectFollowUpCustomerListByDate"
+            resultType="com.meession.etm.module.crm.service.statistics.bo.CrmStatisticsFollowUpCustomerByDateBO">
+        SELECT DATE_FORMAT(MIN(create_time), '%Y-%m-%dT%H:%i:%s') AS time,
+               biz_id AS customer_id
           FROM crm_follow_up_record
-         WHERE creator IN
+         WHERE deleted = 0
+           AND creator IN
                 <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                     #{userId}
                 </foreach>
            AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND #{times[1],javaType=java.time.LocalDateTime}
            AND biz_type = ${@com.meession.etm.module.crm.enums.common.CrmBizTypeEnum@CRM_CUSTOMER.type}
-         GROUP BY time
+         GROUP BY DATE(create_time), biz_id
     </select>
 
     <select id="selectFollowUpRecordCountGroupByUser"
@@ -127,7 +150,8 @@
         SELECT creator as owner_user_id,
                COUNT(*) AS follow_up_record_count
           FROM crm_follow_up_record
-         WHERE creator IN
+         WHERE deleted = 0
+           AND creator IN
                 <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                     #{userId}
                 </foreach>
@@ -142,12 +166,13 @@
             creator as owner_user_id,
             COUNT(DISTINCT biz_id) AS follow_up_customer_count
         FROM crm_follow_up_record
-        WHERE creator IN
+        WHERE deleted = 0
+          AND creator IN
             <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                 #{userId}
             </foreach>
-        AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND #{times[1],javaType=java.time.LocalDateTime}
-        AND biz_type = ${@com.meession.etm.module.crm.enums.common.CrmBizTypeEnum@CRM_CUSTOMER.type}
+          AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND #{times[1],javaType=java.time.LocalDateTime}
+          AND biz_type = ${@com.meession.etm.module.crm.enums.common.CrmBizTypeEnum@CRM_CUSTOMER.type}
         GROUP BY creator
     </select>
 
@@ -156,7 +181,8 @@
         SELECT type AS follow_up_type,
                COUNT(*) AS follow_up_record_count
           FROM crm_follow_up_record
-         WHERE creator IN
+         WHERE deleted = 0
+           AND creator IN
                 <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                     #{userId}
                 </foreach>
@@ -178,42 +204,131 @@
                contract.order_date,
                IFNULL(receivable.price, 0) AS receivable_price
           FROM crm_customer AS customer
-                INNER JOIN crm_contract AS contract ON customer.id = contract.customer_id
-                LEFT JOIN crm_receivable AS receivable ON contract.id = receivable.contract_id
-         WHERE customer.deleted = 0 AND contract.deleted = 0 AND receivable.deleted = 0
-           AND contract.audit_status = ${@com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
+                <include refid="firstApprovedContractJoin"/>
+                LEFT JOIN (
+                    SELECT contract_id,
+                           SUM(price) AS price
+                      FROM crm_receivable
+                     WHERE deleted = 0
+                       AND audit_status = ${@com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
+                     GROUP BY contract_id
+                ) AS receivable ON contract.id = receivable.contract_id
+         WHERE customer.deleted = 0
            AND customer.owner_user_id IN
                 <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                     #{userId}
                 </foreach>
            AND customer.create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND #{times[1],javaType=java.time.LocalDateTime}
+         ORDER BY customer.create_time, customer.id
     </select>
 
-    <!-- TIMESTAMPDIFF 用于求差值；AVG 求平均；TRUNCATE 去掉小数点、只保留整数 -->
+    <select id="selectCustomerDealTop10"
+            resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerDealTopRespVO">
+        SELECT customer.id AS customerId,
+               customer.name AS customerName,
+               COUNT(contract.id) AS contractCount,
+               COALESCE(SUM(contract.total_price), 0) AS contractAmount
+          FROM crm_customer AS customer
+         INNER JOIN crm_contract AS contract
+            ON contract.customer_id = customer.id
+           AND contract.deleted = 0
+           AND contract.audit_status = ${@com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
+         WHERE customer.deleted = 0
+           AND customer.owner_user_id IN
+                <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+                    #{userId}
+                </foreach>
+           AND contract.order_date BETWEEN #{times[0],javaType=java.time.LocalDateTime}
+               AND #{times[1],javaType=java.time.LocalDateTime}
+         GROUP BY customer.id, customer.name
+         ORDER BY contractAmount DESC, customer.id ASC
+         LIMIT 10
+    </select>
+
+    <select id="selectPoolCustomerPutCountByDate"
+            resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsPoolSummaryByDateRespVO">
+        SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS time,
+               COUNT(*) AS customer_put_count
+          FROM crm_customer_owner_record
+         WHERE deleted = 0
+           AND type = ${@com.meession.etm.module.crm.enums.customer.CrmCustomerOwnerRecordTypeEnum@PUT_POOL.type}
+           AND owner_user_id IN
+                <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+                    #{userId}
+                </foreach>
+           AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND #{times[1],javaType=java.time.LocalDateTime}
+         GROUP BY time
+    </select>
+
+    <select id="selectPoolCustomerTakeCountByDate"
+            resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsPoolSummaryByDateRespVO">
+        SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS time,
+               COUNT(*) AS customer_take_count
+          FROM crm_customer_owner_record
+         WHERE deleted = 0
+           AND type = ${@com.meession.etm.module.crm.enums.customer.CrmCustomerOwnerRecordTypeEnum@TAKE_POOL.type}
+           AND owner_user_id IN
+                <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+                    #{userId}
+                </foreach>
+           AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND #{times[1],javaType=java.time.LocalDateTime}
+         GROUP BY time
+    </select>
+
+    <select id="selectPoolCustomerPutCountByUser"
+            resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsPoolSummaryByUserRespVO">
+        SELECT owner_user_id,
+               COUNT(*) AS customer_put_count
+          FROM crm_customer_owner_record
+         WHERE deleted = 0
+           AND type = ${@com.meession.etm.module.crm.enums.customer.CrmCustomerOwnerRecordTypeEnum@PUT_POOL.type}
+           AND owner_user_id IN
+                <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+                    #{userId}
+                </foreach>
+           AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND #{times[1],javaType=java.time.LocalDateTime}
+         GROUP BY owner_user_id
+    </select>
+
+    <select id="selectPoolCustomerTakeCountByUser"
+            resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsPoolSummaryByUserRespVO">
+        SELECT owner_user_id,
+               COUNT(*) AS customer_take_count
+          FROM crm_customer_owner_record
+         WHERE deleted = 0
+           AND type = ${@com.meession.etm.module.crm.enums.customer.CrmCustomerOwnerRecordTypeEnum@TAKE_POOL.type}
+           AND owner_user_id IN
+                <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
+                    #{userId}
+                </foreach>
+           AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND #{times[1],javaType=java.time.LocalDateTime}
+         GROUP BY owner_user_id
+    </select>
+
+    <!-- 返回每个客户的首次成交周期，由 Service 按请求区间计算整体平均值。 -->
     <select id="selectCustomerDealCycleGroupByDate"
             resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerDealCycleByDateRespVO">
-        SELECT DATE_FORMAT(contract.order_date, '%Y-%m-%d') AS time,
-               IFNULL(TRUNCATE(AVG(TIMESTAMPDIFF(DAY, customer.create_time, contract.order_date)), 1), 0) AS customer_deal_cycle
+        SELECT DATE_FORMAT(contract.order_date, '%Y-%m-%dT%H:%i:%s') AS time,
+               TIMESTAMPDIFF(DAY, customer.create_time, contract.order_date) AS customer_deal_cycle,
+               CASE WHEN contract.order_date &lt; customer.create_time THEN 1 ELSE 0 END AS negative_sample_count
           FROM crm_customer AS customer
-                LEFT JOIN crm_contract AS contract ON contract.customer_id = customer.id
-         WHERE customer.deleted = 0 AND contract.deleted = 0
-           AND contract.audit_status = ${@com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
+                <include refid="firstApprovedContractJoin"/>
+         WHERE customer.deleted = 0
            AND customer.owner_user_id IN
                 <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                     #{userId}
                 </foreach>
            AND customer.create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND #{times[1],javaType=java.time.LocalDateTime}
-         GROUP BY time
     </select>
 
     <select id="selectCustomerDealCycleGroupByUser"
             resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerDealCycleByUserRespVO">
         SELECT customer.owner_user_id,
-               IFNULL(TRUNCATE(AVG(TIMESTAMPDIFF(DAY, customer.create_time, contract.order_date)), 1), 0) AS customer_deal_cycle
+               IFNULL(TRUNCATE(AVG(TIMESTAMPDIFF(DAY, customer.create_time, contract.order_date)), 1), 0) AS customer_deal_cycle,
+               COUNT(DISTINCT CASE WHEN contract.order_date &lt; customer.create_time THEN customer.id END) AS negative_sample_count
           FROM crm_customer AS customer
-                LEFT JOIN crm_contract AS contract ON contract.customer_id = customer.id
-         WHERE customer.deleted = 0 AND contract.deleted = 0
-           AND contract.audit_status = ${@com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
+                <include refid="firstApprovedContractJoin"/>
+         WHERE customer.deleted = 0
            AND customer.owner_user_id IN
                 <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                     #{userId}
@@ -226,12 +341,11 @@
             resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerDealCycleByAreaRespVO">
         SELECT customer.area_id AS area_id,
                IFNULL(TRUNCATE(AVG(TIMESTAMPDIFF(DAY, customer.create_time, contract.order_date)), 1), 0) AS customer_deal_cycle,
-               COUNT(DISTINCT customer.id) AS customer_deal_count
+               COUNT(DISTINCT customer.id) AS customer_deal_count,
+               COUNT(DISTINCT CASE WHEN contract.order_date &lt; customer.create_time THEN customer.id END) AS negative_sample_count
         FROM crm_customer AS customer
-                LEFT JOIN crm_contract AS contract ON customer.id = contract.customer_id
+                <include refid="firstApprovedContractJoin"/>
         WHERE customer.deleted = 0
-          AND contract.deleted = 0
-          AND contract.audit_status = ${@com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
           AND customer.owner_user_id IN
                 <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                     #{userId}
@@ -245,16 +359,15 @@
             resultType="com.meession.etm.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerDealCycleByProductRespVO">
         SELECT product.name                                                                                 AS product_name,
                IFNULL(TRUNCATE(AVG(TIMESTAMPDIFF(DAY, customer.create_time, contract.order_date)), 1), 0)   AS customer_deal_cycle,
-               COUNT(DISTINCT customer.id)                                                                  AS customer_deal_count
+               COUNT(DISTINCT customer.id)                                                                  AS customer_deal_count,
+               COUNT(DISTINCT CASE WHEN contract.order_date &lt; customer.create_time THEN customer.id END)   AS negative_sample_count
           FROM crm_customer AS customer
-                LEFT JOIN crm_contract AS contract ON customer.id = contract.customer_id
+                <include refid="firstApprovedContractJoin"/>
                 LEFT JOIN crm_contract_product AS contract_product ON contract_product.contract_id = contract.id
                 LEFT JOIN crm_product AS product ON contract_product.product_id = product.id
          WHERE customer.deleted = 0
-           AND contract.deleted = 0
            AND contract_product.deleted = 0
            AND product.deleted = 0
-           AND contract.audit_status = ${@com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
            AND customer.owner_user_id IN
                  <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                      #{userId}

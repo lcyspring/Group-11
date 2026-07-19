@@ -1,11 +1,14 @@
 <template>
   <BusinessDetailsHeader v-loading="loading" :business="business">
-    <el-button v-if="permissionListRef?.validateWrite" @click="openForm('update', business.id)">
+    <el-button
+      v-if="permissionListRef?.validateWrite && currentQuote?.status === 0 && !business.endStatus"
+      @click="openForm('update', business.id)"
+    >
       {{ t('common.edit') }}
     </el-button>
     <el-button
       v-if="permissionListRef?.validateWrite"
-      :disabled="business.endStatus"
+      :disabled="Boolean(business.endStatus)"
       type="success"
       @click="openStatusForm()"
     >
@@ -34,8 +37,19 @@
       <el-tab-pane :label="t('crm.business.productTab')">
         <BusinessProductList :business="business" />
       </el-tab-pane>
+      <el-tab-pane :label="t('crm.business.quoteTab')" lazy>
+        <BusinessQuotePanel
+          :business-id="business.id!"
+          :business-ended="business.endStatus != null"
+          @changed="handleQuoteChanged"
+        />
+      </el-tab-pane>
       <el-tab-pane :label="t('crm.business.contractTab')" lazy>
-        <ContractList :biz-id="business.id!" :biz-type="BizTypeEnum.CRM_BUSINESS" />
+        <ContractList
+          :biz-id="business.id!"
+          :biz-type="BizTypeEnum.CRM_BUSINESS"
+          :business="business"
+        />
       </el-tab-pane>
       <el-tab-pane :label="t('crm.business.operateLogTab')">
         <OperateLogV2 :log-list="logList" />
@@ -73,6 +87,8 @@ import ContactList from '@/views/crm/contact/components/ContactList.vue'
 import BusinessUpdateStatusForm from '@/views/crm/business/BusinessUpdateStatusForm.vue'
 import ContractList from '@/views/crm/contract/components/ContractList.vue'
 import BusinessProductList from '@/views/crm/business/detail/BusinessProductList.vue'
+import BusinessQuotePanel from '@/views/crm/business/detail/BusinessQuotePanel.vue'
+import * as QuoteApi from '@/api/crm/business/quote'
 
 defineOptions({ name: 'CrmBusinessDetail' })
 
@@ -82,6 +98,7 @@ const message = useMessage()
 const businessId = ref(0) // 线索编号
 const loading = ref(true) // 加载中
 const business = ref<BusinessApi.BusinessVO>({} as BusinessApi.BusinessVO) // 商机详情
+const currentQuote = ref<QuoteApi.QuoteVO>()
 const permissionListRef = ref<InstanceType<typeof PermissionList>>() // 团队成员列表 Ref
 
 /** 获取详情 */
@@ -89,10 +106,15 @@ const getBusiness = async () => {
   loading.value = true
   try {
     business.value = await BusinessApi.getBusiness(businessId.value)
+    currentQuote.value = await QuoteApi.getCurrentQuote(businessId.value)
     await getOperateLog(businessId.value)
   } finally {
     loading.value = false
   }
+}
+
+const handleQuoteChanged = (quote: QuoteApi.QuoteVO) => {
+  currentQuote.value = quote
 }
 
 /** 编辑 */

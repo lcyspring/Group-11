@@ -21,7 +21,7 @@ import java.util.function.Consumer;
  *
  * @author 芋艿
  */
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface PayAppConvert {
 
     PayAppConvert INSTANCE = Mappers.getMapper(PayAppConvert.class);

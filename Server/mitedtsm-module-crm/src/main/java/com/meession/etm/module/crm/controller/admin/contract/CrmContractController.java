@@ -14,17 +14,20 @@ import com.meession.etm.module.crm.controller.admin.contract.vo.contract.CrmCont
 import com.meession.etm.module.crm.controller.admin.contract.vo.contract.CrmContractRespVO;
 import com.meession.etm.module.crm.controller.admin.contract.vo.contract.CrmContractSaveReqVO;
 import com.meession.etm.module.crm.controller.admin.contract.vo.contract.CrmContractTransferReqVO;
+import com.meession.etm.module.crm.controller.admin.contract.vo.contract.CrmReceivableContractCandidateRespVO;
 import com.meession.etm.module.crm.dal.dataobject.business.CrmBusinessDO;
 import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractProductDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
 import com.meession.etm.module.crm.dal.dataobject.product.CrmProductDO;
+import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.service.business.CrmBusinessService;
 import com.meession.etm.module.crm.service.contact.CrmContactService;
 import com.meession.etm.module.crm.service.contract.CrmContractService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
 import com.meession.etm.module.crm.service.product.CrmProductService;
+import com.meession.etm.module.crm.service.permission.CrmPermissionService;
 import com.meession.etm.module.crm.service.receivable.CrmReceivableService;
 import com.meession.etm.module.system.api.dept.DeptApi;
 import com.meession.etm.module.system.api.dept.dto.DeptRespDTO;
@@ -72,6 +75,8 @@ public class CrmContractController {
     private CrmProductService productService;
     @Resource
     private CrmReceivableService receivableService;
+    @Resource
+    private CrmPermissionService permissionService;
 
     @Resource
     private AdminUserApi adminUserApi;
@@ -83,6 +88,13 @@ public class CrmContractController {
     @PreAuthorize("@ss.hasPermission('crm:contract:create')")
     public CommonResult<Long> createContract(@Valid @RequestBody CrmContractSaveReqVO createReqVO) {
         return success(contractService.createContract(createReqVO, getLoginUserId()));
+    }
+
+    @PostMapping("/create-from-business")
+    @Operation(summary = "从赢单商机幂等创建合同")
+    @PreAuthorize("@ss.hasPermission('crm:contract:create')")
+    public CommonResult<Long> createContractFromBusiness(@Valid @RequestBody CrmContractSaveReqVO createReqVO) {
+        return success(contractService.createContractFromBusiness(createReqVO, getLoginUserId()));
     }
 
     @PutMapping("/update")
@@ -117,13 +129,26 @@ public class CrmContractController {
         }
         CrmContractRespVO contractVO = buildContractDetailList(singletonList(contract)).get(0);
         // 拼接产品项
-        List<CrmContractProductDO> businessProducts = contractService.getContractProductListByContractId(contractVO.getId());
+        List<CrmContractProductDO> contractProducts = contractService.getContractProductListByContractId(contractVO.getId());
         Map<Long, CrmProductDO> productMap = productService.getProductMap(
-                convertSet(businessProducts, CrmContractProductDO::getProductId));
-        contractVO.setProducts(BeanUtils.toBean(businessProducts, CrmContractRespVO.Product.class, businessProductVO ->
-                MapUtils.findAndThen(productMap, businessProductVO.getProductId(),
-                        product -> businessProductVO.setProductName(product.getName())
-                                .setProductNo(product.getNo()).setProductUnit(product.getUnit()))));
+                convertSet(contractProducts, CrmContractProductDO::getProductId));
+        contractVO.setProducts(BeanUtils.toBean(contractProducts, CrmContractRespVO.Product.class, contractProductVO -> {
+            contractProductVO.setProductName(contractProductVO.getProductNameSnapshot())
+                    .setProductNo(contractProductVO.getProductNoSnapshot())
+                    .setProductUnit(contractProductVO.getProductUnitSnapshot());
+            // 兼容尚未执行回填或目录已删除的历史数据；快照存在时绝不被当前目录覆盖。
+            MapUtils.findAndThen(productMap, contractProductVO.getProductId(), product -> {
+                if (contractProductVO.getProductName() == null) {
+                    contractProductVO.setProductName(product.getName());
+                }
+                if (contractProductVO.getProductNo() == null) {
+                    contractProductVO.setProductNo(product.getNo());
+                }
+                if (contractProductVO.getProductUnit() == null) {
+                    contractProductVO.setProductUnit(product.getUnit());
+                }
+            });
+        }));
         return contractVO;
     }
 
@@ -157,7 +182,11 @@ public class CrmContractController {
     @ApiAccessLog(operateType = EXPORT)
     public void exportContractExcel(@Valid CrmContractPageReqVO exportReqVO,
                                     HttpServletResponse response) throws IOException {
-        PageResult<CrmContractDO> pageResult = contractService.getContractPage(exportReqVO, getLoginUserId());
+        exportReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
+        Long userId = getLoginUserId();
+        PageResult<CrmContractDO> pageResult = contractService.getContractPage(exportReqVO, userId);
+        permissionService.validateExportPermission(CrmBizTypeEnum.CRM_CONTRACT.getType(),
+                convertSet(pageResult.getList(), CrmContractDO::getId), userId);
         // 导出 Excel
         ExcelUtils.write(response, "合同.xls", "数据", CrmContractRespVO.class,
                 BeanUtils.toBean(pageResult.getList(), CrmContractRespVO.class));
@@ -251,6 +280,35 @@ public class CrmContractController {
                 .setId(contract.getId()).setName(contract.getName()).setAuditStatus(contract.getAuditStatus())
                 .setTotalPrice(contract.getTotalPrice())
                 .setTotalReceivablePrice(receivablePriceMap.getOrDefault(contract.getId(), BigDecimal.ZERO))));
+    }
+
+    @GetMapping("/receivable-candidates")
+    @Operation(summary = "获得可创建回款的合同候选")
+    @PreAuthorize("@ss.hasPermission('crm:receivable:create')")
+    public CommonResult<List<CrmReceivableContractCandidateRespVO>> getReceivableContractCandidates(
+            @RequestParam(value = "customerId", required = false) Long customerId) {
+        List<CrmContractDO> contracts = contractService.getReceivableCandidateList(customerId, getLoginUserId());
+        if (CollUtil.isEmpty(contracts)) {
+            return success(Collections.emptyList());
+        }
+        Map<Long, CrmCustomerDO> customerMap = customerService.getCustomerMap(
+                convertSet(contracts, CrmContractDO::getCustomerId));
+        Map<Long, BigDecimal> reservedPriceMap = receivableService.getReservedPriceMapByContractId(
+                convertSet(contracts, CrmContractDO::getId));
+        return success(convertList(contracts, contract -> {
+            BigDecimal reservedPrice = reservedPriceMap.getOrDefault(contract.getId(), BigDecimal.ZERO);
+            BigDecimal remainingPrice = contract.getTotalPrice().subtract(reservedPrice).max(BigDecimal.ZERO);
+            CrmCustomerDO customer = customerMap.get(contract.getCustomerId());
+            return new CrmReceivableContractCandidateRespVO()
+                    .setId(contract.getId())
+                    .setNo(contract.getNo())
+                    .setName(contract.getName())
+                    .setCustomerId(contract.getCustomerId())
+                    .setCustomerName(customer == null ? null : customer.getName())
+                    .setTotalPrice(contract.getTotalPrice())
+                    .setTotalReceivablePrice(reservedPrice)
+                    .setRemainingReceivablePrice(remainingPrice);
+        }));
     }
 
 }

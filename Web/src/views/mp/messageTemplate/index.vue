@@ -12,7 +12,7 @@
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item :label="t('account.title')" prop="accountId">
-            <WxAccountSelect @change="onAccountChanged" />
+            <WxAccountSelect @change="onAccountChanged" @unavailable="onAccountUnavailable" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -45,24 +45,26 @@
       <el-table-column :label="t('messageTemplate.primaryIndustry')" align="center" prop="primaryIndustry" min-width="120" />
       <el-table-column :label="t('messageTemplate.deputyIndustry')" align="center" prop="deputyIndustry" min-width="120" />
       <el-table-column :label="t('common.status')" align="center" prop="status" />
-      <el-table-column :label="t('common.operation')" align="center" min-width="160">
+      <el-table-column :label="t('common.operation')" align="center" width="220">
         <template #default="scope">
-          <el-button
-            link
-            type="primary"
-            @click="handleSend(scope.row)"
-            v-hasPermi="['mp:message-template:send']"
-          >
-            {{ t('messageTemplate.send') }}
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-            v-hasPermi="['mp:message-template:delete']"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions>
+            <el-button
+              link
+              type="primary"
+              @click="handleSend(scope.row)"
+              v-hasPermi="['mp:message-template:send']"
+            >
+              {{ t('messageTemplate.send') }}
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+              v-hasPermi="['mp:message-template:delete']"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>
@@ -96,6 +98,13 @@ const syncLoading = ref(false) // 同步模板的加载中
 const onAccountChanged = (accountId: number) => {
   queryParams.accountId = accountId
   getList()
+}
+
+const onAccountUnavailable = () => {
+  queryParams.accountId = -1
+  list.value = []
+  loading.value = false
+  syncLoading.value = false
 }
 
 /** 查询列表 */

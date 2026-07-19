@@ -9,6 +9,7 @@ import com.meession.etm.module.crm.controller.admin.receivable.vo.plan.CrmReceiv
 import com.meession.etm.module.crm.dal.dataobject.contract.CrmContractDO;
 import com.meession.etm.module.crm.dal.dataobject.receivable.CrmReceivablePlanDO;
 import com.meession.etm.module.crm.dal.mysql.receivable.CrmReceivablePlanMapper;
+import com.meession.etm.module.crm.enums.common.CrmAuditStatusEnum;
 import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.enums.permission.CrmPermissionLevelEnum;
 import com.meession.etm.module.crm.framework.permission.core.annotations.CrmPermission;
@@ -24,12 +25,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
 import static com.meession.etm.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.RECEIVABLE_PLAN_CREATE_FAIL_CONTRACT_NOT_APPROVE;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.RECEIVABLE_PLAN_DELETE_FAIL_LINKED;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.RECEIVABLE_PLAN_EXISTS_RECEIVABLE;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.RECEIVABLE_PLAN_NOT_EXISTS;
+import static com.meession.etm.module.crm.enums.ErrorCodeConstants.RECEIVABLE_PLAN_PRICE_EXCEEDS_CONTRACT;
 import static com.meession.etm.module.crm.enums.ErrorCodeConstants.RECEIVABLE_PLAN_UPDATE_FAIL;
 import static com.meession.etm.module.crm.enums.LogRecordConstants.*;
 
@@ -57,9 +63,14 @@ public class CrmReceivablePlanServiceImpl implements CrmReceivablePlanService {
     @Transactional(rollbackFor = Exception.class)
     @LogRecord(type = CRM_RECEIVABLE_PLAN_TYPE, subType = CRM_RECEIVABLE_PLAN_CREATE_SUB_TYPE, bizNo = "{{#receivablePlan.id}}",
             success = CRM_RECEIVABLE_PLAN_CREATE_SUCCESS)
+    @CrmPermission(bizType = CrmBizTypeEnum.CRM_CONTRACT, bizId = "#createReqVO.contractId",
+            level = CrmPermissionLevelEnum.WRITE)
     public Long createReceivablePlan(CrmReceivablePlanSaveReqVO createReqVO) {
-        // 1. 校验关联数据是否存在
-        validateRelationDataExists(createReqVO);
+        // 1. 锁定合同后校验关系和计划总额，串行化期次与金额分配
+        validateOwnerUser(createReqVO.getOwnerUserId());
+        receivablePlanMapper.selectContractIdForUpdate(createReqVO.getContractId());
+        CrmContractDO contract = validateAndFillContract(createReqVO);
+        validateTotalPrice(createReqVO.getPrice(), contract, null);
 
         // 2. 插入回款计划
         CrmReceivablePlanDO maxPeriodReceivablePlan = receivablePlanMapper.selectMaxPeriodByContractId(createReqVO.getContractId());
@@ -87,14 +98,20 @@ public class CrmReceivablePlanServiceImpl implements CrmReceivablePlanService {
     @CrmPermission(bizType = CrmBizTypeEnum.CRM_RECEIVABLE_PLAN, bizId = "#updateReqVO.id", level = CrmPermissionLevelEnum.WRITE)
     public void updateReceivablePlan(CrmReceivablePlanSaveReqVO updateReqVO) {
         updateReqVO.setOwnerUserId(null).setCustomerId(null).setContractId(null); // 防止修改这些字段
-        // 1.1 校验存在
-        validateRelationDataExists(updateReqVO);
-        // 1.2 校验关联数据是否存在
+        // 1.1 先读取合同编号，再按合同、计划顺序加锁
         CrmReceivablePlanDO oldReceivablePlan = validateReceivablePlanExists(updateReqVO.getId());
-        // 1.3 如果已经有对应的回款，则不允许编辑
+        receivablePlanMapper.selectContractIdForUpdate(oldReceivablePlan.getContractId());
+        oldReceivablePlan = validateReceivablePlanExistsForUpdate(updateReqVO.getId());
+        // 1.2 如果已经有对应的回款，则不允许编辑
         if (Objects.nonNull(oldReceivablePlan.getReceivableId())) {
             throw exception(RECEIVABLE_PLAN_UPDATE_FAIL);
         }
+        // 1.3 只允许修改可变字段，并校验更新后的合同计划总额
+        updateReqVO.setOwnerUserId(oldReceivablePlan.getOwnerUserId())
+                .setCustomerId(oldReceivablePlan.getCustomerId())
+                .setContractId(oldReceivablePlan.getContractId());
+        CrmContractDO contract = validateAndFillContract(updateReqVO);
+        validateTotalPrice(updateReqVO.getPrice(), contract, oldReceivablePlan.getId());
 
         // 2. 更新回款计划
         CrmReceivablePlanDO updateObj = BeanUtils.toBean(updateReqVO, CrmReceivablePlanDO.class);
@@ -109,24 +126,52 @@ public class CrmReceivablePlanServiceImpl implements CrmReceivablePlanService {
         LogRecordContext.putVariable("receivablePlan", oldReceivablePlan);
     }
 
-    private void validateRelationDataExists(CrmReceivablePlanSaveReqVO reqVO) {
-        // 校验负责人存在
-        if (reqVO.getOwnerUserId() != null) {
-            adminUserApi.validateUser(reqVO.getOwnerUserId());
+    private void validateOwnerUser(Long ownerUserId) {
+        if (ownerUserId != null) {
+            adminUserApi.validateUser(ownerUserId);
         }
-        // 校验合同存在
-        if (reqVO.getContractId() != null) {
-            CrmContractDO contract = contractService.getContract(reqVO.getContractId());
-            reqVO.setCustomerId(contract.getCustomerId());
+    }
+
+    private CrmContractDO validateAndFillContract(CrmReceivablePlanSaveReqVO reqVO) {
+        CrmContractDO contract = contractService.validateContract(reqVO.getContractId());
+        if (!CrmAuditStatusEnum.APPROVE.getStatus().equals(contract.getAuditStatus())) {
+            throw exception(RECEIVABLE_PLAN_CREATE_FAIL_CONTRACT_NOT_APPROVE);
+        }
+        reqVO.setCustomerId(contract.getCustomerId());
+        return contract;
+    }
+
+    private void validateTotalPrice(BigDecimal price, CrmContractDO contract, Long excludedPlanId) {
+        List<CrmReceivablePlanDO> plans = receivablePlanMapper.selectListByContractId(contract.getId());
+        BigDecimal plannedPrice = plans.stream()
+                .filter(plan -> !Objects.equals(plan.getId(), excludedPlanId))
+                .map(CrmReceivablePlanDO::getPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal remainingPrice = contract.getTotalPrice().subtract(plannedPrice);
+        if (price.compareTo(remainingPrice) > 0) {
+            throw exception(RECEIVABLE_PLAN_PRICE_EXCEEDS_CONTRACT, remainingPrice.max(BigDecimal.ZERO));
         }
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateReceivablePlanReceivableId(Long id, Long receivableId) {
-        // 校验存在
-        validateReceivablePlanExists(id);
+        // 锁定计划，防止并发创建多个回款或与删除串写
+        CrmReceivablePlanDO receivablePlan = validateReceivablePlanExistsForUpdate(id);
+        if (receivablePlan.getReceivableId() != null) {
+            throw exception(RECEIVABLE_PLAN_EXISTS_RECEIVABLE);
+        }
         // 更新回款计划
         receivablePlanMapper.updateById(new CrmReceivablePlanDO().setId(id).setReceivableId(receivableId));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void unlinkReceivablePlan(Long id, Long receivableId) {
+        validateReceivablePlanExistsForUpdate(id);
+        if (receivablePlanMapper.clearReceivableIdIfMatches(id, receivableId) == 0) {
+            throw exception(RECEIVABLE_PLAN_UPDATE_FAIL);
+        }
     }
 
     @Override
@@ -135,8 +180,11 @@ public class CrmReceivablePlanServiceImpl implements CrmReceivablePlanService {
             success = CRM_RECEIVABLE_PLAN_DELETE_SUCCESS)
     @CrmPermission(bizType = CrmBizTypeEnum.CRM_RECEIVABLE_PLAN, bizId = "#id", level = CrmPermissionLevelEnum.OWNER)
     public void deleteReceivablePlan(Long id) {
-        // 1. 校验存在
-        CrmReceivablePlanDO receivablePlan = validateReceivablePlanExists(id);
+        // 1. 锁定并校验存在，已关联回款的计划必须保留业务关系
+        CrmReceivablePlanDO receivablePlan = validateReceivablePlanExistsForUpdate(id);
+        if (receivablePlan.getReceivableId() != null) {
+            throw exception(RECEIVABLE_PLAN_DELETE_FAIL_LINKED);
+        }
 
         // 2. 删除
         receivablePlanMapper.deleteById(id);
@@ -149,6 +197,14 @@ public class CrmReceivablePlanServiceImpl implements CrmReceivablePlanService {
 
     private CrmReceivablePlanDO validateReceivablePlanExists(Long id) {
         CrmReceivablePlanDO receivablePlan = receivablePlanMapper.selectById(id);
+        if (receivablePlan == null) {
+            throw exception(RECEIVABLE_PLAN_NOT_EXISTS);
+        }
+        return receivablePlan;
+    }
+
+    private CrmReceivablePlanDO validateReceivablePlanExistsForUpdate(Long id) {
+        CrmReceivablePlanDO receivablePlan = receivablePlanMapper.selectByIdForUpdate(id);
         if (receivablePlan == null) {
             throw exception(RECEIVABLE_PLAN_NOT_EXISTS);
         }

@@ -3,6 +3,8 @@ package com.meession.etm.module.crm.service.customer;
 import com.meession.etm.framework.common.pojo.PageResult;
 import com.meession.etm.module.crm.controller.admin.customer.vo.customer.*;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerOwnerRecordDO;
+import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerLifecycleRecordDO;
 import com.meession.etm.module.crm.service.customer.bo.CrmCustomerCreateReqBO;
 import jakarta.validation.Valid;
 
@@ -42,7 +44,13 @@ public interface CrmCustomerService {
      * @param id         编号
      * @param dealStatus 跟进状态
      */
-    void updateCustomerDealStatus(Long id, Boolean dealStatus);
+    void updateCustomerDealStatus(Long id, Boolean dealStatus, Long operatorUserId);
+
+    /** 更新客户生命周期状态，并写入不可变历史。 */
+    void updateCustomerLifecycleStatus(@Valid CrmCustomerLifecycleUpdateReqVO reqVO, Long operatorUserId);
+
+    /** 获得客户生命周期变更记录，按时间倒序返回。 */
+    List<CrmCustomerLifecycleRecordDO> getCustomerLifecycleRecordList(Long customerId);
 
     /**
      * 更新客户相关的跟进信息
@@ -78,6 +86,11 @@ public interface CrmCustomerService {
     List<CrmCustomerDO> getCustomerList(Collection<Long> ids);
 
     /**
+     * 按客户名称或手机查询当前用户可见的疑似重复客户。
+     */
+    List<CrmCustomerDO> getDuplicateCustomerList(CrmCustomerDuplicateCheckReqVO reqVO, Long userId);
+
+    /**
      * 获得客户 Map
      *
      * @param ids 客户编号数组
@@ -95,6 +108,9 @@ public interface CrmCustomerService {
      * @return 客户分页
      */
     PageResult<CrmCustomerDO> getCustomerPage(CrmCustomerPageReqVO pageReqVO, Long userId);
+
+    /** Remaining days before automatic pool entry; protected customers are omitted. */
+    Map<Long, Long> getPoolDayMap(List<CrmCustomerDO> customers);
 
     /**
      * 获得放入公海提醒的客户分页
@@ -137,6 +153,17 @@ public interface CrmCustomerService {
     void validateCustomer(Long id);
 
     /**
+     * 获得客户归属变更记录，按时间倒序返回。
+     *
+     * @param customerId 客户编号
+     * @return 归属变更记录
+     */
+    List<CrmCustomerOwnerRecordDO> getCustomerOwnerRecordList(Long customerId);
+
+    /** Latest public-pool entry event for each requested customer. */
+    Map<Long, CrmCustomerOwnerRecordDO> getLatestPoolRecordMap(Collection<Long> customerIds);
+
+    /**
      * 客户转移
      *
      * @param reqVO  请求
@@ -175,9 +202,10 @@ public interface CrmCustomerService {
     /**
      * 客户放入公海
      *
-     * @param id 客户编号
+     * @param id             客户编号
+     * @param operatorUserId 操作人
      */
-    void putCustomerPool(Long id);
+    void putCustomerPool(Long id, Long operatorUserId);
 
     /**
      * 领取公海客户

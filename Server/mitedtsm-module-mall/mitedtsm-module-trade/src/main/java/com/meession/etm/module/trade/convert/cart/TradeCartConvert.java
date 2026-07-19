@@ -17,7 +17,7 @@ import java.util.Map;
 
 import static com.meession.etm.framework.common.util.collection.CollectionUtils.convertMap;
 
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface TradeCartConvert {
 
     TradeCartConvert INSTANCE = Mappers.getMapper(TradeCartConvert.class);

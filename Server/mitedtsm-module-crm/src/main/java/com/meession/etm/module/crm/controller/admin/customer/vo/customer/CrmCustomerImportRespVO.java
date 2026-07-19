@@ -3,6 +3,8 @@ package com.meession.etm.module.crm.controller.admin.customer.vo.customer;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
@@ -10,6 +12,8 @@ import java.util.Map;
 @Schema(description = "管理后台 - 客户导入 Response VO")
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class CrmCustomerImportRespVO {
 
     @Schema(description = "创建成功的客户名数组", requiredMode = Schema.RequiredMode.REQUIRED)

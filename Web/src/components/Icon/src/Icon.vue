@@ -1,7 +1,12 @@
 <script lang="ts" setup>
 import { propTypes } from '@/utils/propTypes'
-import Iconify from '@purge-icons/generated'
+import { getIconData, iconToSVG, replaceIDs } from '@iconify/utils'
 import { useDesign } from '@/hooks/web/useDesign'
+import offlineCollections from './offline-icon-collections.generated.json'
+
+const offlineCollectionsByPrefix = new Map(
+  offlineCollections.map((collection) => [collection.prefix, collection as any])
+)
 
 defineOptions({ name: 'Icon' })
 
@@ -45,23 +50,29 @@ const getSvgClass = computed(() => {
 const updateIcon = async (icon: string) => {
   if (unref(isLocal)) return
 
-  const el = unref(elRef)
-  if (!el) return
-
   await nextTick()
 
+  const el = unref(elRef)
+  if (!el) return
   if (!icon) return
 
-  const svg = Iconify.renderSVG(icon, {})
-  if (svg) {
+  const [prefix, name] = icon.split(':', 2)
+  const collection = offlineCollectionsByPrefix.get(prefix)
+  const iconData = collection ? getIconData(collection, name) : null
+  if (iconData) {
+    const rendered = iconToSVG(iconData, {})
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    for (const [attribute, value] of Object.entries(rendered.attributes)) {
+      svg.setAttribute(attribute, String(value))
+    }
+    svg.setAttribute('aria-hidden', 'true')
+    svg.setAttribute('class', getSvgClass.value)
+    svg.innerHTML = replaceIDs(rendered.body)
     el.textContent = ''
     el.appendChild(svg)
   } else {
-    const span = document.createElement('span')
-    span.className = 'iconify'
-    span.dataset.icon = icon
     el.textContent = ''
-    el.appendChild(span)
+    el.dataset.missingIcon = icon
   }
 }
 
@@ -69,7 +80,8 @@ watch(
   () => props.icon,
   (icon: string) => {
     updateIcon(icon)
-  }
+  },
+  { immediate: true, flush: 'post' }
 )
 </script>
 
@@ -79,8 +91,6 @@ watch(
       <use :xlink:href="symbolId" />
     </svg>
 
-    <span v-else ref="elRef" :class="$attrs.class" :style="getIconifyStyle">
-      <span :class="getSvgClass" :data-icon="symbolId"></span>
-    </span>
+    <span v-else ref="elRef" :class="$attrs.class" :style="getIconifyStyle"></span>
   </ElIcon>
 </template>

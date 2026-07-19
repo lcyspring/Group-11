@@ -24,24 +24,26 @@
   <!-- 列表 -->
   <ContentWrap>
     <el-table v-loading="loading" :data="list" :show-overflow-tooltip="true" :table-layout="'auto'">
-      <el-table-column :label="t('common.action')" align="center" min-width="150" fixed="right">
+      <el-table-column :label="t('common.action')" align="center" fixed="right" width="220">
         <template #default="scope">
-          <el-button
-            v-if="scope.row.status === 0 && !scope.row.payTransferId"
-            type="primary"
-            link
-            @click="handleTransfer(scope.row.id)"
-          >
-            {{ t('demo.withdraw.transferButton') }}
-          </el-button>
-          <el-button
-            v-else-if="scope.row.status === 20"
-            type="warning"
-            link
-            @click="handleTransfer(scope.row.id)"
-          >
-            {{ t('demo.withdraw.retransferButton') }}
-          </el-button>
+          <TableActions>
+            <el-button
+              v-if="scope.row.status === 0 && !scope.row.payTransferId"
+              type="primary"
+              link
+              @click="handleTransfer(scope.row.id)"
+            >
+              {{ t('demo.withdraw.transferButton') }}
+            </el-button>
+            <el-button
+              v-else-if="scope.row.status === 20"
+              type="warning"
+              link
+              @click="handleTransfer(scope.row.id)"
+            >
+              {{ t('demo.withdraw.retransferButton') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
       <el-table-column :label="t('demo.withdraw.id')" align="center" prop="id" min-width="100" />

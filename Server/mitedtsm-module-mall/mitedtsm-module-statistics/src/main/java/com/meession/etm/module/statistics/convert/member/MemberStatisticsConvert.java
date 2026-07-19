@@ -23,7 +23,7 @@ import java.util.Optional;
  *
  * @author owen
  */
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface MemberStatisticsConvert {
 
     MemberStatisticsConvert INSTANCE = Mappers.getMapper(MemberStatisticsConvert.class);

@@ -9,7 +9,13 @@
 
   <!-- 列表 -->
   <ContentWrap class="mt-10px">
-    <el-table v-loading="loading" :data="list" :show-overflow-tooltip="true" :stripe="true" :table-layout="'auto'">
+    <el-table
+      v-loading="loading"
+      :data="list"
+      :show-overflow-tooltip="true"
+      :stripe="true"
+      :table-layout="'auto'"
+    >
       <el-table-column align="center" :label="t('receivable.no')" prop="no" />
       <el-table-column align="center" :label="t('receivable.customerId')" prop="customerName" />
       <el-table-column align="center" :label="t('contract.title')" prop="contract.no" />
@@ -20,37 +26,46 @@
         prop="returnTime"
         min-width="150"
       />
-      <el-table-column align="center" :label="t('receivable.returnType')" prop="returnType" min-width="130">
+      <el-table-column
+        align="center"
+        :label="t('receivable.returnType')"
+        prop="returnType"
+        min-width="130"
+      >
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.CRM_RECEIVABLE_RETURN_TYPE" :value="scope.row.returnType" />
         </template>
       </el-table-column>
       <el-table-column
         align="center"
-        :label="t('receivable.price') + '（元）'"
+        :label="t('receivable.amountInCny', { label: t('receivable.price') })"
         prop="price"
         :formatter="erpPriceTableColumnFormatter"
       />
       <el-table-column align="center" :label="t('receivable.ownerUserName')" prop="ownerUserName" />
       <el-table-column align="center" :label="t('receivable.remark')" prop="remark" />
-      <el-table-column align="center" fixed="right" :label="t('common.action')" min-width="150">
+      <el-table-column align="center" fixed="right" :label="t('common.action')" width="220">
         <template #default="scope">
-          <el-button
-            v-hasPermi="['crm:receivable:update']"
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-          >
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button
-            v-hasPermi="['crm:receivable:delete']"
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-          >
-            {{ t('common.delete') }}
-          </el-button>
+          <TableActions>
+            <el-button
+              v-if="[0, 30, 40].includes(scope.row.auditStatus)"
+              v-hasPermi="['crm:receivable:update']"
+              link
+              type="primary"
+              @click="openForm('update', scope.row.id)"
+            >
+              {{ scope.row.auditStatus === 0 ? t('common.edit') : t('receivable.revise') }}
+            </el-button>
+            <el-button
+              v-if="scope.row.auditStatus === 0 && !scope.row.processInstanceId"
+              v-hasPermi="['crm:receivable:delete']"
+              link
+              type="danger"
+              @click="handleDelete(scope.row.id)"
+            >
+              {{ t('common.delete') }}
+            </el-button>
+          </TableActions>
         </template>
       </el-table-column>
     </el-table>
@@ -71,6 +86,7 @@ import * as ReceivablePlanApi from '@/api/crm/receivable/plan'
 import * as ReceivableApi from '@/api/crm/receivable'
 import ReceivableForm from './../ReceivableForm.vue'
 import { dateFormatter2 } from '@/utils/formatTime'
+import { resolveDialogAction } from '@/utils/dialogAction'
 import { DICT_TYPE } from '@/utils/dict'
 import { erpPriceTableColumnFormatter } from '@/utils'
 
@@ -131,21 +147,15 @@ const openForm = (type: string, id?: number) => {
 
 /** 删除按钮操作 */
 const handleDelete = async (id: number) => {
-  try {
-    // 删除的二次确认
-    await message.delConfirm()
-    // 发起删除
-    await ReceivableApi.deleteReceivable(id)
-    message.success(t('common.delSuccess'))
-    // 刷新列表
-    await getList()
-  } catch {}
+  if (!(await resolveDialogAction(message.delConfirm()))) return
+  await ReceivableApi.deleteReceivable(id)
+  message.success(t('common.delSuccess'))
+  await getList()
 }
 
 /** 从回款计划创建回款 */
-const createReceivable = (planData: any) => {
-  const data = planData as unknown as ReceivablePlanApi.ReceivablePlanVO
-  formRef.value.open('create', undefined, data)
+const createReceivable = (planData: ReceivablePlanApi.ReceivablePlanVO) => {
+  formRef.value.open('create', undefined, planData)
 }
 defineExpose({ createReceivable })
 

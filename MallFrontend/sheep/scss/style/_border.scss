@@ -1,3 +1,6 @@
+@use 'sass:map';
+@use '../var' as *;
+
 /* ==================
           边框
  ==================== */
@@ -69,7 +72,7 @@
     }
   }
 }
-@each $color, $value in map-merge($colors, map-merge($darks, $grays)) {
+@each $color, $value in map.merge($colors, map.merge($darks, $grays)) {
   .border-#{$color}::after,
   .border-#{$color}[class*='-shine']::before {
     border-color: $value !important;

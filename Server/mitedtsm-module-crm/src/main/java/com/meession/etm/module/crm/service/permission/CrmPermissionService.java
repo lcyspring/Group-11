@@ -58,6 +58,12 @@ public interface CrmPermissionService {
     void transferPermission(@Valid CrmPermissionTransferReqBO crmPermissionTransferReqBO);
 
     /**
+     * Synchronize the single owner permission of a business object while preserving team permissions.
+     * A {@code null} owner removes the current owner permission, as required when an object enters a pool.
+     */
+    void replaceOwnerPermission(Integer bizType, Long bizId, Long ownerUserId);
+
+    /**
      * 删除数据权限
      *
      * @param bizType 数据类型，关联 {@link CrmBizTypeEnum}
@@ -73,6 +79,9 @@ public interface CrmPermissionService {
      * @param bizId   数据编号，关联 {@link CrmBizTypeEnum} 对应模块 DO#getId()
      */
     void deletePermission(Integer bizType, Long bizId);
+
+    /** Delete all grants when present; pool quarantine must also work for objects with no team grants. */
+    void deletePermissionIfPresent(Integer bizType, Long bizId);
 
     /**
      * 批量删除数据权限
@@ -127,5 +136,10 @@ public interface CrmPermissionService {
      * @return 是否有权限
      */
     boolean hasPermission(Integer bizType, Long bizId, Long userId, CrmPermissionLevelEnum level);
+
+    /**
+     * Export is a privileged read: every selected object requires OWNER or WRITE scope.
+     */
+    void validateExportPermission(Integer bizType, Collection<Long> bizIds, Long userId);
 
 }

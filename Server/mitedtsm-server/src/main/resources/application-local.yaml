@@ -13,9 +13,9 @@ spring:
   datasource:
     druid: # Druid 【监控】相关的全局配置
       web-stat-filter:
-        enabled: true
+        enabled: ${SPRING_DATASOURCE_DRUID_WEB_STAT_FILTER_ENABLED:false}
       stat-view-servlet:
-        enabled: true
+        enabled: ${SPRING_DATASOURCE_DRUID_STAT_VIEW_SERVLET_ENABLED:false}
         allow: # 设置白名单，不填则允许所有访问
         url-pattern: /druid/*
         login-username: # 控制台管理用户名和密码
@@ -47,33 +47,20 @@ spring:
       primary: master
       datasource:
         master:
-          url: jdbc:mysql://127.0.0.1:3306/mitedtsm_database?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true&useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci # MySQL Connector/J 8.X 连接的示例
-          #          url: jdbc:mysql://127.0.0.1:3306/mitedtsm_database?useSSL=true&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&rewriteBatchedStatements=true # MySQL Connector/J 5.X 连接的示例
-          #          url: jdbc:postgresql://127.0.0.1:5432/mitedtsm_database # PostgreSQL 连接的示例
-          #          url: jdbc:oracle:thin:@127.0.0.1:1521:xe # Oracle 连接的示例
-          #          url: jdbc:sqlserver://127.0.0.1:1433;DatabaseName=mitedtsm_database;SelectMethod=cursor;encrypt=false;rewriteBatchedStatements=true;useUnicode=true;characterEncoding=utf-8 # SQLServer 连接的示例
-          #          url: jdbc:dm://127.0.0.1:5236?schema=MITEDTSM_DATABASE # DM 连接的示例
-          #          url: jdbc:kingbase8://127.0.0.1:54321/test  # 人大金仓 KingbaseES 连接的示例
-          #          url: jdbc:postgresql://127.0.0.1:5432/postgres # OpenGauss 连接的示例
-          username: root
-          password: 1234
-          #          username: sa # SQL Server 连接的示例
-          #          password: Mitedtsm@2024 # SQL Server 连接的示例
-          #          username: SYSDBA # DM 连接的示例
-          #          password: SYSDBA001 # DM 连接的示例
-          #          username: root # OpenGauss 连接的示例
-          #          password: Mitedtsm@2024 # OpenGauss 连接的示例
+          url: ${MYSQL_JDBC_URL}
+          username: ${MYSQL_USERNAME}
+          password: ${MYSQL_PASSWORD}
         slave: # 模拟从库，可根据自己需要修改
           lazy: true # 开启懒加载，保证启动速度
-          url: jdbc:mysql://127.0.0.1:3306/mitedtsm_database?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true&nullCatalogMeansCurrent=true
-          username: root
-          password: 123456
+          url: ${MYSQL_SLAVE_JDBC_URL:${MYSQL_JDBC_URL}}
+          username: ${MYSQL_SLAVE_USERNAME:${MYSQL_USERNAME}}
+          password: ${MYSQL_SLAVE_PASSWORD:${MYSQL_PASSWORD}}
         tdengine: # IoT 数据库（需要 IoT 物联网再开启噢！）
           lazy: true # 开启懒加载，保证启动速度
           url: jdbc:TAOS-WS://localhost:6041/mitedtsm_database?varcharAsString=true
           driver-class-name: com.taosdata.jdbc.ws.WebSocketDriver
-          username: root
-          password: taosdata
+          username: ${TDENGINE_USER:root}
+          password: ${TDENGINE_PASSWORD:}
           druid:
             validation-query: SELECT SERVER_STATUS() # TDengine 数据源的有效性检查 SQL
 
@@ -127,8 +114,8 @@ spring:
   rabbitmq:
     host: 127.0.0.1 # RabbitMQ 服务的地址
     port: 5672 # RabbitMQ 服务的端口
-    username: rabbit # RabbitMQ 服务的账号
-    password: rabbit # RabbitMQ 服务的密码
+    username: ${RABBITMQ_USERNAME:rabbit}
+    password: ${RABBITMQ_PASSWORD:}
   # Kafka 配置项，对应 KafkaProperties 配置类
   kafka:
     bootstrap-servers: 127.0.0.1:9092 # 指定 Kafka Broker 地址，可以设置多个，以逗号分隔
@@ -148,7 +135,7 @@ management:
     web:
       base-path: /actuator # Actuator 提供的 API 接口的根目录。默认为 /actuator
       exposure:
-        include: '*' # 需要开放的端点。默认值只打开 health 和 info 两个端点。通过设置 * ，可以开放所有端点。
+        include: ${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE:health,info}
 
 # Spring Boot Admin 配置项
 spring:
@@ -159,8 +146,8 @@ spring:
         url: http://127.0.0.1:${server.port}/${spring.boot.admin.context-path} # 设置 Spring Boot Admin Server 地址
         instance:
           service-host-type: IP # 注册实例时，优先使用 IP [IP, HOST_NAME, CANONICAL_HOST_NAME]
-        username: admin
-        password: admin
+        username: ${SPRING_BOOT_ADMIN_USERNAME:}
+        password: ${SPRING_BOOT_ADMIN_PASSWORD:}
       # Spring Boot Admin Server 服务端的相关配置
       context-path: /admin # 配置 Spring
 
@@ -197,26 +184,26 @@ debug: false
 --- #################### 微信公众号、小程序相关配置 ####################
 wx:
   mp: # 公众号配置（必填），参见 https://github.com/Wechat-Group/WxJava/blob/develop/spring-boot-starters/wx-java-mp-spring-boot-starter/README.md 文档
-#    app-id: wx041349c6f39b268b # 测试号（牛希尧提供的）
-#    secret: 5abee519483bc9f8cb37ce280e814bd0
-#    app-id: wx5b23ba7a5589ecbb # 测试号（自己的）
-#    secret: 2a7b3b20c537e52e74afd395eb85f61f
-    app-id: wxf56b1542b9e85f8a # 测试号（Kongdy 提供的）
-    secret: 496379dcef1ba869e9234de8d598cfd3
+    # app-id 由运行 YAML 显式提供
+    # secret 由运行 YAML 显式提供
+    # 不在仓库保留公众号测试凭据
+    # 数据库公众号账号与 SDK 启动凭据分离管理
+    app-id: ${WX_MP_APP_ID:not-configured}
+    secret: ${WX_MP_SECRET:not-configured}
     # 存储配置，解决 AccessToken 的跨节点的共享
     config-storage:
       type: RedisTemplate # 采用 RedisTemplate 操作 Redis，会自动从 Spring 中获取
       key-prefix: wx # Redis Key 的前缀
       http-client-type: HttpClient # 采用 HttpClient 请求微信公众号平台
   miniapp: # 小程序配置（必填），参见 https://github.com/Wechat-Group/WxJava/blob/develop/spring-boot-starters/wx-java-miniapp-spring-boot-starter/README.md 文档
-    #    appid: wx62056c0d5e8db250 # 测试号（牛希尧提供的）
-    #    secret: 333ae72f41552af1e998fe1f54e1584a
-#    appid: wx63c280fe3248a3e7 # wenhualian的接口测试号
-#    secret: 6f270509224a7ae1296bbf1c8cb97aed
-    appid: wxc4598c446f8a9cb3 # 测试号（Kongdy 提供的）
-    secret: 4a1a04e07f6a4a0751b39c3064a92c8b
-#    appid: wx66186af0759f47c9 # 测试号（puhui 提供的）
-#    secret: 3218bcbd112cbc614c7264ceb20144ac
+    # appid 由运行 YAML 显式提供
+    # secret 由运行 YAML 显式提供
+    # 不在仓库保留小程序测试凭据
+    # 数据库账号与 SDK 启动凭据分离管理
+    appid: ${WX_MINIAPP_APP_ID:not-configured}
+    secret: ${WX_MINIAPP_SECRET:not-configured}
+    # AppID/Secret 仅允许通过运行配置注入
+    # 未配置时使用不可调用的占位值启动
     config-storage:
       type: RedisTemplate # 采用 RedisTemplate 操作 Redis，会自动从 Spring 中获取
       key-prefix: wa # Redis Key 的前缀
@@ -226,14 +213,19 @@ wx:
 
 # 密讯配置项，设置当前项目所有自定义的配置
 mitedtsm:
+  crm:
+    invoice:
+      provider: local-ledger # CRM 台账模式；外部税务平台通过 CrmInvoiceProvider 扩展
+    contract-sign:
+      provider: local-record # 线下签署事实；电子签平台通过 CrmContractSignProvider 扩展
   captcha:
-    enable: false # 本地环境，暂时关闭图片验证码，方便登录等接口的测试；
+    enable: ${MITEDTSM_CAPTCHA_ENABLE:false}
   security:
-    mock-enable: true
+    mock-enable: ${MITEDTSM_SECURITY_MOCK_ENABLE:false}
   pay:
-    order-notify-url: https://yutou.mynatapp.cc/admin-api/pay/notify/order # 支付渠道的【支付】回调地址
-    refund-notify-url: https://yutou.mynatapp.cc/admin-api/pay/notify/refund # 支付渠道的【退款】回调地址
-    transfer-notify-url: https://yutou.mynatapp.cc/admin-api/pay/notify/transfer # 支付渠道的【转账】回调地址
+    order-notify-url: ${MITEDTSM_PAY_ORDER_NOTIFY_URL:http://127.0.0.1:8080/admin-api/pay/notify/order}
+    refund-notify-url: ${MITEDTSM_PAY_REFUND_NOTIFY_URL:http://127.0.0.1:8080/admin-api/pay/notify/refund}
+    transfer-notify-url: ${MITEDTSM_PAY_TRANSFER_NOTIFY_URL:http://127.0.0.1:8080/admin-api/pay/notify/transfer}
   access-log: # 访问日志的配置项
     enable: false
   demo: false # 关闭演示模式
@@ -241,33 +233,33 @@ mitedtsm:
     env-version: develop # 小程序版本: 正式版为 "release"；体验版为 "trial"；开发版为 "develop"
   wxa-subscribe-message:
     miniprogram-state: developer # 跳转小程序类型：开发版为 “developer”；体验版为 “trial”为；正式版为 “formal”
-  tencent-lbs-key: TVDBZ-TDILD-4ON4B-PFDZA-RNLKH-VVF6E # QQ 地图的密钥 https://lbs.qq.com/service/staticV2/staticGuide/staticDoc
+  tencent-lbs-key: ${MITEDTSM_TENCENT_LBS_KEY:not-configured}
 
 justauth:
-  enabled: true
+  enabled: ${JUSTAUTH_ENABLED:false}
   type:
     DINGTALK: # 钉钉
-      client-id: dingvrnreaje3yqvzhxg
-      client-secret: i8E6iZyDvZj51JIb0tYsYfVQYOks9Cq1lgryEjFRqC79P3iJcrxEwT6Qk2QvLrLI
+      client-id: ${JUSTAUTH_DINGTALK_CLIENT_ID:not-configured}
+      client-secret: ${JUSTAUTH_DINGTALK_CLIENT_SECRET:not-configured}
       ignore-check-redirect-uri: true
     WECHAT_ENTERPRISE: # 企业微信
-      client-id: wwd411c69a39ad2e54
-      client-secret: 1wTb7hYxnpT2TUbIeHGXGo7T0odav1ic10mLdyyATOw
+      client-id: ${JUSTAUTH_WECHAT_ENTERPRISE_CLIENT_ID:not-configured}
+      client-secret: ${JUSTAUTH_WECHAT_ENTERPRISE_CLIENT_SECRET:not-configured}
       agent-id: 1000004
       ignore-check-redirect-uri: true
     # noinspection SpringBootApplicationYaml
     WECHAT_MINI_PROGRAM: # 微信小程序
-      client-id: ${wx.miniapp.appid}
-      client-secret: ${wx.miniapp.secret}
+      client-id: ${WX_MINIAPP_APP_ID:not-configured}
+      client-secret: ${WX_MINIAPP_SECRET:not-configured}
       ignore-check-redirect-uri: true
       ignore-check-state: true # 微信小程序，不会使用到 state，所以不进行校验
     WECHAT_MP: # 微信公众号
-      client-id: ${wx.mp.app-id}
-      client-secret: ${wx.mp.secret}
+      client-id: ${WX_MP_APP_ID:not-configured}
+      client-secret: ${WX_MP_SECRET:not-configured}
       ignore-check-redirect-uri: true
     ALIPAY: # 支付宝小程序
-      client-id: xx
-      client-secret: xx
+      client-id: ${JUSTAUTH_ALIPAY_CLIENT_ID:not-configured}
+      client-secret: ${JUSTAUTH_ALIPAY_CLIENT_SECRET:not-configured}
       alipay-public-key: xx
       ignore-check-redirect-uri: true
       ignore-check-state: true

@@ -13,9 +13,11 @@ import com.meession.etm.framework.ip.core.utils.AreaUtils;
 import com.meession.etm.module.crm.controller.admin.contact.vo.*;
 import com.meession.etm.module.crm.dal.dataobject.contact.CrmContactDO;
 import com.meession.etm.module.crm.dal.dataobject.customer.CrmCustomerDO;
+import com.meession.etm.module.crm.enums.common.CrmBizTypeEnum;
 import com.meession.etm.module.crm.service.contact.CrmContactBusinessService;
 import com.meession.etm.module.crm.service.contact.CrmContactService;
 import com.meession.etm.module.crm.service.customer.CrmCustomerService;
+import com.meession.etm.module.crm.service.permission.CrmPermissionService;
 import com.meession.etm.module.system.api.dept.DeptApi;
 import com.meession.etm.module.system.api.dept.dto.DeptRespDTO;
 import com.meession.etm.module.system.api.user.AdminUserApi;
@@ -58,6 +60,8 @@ public class CrmContactController {
     private CrmCustomerService customerService;
     @Resource
     private CrmContactBusinessService contactBusinessLinkService;
+    @Resource
+    private CrmPermissionService permissionService;
 
     @Resource
     private AdminUserApi adminUserApi;
@@ -84,7 +88,7 @@ public class CrmContactController {
     @Parameter(name = "id", description = "编号", required = true)
     @PreAuthorize("@ss.hasPermission('crm:contact:delete')")
     public CommonResult<Boolean> deleteContact(@RequestParam("id") Long id) {
-        contactService.deleteContact(id);
+        contactService.deleteContact(id, getLoginUserId());
         return success(true);
     }
 
@@ -144,8 +148,11 @@ public class CrmContactController {
     @ApiAccessLog(operateType = EXPORT)
     public void exportContactExcel(@Valid CrmContactPageReqVO exportReqVO,
                                    HttpServletResponse response) throws IOException {
-        exportReqVO.setPageNo(PAGE_SIZE_NONE);
-        List<CrmContactDO> list = contactService.getContactPage(exportReqVO, getLoginUserId()).getList();
+        exportReqVO.setPageSize(PAGE_SIZE_NONE);
+        Long userId = getLoginUserId();
+        List<CrmContactDO> list = contactService.getContactPage(exportReqVO, userId).getList();
+        permissionService.validateExportPermission(CrmBizTypeEnum.CRM_CONTACT.getType(),
+                convertSet(list, CrmContactDO::getId), userId);
         ExcelUtils.write(response, "联系人.xls", "数据", CrmContactRespVO.class, buildContactDetailList(list));
     }
 

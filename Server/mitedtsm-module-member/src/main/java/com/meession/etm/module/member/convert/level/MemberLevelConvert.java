@@ -17,7 +17,7 @@ import java.util.List;
  *
  * @author owen
  */
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface MemberLevelConvert {
 
     MemberLevelConvert INSTANCE = Mappers.getMapper(MemberLevelConvert.class);

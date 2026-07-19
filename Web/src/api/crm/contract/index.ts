@@ -13,7 +13,7 @@ export interface ContractVO {
   ownerUserId: number
   ownerUserName?: string
   ownerUserDeptName?: string
-  processInstanceId: number
+  processInstanceId?: string
   auditStatus: number
   orderDate: Date
   startTime: Date
@@ -36,14 +36,28 @@ export interface ContractVO {
       id: number
       productId: number
       productName: string
+      productNameSnapshot?: string
       productNo: string
+      productNoSnapshot?: string
       productUnit: number
+      productUnitSnapshot?: number
       productPrice: number
       contractPrice: number
       count: number
       totalPrice: number
     }
   ]
+}
+
+export interface ReceivableContractCandidateVO {
+  id: number
+  no: string
+  name: string
+  customerId: number
+  customerName?: string
+  totalPrice: number
+  totalReceivablePrice: number
+  remainingReceivablePrice: number
 }
 
 // 查询 CRM 合同列表
@@ -73,9 +87,19 @@ export const getContractSimpleList = async (customerId: number) => {
   })
 }
 
+export const getReceivableContractCandidates = async (customerId?: number) => {
+  return await request.get({
+    url: '/crm/contract/receivable-candidates',
+    params: { customerId }
+  })
+}
+
 // 新增 CRM 合同
 export const createContract = async (data: ContractVO) => {
-  return await request.post({ url: `/crm/contract/create`, data })
+  return await request.post({
+    url: data.businessId ? `/crm/contract/create-from-business` : `/crm/contract/create`,
+    data
+  })
 }
 
 // 修改 CRM 合同

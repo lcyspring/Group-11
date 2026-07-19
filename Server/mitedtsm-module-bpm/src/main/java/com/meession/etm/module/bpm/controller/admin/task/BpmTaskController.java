@@ -95,7 +95,15 @@ public class BpmTaskController {
                 convertSet(processInstanceMap.values(), instance -> Long.valueOf(instance.getStartUserId())));
         Map<String, BpmProcessDefinitionInfoDO> processDefinitionInfoMap = processDefinitionService.getProcessDefinitionInfoMap(
                 convertSet(pageResult.getList(), HistoricTaskInstance::getProcessDefinitionId));
-        return success(BpmTaskConvert.INSTANCE.buildTaskPage(pageResult, processInstanceMap, userMap, null, processDefinitionInfoMap));
+        PageResult<BpmTaskRespVO> result = BpmTaskConvert.INSTANCE.buildTaskPage(pageResult, processInstanceMap, userMap, null, processDefinitionInfoMap);
+        result.getList().forEach(task -> {
+            BpmProcessDefinitionInfoDO info = task.getProcessInstance() == null ? null
+                    : processDefinitionInfoMap.get(task.getProcessInstance().getProcessDefinitionId());
+            task.setWithdrawable(task.getProcessInstance() != null
+                    && processInstanceService.getProcessInstance(task.getProcessInstanceId()) != null
+                    && info != null && Boolean.TRUE.equals(info.getAllowWithdrawTask()));
+        });
+        return success(result);
     }
 
     @GetMapping("manager-page")

@@ -6,7 +6,9 @@
           <span class="text-base font-bold">{{ t('customer.basicInfoTab') }}</span>
         </template>
         <el-descriptions :column="4">
-          <el-descriptions-item :label="t('receivablePlan.period')">{{ receivablePlan.period }}</el-descriptions-item>
+          <el-descriptions-item :label="t('receivablePlan.period')">{{
+            receivablePlan.period
+          }}</el-descriptions-item>
           <el-descriptions-item :label="t('receivablePlan.customerName')">
             {{ receivablePlan.customerName }}
           </el-descriptions-item>
@@ -28,21 +30,21 @@
           <el-descriptions-item :label="t('receivablePlan.remindDays')">
             {{ receivablePlan.remindDays }}
           </el-descriptions-item>
-          <el-descriptions-item :label="t('receivablePlan.remark')">{{ receivablePlan.remark }}</el-descriptions-item>
+          <el-descriptions-item :label="t('receivablePlan.remark')">{{
+            receivablePlan.remark
+          }}</el-descriptions-item>
           <el-descriptions-item :label="t('receivablePlan.receivablePrice')">
-            <el-text v-if="receivablePlan.receivable">
-              {{ erpPriceInputFormatter(receivablePlan.receivable.price) }}
-            </el-text>
-            <el-text v-else>{{ erpPriceInputFormatter(0) }}</el-text>
+            {{ erpPriceInputFormatter(receivablePlan.receivedPrice) }}
           </el-descriptions-item>
-          <el-descriptions-item :label="t('receivable.price')">
-            <el-text v-if="receivablePlan.receivable">
-              {{ erpPriceInputFormatter(receivablePlan.price - receivablePlan.receivable.price) }}
-            </el-text>
-            <el-text v-else>{{ erpPriceInputFormatter(receivablePlan.price) }}</el-text>
+          <el-descriptions-item :label="t('receivablePlan.unreceivedPrice')">
+            {{ erpPriceInputFormatter(receivablePlan.unreceivedPrice) }}
           </el-descriptions-item>
           <el-descriptions-item :label="t('receivable.returnTime')">
-            {{ formatDate(receivablePlan.receivable?.returnTime, 'YYYY-MM-DD') }}
+            {{
+              receivablePlan.status === ReceivablePlanApi.ReceivablePlanStatus.RECEIVED
+                ? formatDate(receivablePlan.receivable?.returnTime, 'YYYY-MM-DD')
+                : '-'
+            }}
           </el-descriptions-item>
         </el-descriptions>
       </el-collapse-item>

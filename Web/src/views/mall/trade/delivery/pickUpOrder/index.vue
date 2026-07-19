@@ -122,7 +122,7 @@
         icon-bg-color="text-purple-500"
         prefix="¥"
         :decimals="2"
-        :value="fenToYuan(summary?.orderPayPrice || 0)"
+        :value="Number(fenToYuan(summary?.orderPayPrice || 0))"
       />
     </el-col>
     <el-col :sm="6" :xs="12" v-loading="loading">
@@ -142,7 +142,7 @@
         icon-bg-color="text-green-500"
         prefix="¥"
         :decimals="2"
-        :value="fenToYuan(summary?.afterSalePrice || 0)"
+        :value="Number(fenToYuan(summary?.afterSalePrice || 0))"
       />
     </el-col>
   </el-row>
@@ -243,9 +243,9 @@ import { useUserStore } from '@/store/modules/user'
 const message = useMessage() // 消息弹窗
 const { t } = useI18n('mall.trade') // 国际化
 
-const port = ref('')
-const ports = ref([])
-const reader = ref('')
+const port = ref<SerialPort | null>(null)
+const ports = ref<SerialPort[]>([])
+const reader = ref<ReadableStreamDefaultReader<Uint8Array> | null>(null)
 
 defineOptions({ name: 'PickUpOrder' })
 
@@ -347,14 +347,11 @@ const handlePickup = () => {
 const connectToSerialPort = async () => {
   try {
     // 判断浏览器支持串口通信
-    if (
-      'serial' in navigator &&
-      navigator.serial != null &&
-      typeof navigator.serial === 'object' &&
-      'requestPort' in navigator.serial
-    ) {
+    if (navigator.serial) {
       // 提示用户选择一个串口
-      port.value = await navigator.serial.requestPort()
+      const selectedPort = await navigator.serial.requestPort()
+      await selectedPort.open({ baudRate: 9600, dataBits: 8, stopBits: 2 })
+      port.value = selectedPort
     } else {
       message.error(t('mall.trade.order.scannerNotSupported'))
       return
@@ -362,11 +359,6 @@ const connectToSerialPort = async () => {
 
     // 获取用户之前授予该网站访问权限的所有串口
     ports.value = await navigator.serial.getPorts()
-
-    // console.log(port.value, ports.value);
-    // console.log(port.value)
-    // 等待串口打开
-    await port.value.open({ baudRate: 9600, dataBits: 8, stopBits: 2 })
 
     // console.log(typeof port.value);
     message.success(t('mall.trade.order.scannerConnectSuccess'))
@@ -381,14 +373,16 @@ const connectToSerialPort = async () => {
 
 /** 监听扫码枪输入 */
 const readData = async () => {
-  reader.value = port.value.readable.getReader()
+  if (!port.value?.readable) return
+  const activeReader = port.value.readable.getReader()
+  reader.value = activeReader
   let data = '' //扫码数据
   // 监听来自串口的数据
   while (true) {
-    const { value, done } = await reader.value.read()
+    const { value, done } = await activeReader.read()
     if (done) {
       // 允许稍后关闭串口
-      reader.value.releaseLock()
+      activeReader.releaseLock()
       break
     }
     // 获取发送的数据
@@ -407,10 +401,11 @@ const readData = async () => {
 
 /** 断开扫码枪 */
 const cutPort = async () => {
-  if (port.value !== '') {
-    await reader.value.cancel()
+  if (port.value) {
+    await reader.value?.cancel()
     await port.value.close()
-    port.value = ''
+    port.value = null
+    reader.value = null
     console.log('断开扫码枪连接')
     message.success(t('mall.trade.order.scannerDisconnectSuccess'))
     serialPort.value = false

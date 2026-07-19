@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Schema(description = "管理后台 - 请假申请 Response VO")
 @Data
@@ -18,6 +19,9 @@ public class BpmOALeaveRespVO {
     @Schema(description = "原因", requiredMode = Schema.RequiredMode.REQUIRED, example = "阅读密讯")
     private String reason;
 
+    @Schema(description = "附件 URL 列表")
+    private List<String> attachmentUrls;
+
     @Schema(description = "申请时间", requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDateTime createTime;
 
@@ -26,6 +30,9 @@ public class BpmOALeaveRespVO {
 
     @Schema(description = "请假的结束时间", requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDateTime endTime;
+
+    @Schema(description = "请假工作日天数", requiredMode = Schema.RequiredMode.REQUIRED, example = "3")
+    private Long day;
 
     @Schema(description = "流程编号")
     private String processInstanceId;

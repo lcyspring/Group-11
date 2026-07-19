@@ -9,6 +9,7 @@ import com.meession.etm.framework.common.util.object.BeanUtils;
 import com.meession.etm.framework.tenant.core.aop.TenantIgnore;
 import com.meession.etm.module.infra.controller.admin.file.vo.file.*;
 import com.meession.etm.module.infra.dal.dataobject.file.FileDO;
+import com.meession.etm.module.infra.framework.file.config.FileSecurityProperties;
 import com.meession.etm.module.infra.service.file.FileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -43,6 +44,8 @@ public class FileController {
 
     @Resource
     private FileService fileService;
+    @Resource
+    private FileSecurityProperties fileSecurityProperties;
 
     @PostMapping("/upload")
     @Operation(summary = "上传文件", description = "模式一：后端上传文件")
@@ -116,6 +119,11 @@ public class FileController {
         // https://gitee.com/zhijiantianya/ruoyi-vue-pro/pulls/807/
         // https://gitee.com/zhijiantianya/ruoyi-vue-pro/pulls/1432/
         path = URLUtil.decode(path, StandardCharsets.UTF_8, false);
+        if (fileSecurityProperties.isProtectedPath(path)) {
+            log.warn("[getFileContent][拒绝通过公共路由读取受保护文件 path({})]", path);
+            response.setStatus(HttpStatus.NOT_FOUND.value());
+            return;
+        }
 
         // 流式读取文件内容（支持大文件）
         try (InputStream in = fileService.getFileContentStream(configId, path)) {

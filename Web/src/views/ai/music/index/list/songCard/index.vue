@@ -21,14 +21,14 @@ defineOptions({ name: 'Index' })
 
 defineProps({
   songInfo: {
-    type: Object,
+    type: Object as PropType<Recordable>,
     default: () => ({})
   }
 })
 
 const emits = defineEmits(['play'])
 
-const currentSong = inject('currentSong', {})
+const currentSong = inject<Ref<Recordable>>('currentSong', ref({}))
 
 function playSong () {
   emits('play')

@@ -16,7 +16,7 @@ import java.util.List;
  *
  * @author owen
  */
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface MemberGroupConvert {
 
     MemberGroupConvert INSTANCE = Mappers.getMapper(MemberGroupConvert.class);

@@ -164,8 +164,8 @@ public class AiImageServiceImpl implements AiImageService {
                     .build();
         } else if (ObjUtil.equal(model.getPlatform(), AiPlatformEnum.TONG_YI.getPlatform())) {
             return DashScopeImageOptions.builder()
-                    .withModel(model.getModel()).withN(1)
-                    .withHeight(draw.getHeight()).withWidth(draw.getWidth())
+                    .model(model.getModel()).n(1)
+                    .height(draw.getHeight()).width(draw.getWidth())
                     .build();
         } else if (ObjUtil.equal(model.getPlatform(), AiPlatformEnum.YI_YAN.getPlatform())) {
             return QianFanImageOptions.builder()

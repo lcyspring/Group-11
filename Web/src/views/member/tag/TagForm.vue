@@ -36,6 +36,8 @@
 </template>
 <script setup lang="ts">
 import * as TagApi from '@/api/member/tag'
+import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
+import { CommonStatusEnum } from '@/utils/constants'
 import { useI18n } from '@/hooks/web/useI18n'
 
 const { t } = useI18n('member') // 国际化
@@ -47,7 +49,8 @@ const formLoading = ref(false) // 表单的加载中：1）修改时的数据加
 const formType = ref('') // 表单的类型：create - 新增；update - 修改
 const formData = ref({
   id: undefined,
-  name: undefined
+  name: undefined,
+  status: CommonStatusEnum.ENABLE
 })
 const formRules = reactive({
   name: [{ required: true, message: t('tag.nameRequired'), trigger: 'blur' }]
@@ -102,7 +105,8 @@ const submitForm = async () => {
 const resetForm = () => {
   formData.value = {
     id: undefined,
-    name: undefined
+    name: undefined,
+    status: CommonStatusEnum.ENABLE
   }
   formRef.value?.resetFields()
 }

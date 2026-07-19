@@ -1,226 +1,188 @@
 # Rootless Podman deployment
 
-This is a Podman-only deployment. It starts the project directly on the real
-host with one rootless Podman Pod and Podman's default Pasta network; it never
-uses Docker Engine, the Docker CLI, a Docker socket, or Compose.
+This project builds in a dedicated Ubuntu 26.04 container and runs as one
+rootless Podman Pod. Docker Engine, the Docker CLI, Docker sockets, and Compose
+are not used. `docker.io` in an image name is an OCI registry address only.
 
-The default `docker.io` image references are OCI registry addresses, not a
-runtime dependency on Docker. Podman pulls them directly, or it can load OCI
-archives created by Podman itself for an offline deployment.
+中文入口请阅读：[中文 README](README_ZH.md)。完整流程另见：[Podman 全流程操作指南](DEPLOY_GUIDE_ZH.md)、
+[编译构建部署手册](OPERATIONS_ZH.md)和[配置字段参考](config/KDL_FIELDS_ZH.md)。
 
-中文完整流程请阅读：[Podman 全流程操作指南](DEPLOY_GUIDE_ZH.md)。
+## Configuration contract
 
-## Layout
+Runtime entry points accept exactly one argument: a KDL configuration path.
+Deployment behavior is never selected with command options or environment
+variable overrides.
 
-- `up.sh`: creates the Pod and starts all services.
-- `down.sh`: stops and removes the Pod; `--volumes` also removes its persistent data.
-- `image-archives.sh`: creates portable OCI base-image archives with Podman.
-- `images/`: default location for those ignored offline archives.
-- `Containerfile`: one multi-target Containerfile for MySQL, the server,
-  InitService, Web, and Mall images.
-- `nginx/`: Pod-specific frontend configuration. Services in a shared Pod
-  reach the backend through `127.0.0.1`.
+The repository pins the official dasel `v3.11.2` GitHub Release as its KDL
+parser. Install the checksum-pinned Linux release asset once; Go and git are
+not required, and operational scripts never use a system-wide dasel:
 
-`Containerfile` only packages existing artifacts and SQL files. It never
-compiles source code, so source control and compilation stay on the real
-host. At runtime, no project file is bind-mounted: all application assets are
-inside their images, while service data lives in named volumes. This also
-works when the project itself is stored on a network drive.
-
-## Start
-
-On Ubuntu, install the build and rootless-Podman prerequisites once:
+```bash
+bash ./tools/install-dasel.sh
+./tools/bin/dasel version
+```
 
 ```bash
 cd podman
-bash ./install-build-deps-ubuntu.sh
+bash ./deploy.sh ./config/runtime-local-check.kdl
+bash ./stop.sh ./config/runtime-local-check.kdl
+bash ./operations/images/image-archives.sh ./config/runtime-local-check.kdl
 ```
 
-On CachyOS/Arch, use the matching installer instead. It uses Pasta through
-`passt`; `slirp4netns` is not required.
+The committed configuration uses `operation.startup_mode: check` and
+`operation.shutdown_mode: check`; both commands therefore validate without
+changing Pod or volume state. Copy it to a local deployment configuration and
+explicitly select a mode before making a stateful operation:
+
+- startup: `replace`, `fast`, `frontends-only`, `replace-server`, `replace-web`, or `replace-mall`;
+- shutdown: `stop`;
+- image archives: `save` or `pull-save`;
+- destructive data removal additionally requires both
+  `operation.remove_volumes_on_down: true` and
+  `operation.confirm_persistent_data_reset: true`.
+
+Relative paths such as `image.archive_dir` are resolved relative to the KDL
+file. Missing values, duplicate keys, mappings deeper than two levels, invalid
+booleans, ports, or modes fail before any deployment action.
+
+Configuration includes Pod/container/volume names, host and container ports,
+image and archive names, MySQL/RabbitMQ settings, the Spring profile, proxy
+URLs, and all health-check paths and retry limits. Proxy URLs must be written
+in KDL; host proxy environment variables are not consumed by `deploy.sh`.
+
+## Ubuntu 26.04 build
+
+Server, InitService, CRM tests/JaCoCo, and management Web builds run inside the
+dedicated Ubuntu 26.04 image:
 
 ```bash
 cd podman
-bash ./install-build-deps-cachyos.sh
+bash ./compile.sh ./config/build-ubuntu-26.04.kdl
 ```
 
-Build the application assets before starting the Pod. The check command only
-reports missing tools or artifacts; it never builds anything.
+The build entry point also accepts exactly one KDL path. Named Podman volumes
+hold Maven, Deno package, and Web `node_modules` caches. The repository must be on
+a filesystem with symbolic-link support; no legacy staging/copy-back path is
+used.
+
+Mall H5 uses HBuilderX's non-graphical uni-app compiler in a separate Ubuntu
+26.04 image:
 
 ```bash
 cd podman
-bash ./build-assets.sh --check
-# Requires HBuilderX CLI 3.1.5+; set HBUILDERX_CLI if cli is not on PATH.
-bash ./build-mall-h5.sh
-bash ./build-assets.sh
+bash ./compile.sh ./config/build-mall-h5-ubuntu-26.04.kdl
 ```
 
-`build-assets.sh` builds the Server, InitService, and management Web frontend.
-`build-mall-h5.sh` uses HBuilderX CLI to build the Mall H5 frontend and
-normalizes its output to `MallFrontend/unpackage/dist/build/web/`. Alternatively,
-build every artifact in one command with
-`bash ./build-assets.sh --build-mall`. The `web` HBuilderX CLI platform is also
-available with HBuilderX 4.67-alpha+ via `HBUILDERX_PLATFORM=web`; the default
-`h5` platform works with HBuilderX 3.1.5+.
+The unified entry point accepts only its KDL path. It does not start the
+HBuilderX IDE, Qt, X11, or Xvfb. Normal builds pull or reuse the published
+`ghcr.io/elel-code/group-11-hbuilderx-ubuntu:26.04-5.05` image and never read or
+mount the host HBuilderX installation. Only a maintainer configuration with
+`image.rebuild: true` copies HBuilderX's bundled Node, Vue 3/Vite uni-app compiler,
+and Dart Sass runtime from `hbuilderx.source_dir`. Mall project
+dependencies are installed at container runtime into Podman named volumes by
+`ghcr.io/elel-code/group-11-build-ubuntu:26.04-deno-2.9.3`; the offline compiler mounts
+that volume instead of host `node_modules`. `MallFrontend/unpackage/` is generated locally
+and ignored by Git; build it before packaging a deployment image.
 
-When the repository is on a filesystem without symbolic-link support, such as
-a VMware shared folder mounted at `/mnt/hgfs`, `build-assets.sh` automatically
-stages the Web build on a native local filesystem and copies `Web/dist-prod/`
-back after it succeeds. To choose a staging parent explicitly, use
-`WEB_BUILD_WORKDIR=/tmp bash ./build-assets.sh`.
+Host JDK, Node, npm, and pnpm build helpers have been removed. Every project member uses
+the unified Ubuntu 26.04 container entry point above.
 
-If the Java artifacts already succeeded and only the management-Web build
-failed, rerun just that stage with `bash ./build-assets.sh --web-only`; it does
-not invoke Maven or rebuild either JAR.
-
-The `Web/build/vite/` directory is Vite configuration source and must be
-tracked in Git. If a checkout reports that `./build/vite` cannot be resolved,
-update the repository before retrying; reinstalling pnpm dependencies cannot
-restore missing source files.
-
-`Web/.env` and `Web/pnpm-lock.yaml` are also required tracked build inputs.
-The asset script installs with `--frozen-lockfile`, so a fresh clone uses the
-same dependency graph as the known-good build instead of silently upgrading
-Vite plugins and other packages. All `VITE_` values are visible in the browser
-bundle and must not contain server-side secrets.
-
-Before invoking Vite, `build-assets.sh` removes the previous `Web/dist-prod/`.
-If the build fails, there is therefore no stale frontend output for `up.sh` to
-package. Both scripts also verify that every hashed asset directly referenced
-by `index.html` exists before an image is built.
-
-The current Mall H5 output is versioned in Git so deployment members can pull
-and use it directly. HBuilderX is only needed when publishing a new Mall H5
-revision; generated Server JARs, management-Web output, and image archives
-remain unversioned.
-
-After the assets are ready, start the Pod:
-
-```bash
-cd podman
-bash ./up.sh --check
-bash ./up.sh
-```
-
-`--check` is safe to run on a new host: it validates the rootless Podman
-environment and application artifacts, but does not load, pull, build, create,
-or start anything.
-
-## Fast restart paths
-
-The normal no-argument command remains the deployment path after application
-assets or SQL have changed. For an unchanged deployment, avoid its image
-packaging work:
-
-```bash
-# `down.sh` removed the Pod, but the existing local runtime images are valid.
-bash ./up.sh --no-build
-
-# The Pod still exists but was stopped, for example after `podman pod stop`.
-bash ./up.sh --fast
-```
-
-`--fast` starts/checks the existing containers without rebuilding or replacing
-them. `--no-build` recreates the Pod from the current local images. Both modes
-keep all named volumes intact; run plain `up.sh` to deploy changed artifacts.
-
-If a previous start reached `Spring Boot server is ready.` but stopped before
-the two Nginx frontends were created, start just those missing containers
-without rebuilding images or restarting the Pod:
-
-```bash
-bash ./up.sh --frontends-only
-```
-
-This recovery mode is also useful after an interrupted terminal session. If it
-cannot start a frontend or reach its port, it prints the last health-check
-error instead of hiding it during retries.
-
-Only when the deployed Server and InitService JARs are confirmed unchanged,
-update a management-Web-only change without a full Pod replacement or the
-Spring Boot startup wait:
-
-```bash
-bash ./build-assets.sh --web-only
-bash ./up.sh --rebuild-web
-```
-
-`--rebuild-web` packages `Web/dist-prod/` and replaces only the Web Nginx
-container. It leaves the Java server, databases, Redis, RabbitMQ, TDengine,
-and Mall container running. After `git pull`, a backend change, or any doubt
-about JAR freshness, use the complete `build-assets.sh` followed by `up.sh`.
-
-The Web Nginx configuration never caches `index.html`, while hashed JS and CSS
-assets remain cacheable. This prevents a browser from combining an old index
-page with a newer `assets/` directory after a frontend deployment.
-
-The required artifacts are:
+Required runtime artifacts are:
 
 - `Server/mitedtsm-server/target/mitedtsm-server.jar`
 - `InitService/target/mitedtsm-init-service.jar`
 - `Web/dist-prod/`
 - `MallFrontend/unpackage/dist/build/web/`
 
-The management frontend is built with the production configuration. Its API
-base URL is intentionally relative (`/admin-api`), so browsers outside the
-Linux host use the Pod's published web port and Nginx proxies the request to
-the backend. Do not set it to `http://localhost:8080`, because `localhost`
-would then mean the visitor's own computer.
-
-The script first imports a missing base image from `podman/images/`. When that
-OCI archive is absent, its default `IMAGE_SOURCE=auto` mode pulls the image
-directly through Podman. It then builds all runtime images from this
-directory's `Containerfile`.
-
-For a fully offline deployment, run the following on a connected machine with
-Podman, copy `podman/images/` with the project, and then deploy with
-`IMAGE_SOURCE=archive`:
+`Containerfile` only packages these four application artifacts into runtime
+images. Database SQL is not copied into an image. Packaging is a separate
+KDL-only stage:
 
 ```bash
-cd podman
-bash ./image-archives.sh --pull
-IMAGE_SOURCE=archive bash ./up.sh
+bash ./build-images.sh ./config/runtime-images.example.kdl
 ```
 
-To keep archives outside the repository, point both commands at the same
-directory with `IMAGE_ARCHIVE_DIR=/absolute/path/to/archives`. To always fetch
-current registry images, use `IMAGE_SOURCE=pull bash ./up.sh`.
+`deploy.sh` never reads build artifacts or runs `podman build`. Running containers
+do not bind-mount project files; persistent service data lives in named volumes.
+Full replacement uses `podman pod create --replace`, while managed service and
+single-component replacement uses `podman run --replace`. Explicit Pod removal
+is isolated in `stop.sh`.
 
-For a transition from the old project archive directory, set
-`IMAGE_ARCHIVE_DIR=../docker-images` explicitly. Podman can load those image
-archives directly; this still does not require Docker to be installed.
+MySQL runs directly from the configured official `mysql:8.0` image. During
+`replace` or `replace-server`, `deploy.sh` streams repository SQL over stdin:
+an explicitly confirmed empty schema can receive bootstrap plus its selected
+dataset, while an existing recognized schema preserves data and only receives
+the idempotent compatibility manifest. A non-empty unrecognized schema is
+rejected instead of being overwritten.
 
-## Network-drive projects
+## Startup modes
 
-The project may live on a network drive: `up.sh` reads it only while building
-images and never bind-mounts it into a running container. Keep rootless
-Podman storage and its named volumes on a local filesystem (the default is
-under `~/.local/share/containers/`). If building itself fails while reading
-the network drive, build on a local disk and transfer the resulting images.
-
-To use alternative host ports:
+Set `operation.startup_mode` in the selected KDL and run the same command:
 
 ```bash
-SERVER_PORT=18080 WEB_PORT=18081 MALL_PORT=18082 bash ./up.sh
+bash ./deploy.sh ./config/my-runtime.kdl
 ```
 
-## Network and proxy
+- `replace` loads or pulls configured pre-packaged runtime images and replaces
+  the Pod while retaining named volumes.
+- `fast` starts an existing stopped Pod and missing frontend containers.
+- `frontends-only` replaces only Web and Mall containers in a running Pod.
+- `replace-server` applies compatibility migrations and replaces only Server.
+- `replace-web` replaces only Web with an already packaged image.
+- `replace-mall` replaces only Mall with an already packaged image.
+- `check` validates runtime configuration and offline archive prerequisites
+  without loading, pulling, building, or starting.
 
-No `--network=pasta` is necessary: it is the rootless Podman default. The
-Pod publishes 8080, 8081, and 8082 to the real host.
+Compile first, package the selected image targets second, and replace containers
+third. The
+Web Nginx configuration does not cache `index.html`, while hashed assets remain
+cacheable.
 
-Proxy use is disabled by default. `up.sh`, `build-assets.sh`,
-`build-mall-h5.sh`, and `install-build-deps-ubuntu.sh` clear the standard proxy environment variables;
-Podman builds and containers also receive `--http-proxy=false`. To opt in to
-the host proxy deliberately, set `USE_HOST_PROXY=true` for the command:
+## Images, network, and proxy
+
+`image.source` is explicit:
+
+- `auto`: use a configured local image/archive first, otherwise pull;
+- `archive`: never use registries and require missing images as archives;
+- `pull`: fetch configured images from their registries.
+
+Create offline archives by selecting `operation.archive_mode: save` (local
+images only) or `pull-save` (pull first), then call `operations/images/image-archives.sh` with the
+same KDL. Set `image.source` and `image.archive_dir` for deployment. Host
+addresses and all published ports are likewise KDL values.
+
+Rootless Podman's default Pasta network is used. When
+`network.use_host_proxy: false`, proxy environment variables are cleared and
+Podman receives `--http-proxy=false`. To enable a proxy, set the boolean and at
+least one of `network.http_proxy`, `network.https_proxy`, or
+`network.all_proxy` to an explicit URL; use `none` for unused URLs. Loopback
+proxy hostnames are translated to the configured `network.host_proxy_name`.
+
+## Layout and tests
+
+- `config/`: explicit build and runtime KDL files.
+- `lib/kdl-config.sh`: strict two-level KDL contract backed by project-local dasel.
+- `tools/install-dasel.sh`: downloads and verifies the pinned official dasel release; `tools/bin/` is local and ignored.
+- `tests/runtime-config/`: parser, CLI contract, preflight, and Pod-state tests.
+- `build-images.sh`: KDL-only runtime image packaging entry point.
+- `deploy.sh` / `stop.sh`: KDL-only container lifecycle entry points.
+- `Containerfile.build-ubuntu`: Ubuntu 26.04 build toolchain image.
+- `Containerfile.hbuilderx-ubuntu`: headless Mall H5 compiler image.
+- `compile.sh`: unified KDL-only compiler; include/exclude target sets select all four artifacts.
+- `internal/`: standard compiler helper and container-only entry points; not member-facing commands.
+- `tests/acceptance/`: real API/MySQL acceptance scripts; never used for normal startup.
+- `operations/`: database, image, BPM, and diagnostic maintenance commands.
+- `Containerfile`: multi-target runtime packaging.
+- `operations/images/image-archives.sh` / `images/`: portable Podman base-image archives.
+
+Run the structured runtime configuration test with:
 
 ```bash
-USE_HOST_PROXY=true bash ./install-build-deps-ubuntu.sh
-USE_HOST_PROXY=true bash ./build-mall-h5.sh
-USE_HOST_PROXY=true bash ./build-assets.sh
-USE_HOST_PROXY=true bash ./up.sh
+bash ./tests/runtime-config/run.sh ./config/runtime-local-check.kdl
 ```
 
-When proxy use is enabled, a proxy listening on `127.0.0.1` or `localhost` is
-rewritten to `host.containers.internal`, Pasta's dedicated host mapping inside
-the Pod. No host network, nested Podman, systemd, or Compose is used.
+Run the Mall H5 container integration test with:
+
+```bash
+bash ./tests/mall-h5-build/run.sh ./config/build-mall-h5-ubuntu-26.04.kdl
+```

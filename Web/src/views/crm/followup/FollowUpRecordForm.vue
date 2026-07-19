@@ -67,8 +67,8 @@
       </el-row>
     </el-form>
     <template #footer>
-      <el-button :disabled="formLoading" type="primary" @click="submitForm">{{ t('dialog.confirm') }}</el-button>
-      <el-button @click="dialogVisible = false">{{ t('dialog.cancel') }}</el-button>
+      <el-button :disabled="formLoading" type="primary" @click="submitForm">{{ t('common.confirm') }}</el-button>
+      <el-button @click="dialogVisible = false">{{ t('common.cancel') }}</el-button>
     </template>
   </Dialog>
 
@@ -106,6 +106,11 @@ const formLoading = ref(false) // 表单的加载中：1）修改时的数据加
 const formData = ref({
   bizType: undefined,
   bizId: undefined,
+  type: undefined,
+  nextTime: undefined,
+  content: '',
+  picUrls: [] as string[],
+  fileUrls: [] as string[],
   businesses: [],
   contacts: []
 })
@@ -181,6 +186,11 @@ const resetForm = () => {
   formData.value = {
     bizId: undefined,
     bizType: undefined,
+    type: undefined,
+    nextTime: undefined,
+    content: '',
+    picUrls: [],
+    fileUrls: [],
     businesses: [],
     contacts: []
   }
