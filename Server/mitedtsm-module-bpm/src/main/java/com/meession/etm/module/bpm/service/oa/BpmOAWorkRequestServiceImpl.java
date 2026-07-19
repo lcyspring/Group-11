@@ -9,6 +9,7 @@ import com.meession.etm.module.bpm.dal.mysql.oa.BpmOAWorkRequestMapper;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDateTime;
 import java.util.*;
 import static com.meession.etm.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static com.meession.etm.module.bpm.enums.ErrorCodeConstants.OA_TASK_NOT_EXISTS;
@@ -39,5 +40,11 @@ public class BpmOAWorkRequestServiceImpl implements BpmOAWorkRequestService {
         return row;
     }
     @Override public List<BpmOAWorkRequestDO> list(Long userId) { return mapper.selectByUserId(userId); }
-    @Override public void updateStatus(Long id, Integer status) { mapper.updateById(new BpmOAWorkRequestDO().setId(id).setStatus(status)); }
+    @Override public void updateStatus(Long id, Integer status) {
+        BpmOAWorkRequestDO update = new BpmOAWorkRequestDO().setId(id).setStatus(status);
+        if (Objects.equals(status, 2)) {
+            update.setApprovedTime(LocalDateTime.now());
+        }
+        mapper.updateById(update);
+    }
 }

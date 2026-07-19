@@ -26,6 +26,21 @@ OA 日程创建入口与标准弹窗修复记录：
 OA 日程清空日期后查询参数非法修复记录：
 [OA-EVENT-BUG-006](logs/OA-EVENT-BUG-006-empty-date-filter.md)。
 
+OA 日程响应时间戳直接显示修复记录：
+[OA-EVENT-BUG-007](logs/OA-EVENT-BUG-007-response-time-format.md)。
+
+OA 任务截止时间响应标准化修复记录：
+[OA-TASK-BUG-001](logs/OA-TASK-BUG-001-response-time-format.md)。
+
+OA 请示状态、信息和生命周期操作修复记录：
+[OA-WORK-REQUEST-BUG-009](logs/OA-WORK-REQUEST-BUG-009-status-and-lifecycle-ui.md)。
+
+CRM 客户拜访返回缓存列表不刷新修复记录：
+[CRM-CUSTOMER-VISIT-BUG-001](logs/CRM-CUSTOMER-VISIT-BUG-001-cached-list-not-refreshed.md)。
+
+公共保存成功提示翻译键修复记录：
+[WEB-I18N-BUG-005](logs/WEB-I18N-BUG-005-common-save-success-key.md)。
+
 OA 请假列表流程实例翻译路径修复记录：
 [OA-LEAVE-BUG-005](logs/OA-LEAVE-BUG-005-process-instance-locale-path.md)。
 

@@ -11,7 +11,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.mockito.ArgumentCaptor;
 
 @ExtendWith(MockitoExtension.class)
 class BpmOAWorkRequestServiceImplTest {
@@ -34,5 +38,14 @@ class BpmOAWorkRequestServiceImplTest {
         when(mapper.selectById(8L)).thenReturn(null);
         assertThrows(ServiceException.class, () -> service.get(1L, 8L));
     }
-}
 
+    @Test
+    void approvalStatusRecordsCompletionTime() {
+        service.updateStatus(9L, 2);
+        ArgumentCaptor<BpmOAWorkRequestDO> captor = ArgumentCaptor.forClass(BpmOAWorkRequestDO.class);
+        verify(mapper).updateById(captor.capture());
+        assertEquals(9L, captor.getValue().getId());
+        assertEquals(2, captor.getValue().getStatus());
+        assertNotNull(captor.getValue().getApprovedTime());
+    }
+}

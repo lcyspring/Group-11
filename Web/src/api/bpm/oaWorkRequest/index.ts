@@ -1,5 +1,5 @@
 import request from '@/config/axios'
-export interface WorkRequestVO { id?: number; title: string; content: string; urgency: number; status?: number; processInstanceId?: string }
+export interface WorkRequestVO { id?: number; userId?: number; title: string; content: string; urgency: number; status?: number; processInstanceId?: string; approvedTime?: string | number; createTime?: string | number }
 export const getList = () => request.get<WorkRequestVO[]>({ url: '/bpm/oa/work-request/list' })
 export const get = (id: number) => request.get<WorkRequestVO>({ url: '/bpm/oa/work-request/get', params: { id } })
 export const create = (data: WorkRequestVO) => request.post({ url: '/bpm/oa/work-request/create', data })
