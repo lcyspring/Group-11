@@ -37,3 +37,9 @@ test('export permission attaches to the service work order page instead of the s
   assert.match(migration, /COALESCE\(parent\.component,''\)<>'crm\/workorder\/index'/)
   assert.match(migration, /DELETE role_menu FROM system_role_menu/)
 })
+
+test('work order action menu is hidden when the row has no permitted action', () => {
+  assert.match(view, /TableActions v-if="hasWorkOrderActions\(row\)" mode="menu"/)
+  assert.match(view, /const hasWorkOrderActions = \(row: WorkOrderApi\.WorkOrderVO\)/)
+  assert.match(view, /checkPermi\(\['crm:work-order:process'\]\)/)
+})

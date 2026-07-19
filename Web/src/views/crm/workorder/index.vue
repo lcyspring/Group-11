@@ -113,7 +113,7 @@
       />
       <el-table-column :label="t('common.action')" fixed="right" width="140">
         <template #default="{ row }">
-          <TableActions mode="menu">
+          <TableActions v-if="hasWorkOrderActions(row)" mode="menu">
             <el-button
               v-if="[10, 40].includes(row.status) && row.creator === String(userId)"
               v-hasPermi="['crm:work-order:update']"
@@ -310,6 +310,21 @@ const handleExport = async () => {
 const canClaim = (row: WorkOrderApi.WorkOrderVO) => {
   const group = groups.value.find((item) => item.id === row.groupId)
   return canClaimWorkOrder(row.status, row.handlerUserId, row.groupId, userId, group?.memberUserIds)
+}
+const hasWorkOrderActions = (row: WorkOrderApi.WorkOrderVO) => {
+  const isCreator = row.creator === String(userId)
+  const isHandler = row.handlerUserId === userId
+  return (
+    ([10, 40].includes(row.status) && isCreator && checkPermi(['crm:work-order:update'])) ||
+    (row.status === 10 &&
+      (isCreator || canAssignAny) &&
+      checkPermi(['crm:work-order:assign'])) ||
+    (canClaim(row) && checkPermi(['crm:work-order:process'])) ||
+    (row.status === 10 && isHandler && checkPermi(['crm:work-order:process'])) ||
+    (row.status === 20 && isHandler && checkPermi(['crm:work-order:process'])) ||
+    (row.status === 40 && isCreator && checkPermi(['crm:work-order:update'])) ||
+    (row.status === 10 && isCreator && checkPermi(['crm:work-order:delete']))
+  )
 }
 const claim = async (row: WorkOrderApi.WorkOrderVO) => {
   await WorkOrderApi.claimWorkOrder(row.id!)
