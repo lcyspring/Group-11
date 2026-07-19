@@ -17,6 +17,9 @@
 演示数据财务负责人、客服处理组、竞争对手和 ERP 映射缺失修复记录：
 [DEMO-DATA-BUG-008](logs/DEMO-DATA-BUG-008-finance-service-competitor-erp-coverage.md)。
 
+产品分类 CRUD 类型、异常边界与源码杂项清理记录：
+[CRM-PRODUCT-BUG-003](logs/CRM-PRODUCT-BUG-003-category-crud-maintainability.md)。
+
 Deno/Vite 8 工具链迁移缺陷：
 [WEB-BUILD-BUG-003](logs/WEB-BUILD-BUG-003-node-pnpm-toolchain-drift.md)、
 [004](logs/WEB-BUILD-BUG-004-deno-lifecycle-node-assumption.md)、

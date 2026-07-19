@@ -1,16 +1,20 @@
 <template>
-  <Dialog :title="dialogTitle" v-model="dialogVisible">
+  <Dialog v-model="dialogVisible" :title="dialogTitle">
     <el-form
       ref="formRef"
+      v-loading="formLoading"
       :model="formData"
       :rules="formRules"
       label-width="auto"
-      v-loading="formLoading"
     >
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item :label="t('category.parentId')" prop="parentId">
-            <el-select v-model="formData.parentId" :placeholder="t('category.parentIdPlaceholder')" class="w-1/1">
+            <el-select
+              v-model="formData.parentId"
+              class="w-1/1"
+              :placeholder="t('category.parentIdPlaceholder')"
+            >
               <el-option :key="0" :label="t('category.topCategory')" :value="0" />
               <el-option
                 v-for="item in productCategoryList"
@@ -29,75 +33,80 @@
       </el-row>
     </el-form>
     <template #footer>
-      <el-button @click="submitForm" type="primary" :disabled="formLoading">{{ t('common.confirm') }}</el-button>
-      <el-button @click="dialogVisible = false">{{ t('common.cancel') }}</el-button>
+      <el-button :disabled="formLoading" type="primary" @click="submitForm">
+        {{ t('common.confirm') }}
+      </el-button>
+      <el-button :disabled="formLoading" @click="dialogVisible = false">
+        {{ t('common.cancel') }}
+      </el-button>
     </template>
   </Dialog>
 </template>
 <script setup lang="ts">
+import type { FormInstance, FormRules } from 'element-plus'
 import * as ProductCategoryApi from '@/api/crm/product/category'
 
 defineOptions({ name: 'CrmProductCategoryForm' })
 
-const { t } = useI18n('crm.product') // 国际化
-const message = useMessage() // 消息弹窗
+type FormType = 'create' | 'update'
+type ProductCategoryFormData = {
+  id?: number
+  name: string
+  parentId: number
+}
 
-const dialogVisible = ref(false) // 弹窗的是否展示
-const dialogTitle = ref('') // 弹窗的标题
-const formLoading = ref(false) // 表单的加载中：1）修改时的数据加载；2）提交的按钮禁用
-const formType = ref('') // 表单的类型：create - 新增；update - 修改
-const formData = ref({
-  id: undefined,
-  name: undefined,
-  parentId: undefined
-})
-const formRules = reactive({
+const { t } = useI18n('crm.product')
+const message = useMessage()
+const dialogVisible = ref(false)
+const dialogTitle = ref('')
+const formLoading = ref(false)
+const formType = ref<FormType>('create')
+const createEmptyForm = (): ProductCategoryFormData => ({ name: '', parentId: 0 })
+const formData = ref<ProductCategoryFormData>(createEmptyForm())
+const formRules = reactive<FormRules<ProductCategoryFormData>>({
   name: [{ required: true, message: t('category.nameRequired'), trigger: 'blur' }],
   parentId: [{ required: true, message: t('category.parentIdRequired'), trigger: 'blur' }]
 })
-const formRef = ref() // 表单 Ref
-const productCategoryList = ref<any[]>([]) // 产品分类树
+const formRef = ref<FormInstance>()
+const productCategoryList = ref<ProductCategoryApi.ProductCategoryVO[]>([])
 
 /** 打开弹窗 */
-const open = async (type: string, id?: number) => {
+const open = async (type: FormType, id?: number) => {
   dialogVisible.value = true
   dialogTitle.value = t(type === 'create' ? 'category.createTitle' : 'category.updateTitle')
   formType.value = type
   resetForm()
-  // 修改时，设置数据
-  if (id) {
-    formLoading.value = true
-    try {
-      formData.value = await ProductCategoryApi.getProductCategory(id)
-    } finally {
-      formLoading.value = false
-    }
-  }
-  // 获得分类树
-  productCategoryList.value = await ProductCategoryApi.getProductCategoryList({ parentId: 0 })
-}
-defineExpose({ open }) // 提供 open 方法，用于打开弹窗
-
-/** 提交表单 */
-const emit = defineEmits(['success']) // 定义 success 事件，用于操作成功后的回调
-const submitForm = async () => {
-  // 校验表单
-  if (!formRef) return
-  const valid = await formRef.value.validate()
-  if (!valid) return
-  // 提交请求
   formLoading.value = true
   try {
-    const data = formData.value as unknown as ProductCategoryApi.ProductCategoryVO
+    const categoryListPromise = ProductCategoryApi.getProductCategoryList({ parentId: 0 })
+    if (type === 'update' && id !== undefined) {
+      formData.value = await ProductCategoryApi.getProductCategory(id)
+    }
+    productCategoryList.value = await categoryListPromise
+  } finally {
+    formLoading.value = false
+  }
+}
+defineExpose({ open })
+
+/** 提交表单 */
+const emit = defineEmits<{ success: [] }>()
+const submitForm = async () => {
+  const valid = await formRef.value?.validate()
+  if (!valid) return
+  if (formType.value === 'update' && formData.value.id === undefined) return
+  formLoading.value = true
+  try {
+    const { id, name, parentId } = formData.value
     if (formType.value === 'create') {
-      await ProductCategoryApi.createProductCategory(data)
+      await ProductCategoryApi.createProductCategory({ name, parentId })
       message.success(t('common.createSuccess'))
     } else {
-      await ProductCategoryApi.updateProductCategory(data)
+      if (id === undefined) return
+      await ProductCategoryApi.updateProductCategory({ id, name, parentId })
       message.success(t('common.updateSuccess'))
     }
     dialogVisible.value = false
-    // 发送操作成功的事件
     emit('success')
   } finally {
     formLoading.value = false
@@ -106,11 +115,7 @@ const submitForm = async () => {
 
 /** 重置表单 */
 const resetForm = () => {
-  formData.value = {
-    id: undefined,
-    name: undefined,
-    parentId: undefined
-  }
+  formData.value = createEmptyForm()
   formRef.value?.resetFields()
 }
 </script>
