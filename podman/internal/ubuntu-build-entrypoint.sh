@@ -445,6 +445,14 @@ if [[ "$BUILD_WEB" == "true" || -n "${WEB_TEST_SCRIPT:-}" ]]; then
         fi
     fi
     if [[ -n "$coverage_dir" ]]; then
+        # Deno may leave a zero-byte profile when a task launches short-lived
+        # subprocesses (for example ESLint). Such a file contains no coverage
+        # data and makes `deno coverage` abort before reading the valid profiles.
+        find "$coverage_dir" -maxdepth 1 -type f -name '*.json' -empty -delete
+        find "$coverage_dir" -maxdepth 1 -type f -name '*.json' -print -quit | grep -q . || {
+            printf 'No valid Web coverage profiles were produced for task: %s\n' "$WEB_TEST_SCRIPT" >&2
+            exit 1
+        }
         deno coverage --threshold="$WEB_COVERAGE_THRESHOLD" "$coverage_dir"
         deno coverage --lcov --output="${coverage_dir}.lcov" "$coverage_dir"
         require_file "${coverage_dir}.lcov"
