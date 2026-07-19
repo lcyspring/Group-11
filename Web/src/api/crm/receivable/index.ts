@@ -19,6 +19,8 @@ export interface ReceivableVO {
   returnTime: Date
   returnType: number
   price: number
+  writtenOffAmount?: number
+  remainingWriteOffAmount?: number
   ownerUserId: number
   ownerUserName?: string
   remark: string
@@ -28,8 +30,23 @@ export interface ReceivableVO {
   updateTime: Date // 更新时间
 }
 export interface ReceivableWriteOffVO {
-  id: number; receivableId: number; amount: number; writeOffTime: Date; sourceType: number
-  referenceNo?: string; remark?: string; status: number; reversedAt?: Date
+  id: number
+  receivableId: number
+  amount: number
+  writeOffTime: Date | number | string
+  sourceType: number
+  referenceNo?: string
+  remark?: string
+  status: number
+  reversedAt?: Date | number | string
+}
+export interface ReceivableWriteOffCreateReqVO {
+  receivableId: number
+  amount: number
+  writeOffTime: number | string
+  sourceType: 1 | 2 | 3
+  referenceNo?: string
+  remark?: string
 }
 
 // 查询回款列表
@@ -76,7 +93,7 @@ export const submitReceivable = async (id: number) => {
 export const getAuditReceivableCount = async () => {
   return await request.get({ url: '/crm/receivable/audit-count' })
 }
-export const createReceivableWriteOff = async (data: Partial<ReceivableWriteOffVO>) =>
+export const createReceivableWriteOff = async (data: ReceivableWriteOffCreateReqVO) =>
   request.post({ url: '/crm/receivable/write-off/create', data })
 export const getReceivableWriteOffList = async (receivableId: number) =>
   request.get<ReceivableWriteOffVO[]>({ url: '/crm/receivable/write-off/list', params: { receivableId } })

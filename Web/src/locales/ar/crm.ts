@@ -1076,7 +1076,14 @@ export default {
     missingContractReference: 'العقد الأصلي مفقود أو تابع لعميل آخر (المعرف: {id})',
     writeOff: 'تسوية المستحق', writeOffAmount: 'مبلغ التسوية', writeOffTime: 'وقت التسوية', writeOffSource: 'مصدر التسوية',
     writeOffManual: 'يدوي', writeOffBank: 'حركة بنكية', writeOffImport: 'استيراد', writeOffReference: 'المرجع الخارجي',
-    writeOffSuccess: 'تم إنشاء تسوية المستحق',
+    writeOffSuccess: 'تم إنشاء تسوية المستحق', writeOffLedgerTitle: 'سجل تسوية المستحق · {no}', receivableAmount: 'مبلغ التحصيل',
+    writtenOffAmount: 'المبلغ المسوى', writeOffRemaining: 'المبلغ المتبقي', writeOffCompleted: 'تمت تسوية هذا التحصيل بالكامل',
+    writeOffLedger: 'سجلات التسوية', writeOffActive: 'فعال', writeOffReversed: 'معكوس', reverseWriteOff: 'عكس',
+    reverseWriteOffConfirm: 'هل تريد عكس سجل التسوية؟ سيبقى سجل التدقيق محفوظاً.', reverseWriteOffSuccess: 'تم عكس سجل التسوية',
+    noWriteOffRecords: 'لا توجد سجلات تسوية', writeOffAllRemaining: 'استخدام كامل المبلغ المتبقي', confirmWriteOff: 'تأكيد التسوية',
+    writeOffReferencePlaceholder: 'مرجع خارجي اختياري وفريد، مثل رقم الحركة البنكية', writeOffAmountRequired: 'يجب ألا يقل المبلغ عن 0.01',
+    writeOffAmountExceeded: 'لا يمكن أن يتجاوز المبلغ المتبقي {amount}', writeOffTimeRequired: 'اختر وقت التسوية',
+    writeOffSourceRequired: 'اختر مصدر التسوية',
     referenceArchiveNotice:
       'يبقى هذا التحصيل المعتمد كسجل مالي تاريخي ولن يُحذف أو يُعاد ربطه تلقائياً. معرف العميل الأصلي: {customerId}؛ معرف العقد الأصلي: {contractId}'
   },

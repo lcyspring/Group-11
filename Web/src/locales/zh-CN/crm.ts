@@ -1069,7 +1069,14 @@ export default {
     missingContractReference: '原合同不存在或不属于原客户（ID: {id}）',
     writeOff: '回款核销', writeOffAmount: '核销金额', writeOffTime: '核销时间', writeOffSource: '核销来源',
     writeOffManual: '人工登记', writeOffBank: '银行流水', writeOffImport: '批量导入', writeOffReference: '外部流水号',
-    writeOffSuccess: '回款核销成功',
+    writeOffSuccess: '回款核销成功', writeOffLedgerTitle: '回款核销台账 · {no}', receivableAmount: '回款金额',
+    writtenOffAmount: '已核销金额', writeOffRemaining: '剩余可核销', writeOffCompleted: '该笔回款已全部核销',
+    writeOffLedger: '核销记录', writeOffActive: '有效', writeOffReversed: '已冲销', reverseWriteOff: '冲销',
+    reverseWriteOffConfirm: '确定冲销这条核销记录吗？冲销后记录仍会保留。', reverseWriteOffSuccess: '核销记录已冲销',
+    noWriteOffRecords: '暂无核销记录', writeOffAllRemaining: '填入全部剩余金额', confirmWriteOff: '确认核销',
+    writeOffReferencePlaceholder: '选填；银行流水号等外部唯一标识', writeOffAmountRequired: '核销金额必须大于等于 0.01',
+    writeOffAmountExceeded: '核销金额不能超过剩余可核销金额 {amount}', writeOffTimeRequired: '请选择核销时间',
+    writeOffSourceRequired: '请选择核销来源',
     referenceArchiveNotice:
       '该回款作为已审批财务历史保留，不会自动删除或重绑。原客户 ID: {customerId}，原合同 ID: {contractId}'
   },

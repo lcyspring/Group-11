@@ -118,7 +118,7 @@
       />
       <el-table-column :label="t('common.action')" fixed="right" width="140">
         <template #default="{ row }">
-          <TableActions mode="menu">
+          <TableActions v-if="hasInvoiceActions(row)" mode="menu">
             <el-button
               v-if="canEditInvoice(row.status, row.direction)"
               v-hasPermi="['crm:invoice:update']"
@@ -160,6 +160,7 @@
               >{{ t('common.delete') }}</el-button
             >
           </TableActions>
+          <span v-else class="text-gray-400">-</span>
         </template>
       </el-table-column>
     </el-table>
@@ -234,6 +235,11 @@ const money = (value: number) =>
     minimumFractionDigits: 2,
     maximumFractionDigits: 6
   })
+const hasInvoiceActions = (row: InvoiceApi.InvoiceVO) =>
+  canEditInvoice(row.status, row.direction) ||
+  canIssueInvoice(row.status, row.direction) ||
+  canRedFlushInvoice(row.status, row.direction) ||
+  canVoidInvoice(row.status)
 const getList = async () => {
   loading.value = true
   try {
