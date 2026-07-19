@@ -46,6 +46,7 @@ export default {
   importMessage: '是否确认导入数据项？',
   createSuccess: '新增成功',
   updateSuccess: '修改成功',
+  saveSuccess: '保存成功',
   delMessage: '是否删除所选中数据？',
   delDataMessage: '是否删除数据？',
   delNoData: '请选择需要删除的数据',

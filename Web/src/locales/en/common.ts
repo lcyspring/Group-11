@@ -46,6 +46,7 @@ export default {
   importMessage: 'Whether to confirm import data item?',
   createSuccess: 'Create Success',
   updateSuccess: 'Update Success',
+  saveSuccess: 'Saved successfully',
   delMessage: 'Delete the selected data?',
   delDataMessage: 'Delete the data?',
   delNoData: 'Please select the data to delete',

@@ -46,6 +46,7 @@ export default {
   importMessage: 'هل تؤكد استيراد عنصر البيانات؟',
   createSuccess: 'تم الإنشاء بنجاح',
   updateSuccess: 'تم التحديث بنجاح',
+  saveSuccess: 'تم الحفظ بنجاح',
   delMessage: 'حذف البيانات المحددة؟',
   delDataMessage: 'حذف البيانات؟',
   delNoData: 'الرجاء تحديد البيانات للحذف',
