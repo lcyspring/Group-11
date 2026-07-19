@@ -21,10 +21,12 @@ export interface OaEventVO extends OaEventUpdateReqVO {
 
 const toLocalDateTime = (value: string) => value.replace(' ', 'T')
 
-export const getOaEventList = (from: string, to: string) =>
+export const getOaEventList = (range?: readonly [string, string]) =>
   request.get<OaEventVO[]>({
     url: '/bpm/oa/event/list',
-    params: { from: toLocalDateTime(from), to: toLocalDateTime(to) }
+    params: range
+      ? { from: toLocalDateTime(range[0]), to: toLocalDateTime(range[1]) }
+      : undefined
   })
 
 const toSavePayload = (data: OaEventSaveReqVO | OaEventUpdateReqVO) => ({

@@ -90,12 +90,21 @@ const message = useMessage()
 const loading = ref(false)
 const list = ref<Api.OaEventVO[]>([])
 const viewMode = ref<ViewMode>('month')
-const anchor = ref(dayjs().format('YYYY-MM-DD'))
-const range = ref<[string, string]>(['', ''])
+const anchor = ref<string | null>(dayjs().format('YYYY-MM-DD'))
+const range = ref<[string, string]>()
 const formRef = ref<InstanceType<typeof OaEventForm>>()
 
 const updateRange = () => {
+  if (!anchor.value) {
+    range.value = undefined
+    return
+  }
   const date = dayjs(anchor.value)
+  if (!date.isValid()) {
+    anchor.value = null
+    range.value = undefined
+    return
+  }
   range.value = [
     date.startOf(viewMode.value).format('YYYY-MM-DD HH:mm:ss'),
     date.endOf(viewMode.value).format('YYYY-MM-DD HH:mm:ss')
@@ -105,7 +114,7 @@ const updateRange = () => {
 const load = async () => {
   loading.value = true
   try {
-    list.value = await Api.getOaEventList(range.value[0], range.value[1])
+    list.value = await Api.getOaEventList(range.value)
   } finally {
     loading.value = false
   }
@@ -117,7 +126,8 @@ const changeView = async () => {
 }
 
 const movePeriod = async (step: number) => {
-  anchor.value = dayjs(anchor.value).add(step, viewMode.value).format('YYYY-MM-DD')
+  const date = anchor.value && dayjs(anchor.value).isValid() ? dayjs(anchor.value) : dayjs()
+  anchor.value = date.add(step, viewMode.value).format('YYYY-MM-DD')
   await changeView()
 }
 

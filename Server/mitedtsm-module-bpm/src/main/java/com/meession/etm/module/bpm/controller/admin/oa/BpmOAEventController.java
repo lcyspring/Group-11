@@ -31,5 +31,9 @@ public class BpmOAEventController {
     @GetMapping("/get") @Operation(summary = "获得日程") @PreAuthorize("@ss.hasPermission('bpm:oa-event:query')")
     public CommonResult<BpmOAEventDO> get(@RequestParam Long id) { return success(service.get(getLoginUserId(), id)); }
     @GetMapping("/list") @Operation(summary = "获得时间范围内日程") @PreAuthorize("@ss.hasPermission('bpm:oa-event:query')")
-    public CommonResult<List<BpmOAEventDO>> list(@RequestParam LocalDateTime from, @RequestParam LocalDateTime to) { return success(service.list(getLoginUserId(), from, to)); }
+    public CommonResult<List<BpmOAEventDO>> list(
+            @RequestParam(required = false) LocalDateTime from,
+            @RequestParam(required = false) LocalDateTime to) {
+        return success(service.list(getLoginUserId(), from, to));
+    }
 }

@@ -13,9 +13,12 @@ import java.util.List;
 @Mapper
 public interface BpmOAEventMapper extends BaseMapperX<BpmOAEventDO> {
     default List<BpmOAEventDO> selectByUserId(Long userId, java.time.LocalDateTime from, java.time.LocalDateTime to) {
-        return selectList(new LambdaQueryWrapperX<BpmOAEventDO>().eq(BpmOAEventDO::getUserId, userId)
-                .ne(BpmOAEventDO::getStatus, 10).lt(BpmOAEventDO::getStartTime, to)
-                .gt(BpmOAEventDO::getEndTime, from).orderByAsc(BpmOAEventDO::getStartTime));
+        LambdaQueryWrapperX<BpmOAEventDO> query = new LambdaQueryWrapperX<>();
+        query.eq(BpmOAEventDO::getUserId, userId).ne(BpmOAEventDO::getStatus, 10);
+        query.ltIfPresent(BpmOAEventDO::getStartTime, to)
+                .gtIfPresent(BpmOAEventDO::getEndTime, from)
+                .orderByAsc(BpmOAEventDO::getStartTime);
+        return selectList(query);
     }
 
     @Select("""

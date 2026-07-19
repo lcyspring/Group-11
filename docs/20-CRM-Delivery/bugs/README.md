@@ -23,6 +23,12 @@
 OA 日程创建入口与标准弹窗修复记录：
 [OA-EVENT-BUG-004](logs/OA-EVENT-BUG-004-create-entry-no-response.md)。
 
+OA 日程清空日期后查询参数非法修复记录：
+[OA-EVENT-BUG-006](logs/OA-EVENT-BUG-006-empty-date-filter.md)。
+
+OA 请假列表流程实例翻译路径修复记录：
+[OA-LEAVE-BUG-005](logs/OA-LEAVE-BUG-005-process-instance-locale-path.md)。
+
 CRM 确认框取消与业务请求异常边界修复记录：
 [CRM-FE-BUG-007](logs/CRM-FE-BUG-007-dialog-errors-silently-swallowed.md)。
 

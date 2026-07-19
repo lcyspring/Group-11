@@ -5,13 +5,27 @@ import test from 'node:test'
 const source = readFileSync(new URL('./index.vue', import.meta.url), 'utf8')
 const form = readFileSync(new URL('./OaEventForm.vue', import.meta.url), 'utf8')
 const api = readFileSync(new URL('../../../../api/bpm/oaEvent/index.ts', import.meta.url), 'utf8')
+const controller = readFileSync(
+  new URL(
+    '../../../../../../Server/mitedtsm-module-bpm/src/main/java/com/meession/etm/module/bpm/controller/admin/oa/BpmOAEventController.java',
+    import.meta.url
+  ),
+  'utf8'
+)
+const mapper = readFileSync(
+  new URL(
+    '../../../../../../Server/mitedtsm-module-bpm/src/main/java/com/meession/etm/module/bpm/dal/mysql/oa/BpmOAEventMapper.java',
+    import.meta.url
+  ),
+  'utf8'
+)
 
 test('event workspace offers day week and month ranges without reusing the edit range', () => {
   assert.match(source, /type ViewMode = 'day' \| 'week' \| 'month'/)
   assert.match(source, /date\.startOf\(viewMode\.value\)/)
   assert.match(source, /date\.endOf\(viewMode\.value\)/)
   assert.match(source, /const range = ref/)
-  assert.match(source, /await Api\.getOaEventList\(range\.value\[0\], range\.value\[1\]\)/)
+  assert.match(source, /await Api\.getOaEventList\(range\.value\)/)
 })
 
 test('event API converts display timestamps to Spring LocalDateTime ISO format', () => {
@@ -42,4 +56,18 @@ test('calendar navigation reloads its selected period', () => {
   assert.match(source, /const movePeriod = async/)
   assert.match(source, /const goToday = async/)
   assert.match(source, /await changeView\(\)/)
+})
+
+test('clearing the calendar date loads all events without invalid time parameters', () => {
+  assert.match(source, /if \(!anchor\.value\) \{/)
+  assert.match(source, /range\.value = undefined/)
+  assert.match(source, /if \(!date\.isValid\(\)\)/)
+  assert.match(api, /getOaEventList = \(range\?/)
+  assert.match(api, /params: range/)
+  assert.match(api, /: undefined/)
+  assert.doesNotMatch(api, /toLocalDateTime\(from\)/)
+  assert.match(controller, /@RequestParam\(required = false\) LocalDateTime from/)
+  assert.match(controller, /@RequestParam\(required = false\) LocalDateTime to/)
+  assert.match(mapper, /ltIfPresent\(BpmOAEventDO::getStartTime, to\)/)
+  assert.match(mapper, /gtIfPresent\(BpmOAEventDO::getEndTime, from\)/)
 })

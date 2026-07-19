@@ -29,10 +29,10 @@
 
 ## 回归
 
-- OA 日程源码契约测试：5/5；
+- OA 日程源码契约测试：6/6；
 - ESLint：`--max-warnings=0` 通过；
 - CRM 后端回归：541/541；
 - Ubuntu 26.04 Vite 8 production build 和三语言包校验通过；
-- 已生成专项 LCOV；当前 5 项为 Vue 源码契约测试，报告仅统计测试进程实际加载的工具配置，不能把
-  报告中的 100% 当作日程 Vue 组件运行时覆盖率。日程行为以 5/5 契约、ESLint 和 production build
+- 已生成专项 LCOV；当前 6 项为 Vue/接口源码契约测试，报告仅统计测试进程实际加载的工具配置，不能把
+  报告中的 100% 当作日程 Vue 组件运行时覆盖率。日程行为以 6/6 契约、ESLint 和 production build
   三道门禁共同验收。

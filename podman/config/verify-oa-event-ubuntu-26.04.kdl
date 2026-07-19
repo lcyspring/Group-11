@@ -12,11 +12,13 @@ toolchain {
 }
 
 build {
-  include_targets "web"
+  include_targets "server,web"
   exclude_targets "mall-h5"
   clean #false
   crm_tests #false
   crm_coverage #false
+  bpm_tests #true
+  bpm_coverage #true
   ci #true
   maven_threads 4
   deno_frozen_lockfile #true
