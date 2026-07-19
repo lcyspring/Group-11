@@ -27,3 +27,9 @@ test('visit pages have stable hidden routes and process progress', () => {
   assert.match(router, /activeMenu: '\/crm\/customer-visit'/)
   assert.match(listPage, /BpmProcessInstanceDetail/)
 })
+
+test('cached visit list reloads after returning from create page', () => {
+  assert.match(listPage, /let initialized = false/)
+  assert.match(listPage, /initialized = true/)
+  assert.match(listPage, /onActivated\(\(\) => \{ if \(initialized\) load\(\) \}\)/)
+})

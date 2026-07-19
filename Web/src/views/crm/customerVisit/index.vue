@@ -45,6 +45,7 @@ const total = ref(0)
 const queryRef = ref()
 const query = reactive({ pageNo: 1, pageSize: 10, customerId: undefined, auditStatus: undefined })
 const customers = ref<CustomerApi.CustomerVO[]>([])
+let initialized = false
 const load = async () => { loading.value = true; try { const data = await VisitApi.getCustomerVisitPage(query); list.value = data.list; total.value = data.total } finally { loading.value = false } }
 const search = () => { query.pageNo = 1; load() }
 const reset = () => { queryRef.value?.resetFields(); search() }
@@ -58,5 +59,6 @@ const result = ref<VisitApi.CustomerVisitResultVO>({ id: 0, actualStartTime: '',
 const resultRules = { actualStartTime: [{ required: true, message: t('customerVisit.actualStartRequired'), trigger: 'change' }], actualEndTime: [{ required: true, message: t('customerVisit.actualEndRequired'), trigger: 'change' }], resultContent: [{ required: true, message: t('customerVisit.resultRequired'), trigger: 'blur' }, { min: 5, max: 2000, message: t('customerVisit.resultLength'), trigger: 'blur' }], nextContactTime: [{ required: true, message: t('customerVisit.nextContactRequired'), trigger: 'change' }] }
 const openResult = (row: VisitApi.CustomerVisitVO) => { result.value = { id: row.id!, actualStartTime: row.plannedStartTime, actualEndTime: Date.now(), resultContent: '', nextContactTime: '', resultAttachmentUrls: [] }; resultVisible.value = true }
 const submitResult = async () => { if (!await resultRef.value?.validate()) return; resultLoading.value = true; try { await VisitApi.recordCustomerVisitResult(result.value); message.success(t('customerVisit.resultSuccess')); resultVisible.value = false; await load() } finally { resultLoading.value = false } }
-onMounted(async () => { customers.value = await CustomerApi.getCustomerSimpleList(); await load() })
+onMounted(async () => { customers.value = await CustomerApi.getCustomerSimpleList(); await load(); initialized = true })
+onActivated(() => { if (initialized) load() })
 </script>
