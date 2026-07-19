@@ -14,9 +14,15 @@
 
 ## 门禁
 
-- `node scripts/analyze-table-actions.mjs --check`；
-- `financeApprovalUi.test.mjs`；
-- `todoRefresh.test.mjs`；
-- `remainingTitle.test.mjs`；
-- `pnpm run verify:crm-finance-approval-ui`；
-- `podman/compile.sh podman/config/verify-table-actions-ubuntu-26.04.kdl`。
+以下分析、SFC 契约、Deno Test 与 ESLint 均由 `verify:crm-finance-approval-ui` 任务在 Ubuntu 26.04
+工具链容器内统一执行，不在宿主机逐项调用 Node 或包管理器：
+
+- 表格操作静态分析与 SFC 操作列验证；
+- `financeApprovalUi.test.mjs`、`todoRefresh.test.mjs`、`remainingTitle.test.mjs`；
+- 相关 CRM、BPM 与通用组件 ESLint，warning 上限为 0。
+
+唯一成员入口：
+
+```bash
+bash podman/compile.sh podman/config/verify-table-actions-ubuntu-26.04.kdl
+```

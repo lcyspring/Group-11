@@ -18,6 +18,7 @@ dist-*
 *.class
 *.jar
 *.war
+dependency-reduced-pom.xml
 
 # Web/build contains Vite configuration source, not generated output.
 !Web/build/
@@ -115,3 +116,9 @@ podman/diagnostics/
 # Others
 *.swp
 *.xml.versionsBackup
+
+# Retired one-off i18n scan outputs. Source-controlled locale files and tests
+# are the only translation truth; regenerate ad hoc reports outside the tree.
+MallFrontend/i18n_keys_temp.txt
+MallFrontend/sheep_i18n_keys.txt
+MallFrontend/sheep_js_i18n_keys.txt

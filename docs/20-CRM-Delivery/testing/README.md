@@ -98,7 +98,6 @@
 | `bpm-orphan-approval-recovery/` | 孤立审批审计恢复、详情顺序加载和 Promise 异常收敛 |
 | `crm-marketing-outreach/` | 合规群发名单、审核、调度、发送、重试和收件人结果完整闭环 |
 | `crm-marketing-delivery-analytics/` | 短信送达、邮件接受/首次打开、匿名像素、对象范围和分口径比率 |
-| `mall-h5-runtime-dependencies/` | Mall 依赖容器运行时安装、named volume 隔离和断网 HBuilderX 编译 |
 | `crm-customer-care-management/` | 客户关怀计划、生日/节假日/成交后回访、自动触达、记录和生日查询 |
 | `crm-runtime-security-baseline/` | Podman 显式安全配置、管理端点、Mock Token、CORS 和凭据外置 |
 | `receivable-form-localization/` | 回款及回款计划负责人标签和客户/合同下拉三语一致性 |

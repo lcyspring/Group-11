@@ -33,6 +33,29 @@ kdl_config_init "$CONFIG_PATH"
     exit 1
 }
 
+retired_repository_files=(
+    "InitService/dependency-reduced-pom.xml"
+    "Server/RAW_README.md"
+    "Server/script/idea/http-client.env.json"
+    "Server/script/jenkins/Jenkinsfile"
+    "Server/script/shell/deploy.sh"
+    "Web/README.md"
+    "MallFrontend/README.md"
+    "MallFrontend/RUN.md"
+    "MallFrontend/i18n_keys_temp.txt"
+    "MallFrontend/sheep_i18n_keys.txt"
+    "MallFrontend/sheep_js_i18n_keys.txt"
+    "docs/20-CRM-Delivery/planning/crm-remaining-backlog"
+    "docs/20-CRM-Delivery/planning/kdl-config-migration"
+    "docs/20-CRM-Delivery/testing/mall-h5-runtime-dependencies"
+)
+for retired_file in "${retired_repository_files[@]}"; do
+    [[ ! -e "${PROJECT_ROOT}/${retired_file}" ]] || {
+        printf 'Retired repository file must not return: %s\n' "$retired_file" >&2
+        exit 1
+    }
+done
+
 failures=0
 checked_links=0
 
