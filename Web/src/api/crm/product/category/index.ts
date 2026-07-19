@@ -1,33 +1,33 @@
 import request from '@/config/axios'
 
-// TODO @zange：挪到 product 下，建个 category 包，挪进去哈；
 export interface ProductCategoryVO {
   id: number
   name: string
   parentId: number
 }
 
-// 查询产品分类详情
-export const getProductCategory = async (id: number) => {
-  return await request.get({ url: `/crm/product-category/get?id=` + id })
+export interface ProductCategoryListReqVO {
+  name?: string | null
+  parentId?: number
+  createTime?: string
 }
+
+// 查询产品分类详情
+export const getProductCategory = (id: number) =>
+  request.get<ProductCategoryVO>({ url: '/crm/product-category/get', params: { id } })
 
 // 新增产品分类
-export const createProductCategory = async (data: ProductCategoryVO) => {
-  return await request.post({ url: `/crm/product-category/create`, data })
-}
+export const createProductCategory = (data: ProductCategoryVO) =>
+  request.post<number>({ url: '/crm/product-category/create', data })
 
 // 修改产品分类
-export const updateProductCategory = async (data: ProductCategoryVO) => {
-  return await request.put({ url: `/crm/product-category/update`, data })
-}
+export const updateProductCategory = (data: ProductCategoryVO) =>
+  request.put<boolean>({ url: '/crm/product-category/update', data })
 
 // 删除产品分类
-export const deleteProductCategory = async (id: number) => {
-  return await request.delete({ url: `/crm/product-category/delete?id=` + id })
-}
+export const deleteProductCategory = (id: number) =>
+  request.delete<boolean>({ url: '/crm/product-category/delete', params: { id } })
 
 // 产品分类列表
-export const getProductCategoryList = async (params) => {
-  return await request.get({ url: `/crm/product-category/list`, params })
-}
+export const getProductCategoryList = (params: ProductCategoryListReqVO = {}) =>
+  request.get<ProductCategoryVO[]>({ url: '/crm/product-category/list', params })
