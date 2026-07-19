@@ -35,6 +35,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -239,9 +240,9 @@ class CrmContractAmendmentServiceImplTest {
         verify(contractMapper).updateById(ArgumentMatchers.<CrmContractDO>argThat(item -> "合同 V3".equals(item.getName())
                 && new BigDecimal("120").compareTo(item.getTotalPrice()) == 0));
         verify(productMapper).deleteByIds(List.of(31L));
-        verify(productMapper).insertBatch(argThat(items -> items.size() == 1
-                && items.iterator().next().getId() == null
-                && items.iterator().next().getContractId().equals(7L)));
+        verify(productMapper).insertBatch(ArgumentMatchers.<Collection<CrmContractProductDO>>argThat(
+                items -> items.size() == 1 && items.iterator().next().getId() == null
+                        && items.iterator().next().getContractId().equals(7L)));
         verify(attachmentMapper).updateById(ArgumentMatchers.<CrmContractAttachmentDO>argThat(item -> item.getId().equals(21L)
                 && Boolean.TRUE.equals(item.getImmutable())));
         verify(lifecycleService).recordChange(eq(7L),
