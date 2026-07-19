@@ -15,7 +15,6 @@ import com.meession.etm.module.system.service.user.AdminUserService;
 import org.assertj.core.util.Lists;
 import org.dromara.hutool.extra.mail.MailAccount;
 import org.dromara.hutool.extra.mail.MailUtil;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -51,21 +50,6 @@ public class MailSendServiceImplTest extends BaseMockitoUnitTest {
     private MailLogService mailLogService;
     @Mock
     private MailProducer mailProducer;
-
-    /**
-     * 用于快速测试你的邮箱账号是否正常
-     */
-    @Test
-    @Disabled
-    public void testDemo() {
-        MailAccount mailAccount = new MailAccount()
-//                .setFrom("奥特曼 <ydym_test@163.com>")
-                .setFrom("ydym_test@163.com") // 邮箱地址
-                .setHost("smtp.163.com").setPort(465).setSslEnable(true) // SMTP 服务器
-                .setAuth(true).setUser("ydym_test@163.com").setPass("WBZTEINMIFVRYSOE".toCharArray()); // 登录账号密码
-        String messageId = MailUtil.send(mailAccount, "7685413@qq.com", "主题", "内容", false);
-        System.out.println("发送结果：" + messageId);
-    }
 
     @Test
     public void testSendSingleMail_success() {

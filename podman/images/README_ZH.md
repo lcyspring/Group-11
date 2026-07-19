@@ -42,14 +42,17 @@
 
 | 本地/仓库镜像 | 构建来源 | 作用 | 交付建议 |
 |---|---|---|---|
-| `ghcr.io/elel-code/group-11-build-ubuntu:26.04` | Ubuntu 26.04 + OpenJDK 17 + Maven + Node.js + pnpm 11.3.0 + 项目构建入口 | 编译 Server、InitService、Web，并在运行容器中安装 Web/Mall 依赖 | 已公开，脚本默认优先拉取；离线环境使用带 SHA-256 的 OCI tar |
+| `ghcr.io/elel-code/group-11-build-ubuntu:26.04-deno-2.9.3` | Ubuntu 26.04 + OpenJDK 17.0.19 + Maven 3.9.12 + Deno 2.9.3；Deno 二进制来自官方固定摘要层，镜像不含 Node/npm/pnpm | 编译 Server、InitService、Web，执行 Deno Test/覆盖率，并在容器运行时安装 Web/Mall 依赖 | public；版本标签摘要为 `sha256:29c77cc02e5fcf5fa2d77bf2bd527b0bb0fdc435d7bb6b12bc56e8e524ccf47d`，离线环境使用带 SHA-256 的 OCI tar |
 | `ghcr.io/elel-code/group-11-hbuilderx-ubuntu:26.04-5.05` | Ubuntu 26.04 + HBuilderX 5.05 提取出的 Node、uni-app Vite 和 Sass 无图形组件 | 挂载 Mall 依赖卷并断网编译 H5 | 已公开，脚本默认优先拉取；离线环境使用带 SHA-256 的 OCI tar |
 
 HBuilderX 工具链镜像不是从 Docker Hub 下载的现成镜像。普通成员直接使用上面的公共 GHCR image；
 仅工具链维护者在 KDL 显式设置 `image.rebuild: true` 时，才从 `hbuilderx.source_dir` 读取团队有权使用的 HBuilderX 安装目录。GHCR 中两个镜像是本项目已经构建的
 编译制品，不是上游官方镜像。`elel-code` 命名空间下这两个 package 当前均为 public，其他成员 pull
 不需要登录；只有维护者 push 新标签时才需要 `podman login ghcr.io`。成员可直接 pull/load，通常无需
-在宿主安装 JDK、pnpm 或 HBuilderX。
+在宿主安装 JDK、Deno、Node、npm、pnpm 或 HBuilderX。
+
+`ghcr.io/elel-code/group-11-build-ubuntu:26.04` 是同一镜像的稳定别名，2026-07-19 已更新到上述
+摘要；共享编译 KDL 仍使用带 Deno 版本的标签，保证升级需要显式修改配置。
 
 ## 哪些镜像需要归档
 

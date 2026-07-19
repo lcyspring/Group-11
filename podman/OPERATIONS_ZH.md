@@ -7,19 +7,19 @@
 日常编译不是“可选地优先”使用公共镜像，而是统一使用以下固定工具链：
 
 ```text
-Server / InitService / Web / 测试：ghcr.io/elel-code/group-11-build-ubuntu:26.04
+Server / InitService / Web / 测试：ghcr.io/elel-code/group-11-build-ubuntu:26.04-deno-2.9.3
 Mall H5：                         ghcr.io/elel-code/group-11-hbuilderx-ubuntu:26.04-5.05
 ```
 
 普通成员直接运行下方 KDL 命令即可，首次运行由 Podman 拉取 public image，不需要先执行镜像构建，
-也不需要在 Host 安装 JDK、Node、pnpm 或 HBuilderX。日常配置必须使用 `image.rebuild: false`；
+也不需要在 Host 安装 JDK、Deno、Node、pnpm 或 HBuilderX。日常配置必须使用 `image.rebuild: false`；
 `image.rebuild: true` 仅用于维护者发布新版工具链镜像，不属于项目编译步骤。
 
 ## 职责边界
 
 | 阶段 | 命令 | 输出/作用 |
 |---|---|---|
-| Server/Web/测试编译 | `compile.sh <kdl>` | JAR、Web `dist-prod`、测试与 JaCoCo |
+| Server/Web/测试编译 | `compile.sh <kdl>` | JAR、Web `dist-prod`、Deno LCOV 与 JaCoCo |
 | Mall H5 编译 | `compile.sh <kdl>` | 本地 ignored 的 H5 构建目录 |
 | 运行镜像封装 | `build-images.sh <kdl>` | 只把已有产物封装为 Init/Server/Web/Mall 四个应用镜像 |
 | 启动/替换容器 | `deploy.sh <kdl>` | 只消费运行镜像，启动或替换 rootless Pod/容器 |
@@ -33,7 +33,7 @@ Mall H5：                         ghcr.io/elel-code/group-11-hbuilderx-ubuntu:2
 | 配置门禁 | `tests/runtime-config/run.sh <kdl>` | 无状态检查 KDL、manifest、脚本和 Pod 不变性 |
 | 数据库部署期 provision | `deploy.sh <kdl>` | 直接运行官方 MySQL，并通过 stdin 初始化空库或执行幂等兼容迁移 |
 
-宿主 JDK/Node/pnpm 构建入口已删除，所有成员统一通过 `compile.sh` 使用上述 `elel-code`
+宿主 JDK/Deno/Node/pnpm 构建入口已删除，所有成员统一通过 `compile.sh` 使用上述 `elel-code`
 公共镜像。项目原 Docker/Compose 不进入本流程。
 
 ## 标准流程

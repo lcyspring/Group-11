@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface OAuth2OpenConvert {
 
     OAuth2OpenConvert INSTANCE = Mappers.getMapper(OAuth2OpenConvert.class);

@@ -42,7 +42,7 @@ public class CrmWorkOrderGroupServiceImpl implements CrmWorkOrderGroupService {
     @Override
     public Map<Long, CrmWorkOrderGroupDO> getGroupMap(Collection<Long> ids) {
         if (ids == null || ids.isEmpty()) return Map.of();
-        return groupMapper.selectBatchIds(ids).stream().collect(Collectors.toMap(CrmWorkOrderGroupDO::getId, item -> item));
+        return groupMapper.selectByIds(ids).stream().collect(Collectors.toMap(CrmWorkOrderGroupDO::getId, item -> item));
     }
 
     @Override

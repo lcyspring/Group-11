@@ -20,7 +20,7 @@ import java.util.Collection;
  *
  * @author 密讯
  */
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface CouponConvert {
 
     CouponConvert INSTANCE = Mappers.getMapper(CouponConvert.class);

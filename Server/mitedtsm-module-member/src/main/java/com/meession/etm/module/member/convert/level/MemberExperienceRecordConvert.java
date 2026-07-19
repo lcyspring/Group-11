@@ -14,7 +14,7 @@ import java.util.List;
  *
  * @author owen
  */
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface MemberExperienceRecordConvert {
 
     MemberExperienceRecordConvert INSTANCE = Mappers.getMapper(MemberExperienceRecordConvert.class);

@@ -34,10 +34,10 @@ podman info --format '{{.Host.Security.Rootless}}'
 ```
 
 输出必须为 `true`。Podman、Pasta、`uidmap` 和 rootless 存储组件应通过宿主发行版的软件包
-管理器安装；仓库不再提供会向 Host 安装 JDK、Maven、Node.js 或 pnpm 的旧脚本。项目编译工具链
+管理器安装；仓库不再提供会向 Host 安装 JDK、Maven、Deno、Node.js 或 pnpm 的旧脚本。项目编译工具链
 全部来自公开 Ubuntu 26.04 镜像。
 
-项目目录必须支持软链接。pnpm 直接在 `Web/` 工作，旧的不支持软链接目录
+项目目录必须支持软链接。Deno 在 Podman `node_modules` 卷中直接维护标准链接结构，旧的不支持软链接目录
 的暂存、复制和回写兼容路径已不再使用。
 
 ## 3. Ubuntu 26.04 容器编译
@@ -50,8 +50,8 @@ bash ./compile.sh ./config/build-ubuntu-26.04.kdl
 ```
 
 KDL 显式声明基础镜像、工具链、构建模块、测试/覆盖率开关、并发度、网络
-代理策略、资源限制和缓存卷。当前工具链为 JDK 17、Maven、Node 22 与
-pnpm；具体版本以 `Containerfile.build-ubuntu` 和 KDL 为准。
+代理策略、资源限制和缓存卷。当前标准工具链为 JDK 17、Maven 3.9.12 与 Deno 2.9.3，
+不包含 Node/npm/pnpm；具体版本和 Deno 官方二进制镜像摘要以 `Containerfile.build-ubuntu` 和 KDL 为准。
 
 输出包括：
 
@@ -63,7 +63,7 @@ pnpm；具体版本以 `Containerfile.build-ubuntu` 和 KDL 为准。
 Mall H5 构建产物位于被 Git 忽略的 `MallFrontend/unpackage/dist/build/web/`，Mall 源码变化后必须
 使用 Ubuntu 26.04 HBuilderX 容器重新生成，不能依赖仓库中的旧产物。
 
-Mall 的 `pnpm install` 由 Ubuntu 26.04 依赖容器在运行时执行，依赖写入专用
+Mall 的 `deno install --frozen` 由 Ubuntu 26.04 依赖容器在运行时执行，依赖写入专用
 Podman named volume。不要在 Host 执行 Mall 的依赖安装；HBuilderX 编译容器挂载该卷并
 使用 `--network=none`，只把最终 `unpackage` 构建产物写回工作区。
 

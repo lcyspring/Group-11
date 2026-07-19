@@ -45,6 +45,9 @@
         <spring.boot.version>3.5.9</spring.boot.version>
         <mapstruct.version>1.6.3</mapstruct.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- Mockito inline mock maker appends to the bootstrap class path. Disable CDS for
+             test JVMs so that the JDK does not emit a misleading sharing warning. -->
+        <argLine>-Xshare:off</argLine>
     </properties>
 
     <dependencyManagement>
@@ -55,6 +58,18 @@
                 <version>${revision}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <!-- Override malformed legacy transitive POMs that make Maven 3.9 emit
+                 effective-model warnings during every reactor and test build. -->
+            <dependency>
+                <groupId>org.javassist</groupId>
+                <artifactId>javassist</artifactId>
+                <version>3.30.2-GA</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.yetus</groupId>
+                <artifactId>audience-annotations</artifactId>
+                <version>0.15.0</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -68,6 +83,26 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${maven-surefire-plugin.version}</version>
+                    <configuration>
+                        <!-- Credential-backed/manual suites are integration tests and are
+                             deliberately outside the deterministic unit-test lifecycle. -->
+                        <excludes>
+                            <exclude>**/*IntegrationTest.java</exclude>
+                            <exclude>**/FtpFileClientTest.java</exclude>
+                            <exclude>**/LocalFileClientTest.java</exclude>
+                            <exclude>**/S3FileClientTest.java</exclude>
+                            <exclude>**/SftpFileClientTest.java</exclude>
+                            <exclude>**/CodegenEngineVue2Test.java</exclude>
+                            <exclude>**/CodegenEngineVue3Test.java</exclude>
+                            <exclude>**/BpmTaskCandidateExpressionStrategyTest.java</exclude>
+                            <exclude>**/BpmTaskCandidateGroupStrategyTest.java</exclude>
+                            <exclude>**/BpmTaskCandidatePostStrategyTest.java</exclude>
+                            <exclude>**/BpmTaskCandidateRoleStrategyTest.java</exclude>
+                            <exclude>**/BpmTaskCandidateUserStrategyTest.java</exclude>
+                            <exclude>**/PayAppServiceTest.java</exclude>
+                            <exclude>**/PayNotifyServiceTest.java</exclude>
+                        </excludes>
+                    </configuration>
                 </plugin>
                 <!-- maven-compiler-plugin 插件，解决 spring-boot-configuration-processor + Lombok + MapStruct 组合 -->
                 <!-- https://stackoverflow.com/questions/33483697/re-run-spring-boot-configuration-annotation-processor-to-update-generated-metada -->

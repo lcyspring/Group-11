@@ -28,7 +28,7 @@ END_TIME="$(kdl_require acceptance.end_time)"
 [[ "$PREFIX" =~ ^[A-Za-z0-9_-]+$ && "$MYSQL_DATABASE" =~ ^[A-Za-z0-9_]+$ ]] || exit 2
 
 mysql_exec() {
-    podman exec "$MYSQL_CONTAINER" mysql "-u${MYSQL_USER}" "-p${MYSQL_PASSWORD}" \
+    podman exec --env "MYSQL_PWD=${MYSQL_PASSWORD}" "$MYSQL_CONTAINER" mysql "-u${MYSQL_USER}" \
         "--database=${MYSQL_DATABASE}" --default-character-set=utf8mb4 -Nse "$1"
 }
 

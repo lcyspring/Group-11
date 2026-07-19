@@ -21,7 +21,7 @@ import java.util.Map;
 import static com.meession.etm.framework.common.util.collection.CollectionUtils.convertList;
 import static com.meession.etm.framework.common.util.collection.CollectionUtils.convertMap;
 
-@Mapper(uses = {AddressConvert.class})
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class, uses = {AddressConvert.class})
 public interface MemberUserConvert {
 
     MemberUserConvert INSTANCE = Mappers.getMapper(MemberUserConvert.class);

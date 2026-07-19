@@ -3,7 +3,7 @@ import type {ConfigEnv, UserConfig} from 'vite'
 import {loadEnv} from 'vite'
 import {createVitePlugins} from './build/vite'
 import {exclude, include} from "./build/vite/optimize"
-// 当前执行node命令时文件夹的地址(工作目录)
+// 当前 Deno 任务的工作目录
 const root = process.cwd()
 
 // 路径查找
@@ -51,19 +51,13 @@ export default ({command, mode}: ConfigEnv): UserConfig => {
         },
         resolve: {
             extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json', '.scss', '.css'],
-            alias: [
-                {
-                    find: 'vue-i18n',
-                    replacement: 'vue-i18n/dist/vue-i18n.cjs.js'
-                },
-                {
-                    find: /\@\//,
-                    replacement: `${pathResolve('src')}/`
-                }
-            ]
+            alias: {
+                '@': pathResolve('src')
+            }
         },
         build: {
             minify: 'terser',
+            chunkSizeWarningLimit: 1500,
             outDir: env.VITE_OUT_DIR || 'dist',
             sourcemap: env.VITE_SOURCEMAP === 'true' ? 'inline' : false,
             // brotliSize: false,
@@ -73,12 +67,18 @@ export default ({command, mode}: ConfigEnv): UserConfig => {
                     drop_console: env.VITE_DROP_CONSOLE === 'true'
                 }
             },
-            rollupOptions: {
+            rolldownOptions: {
+                checks: {
+                    pluginTimings: false
+                },
                 output: {
-                    manualChunks: {
-                      echarts: ['echarts'], // 将 echarts 单独打包，参考 https://gitee.com/mitedtsmcode/mitedtsm-ui-admin-vue3/issues/IAB1SX 讨论
-                      'form-create': ['@form-create/element-ui'], // 参考 https://github.com/mitedtsmcode/mitedtsm-ui-admin-vue3/issues/148 讨论
-                      'form-designer': ['@form-create/designer'],
+                    manualChunks(id) {
+                      if (id.includes('/src/locales/zh-CN/')) return 'locale-zh-CN'
+                      if (id.includes('/src/locales/en/')) return 'locale-en'
+                      if (id.includes('/src/locales/ar/')) return 'locale-ar'
+                      if (id.includes('/node_modules/echarts/')) return 'echarts'
+                      if (id.includes('/node_modules/@form-create/element-ui/')) return 'form-create'
+                      if (id.includes('/node_modules/@form-create/designer/')) return 'form-designer'
                     }
                 },
             },

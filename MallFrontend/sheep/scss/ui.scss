@@ -1,19 +1,19 @@
-@import 'theme/style'; //系统主题
-@import 'main'; //主样式*
+@use 'theme/style' as theme-style; //系统主题
+@use 'main'; //主样式*
 
-@import 'style/background'; //背景
-@import 'style/grid'; //列
-@import 'style/flex'; //布局
-@import 'style/border'; //边框
-@import 'style/text'; //文本
-@import 'style/shadow'; //阴影
-@import 'icon/style'; //图标
-@import 'style/tag'; //标签
-@import 'style/button'; //按钮
-@import 'style/avatar'; //头像
-@import 'style/table'; //表格
-@import 'style/code'; //代码片段
-@import 'style/form'; //表单
-@import 'style/menu'; //表单
-@import 'style/markdown'; //表单
-@import 'style/card'; //表单
+@use 'style/background'; //背景
+@use 'style/grid'; //列
+@use 'style/flex'; //布局
+@use 'style/border'; //边框
+@use 'style/text'; //文本
+@use 'style/shadow'; //阴影
+@use 'icon/style' as icon-style; //图标
+@use 'style/tag'; //标签
+@use 'style/button'; //按钮
+@use 'style/avatar'; //头像
+@use 'style/table'; //表格
+@use 'style/code'; //代码片段
+@use 'style/form'; //表单
+@use 'style/menu'; //表单
+@use 'style/markdown'; //表单
+@use 'style/card'; //表单

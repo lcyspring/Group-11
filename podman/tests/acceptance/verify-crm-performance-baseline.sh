@@ -137,9 +137,9 @@ for scenario_spec in "${SCENARIOS[@]}"; do
         "$scenario" "$REQUESTS" "$errors" "$error_rate" "$p50" "$p95" "$p99" "$throughput" "$status" >>"$SUMMARY_TSV"
 done
 
-table_count="$(podman exec "$MYSQL_CONTAINER" mysql "-u${MYSQL_USER}" "-p${MYSQL_PASSWORD}" \
+table_count="$(podman exec --env "MYSQL_PWD=${MYSQL_PASSWORD}" "$MYSQL_CONTAINER" mysql "-u${MYSQL_USER}" \
     "--database=${MYSQL_DATABASE}" -Nse 'SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE();')"
-crm_table_count="$(podman exec "$MYSQL_CONTAINER" mysql "-u${MYSQL_USER}" "-p${MYSQL_PASSWORD}" \
+crm_table_count="$(podman exec --env "MYSQL_PWD=${MYSQL_PASSWORD}" "$MYSQL_CONTAINER" mysql "-u${MYSQL_USER}" \
     "--database=${MYSQL_DATABASE}" -Nse "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name LIKE 'crm\\_%';")"
 container_snapshot="$(podman stats --no-stream --format '{{.Name}}|{{.CPU}}|{{.MemUsage}}' \
     "$SERVER_CONTAINER" "$MYSQL_CONTAINER" "$REDIS_CONTAINER")"

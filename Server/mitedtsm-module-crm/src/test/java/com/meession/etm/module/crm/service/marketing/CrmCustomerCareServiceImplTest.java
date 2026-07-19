@@ -126,11 +126,11 @@ class CrmCustomerCareServiceImplTest {
                 .thenReturn(new CrmOwnerReadScope(false, Set.of(7L)));
         when(recordMapper.selectPage(any(), eq(false), eq(Set.of(7L))))
                 .thenReturn(new PageResult<>(List.of(record), 1L));
-        when(planMapper.selectBatchIds(anyCollection()))
+        when(planMapper.selectByIds(anyCollection()))
                 .thenReturn(List.of(new CrmCustomerCarePlanDO().setId(2L).setName("生日关怀")));
-        when(customerMapper.selectBatchIds(anyCollection()))
+        when(customerMapper.selectByIds(anyCollection()))
                 .thenReturn(List.of(new CrmCustomerDO().setId(3L).setName("示例客户")));
-        when(contactMapper.selectBatchIds(anyCollection()))
+        when(contactMapper.selectByIds(anyCollection()))
                 .thenReturn(List.of(new CrmContactDO().setId(4L).setName("联系人")));
 
         PageResult<CrmCustomerCareRecordRespVO> page = service.getRecordPage(
@@ -269,7 +269,7 @@ class CrmCustomerCareServiceImplTest {
                 .thenReturn(new CrmOwnerReadScope(false, Set.of(7L)));
         when(contactMapper.selectUpcomingBirthdayPage(any(), eq(today), eq(false), eq(Set.of(7L))))
                 .thenReturn(new PageResult<>(List.of(contact), 1L));
-        when(customerMapper.selectBatchIds(anyCollection()))
+        when(customerMapper.selectByIds(anyCollection()))
                 .thenReturn(List.of(new CrmCustomerDO().setId(52L).setName("生日客户")));
 
         PageResult<CrmCustomerBirthdayRespVO> result = service.getBirthdayPage(

@@ -25,7 +25,7 @@ import java.util.Optional;
  *
  * @author owen
  */
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface BrokerageRecordConvert {
 
     BrokerageRecordConvert INSTANCE = Mappers.getMapper(BrokerageRecordConvert.class);

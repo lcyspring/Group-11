@@ -12,8 +12,8 @@ registry {
 }
 
 image {
-  server_builder_source "ghcr.io/elel-code/group-11-build-ubuntu:26.04"
-  server_builder_destination "ghcr.io/elel-code/group-11-build-ubuntu:26.04"
+  server_builder_source "ghcr.io/elel-code/group-11-build-ubuntu:26.04-deno-2.9.3"
+  server_builder_destination "ghcr.io/elel-code/group-11-build-ubuntu:26.04-deno-2.9.3"
   mall_builder_source "ghcr.io/elel-code/group-11-hbuilderx-ubuntu:26.04-5.05"
   mall_builder_destination "ghcr.io/elel-code/group-11-hbuilderx-ubuntu:26.04-5.05"
 

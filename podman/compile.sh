@@ -110,7 +110,7 @@ fi
 run_mall_h5() {
     local base_image hbuilderx_image dependency_image rebuild_image hbuilderx_source_dir
     local platform clean_output legacy_media_origins legacy_media_fallback network_mode
-    local dependency_network_mode use_host_proxy pnpm_store_volume pnpm_store_path
+    local dependency_network_mode use_host_proxy deno_cache_volume deno_cache_path
     local node_modules_volume frozen_lockfile memory cpus proxy_name
 
     base_image="$(kdl_require image.base)"
@@ -125,10 +125,10 @@ run_mall_h5() {
     network_mode="$(kdl_require network.mall_mode)"
     dependency_network_mode="$(kdl_require network.mall_dependency_mode)"
     use_host_proxy="$(kdl_bool network.use_host_proxy)"
-    pnpm_store_volume="$(kdl_require cache.mall_pnpm_store_volume)"
-    pnpm_store_path="$(kdl_require cache.mall_pnpm_store_path)"
+    deno_cache_volume="$(kdl_require cache.mall_deno_cache_volume)"
+    deno_cache_path="$(kdl_require cache.mall_deno_cache_path)"
     node_modules_volume="$(kdl_require cache.mall_node_modules_volume)"
-    frozen_lockfile="$(kdl_bool dependency.mall_frozen_lockfile)"
+    frozen_lockfile="$(kdl_bool dependency.mall_deno_frozen_lockfile)"
     memory="$(kdl_require runtime.mall_memory)"
     cpus="$(kdl_positive_integer runtime.mall_cpus)"
     proxy_name=host.containers.internal
@@ -149,8 +149,8 @@ run_mall_h5() {
             exit 2
             ;;
     esac
-    [[ "$pnpm_store_path" == /* && "$pnpm_store_path" != /workspace* ]] || {
-        printf 'cache.mall_pnpm_store_path must be an absolute path outside /workspace.\n' >&2
+    [[ "$deno_cache_path" == /* && "$deno_cache_path" != /workspace* ]] || {
+        printf 'cache.mall_deno_cache_path must be an absolute path outside /workspace.\n' >&2
         exit 2
     }
     [[ "$legacy_media_origins" =~ ^https?://[^[:space:]]+(,https?://[^[:space:]]+)*$ ]] || {
@@ -208,8 +208,8 @@ run_mall_h5() {
                 -u all_proxy -u ALL_PROXY -u no_proxy -u NO_PROXY podman pull "$dependency_image"
         fi
     fi
-    podman volume inspect "$pnpm_store_volume" >/dev/null 2>&1 \
-        || podman volume create "$pnpm_store_volume" >/dev/null
+    podman volume inspect "$deno_cache_volume" >/dev/null 2>&1 \
+        || podman volume create "$deno_cache_volume" >/dev/null
     podman volume inspect "$node_modules_volume" >/dev/null 2>&1 \
         || podman volume create "$node_modules_volume" >/dev/null
 
@@ -228,10 +228,10 @@ run_mall_h5() {
     podman run "${podman_proxy_args[@]}" --rm --pull=never \
         --network "$dependency_network_mode" --memory "$memory" --cpus "$cpus" \
         --volume "$PROJECT_ROOT:/workspace:rw" \
-        --volume "$pnpm_store_volume:$pnpm_store_path:rw" \
+        --volume "$deno_cache_volume:$deno_cache_path:rw" \
         --volume "$node_modules_volume:/workspace/MallFrontend/node_modules:rw" \
-        --env "PNPM_STORE_PATH=$pnpm_store_path" \
-        --env "PNPM_FROZEN_LOCKFILE=$frozen_lockfile" \
+        --env "DENO_DIR=$deno_cache_path" \
+        --env "DENO_FROZEN_LOCKFILE=$frozen_lockfile" \
         --env "BUILD_USE_HOST_PROXY=$use_host_proxy" \
         "${proxy_args[@]}" \
         --entrypoint /workspace/podman/internal/mall-dependencies-entrypoint.sh \

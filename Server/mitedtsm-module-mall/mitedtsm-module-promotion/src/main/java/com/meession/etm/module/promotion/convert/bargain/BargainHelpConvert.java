@@ -17,7 +17,7 @@ import java.util.Map;
  *
  * @author 密讯
  */
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface BargainHelpConvert {
 
     BargainHelpConvert INSTANCE = Mappers.getMapper(BargainHelpConvert.class);

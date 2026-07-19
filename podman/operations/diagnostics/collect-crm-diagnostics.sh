@@ -97,7 +97,7 @@ for log_file in "$RUN_DIR"/*.log; do
     error_lines=$((error_lines + count))
 done
 
-podman exec "$MYSQL_CONTAINER" mysql "-u${MYSQL_USER}" "-p${MYSQL_PASSWORD}" \
+podman exec --env "MYSQL_PWD=${MYSQL_PASSWORD}" "$MYSQL_CONTAINER" mysql "-u${MYSQL_USER}" \
     "--database=${MYSQL_DATABASE}" -Nse \
     "SELECT VARIABLE_NAME, VARIABLE_VALUE FROM performance_schema.global_status
        WHERE VARIABLE_NAME IN ('Threads_connected','Threads_running','Aborted_connects');

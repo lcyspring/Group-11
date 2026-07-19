@@ -22,7 +22,7 @@ import java.util.Map;
  *
  * @author aquan
  */
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface PayOrderConvert {
 
     PayOrderConvert INSTANCE = Mappers.getMapper(PayOrderConvert.class);

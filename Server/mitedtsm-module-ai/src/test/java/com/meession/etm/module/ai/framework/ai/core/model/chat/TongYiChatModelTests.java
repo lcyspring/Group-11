@@ -38,7 +38,7 @@ public class TongYiChatModelTests {
                     .build())
             .defaultOptions(DashScopeChatOptions.builder()
 //                    .withModel("qwen1.5-72b-chat") // 模型
-                    .withModel("qwen3-235b-a22b-thinking-2507") // 模型
+                    .model("qwen3-235b-a22b-thinking-2507") // 模型
 //                    .withModel("deepseek-r1") // 模型（deepseek-r1）
 //                    .withModel("deepseek-v3") // 模型（deepseek-v3）
 //                    .withModel("deepseek-r1-distill-qwen-1.5b") // 模型（deepseek-r1-distill-qwen-1.5b）
@@ -85,9 +85,9 @@ public class TongYiChatModelTests {
         List<Message> messages = new ArrayList<>();
         messages.add(new UserMessage("详细分析下，如何设计一个电商系统？"));
         DashScopeChatOptions options = DashScopeChatOptions.builder()
-                .withModel("qwen3-235b-a22b-thinking-2507")
+                .model("qwen3-235b-a22b-thinking-2507")
 //                .withModel("qwen-max-2025-01-25")
-                .withEnableThinking(true) // 必须设置，否则会报错
+                .enableThinking(true) // 必须设置，否则会报错
                 .build();
 
         // 调用
@@ -112,8 +112,8 @@ public class TongYiChatModelTests {
         Document document01 = new Document("abc");
         Document document02 = new Document("sapring");
         RerankOptions options = DashScopeRerankOptions.builder()
-                .withTopN(1)
-                .withModel("gte-rerank-v2")
+                .topN(1)
+                .model("gte-rerank-v2")
                 .build();
         RerankRequest rerankRequest = new RerankRequest(
                 query,

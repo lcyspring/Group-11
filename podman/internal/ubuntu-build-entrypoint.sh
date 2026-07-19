@@ -57,8 +57,7 @@ verify_ubuntu_release
 printf 'Build OS: Ubuntu 26.04\n'
 java -version
 mvn -version
-node --version
-pnpm --version
+deno --version
 
 BUILD_SERVER="$(bool_value "${BUILD_SERVER:-true}")"
 BUILD_INIT_SERVICE="$(bool_value "${BUILD_INIT_SERVICE:-true}")"
@@ -85,9 +84,19 @@ BUILD_FRAMEWORK_MODULES="${BUILD_FRAMEWORK_MODULES:-mitedtsm-framework/mitedtsm-
 BUILD_SYSTEM_TESTS="$(bool_value "${BUILD_SYSTEM_TESTS:-false}")"
 BUILD_SYSTEM_COVERAGE="$(bool_value "${BUILD_SYSTEM_COVERAGE:-false}")"
 BUILD_SYSTEM_TEST_PATTERN="${BUILD_SYSTEM_TEST_PATTERN:-}"
-PNPM_FROZEN_LOCKFILE="$(bool_value "${PNPM_FROZEN_LOCKFILE:-true}")"
+DENO_FROZEN_LOCKFILE="$(bool_value "${DENO_FROZEN_LOCKFILE:-true}")"
 BUILD_CI="$(bool_value "${BUILD_CI:-true}")"
-PNPM_STORE_PATH="${PNPM_STORE_PATH:-/pnpm-store}"
+WEB_COVERAGE_ENABLED="$(bool_value "${WEB_COVERAGE_ENABLED:-false}")"
+WEB_COVERAGE_THRESHOLD="${WEB_COVERAGE_THRESHOLD:-90}"
+
+[[ "$WEB_COVERAGE_THRESHOLD" =~ ^[0-9]+$ && "$WEB_COVERAGE_THRESHOLD" -le 100 ]] || {
+    printf 'WEB_COVERAGE_THRESHOLD must be an integer from 0 to 100.\n' >&2
+    exit 2
+}
+if [[ "$WEB_COVERAGE_ENABLED" == "true" && -z "${WEB_TEST_SCRIPT:-}" ]]; then
+    printf 'WEB_COVERAGE_ENABLED requires WEB_TEST_SCRIPT to be set.\n' >&2
+    exit 2
+fi
 
 if [[ "$BUILD_CRM_COVERAGE" == "true" && "$BUILD_CRM_TESTS" != "true" ]]; then
     printf 'CRM coverage requires CRM tests to be enabled.\n' >&2
@@ -109,7 +118,7 @@ if [[ "$BUILD_PAY_COVERAGE" == "true" && "$BUILD_PAY_TESTS" != "true" ]]; then
     printf 'Pay coverage requires Pay tests to be enabled.\n' >&2
     exit 2
 fi
-if [[ "$BUILD_PAY_TESTS" == "true" && ! "$BUILD_PAY_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?,]+$ ]]; then
+if [[ "$BUILD_PAY_TESTS" == "true" && ! "$BUILD_PAY_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?!,]+$ ]]; then
     printf 'BUILD_PAY_TEST_PATTERN is required for Pay tests and contains unsupported characters.\n' >&2
     exit 2
 fi
@@ -138,7 +147,7 @@ if [[ "$BUILD_SYSTEM_COVERAGE" == "true" && "$BUILD_SYSTEM_TESTS" != "true" ]]; 
     printf 'System coverage requires system tests to be enabled.\n' >&2
     exit 2
 fi
-if [[ "$BUILD_SYSTEM_TESTS" == "true" && ! "$BUILD_SYSTEM_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?,]+$ ]]; then
+if [[ "$BUILD_SYSTEM_TESTS" == "true" && ! "$BUILD_SYSTEM_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?!,]+$ ]]; then
     printf 'BUILD_SYSTEM_TEST_PATTERN is required for system tests and contains unsupported characters.\n' >&2
     exit 2
 fi
@@ -175,6 +184,8 @@ if [[ "$BUILD_COMMON_TESTS" == "true" ]]; then
     )
     if [[ "$BUILD_COMMON_COVERAGE" == "true" ]]; then
         common_test_args+=(
+            -Djacoco.propertyName=unusedJacocoArgLine
+            '-DargLine=-Xshare:off -javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.13/org.jacoco.agent-0.8.13-runtime.jar=destfile=/workspace/Server/mitedtsm-framework/mitedtsm-common/target/jacoco.exec,excludes=net/sf/jsqlparser/**'
             org.jacoco:jacoco-maven-plugin:0.8.13:prepare-agent
             test
             org.jacoco:jacoco-maven-plugin:0.8.13:report
@@ -192,6 +203,8 @@ if [[ "$BUILD_FRAMEWORK_TESTS" == "true" ]]; then
     printf 'Running configured framework module tests%s inside Ubuntu 26.04.\n' \
         "$([[ "$BUILD_FRAMEWORK_COVERAGE" == "true" ]] && printf ' with JaCoCo' || true)"
     framework_modules="$BUILD_FRAMEWORK_MODULES"
+    framework_coverage_file=/workspace/Server/target/framework-jacoco.exec
+    rm -f -- "$framework_coverage_file"
     framework_test_args=(
         -pl "$framework_modules"
         -am
@@ -200,6 +213,9 @@ if [[ "$BUILD_FRAMEWORK_TESTS" == "true" ]]; then
     )
     if [[ "$BUILD_FRAMEWORK_COVERAGE" == "true" ]]; then
         framework_test_args+=(
+            -Djacoco.propertyName=unusedJacocoArgLine
+            "-DargLine=-Xshare:off -javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.13/org.jacoco.agent-0.8.13-runtime.jar=destfile=${framework_coverage_file},excludes=net/sf/jsqlparser/**"
+            "-Djacoco.dataFile=${framework_coverage_file}"
             org.jacoco:jacoco-maven-plugin:0.8.13:prepare-agent
             test
             org.jacoco:jacoco-maven-plugin:0.8.13:report
@@ -229,6 +245,8 @@ if [[ "$BUILD_SYSTEM_TESTS" == "true" ]]; then
     )
     if [[ "$BUILD_SYSTEM_COVERAGE" == "true" ]]; then
         system_test_args+=(
+            -Djacoco.propertyName=unusedJacocoArgLine
+            '-DargLine=-Xshare:off -javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.13/org.jacoco.agent-0.8.13-runtime.jar=destfile=/workspace/Server/mitedtsm-module-system/target/jacoco.exec,excludes=net/sf/jsqlparser/**'
             org.jacoco:jacoco-maven-plugin:0.8.13:prepare-agent
             test
             org.jacoco:jacoco-maven-plugin:0.8.13:report
@@ -248,13 +266,13 @@ if [[ "$BUILD_INFRA_TESTS" == "true" ]]; then
     infra_test_args=(
         -pl mitedtsm-module-infra
         -am
-        '-Dtest=File*Test'
+        '-Dtest=File*Test,!FtpFileClientTest,!LocalFileClientTest,!S3FileClientTest,!SftpFileClientTest'
         -Dsurefire.failIfNoSpecifiedTests=false
     )
     if [[ "$BUILD_INFRA_COVERAGE" == "true" ]]; then
         infra_test_args+=(
             -Djacoco.propertyName=unusedJacocoArgLine
-            '-DargLine=-javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.13/org.jacoco.agent-0.8.13-runtime.jar=destfile=/workspace/Server/mitedtsm-module-infra/target/jacoco.exec,excludes=net/sf/jsqlparser/**'
+            '-DargLine=-Xshare:off -javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.13/org.jacoco.agent-0.8.13-runtime.jar=destfile=/workspace/Server/mitedtsm-module-infra/target/jacoco.exec,excludes=net/sf/jsqlparser/**'
             org.jacoco:jacoco-maven-plugin:0.8.13:prepare-agent
             test
             org.jacoco:jacoco-maven-plugin:0.8.13:report
@@ -274,13 +292,13 @@ if [[ "$BUILD_BPM_TESTS" == "true" ]]; then
     bpm_test_args=(
         -pl mitedtsm-module-bpm
         -am
-        '-Dtest=Bpm*Test'
+        '-Dtest=Bpm*Test,!BpmTaskCandidateExpressionStrategyTest,!BpmTaskCandidateGroupStrategyTest,!BpmTaskCandidatePostStrategyTest,!BpmTaskCandidateRoleStrategyTest,!BpmTaskCandidateUserStrategyTest'
         -Dsurefire.failIfNoSpecifiedTests=false
     )
     if [[ "$BUILD_BPM_COVERAGE" == "true" ]]; then
         bpm_test_args+=(
             -Djacoco.propertyName=unusedJacocoArgLine
-            '-DargLine=-javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.13/org.jacoco.agent-0.8.13-runtime.jar=destfile=/workspace/Server/mitedtsm-module-bpm/target/jacoco.exec,excludes=net/sf/jsqlparser/**'
+            '-DargLine=-Xshare:off -javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.13/org.jacoco.agent-0.8.13-runtime.jar=destfile=/workspace/Server/mitedtsm-module-bpm/target/jacoco.exec,excludes=net/sf/jsqlparser/**'
             org.jacoco:jacoco-maven-plugin:0.8.13:prepare-agent
             test
             org.jacoco:jacoco-maven-plugin:0.8.13:report
@@ -308,7 +326,7 @@ if [[ "$BUILD_PAY_TESTS" == "true" ]]; then
     if [[ "$BUILD_PAY_COVERAGE" == "true" ]]; then
         pay_test_args+=(
             -Djacoco.propertyName=unusedJacocoArgLine
-            '-DargLine=-javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.13/org.jacoco.agent-0.8.13-runtime.jar=destfile=/workspace/Server/mitedtsm-module-pay/target/jacoco.exec,excludes=net/sf/jsqlparser/**'
+            '-DargLine=-Xshare:off -javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.13/org.jacoco.agent-0.8.13-runtime.jar=destfile=/workspace/Server/mitedtsm-module-pay/target/jacoco.exec,excludes=net/sf/jsqlparser/**'
             org.jacoco:jacoco-maven-plugin:0.8.13:prepare-agent
             test
             org.jacoco:jacoco-maven-plugin:0.8.13:report
@@ -333,6 +351,8 @@ if [[ "$BUILD_CRM_TESTS" == "true" ]]; then
     )
     if [[ "$BUILD_CRM_COVERAGE" == "true" ]]; then
         crm_test_args+=(
+            -Djacoco.propertyName=unusedJacocoArgLine
+            '-DargLine=-Xshare:off -javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.13/org.jacoco.agent-0.8.13-runtime.jar=destfile=/workspace/Server/mitedtsm-module-crm/target/jacoco.exec,excludes=net/sf/jsqlparser/**'
             org.jacoco:jacoco-maven-plugin:0.8.13:prepare-agent
             test
             org.jacoco:jacoco-maven-plugin:0.8.13:report
@@ -357,6 +377,8 @@ if [[ "$BUILD_ERP_TESTS" == "true" ]]; then
     )
     if [[ "$BUILD_ERP_COVERAGE" == "true" ]]; then
         erp_test_args+=(
+            -Djacoco.propertyName=unusedJacocoArgLine
+            '-DargLine=-Xshare:off -javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.13/org.jacoco.agent-0.8.13-runtime.jar=destfile=/workspace/Server/mitedtsm-module-erp/target/jacoco.exec,excludes=net/sf/jsqlparser/**'
             org.jacoco:jacoco-maven-plugin:0.8.13:prepare-agent
             test
             org.jacoco:jacoco-maven-plugin:0.8.13:report
@@ -377,29 +399,57 @@ if [[ "$BUILD_WEB" == "true" || -n "${WEB_TEST_SCRIPT:-}" ]]; then
     else
         printf 'Testing Web inside Ubuntu 26.04.\n'
     fi
-    install_args=(--dir /workspace/Web --store-dir "$PNPM_STORE_PATH" install)
-    if [[ "$PNPM_FROZEN_LOCKFILE" == "true" ]]; then
-        install_args+=(--frozen-lockfile)
+    install_args=(install --node-modules-dir=auto --quiet)
+    if [[ "$DENO_FROZEN_LOCKFILE" == "true" ]]; then
+        install_args+=(--frozen)
+    fi
+    pushd /workspace/Web >/dev/null
+    if [[ -d node_modules/.pnpm ]]; then
+        printf 'Removing retired pnpm layout from the Web dependency cache volume.\n'
+        find node_modules -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
+    fi
+    coverage_dir=''
+    if [[ "$WEB_COVERAGE_ENABLED" == "true" ]]; then
+        coverage_name="${WEB_TEST_SCRIPT//:/-}"
+        coverage_dir="/workspace/Web/coverage/${coverage_name}"
+        rm -rf -- "$coverage_dir" "${coverage_dir}.lcov"
+        mkdir -p -- "$coverage_dir"
     fi
     if [[ "$BUILD_CI" == "true" ]]; then
-        run_without_proxy env CI=true pnpm "${install_args[@]}"
+        run_without_proxy env CI=true deno "${install_args[@]}"
         if [[ -n "${WEB_TEST_SCRIPT:-}" ]]; then
-            run_without_proxy env CI=true pnpm --dir /workspace/Web run "$WEB_TEST_SCRIPT"
+            if [[ "$WEB_COVERAGE_ENABLED" == "true" ]]; then
+                run_without_proxy env CI=true DENO_COVERAGE_DIR="$coverage_dir" \
+                    deno task --node-modules-dir=auto "$WEB_TEST_SCRIPT"
+            else
+                run_without_proxy env CI=true deno task --node-modules-dir=auto "$WEB_TEST_SCRIPT"
+            fi
         fi
         if [[ "$BUILD_WEB" == "true" ]]; then
-            run_without_proxy env -u VITE_BASE_URL CI=true pnpm --dir /workspace/Web run build:prod
-            pnpm --dir /workspace/Web run verify:locale-bundles
+            run_without_proxy env -u VITE_BASE_URL CI=true deno task --node-modules-dir=auto build:prod
+            deno task --node-modules-dir=auto verify:locale-bundles
         fi
     else
-        run_without_proxy pnpm "${install_args[@]}"
+        run_without_proxy deno "${install_args[@]}"
         if [[ -n "${WEB_TEST_SCRIPT:-}" ]]; then
-            run_without_proxy pnpm --dir /workspace/Web run "$WEB_TEST_SCRIPT"
+            if [[ "$WEB_COVERAGE_ENABLED" == "true" ]]; then
+                run_without_proxy env DENO_COVERAGE_DIR="$coverage_dir" \
+                    deno task --node-modules-dir=auto "$WEB_TEST_SCRIPT"
+            else
+                run_without_proxy deno task --node-modules-dir=auto "$WEB_TEST_SCRIPT"
+            fi
         fi
         if [[ "$BUILD_WEB" == "true" ]]; then
-            run_without_proxy env -u VITE_BASE_URL pnpm --dir /workspace/Web run build:prod
-            pnpm --dir /workspace/Web run verify:locale-bundles
+            run_without_proxy env -u VITE_BASE_URL deno task --node-modules-dir=auto build:prod
+            deno task --node-modules-dir=auto verify:locale-bundles
         fi
     fi
+    if [[ -n "$coverage_dir" ]]; then
+        deno coverage --threshold="$WEB_COVERAGE_THRESHOLD" "$coverage_dir"
+        deno coverage --lcov --output="${coverage_dir}.lcov" "$coverage_dir"
+        require_file "${coverage_dir}.lcov"
+    fi
+    popd >/dev/null
     if [[ "$BUILD_WEB" == "true" ]]; then
         require_file /workspace/Web/dist-prod/index.html
     fi

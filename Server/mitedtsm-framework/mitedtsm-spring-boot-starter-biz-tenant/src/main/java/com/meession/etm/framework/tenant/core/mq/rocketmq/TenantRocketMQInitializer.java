@@ -1,7 +1,6 @@
 package com.meession.etm.framework.tenant.core.mq.rocketmq;
 
 import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
-import org.apache.rocketmq.client.impl.consumer.DefaultMQPushConsumerImpl;
 import org.apache.rocketmq.client.impl.producer.DefaultMQProducerImpl;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
@@ -29,6 +28,7 @@ public class TenantRocketMQInitializer implements BeanPostProcessor {
         return bean;
     }
 
+    @SuppressWarnings("deprecation") // RocketMQ exposes producer send hooks only through this legacy accessor.
     private void initTenantProducer(DefaultMQProducer producer) {
         if (producer == null) {
             return;
@@ -44,11 +44,7 @@ public class TenantRocketMQInitializer implements BeanPostProcessor {
         if (consumer == null) {
             return;
         }
-        DefaultMQPushConsumerImpl consumerImpl = consumer.getDefaultMQPushConsumerImpl();
-        if (consumerImpl == null) {
-            return;
-        }
-        consumerImpl.registerConsumeMessageHook(new TenantRocketMQConsumeMessageHook());
+        consumer.registerConsumeMessageHook(new TenantRocketMQConsumeMessageHook());
     }
 
 }

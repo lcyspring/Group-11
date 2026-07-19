@@ -11,4 +11,16 @@
 本轮文档与技术栈清理记录：
 [DOC-TECH-BUG-001](logs/DOC-TECH-BUG-001-stale-configuration-and-toolchain-guidance.md)。
 
+首页公告跳转 404 修复记录：
+[CRM-HOME-BUG-002](logs/CRM-HOME-BUG-002-notice-navigation-404.md)。
+
+Deno/Vite 8 工具链迁移缺陷：
+[WEB-BUILD-BUG-003](logs/WEB-BUILD-BUG-003-node-pnpm-toolchain-drift.md)、
+[004](logs/WEB-BUILD-BUG-004-deno-lifecycle-node-assumption.md)、
+[005](logs/WEB-BUILD-BUG-005-vite8-legacy-build-contracts.md)、
+[006](logs/WEB-BUILD-BUG-006-vite8-locale-bundle-verifier.md)、
+[007](logs/WEB-BUILD-BUG-007-static-check-false-coverage.md)、
+[008](logs/WEB-BUILD-BUG-008-retired-pnpm-cache-residue.md)、
+[009](logs/WEB-BUILD-BUG-009-iconify-runtime-remote-fallback.md)。
+
 新增缺陷必须分配稳定编号，修复后记录自动化和人工回归结果；不能只在总表写“已关闭”而没有证据。

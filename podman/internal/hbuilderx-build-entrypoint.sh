@@ -43,7 +43,7 @@ esac
     printf 'Mall H5 project directory is missing: %s\n' "$PROJECT_DIR" >&2
     exit 1
 }
-[[ -d "$PROJECT_DIR/node_modules/.pnpm" ]] || {
+[[ -f "$PROJECT_DIR/node_modules/dayjs/package.json" ]] || {
     printf 'Mall dependency volume is missing or incomplete: %s/node_modules\n' "$PROJECT_DIR" >&2
     printf 'Dependencies must be installed by the runtime dependency container.\n' >&2
     exit 1
@@ -56,6 +56,9 @@ esac
 export HOME=/tmp/hbuilderx-home
 export XDG_CACHE_HOME="$HOME/.cache"
 export NODE_ENV=production
+# Browser compatibility data is part of the pinned HBuilderX toolchain image.
+# It is upgraded by publishing a new toolchain image, never by host-side npx.
+export BROWSERSLIST_IGNORE_OLD_DATA=true
 export UNI_PLATFORM=h5
 export UNI_INPUT_DIR="$PROJECT_DIR"
 export UNI_OUTPUT_DIR="$OUTPUT_DIR"

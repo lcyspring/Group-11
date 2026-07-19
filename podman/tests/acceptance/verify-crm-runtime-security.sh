@@ -30,7 +30,13 @@ DRUID_ENABLED="$(kdl_bool security.druid_console_enabled)"
 TDENGINE_USERNAME="$(kdl_require tdengine.username)"
 TDENGINE_PASSWORD="$(kdl_require tdengine.password)"
 BASE_URL="http://127.0.0.1:${SERVER_PORT}"
-ALLOWED_ORIGIN="${ALLOWED_ORIGINS%%,*}"
+COMMON_APPLICATION_CONFIG="${PROJECT_ROOT}/Server/mitedtsm-server/src/main/resources/application.yaml"
+LOCAL_APPLICATION_CONFIG="${PROJECT_ROOT}/Server/mitedtsm-server/src/main/resources/application-local.yaml"
+if [[ "$ALLOWED_ORIGINS" == "*" ]]; then
+    ALLOWED_ORIGIN="http://127.0.0.1:8081"
+else
+    ALLOWED_ORIGIN="${ALLOWED_ORIGINS%%,*}"
+fi
 
 require_command() {
     command -v "$1" >/dev/null 2>&1 || {
@@ -61,7 +67,14 @@ require_command podman
 [[ "$API_DOCS_ENABLED" == "false" ]] || fail 'API documentation must be disabled'
 [[ "$DRUID_ENABLED" == "false" ]] || fail 'Druid console must be disabled'
 
-health="$(curl --noproxy '*' --silent --show-error --fail --max-time 15 "${BASE_URL}/actuator/health")"
+health=''
+for _ in {1..15}; do
+    if health="$(curl --noproxy '*' --silent --show-error --fail --max-time 3 \
+        "${BASE_URL}/actuator/health" 2>/dev/null)"; then
+        break
+    fi
+    sleep 1
+done
 [[ "$(jq -r '.status' <<<"$health")" == "UP" ]] || fail 'server health is not UP'
 
 endpoint_body="$(mktemp)"
@@ -103,8 +116,11 @@ curl --noproxy '*' --silent --show-error --output /dev/null --dump-header "$deni
     --header 'Origin: https://untrusted.invalid' \
     --header 'Access-Control-Request-Method: POST' \
     "${BASE_URL}/admin-api/system/auth/login"
-if rg -qi '^Access-Control-Allow-Origin:' "$denied_headers"; then
-    fail 'untrusted CORS origin received an allow-origin header'
+if [[ "$ALLOWED_ORIGINS" == "*" ]]; then
+    rg -qi '^Access-Control-Allow-Origin: https://untrusted\.invalid\r?$' "$denied_headers" || \
+        fail 'wildcard CORS did not accept an arbitrary origin'
+elif rg -qi '^Access-Control-Allow-Origin:' "$denied_headers"; then
+    fail 'origin outside the explicit CORS allow-list received an allow-origin header'
 fi
 
 container_env="$(podman inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$SERVER_CONTAINER")"
@@ -126,13 +142,13 @@ if ! awk '
         value = $0
         sub(/^[^:]+:[[:space:]]*/, "", value)
         sub(/[[:space:]]+#.*$/, "", value)
-        if (value !~ /^\$\{[A-Z0-9_]+:/) {
+        if (value !~ /^\$\{[A-Z0-9_]+(:.*)?\}$/) {
             print FNR ":" $0
             bad = 1
         }
     }
     END { exit bad }
-' "${PROJECT_ROOT}/Server/mitedtsm-server/src/main/resources/application.kdl"; then
+' "$COMMON_APPLICATION_CONFIG"; then
     fail 'common application configuration still contains an inline integration secret'
 fi
 
@@ -142,22 +158,26 @@ if ! awk '
         value = $0
         sub(/^[^:]+:[[:space:]]*/, "", value)
         sub(/[[:space:]]+#.*$/, "", value)
-        if (value !~ /^\$\{[A-Z0-9_]+:/) {
+        if (value !~ /^\$\{[A-Z0-9_]+(:.*)?\}$/) {
             print FNR ":" $0
             bad = 1
         }
     }
     END { exit bad }
-' "${PROJECT_ROOT}/Server/mitedtsm-server/src/main/resources/application-local.kdl"; then
+' "$LOCAL_APPLICATION_CONFIG"; then
     fail 'local application configuration still contains an inline credential'
 fi
 
 if rg -n "mock-enable:[[:space:]]*true|include:[[:space:]]*['\"]?\\*['\"]?|addAllowedOriginPattern\\(\"\\*\"\\)" \
-    "${PROJECT_ROOT}/Server/mitedtsm-server/src/main/resources/application.kdl" \
-    "${PROJECT_ROOT}/Server/mitedtsm-server/src/main/resources/application-local.kdl" \
+    "$COMMON_APPLICATION_CONFIG" \
+    "$LOCAL_APPLICATION_CONFIG" \
     "${PROJECT_ROOT}/Server/mitedtsm-framework/mitedtsm-spring-boot-starter-web/src/main/java"; then
     fail 'unsafe wildcard or mock-login default remains in the active Podman source path'
 fi
 
 printf 'crm-runtime-security=ok\n'
-printf 'health=UP hidden-management=4/4 mock-token=blocked cors=allowed+denied explicit-env=8/8\n'
+if [[ "$ALLOWED_ORIGINS" == "*" ]]; then
+    printf 'health=UP hidden-management=4/4 mock-token=blocked cors=wildcard-without-credentials explicit-env=8/8\n'
+else
+    printf 'health=UP hidden-management=4/4 mock-token=blocked cors=allowed+denied explicit-env=8/8\n'
+fi

@@ -15,7 +15,7 @@ import java.util.List;
  *
  * @author owen
  */
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface DiyTemplateConvert {
 
     DiyTemplateConvert INSTANCE = Mappers.getMapper(DiyTemplateConvert.class);

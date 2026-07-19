@@ -13,7 +13,7 @@ import org.mapstruct.factory.Mappers;
 
 import java.io.File;
 
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface MpMaterialConvert {
 
     MpMaterialConvert INSTANCE = Mappers.getMapper(MpMaterialConvert.class);

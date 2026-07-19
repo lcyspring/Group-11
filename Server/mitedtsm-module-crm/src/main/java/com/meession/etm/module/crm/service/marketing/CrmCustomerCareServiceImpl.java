@@ -111,11 +111,11 @@ public class CrmCustomerCareServiceImpl implements CrmCustomerCareService {
         Set<Long> planIds = ids(page.getList(), CrmCustomerCareRecordDO::getPlanId);
         Set<Long> customerIds = ids(page.getList(), CrmCustomerCareRecordDO::getCustomerId);
         Set<Long> contactIds = ids(page.getList(), CrmCustomerCareRecordDO::getContactId);
-        Map<Long, String> plans = names(planIds.isEmpty() ? List.of() : planMapper.selectBatchIds(planIds),
+        Map<Long, String> plans = names(planIds.isEmpty() ? List.of() : planMapper.selectByIds(planIds),
                 CrmCustomerCarePlanDO::getId, CrmCustomerCarePlanDO::getName);
-        Map<Long, String> customers = names(customerIds.isEmpty() ? List.of() : customerMapper.selectBatchIds(customerIds),
+        Map<Long, String> customers = names(customerIds.isEmpty() ? List.of() : customerMapper.selectByIds(customerIds),
                 CrmCustomerDO::getId, CrmCustomerDO::getName);
-        Map<Long, String> contacts = names(contactIds.isEmpty() ? List.of() : contactMapper.selectBatchIds(contactIds),
+        Map<Long, String> contacts = names(contactIds.isEmpty() ? List.of() : contactMapper.selectByIds(contactIds),
                 CrmContactDO::getId, CrmContactDO::getName);
         responses.forEach(item -> item.setPlanName(plans.get(item.getPlanId()))
                 .setCustomerName(customers.get(item.getCustomerId()))
@@ -143,7 +143,7 @@ public class CrmCustomerCareServiceImpl implements CrmCustomerCareService {
         PageResult<CrmContactDO> page = contactMapper.selectUpcomingBirthdayPage(request, today,
                 scope.all(), scope.ownerUserIds());
         Set<Long> customerIds = ids(page.getList(), CrmContactDO::getCustomerId);
-        Map<Long, String> customers = names(customerIds.isEmpty() ? List.of() : customerMapper.selectBatchIds(customerIds),
+        Map<Long, String> customers = names(customerIds.isEmpty() ? List.of() : customerMapper.selectByIds(customerIds),
                 CrmCustomerDO::getId, CrmCustomerDO::getName);
         List<CrmCustomerBirthdayRespVO> list = page.getList().stream().map(contact -> {
             LocalDate next = nextBirthday(contact.getBirthday(), today);

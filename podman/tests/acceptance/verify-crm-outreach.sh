@@ -25,7 +25,7 @@ ALTERNATE_CREATOR_ID="$(kdl_positive_integer acceptance.alternate_creator_id)"
 [[ "$BASE_URL" =~ ^https?://[^[:space:]]+$ ]] || exit 2
 
 mysql_exec() {
-    podman exec "$MYSQL_CONTAINER" mysql "-u${MYSQL_USER}" "-p${MYSQL_PASSWORD}" \
+    podman exec --env "MYSQL_PWD=${MYSQL_PASSWORD}" "$MYSQL_CONTAINER" mysql "-u${MYSQL_USER}" \
         "--database=${MYSQL_DATABASE}" --default-character-set=utf8mb4 -Nse "$1"
 }
 

@@ -11,6 +11,9 @@ const origins = parseLegacyMediaOrigins(
 )
 
 test('blocks only explicitly configured retired media origins', () => {
+  assert.deepEqual(parseLegacyMediaOrigins(' ,not-a-valid-origin'), [])
+  assert.deepEqual(parseLegacyMediaOrigins(), [])
+  assert.equal(normalizeLegacyMediaUrl(null, origins), '')
   assert.equal(
     normalizeLegacyMediaUrl(
       'http://test.yudao.iocoder.cn/user/avatar/20251220/blob_1766215463801.jpg',

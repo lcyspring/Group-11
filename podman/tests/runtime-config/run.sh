@@ -64,16 +64,69 @@ bash -n "${PODMAN_DIR}/internal/compile-standard.sh"
 bash -n "${PODMAN_DIR}/internal/hbuilderx-build-entrypoint.sh"
 bash -n "${PODMAN_DIR}/internal/mall-dependencies-entrypoint.sh"
 bash -n "${PODMAN_DIR}/internal/ubuntu-build-entrypoint.sh"
+rg -q 'Removing retired pnpm layout from the Web dependency cache volume' \
+    "${PODMAN_DIR}/internal/ubuntu-build-entrypoint.sh" || \
+    fail 'Web dependency entrypoint must remove a detected retired pnpm cache layout'
+rg -q 'Removing retired pnpm layout from the Mall dependency cache volume' \
+    "${PODMAN_DIR}/internal/mall-dependencies-entrypoint.sh" || \
+    fail 'Mall dependency entrypoint must remove a detected retired pnpm cache layout'
+for dependency_entrypoint in \
+    "${PODMAN_DIR}/internal/ubuntu-build-entrypoint.sh" \
+    "${PODMAN_DIR}/internal/mall-dependencies-entrypoint.sh"; do
+    rg -q 'install --node-modules-dir=auto --quiet' "$dependency_entrypoint" || \
+        fail "Deno dependency installation must use deterministic quiet output: $dependency_entrypoint"
+done
 rg -q 'BUILD_PAY_TESTS' "${PODMAN_DIR}/internal/compile-standard.sh" || \
     fail 'compile-standard.sh must pass the explicit Pay test selector'
 rg -q 'mitedtsm-module-pay/target/site/jacoco/jacoco.csv' \
     "${PODMAN_DIR}/internal/ubuntu-build-entrypoint.sh" || \
     fail 'Ubuntu entrypoint must preserve Pay JaCoCo evidence'
+for project_dir in "$WEB_DIR" "$MALL_DIR"; do
+    [[ -s "${project_dir}/deno.json" && -s "${project_dir}/deno.lock" ]] || \
+        fail "Deno manifest and frozen lockfile are required: ${project_dir#${PODMAN_DIR}/../}"
+    [[ ! -e "${project_dir}/pnpm-lock.yaml" \
+        && ! -e "${project_dir}/pnpm-workspace.yaml" \
+        && ! -e "${project_dir}/package-lock.json" \
+        && ! -e "${project_dir}/yarn.lock" ]] || \
+        fail "retired Node package-manager lock or workspace file remains: ${project_dir#${PODMAN_DIR}/../}"
+done
+[[ -s "${WEB_DIR}/src/components/Icon/src/offline-icon-collections.generated.json" ]] || \
+    fail 'committed offline Iconify snapshot is required'
+rg -q 'verify:offline-icons' "${WEB_DIR}/package.json" || \
+    fail 'Web build scripts must verify the offline icon snapshot'
+if rg -q '@iconify/iconify' "${WEB_DIR}/package.json" "${WEB_DIR}/src/components/Icon/src/Icon.vue"; then
+    fail 'Web must not restore the Iconify browser network runtime'
+fi
+rg -q '@iconify/utils' "${WEB_DIR}/package.json" || \
+    fail 'Web must render the committed icon snapshot with pure Iconify utilities'
+rg -q 'rolldownOptions' "${WEB_DIR}/vite.config.mts" || \
+    fail 'Vite 8 must use the native Rolldown options key'
+rg -q 'pluginTimings: false' "${WEB_DIR}/vite.config.mts" || \
+    fail 'Vite plugin timing diagnostics must use an explicit zero-warning policy'
+if rg -n 'pnpm|pnpm_store|pnpm-store' "${PODMAN_DIR}/config" --glob '*.kdl'; then
+    fail 'current KDL configurations must not contain retired pnpm fields or volumes'
+fi
+if rg -n '(^|[[:space:]])(nodejs|node|npm|pnpm)([[:space:]]|$)' \
+    "${PODMAN_DIR}/Containerfile.build-ubuntu"; then
+    fail 'standard Ubuntu build image must not install Node, npm, or pnpm'
+fi
+rg -q '^ARG DENO_BIN_IMAGE=.*:bin-[0-9]+\.[0-9]+\.[0-9]+@sha256:[0-9a-f]{64}$' \
+    "${PODMAN_DIR}/Containerfile.build-ubuntu" || \
+    fail 'standard build image must pin the official Deno binary image by version and digest'
+if jq -er '.scripts | to_entries[] | select(.value | test("(^|[;&|[:space:]])(pnpm|npx|node)([;&|[:space:]]|$)"))' \
+    "${WEB_DIR}/package.json" "${MALL_DIR}/package.json" >/dev/null; then
+    fail 'project package scripts must not invoke retired pnpm, npx, or Node compatibility commands'
+fi
 [[ -s "${WEB_DIR}/vite.config.mts" && ! -e "${WEB_DIR}/vite.config.ts" ]] || \
     fail 'Web Vite configuration must use the native ESM .mts entry'
 if rg -n '(^|[^.[:alnum:]_])(map-merge|map-get|map-has-key|type-of|desaturate|darken|mix|nth|append|zip)\(' \
     "${MALL_DIR}/sheep/scss" --glob '*.scss'; then
     fail 'Mall-owned Sass must not reintroduce deprecated global built-in functions'
+fi
+if rg -n '@import[[:space:]]' \
+    "${MALL_DIR}/uni.scss" "${MALL_DIR}/App.vue" "${MALL_DIR}/sheep" \
+    --glob '*.scss' --glob '*.vue'; then
+    fail 'Mall-owned Sass must use the module system instead of deprecated @import rules'
 fi
 bash -n "${PODMAN_DIR}/internal/provision-database.sh"
 bash -n "${PODMAN_DIR}/internal/provision-marketing-provider.sh"
@@ -134,6 +187,17 @@ while IFS= read -r build_config; do
         fail "invalid build.include_targets: ${build_config}"
     [[ "$exclude_targets" =~ ^(all|none|(server|init-service|web|mall-h5)(,(server|init-service|web|mall-h5))*)$ ]] || \
         fail "invalid build.exclude_targets: ${build_config}"
+    if [[ -n "$(kdl_get web.test_script)" || -n "$(kdl_get web.coverage_enabled)" ]]; then
+        coverage_enabled="$(kdl_require web.coverage_enabled)"
+        [[ "$coverage_enabled" == "true" || "$coverage_enabled" == "false" ]] || \
+            fail "web.coverage_enabled must be explicit boolean: ${build_config}"
+        coverage_threshold="$(kdl_require web.coverage_threshold)"
+        [[ "$coverage_threshold" =~ ^[0-9]+$ && "$coverage_threshold" -le 100 ]] || \
+            fail "web.coverage_threshold must be an integer from 0 to 100: ${build_config}"
+        if [[ "$coverage_enabled" == "true" && -z "$(kdl_get web.test_script)" ]]; then
+            fail "web.coverage_enabled requires web.test_script: ${build_config}"
+        fi
+    fi
 done < <(rg -l '^  (standard|hbuilderx) "ghcr.io/elel-code/group-11-(build|hbuilderx)-ubuntu:' \
     "${PODMAN_DIR}/config" --glob '*.kdl')
 if rg -q '^  (engine|server|init_service|web) ("(standard|hbuilderx)"|#true|#false)$' \

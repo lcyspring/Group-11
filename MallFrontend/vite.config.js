@@ -19,6 +19,22 @@ export default (command, mode) => {
 			}
 		},
 		envPrefix: "SHOPRO_",
+		css: {
+			preprocessorOptions: {
+				scss: {
+					// HBuilderX 5.05 still invokes Dart Sass through its legacy JS API.
+					// Project-owned styles use the module system and are guarded below.
+					// DCloud's bundled uni_modules and compiler still use these retired
+					// APIs, so acknowledge only the upstream transition categories.
+					silenceDeprecations: [
+						'legacy-js-api',
+						'import',
+						'global-builtin',
+						'color-functions',
+					],
+				},
+			},
+		},
 		plugins: [
 			uni(),
 			// viteCompression({

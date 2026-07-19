@@ -25,7 +25,6 @@ dist-*
 
 # Dependencies
 node_modules/
-.pnpm-store/
 unpackage/
 backups/
 
@@ -116,10 +115,3 @@ podman/diagnostics/
 # Others
 *.swp
 *.xml.versionsBackup
-yarn.lock
-pnpm-lock.yaml
-package-lock.json
-
-# Pin the management Web dependency graph so a fresh clone builds the same
-# assets on every machine.
-!Web/pnpm-lock.yaml

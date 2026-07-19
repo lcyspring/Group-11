@@ -4,7 +4,7 @@
 
 ## 当前基线
 
-更新日期：2026-07-18
+更新日期：2026-07-19
 
 - Ubuntu 26.04 容器 CRM 自动化：535/535，失败 0、错误 0、跳过 0。
 - CRM JaCoCo：指令 50.23%、分支 43.17%、行 48.95%、方法 38.25%。
@@ -15,6 +15,7 @@
 - Ubuntu 26.04 BPM 自动化：54 个，48 通过、6 跳过、失败 0；行覆盖率 8.58%。
 - Ubuntu 26.04 Pay 自动化：167 个，132 通过、35 个外部集成测试跳过、失败 0、错误 0。
 - Ubuntu 26.04 容器 CRM 前端：统计纯函数与 SFC 契约 11/11，行 95.49%、分支 95.83%、函数 100%；发票 3/3。
+- Deno/Vite 8 构建门禁：Web 5/5 且行/分支/函数 100%，production build 6807 modules、warning 0；Mall 10/10。
 - 原始报告：`Server/mitedtsm-module-crm/target/site/jacoco/`，属于构建产物，不提交。
 
 ## 目录索引
@@ -117,6 +118,7 @@
 | `runtime-base-image-pinning/` | Temurin/Nginx/MySQL/Redis/RabbitMQ/TDengine 精确版本与 digest 门禁 |
 | `deterministic-demo-data/` | 固定 seed 演示数据生成、引用/状态校验、cleanup 和部署隔离 |
 | `dataset-mode-contract/` | preserve/insert/replace 集中模式、manifest 顺序门禁和部署回归 |
+| `frontend-deno-vite8-migration/` | Deno 2.9.3、Vite 8、显式覆盖率、pnpm 缓存退休和 Web/Mall 容器构建 |
 
 运行入口统一为：
 

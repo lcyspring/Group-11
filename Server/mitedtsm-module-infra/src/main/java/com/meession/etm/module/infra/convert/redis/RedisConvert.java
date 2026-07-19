@@ -8,7 +8,7 @@ import org.mapstruct.factory.Mappers;
 import java.util.ArrayList;
 import java.util.Properties;
 
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface RedisConvert {
 
     RedisConvert INSTANCE = Mappers.getMapper(RedisConvert.class);

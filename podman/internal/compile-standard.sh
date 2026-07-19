@@ -41,9 +41,10 @@ normalize_bool() {
 }
 
 BASE_IMAGE="$(config_value image.base docker.io/library/ubuntu:26.04)"
-BUILD_IMAGE="$(config_value image.standard ghcr.io/elel-code/group-11-build-ubuntu:26.04)"
+BUILD_IMAGE="$(config_value image.standard ghcr.io/elel-code/group-11-build-ubuntu:26.04-deno-2.9.3)"
 REBUILD_IMAGE="$(normalize_bool "$(config_value image.rebuild false)")"
-PNPM_VERSION="$(config_value toolchain.pnpm_version 11.3.0)"
+DENO_VERSION="$(config_value toolchain.deno_version 2.9.3)"
+DENO_BINARY_IMAGE="$(config_value toolchain.deno_binary_image 'docker.io/denoland/deno:bin-2.9.3@sha256:b35d3898bc8b5e2ebcfc7c760578f635f0162cda02e4f8359056c44ea3cb9670')"
 BUILD_SERVER="$(normalize_bool "${COMPILE_BUILD_SERVER:?compile.sh must select the Server target}")"
 BUILD_INIT_SERVICE="$(normalize_bool "${COMPILE_BUILD_INIT_SERVICE:?compile.sh must select the InitService target}")"
 BUILD_WEB="$(normalize_bool "${COMPILE_BUILD_WEB:?compile.sh must select the Web target}")"
@@ -73,19 +74,29 @@ BUILD_CI="$(normalize_bool "$(config_value build.ci true)")"
 BAIDU_ANALYTICS_CODE="$(config_value web.baidu_analytics_code '')"
 WEB_LEGACY_MEDIA_ORIGINS="$(config_value web.legacy_media_origins '')"
 WEB_TEST_SCRIPT="$(config_value web.test_script '')"
+WEB_COVERAGE_ENABLED="$(normalize_bool "$(config_value web.coverage_enabled false)")"
+WEB_COVERAGE_THRESHOLD="$(config_value web.coverage_threshold 90)"
 MAVEN_THREADS="$(config_value build.maven_threads 1C)"
-PNPM_FROZEN_LOCKFILE="$(normalize_bool "$(config_value build.pnpm_frozen_lockfile true)")"
+DENO_FROZEN_LOCKFILE="$(normalize_bool "$(config_value build.deno_frozen_lockfile true)")"
 USE_HOST_PROXY="$(normalize_bool "$(config_value network.use_host_proxy false)")"
 MAVEN_VOLUME="$(config_value cache.maven_volume mitedtsm-build-maven-cache)"
-PNPM_VOLUME="$(config_value cache.pnpm_store_volume mitedtsm-build-pnpm-store)"
-PNPM_STORE_PATH="$(config_value cache.pnpm_store_path /pnpm-store)"
+DENO_VOLUME="$(config_value cache.deno_cache_volume mitedtsm-build-deno-cache)"
+DENO_CACHE_PATH="$(config_value cache.deno_cache_path /deno-cache)"
 WEB_NODE_MODULES_VOLUME="$(config_value cache.web_node_modules_volume mitedtsm-build-web-node-modules)"
 MEMORY="$(config_value runtime.memory 8g)"
 CPUS="$(config_value runtime.cpus 4)"
 HOST_PROXY_NAME="host.containers.internal"
 
-[[ "$PNPM_STORE_PATH" == /* && "$PNPM_STORE_PATH" != "/" && "$PNPM_STORE_PATH" != /workspace* ]] || {
-    printf 'cache.pnpm_store_path must be an absolute container path outside /workspace.\n' >&2
+[[ "$DENO_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+    printf 'toolchain.deno_version must be a semantic version.\n' >&2
+    exit 2
+}
+[[ "$DENO_BINARY_IMAGE" == *":bin-${DENO_VERSION}@sha256:"* ]] || {
+    printf 'toolchain.deno_binary_image must match deno_version and include a sha256 digest.\n' >&2
+    exit 2
+}
+[[ "$DENO_CACHE_PATH" == /* && "$DENO_CACHE_PATH" != "/" && "$DENO_CACHE_PATH" != /workspace* ]] || {
+    printf 'cache.deno_cache_path must be an absolute container path outside /workspace.\n' >&2
     exit 2
 }
 
@@ -109,6 +120,14 @@ if [[ -n "$WEB_TEST_SCRIPT" && ! "$WEB_TEST_SCRIPT" =~ ^[A-Za-z0-9:_-]+$ ]]; the
     printf 'web.test_script contains unsupported characters.\n' >&2
     exit 2
 fi
+if [[ "$WEB_COVERAGE_ENABLED" == "true" && -z "$WEB_TEST_SCRIPT" ]]; then
+    printf 'web.coverage_enabled requires web.test_script to be set.\n' >&2
+    exit 2
+fi
+[[ "$WEB_COVERAGE_THRESHOLD" =~ ^[0-9]+$ && "$WEB_COVERAGE_THRESHOLD" -le 100 ]] || {
+    printf 'web.coverage_threshold must be an integer from 0 to 100.\n' >&2
+    exit 2
+}
 for test_pair in \
     'CRM:BUILD_CRM_TESTS:BUILD_CRM_COVERAGE' \
     'ERP:BUILD_ERP_TESTS:BUILD_ERP_COVERAGE' \
@@ -124,7 +143,7 @@ for test_pair in \
         exit 2
     fi
 done
-if [[ "$BUILD_PAY_TESTS" == "true" && ! "$BUILD_PAY_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?,]+$ ]]; then
+if [[ "$BUILD_PAY_TESTS" == "true" && ! "$BUILD_PAY_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?!,]+$ ]]; then
     printf 'build.pay_test_pattern is required for Pay tests and contains unsupported characters.\n' >&2
     exit 2
 fi
@@ -141,7 +160,7 @@ if [[ "$BUILD_FRAMEWORK_TESTS" == "true" &&
     printf 'build.framework_modules must be a comma-separated Maven module path list.\n' >&2
     exit 2
 fi
-if [[ "$BUILD_SYSTEM_TESTS" == "true" && ! "$BUILD_SYSTEM_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?,]+$ ]]; then
+if [[ "$BUILD_SYSTEM_TESTS" == "true" && ! "$BUILD_SYSTEM_TEST_PATTERN" =~ ^[A-Za-z0-9_.*?!,]+$ ]]; then
     printf 'build.system_test_pattern is required for system tests and contains unsupported characters.\n' >&2
     exit 2
 fi
@@ -156,6 +175,10 @@ container_proxy_url() {
 podman_proxy_args=(--http-proxy=false)
 if [[ "$USE_HOST_PROXY" == "true" ]]; then
     podman_proxy_args=()
+fi
+build_network_args=()
+if [[ "$USE_HOST_PROXY" == "true" ]]; then
+    build_network_args=(--network=host)
 fi
 
 command -v podman >/dev/null 2>&1 || {
@@ -173,9 +196,9 @@ if [[ "$REBUILD_IMAGE" == "true" ]]; then
         exit 1
     }
     printf 'Building dedicated Ubuntu toolchain image: %s\n' "$BUILD_IMAGE"
-    podman build "${podman_proxy_args[@]}" --pull=never \
+    podman build "${podman_proxy_args[@]}" "${build_network_args[@]}" --pull=never \
         --build-arg "UBUNTU_BASE_IMAGE=$BASE_IMAGE" \
-        --build-arg "PNPM_VERSION=$PNPM_VERSION" \
+        --build-arg "DENO_BIN_IMAGE=$DENO_BINARY_IMAGE" \
         --tag "$BUILD_IMAGE" \
         --file "$SCRIPT_DIR/Containerfile.build-ubuntu" \
         "$PROJECT_ROOT"
@@ -191,7 +214,7 @@ elif ! podman image exists "$BUILD_IMAGE"; then
 fi
 
 podman volume inspect "$MAVEN_VOLUME" >/dev/null 2>&1 || podman volume create "$MAVEN_VOLUME" >/dev/null
-podman volume inspect "$PNPM_VOLUME" >/dev/null 2>&1 || podman volume create "$PNPM_VOLUME" >/dev/null
+podman volume inspect "$DENO_VOLUME" >/dev/null 2>&1 || podman volume create "$DENO_VOLUME" >/dev/null
 podman volume inspect "$WEB_NODE_MODULES_VOLUME" >/dev/null 2>&1 || podman volume create "$WEB_NODE_MODULES_VOLUME" >/dev/null
 
 proxy_args=()
@@ -209,7 +232,7 @@ podman run "${podman_proxy_args[@]}" --rm --pull=never \
     --cpus "$CPUS" \
     --volume "$PROJECT_ROOT:/workspace:rw" \
     --volume "$MAVEN_VOLUME:/root/.m2:rw" \
-    --volume "$PNPM_VOLUME:$PNPM_STORE_PATH:rw" \
+    --volume "$DENO_VOLUME:$DENO_CACHE_PATH:rw" \
     --volume "$WEB_NODE_MODULES_VOLUME:/workspace/Web/node_modules:rw" \
     --env "BUILD_SERVER=$BUILD_SERVER" \
     --env "BUILD_INIT_SERVICE=$BUILD_INIT_SERVICE" \
@@ -238,12 +261,14 @@ podman run "${podman_proxy_args[@]}" --rm --pull=never \
     --env "BUILD_SYSTEM_TEST_PATTERN=$BUILD_SYSTEM_TEST_PATTERN" \
     --env "BUILD_CI=$BUILD_CI" \
     --env "BUILD_MAVEN_THREADS=$MAVEN_THREADS" \
-    --env "PNPM_FROZEN_LOCKFILE=$PNPM_FROZEN_LOCKFILE" \
-    --env "PNPM_STORE_PATH=$PNPM_STORE_PATH" \
+    --env "DENO_FROZEN_LOCKFILE=$DENO_FROZEN_LOCKFILE" \
+    --env "DENO_DIR=$DENO_CACHE_PATH" \
     --env "BUILD_USE_HOST_PROXY=$USE_HOST_PROXY" \
     --env "VITE_APP_BAIDU_CODE=$BAIDU_ANALYTICS_CODE" \
     --env "VITE_APP_LEGACY_MEDIA_ORIGINS=$WEB_LEGACY_MEDIA_ORIGINS" \
     --env "WEB_TEST_SCRIPT=$WEB_TEST_SCRIPT" \
+    --env "WEB_COVERAGE_ENABLED=$WEB_COVERAGE_ENABLED" \
+    --env "WEB_COVERAGE_THRESHOLD=$WEB_COVERAGE_THRESHOLD" \
     "${proxy_args[@]}" \
     --entrypoint /bin/bash \
     "$BUILD_IMAGE" \

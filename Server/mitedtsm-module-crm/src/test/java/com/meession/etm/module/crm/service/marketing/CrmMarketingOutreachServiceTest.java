@@ -460,7 +460,7 @@ class CrmMarketingOutreachServiceTest {
                 .setName("短信群发诊断").setChannel(1).setSmsTemplateCode("crm-sms")
                 .setCustomerIds(List.of(12L));
         CrmCustomerDO customer = new CrmCustomerDO().setId(12L).setOwnerUserId(7L).setName("测试客户");
-        when(customerMapper.selectBatchIds(org.mockito.ArgumentMatchers.anyCollection())).thenReturn(List.of(customer));
+        when(customerMapper.selectByIds(org.mockito.ArgumentMatchers.anyCollection())).thenReturn(List.of(customer));
         when(contactMapper.selectPrimaryContactListByCustomerIds(List.of(12L))).thenReturn(List.of());
         when(authorizationService.isCrmAdmin(7L)).thenReturn(true);
         doAnswer(invocation -> {

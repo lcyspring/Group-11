@@ -16,7 +16,7 @@ import java.util.Map;
 
 import static com.meession.etm.framework.common.util.collection.CollectionUtils.convertMap;
 
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface ProductFavoriteConvert {
 
     ProductFavoriteConvert INSTANCE = Mappers.getMapper(ProductFavoriteConvert.class);

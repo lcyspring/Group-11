@@ -5,7 +5,7 @@ import com.meession.etm.module.trade.service.aftersale.bo.AfterSaleLogCreateReqB
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
 
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface AfterSaleLogConvert {
 
     AfterSaleLogConvert INSTANCE = Mappers.getMapper(AfterSaleLogConvert.class);

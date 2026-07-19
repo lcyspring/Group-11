@@ -3,6 +3,8 @@ export default {
   happyDay: 'Wish you happy every day!',
   toady: "It's sunny today",
   notice: 'Announcement',
+  noticeCount: 'Announcements',
+  noticeItem: 'Notice',
   access: 'Project access',
   toDo: 'To do',
   introduction: 'A serious introduction',

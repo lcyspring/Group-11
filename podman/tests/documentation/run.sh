@@ -84,6 +84,29 @@ if rg -n "$stale_pattern" \
     ((failures += 1))
 fi
 
+current_entry_docs=(
+    "${PROJECT_ROOT}/README.md"
+    "${PROJECT_ROOT}/podman/README.md"
+    "${PROJECT_ROOT}/podman/README_ZH.md"
+    "${PROJECT_ROOT}/podman/DEPLOY_GUIDE_ZH.md"
+    "${PROJECT_ROOT}/podman/OPERATIONS_ZH.md"
+    "${PROJECT_ROOT}/podman/config/KDL_FIELDS_ZH.md"
+    "${PROJECT_ROOT}/podman/config/README_ZH.md"
+    "${PROJECT_ROOT}/podman/images/README_ZH.md"
+    "${PROJECT_ROOT}/docs/20-CRM-Delivery/TECH_STACK_ZH.md"
+    "${PROJECT_ROOT}/docs/20-CRM-Delivery/build/build-toolchain-images/README.md"
+    "${PROJECT_ROOT}/docs/20-CRM-Delivery/build/ubuntu-26.04-container-build/README.md"
+)
+if rg --pcre2 -n '^(?!.*(?:稳定别名|stable alias)).*ghcr\.io/elel-code/group-11-build-ubuntu:26\.04(?!-deno-2\.9\.3)' \
+    "${current_entry_docs[@]}"; then
+    printf 'Current entry documentation still references the retired unversioned build image.\n' >&2
+    ((failures += 1))
+fi
+if rg -n 'pnpm-store|pnpm store' "${current_entry_docs[@]}"; then
+    printf 'Current entry documentation still presents the retired pnpm cache as active.\n' >&2
+    ((failures += 1))
+fi
+
 ((failures == 0)) || {
     printf 'Documentation gate failed with %d problem(s).\n' "$failures" >&2
     exit 1

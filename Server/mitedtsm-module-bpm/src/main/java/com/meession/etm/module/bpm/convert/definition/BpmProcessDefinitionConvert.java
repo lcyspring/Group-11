@@ -28,7 +28,7 @@ import java.util.Map;
  *
  * @author yunlong.li
  */
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface BpmProcessDefinitionConvert {
 
     BpmProcessDefinitionConvert INSTANCE = Mappers.getMapper(BpmProcessDefinitionConvert.class);

@@ -4,7 +4,7 @@ schema_version 1
 image {
   base "docker.io/library/ubuntu:26.04"
   hbuilderx "ghcr.io/elel-code/group-11-hbuilderx-ubuntu:26.04-5.05"
-  dependency "ghcr.io/elel-code/group-11-build-ubuntu:26.04"
+  dependency "ghcr.io/elel-code/group-11-build-ubuntu:26.04-deno-2.9.3"
   rebuild #false
 
 }
@@ -23,13 +23,13 @@ build {
 }
 
 dependency {
-  mall_frozen_lockfile #true
+  mall_deno_frozen_lockfile #true
 
 }
 
 cache {
-  mall_pnpm_store_volume "mitedtsm-mall-h5-pnpm-store"
-  mall_pnpm_store_path "/pnpm-store"
+  mall_deno_cache_volume "mitedtsm-mall-h5-deno-cache"
+  mall_deno_cache_path "/deno-cache"
   mall_node_modules_volume "mitedtsm-mall-h5-node-modules"
 
 }

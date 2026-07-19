@@ -3,6 +3,8 @@ export default {
   happyDay: '祝你开心每一天!',
   toady: '今日晴',
   notice: '通知公告',
+  noticeCount: '公告总数',
+  noticeItem: '公告',
   access: '项目访问',
   toDo: '待办',
   introduction: '一个正经的简介',

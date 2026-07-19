@@ -7,13 +7,14 @@
 
 所有成员日常编译、测试必须直接使用 `elel-code` 命名空间下已经公开的两个工具链镜像：
 
-- Server、InitService、Web、后端测试：`ghcr.io/elel-code/group-11-build-ubuntu:26.04`；
+- Server、InitService、Web、后端测试：`ghcr.io/elel-code/group-11-build-ubuntu:26.04-deno-2.9.3`；
 - Mall H5：`ghcr.io/elel-code/group-11-hbuilderx-ubuntu:26.04-5.05`。
 
 普通成员不需要、也不应先在本机重新构建工具链镜像。共享 KDL 必须保持 `image.rebuild: false`，脚本
 直接 pull 或使用本地缓存的上述 public image。只有维护者发布新的工具链版本时，才允许在专用维护配置
-中显式设置 `image.rebuild: true`。无网络环境使用这两个镜像对应的 OCI tar，不能改用 Host JDK、Node、
-pnpm、HBuilderX，也不能改用项目原有 Docker/Compose 构建链。
+中显式设置 `image.rebuild: true`。无网络环境使用这两个镜像对应的 OCI tar，不能改用 Host JDK、Deno、
+Node、pnpm 或 HBuilderX，也不能改用项目原有 Docker/Compose 构建链。标准镜像不包含 Node/npm/pnpm；
+HBuilderX 镜像中的内置 Node 只属于 uni-app 编译器内部实现。
 
 ## 快速导航
 
@@ -67,8 +68,10 @@ Web、Mall 及单组件更新均使用 `podman run --replace`。只有 `stop.sh`
 - 后端产物：`Server/mitedtsm-server/target/mitedtsm-server.jar`；
 - 管理端产物：`Web/dist-prod/`，进入独立 Nginx 镜像；
 - Mall H5：`MallFrontend/unpackage/dist/build/web/`，本地生成且 Git 忽略，进入独立 Nginx 镜像；
-- Mall 项目依赖由 Ubuntu 26.04 容器运行时安装到 Podman named volume，Host
+- Web 与 Mall 项目依赖都由 Deno 2.9.3 在 Ubuntu 26.04 容器运行时安装到 Podman named volume，Host
   `node_modules` 不参与；依赖阶段可联网，HBuilderX 编译阶段固定断网；
+- Web 专项测试由 Deno Test 执行，KDL 通过 `web.coverage_enabled` 显式选择采集覆盖率，
+  `web.coverage_threshold` 控制行、分支、函数门禁并输出 ignored LCOV；纯 lint/类型检查不伪造覆盖率；
 - 前端不会打进后端 JAR/WAR；
 - Ubuntu Server/Web 与 HBuilderX 编译工具链镜像必须使用上文指定的 `ghcr.io/elel-code` 公共镜像；
 - `ghcr.io/elel-code` 下两个编译工具链镜像当前为 public，pull 无需登录，push 仍需维护者登录；

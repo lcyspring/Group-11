@@ -27,7 +27,7 @@ DENIED_CODE="$(kdl_positive_integer acceptance.denied_code)"
 for command in curl jq podman date; do command -v "$command" >/dev/null || exit 1; done
 
 mysql_exec() {
-    podman exec "$MYSQL_CONTAINER" mysql "-u${MYSQL_USER}" "-p${MYSQL_PASSWORD}" \
+    podman exec --env "MYSQL_PWD=${MYSQL_PASSWORD}" "$MYSQL_CONTAINER" mysql "-u${MYSQL_USER}" \
         "--database=${MYSQL_DATABASE}" --default-character-set=utf8mb4 -Nse "$1"
 }
 

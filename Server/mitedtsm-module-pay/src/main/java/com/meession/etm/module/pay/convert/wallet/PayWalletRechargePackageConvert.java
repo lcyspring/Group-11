@@ -11,7 +11,7 @@ import com.meession.etm.module.pay.dal.dataobject.wallet.PayWalletRechargePackag
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
 
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface PayWalletRechargePackageConvert {
 
     PayWalletRechargePackageConvert INSTANCE = Mappers.getMapper(PayWalletRechargePackageConvert.class);

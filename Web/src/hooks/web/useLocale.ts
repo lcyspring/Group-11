@@ -1,4 +1,4 @@
-import { i18n } from '@/plugins/vueI18n'
+import { i18n, localeMessages } from '@/plugins/vueI18n'
 import { useLocaleStoreWithOut } from '@/store/modules/locale'
 import { setHtmlPageLang } from '@/plugins/vueI18n/helper'
 import { useUserStoreWithOut } from '@/store/modules/user'
@@ -27,15 +27,7 @@ export const useLocale = () => {
   const changeLocale = async (locale: LocaleType) => {
     const globalI18n = i18n.global
 
-    // 支持模块化语言包：优先加载目录结构，回退到单文件
-    let langModule
-    try {
-      langModule = await import(`../../locales/${locale}/index.ts`)
-    } catch {
-      langModule = await import(`../../locales/${locale}.ts`)
-    }
-
-    globalI18n.setLocaleMessage(locale, langModule.default)
+    globalI18n.setLocaleMessage(locale, localeMessages[locale])
 
     setI18nLanguage(locale)
     
@@ -64,4 +56,3 @@ export const refreshMenuData = async () => {
   const permissionStore = usePermissionStoreWithOut()
   await permissionStore.generateRoutes()
 }
-

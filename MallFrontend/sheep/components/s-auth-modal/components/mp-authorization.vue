@@ -125,7 +125,7 @@
 </script>
 
 <style lang="scss" scoped>
-  @import '../index';
+  @use '../index';
 
   .foot-box {
     width: 100%;

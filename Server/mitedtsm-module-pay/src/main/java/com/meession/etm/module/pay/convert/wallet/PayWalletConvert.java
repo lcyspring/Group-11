@@ -7,7 +7,7 @@ import com.meession.etm.module.pay.dal.dataobject.wallet.PayWalletDO;
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
 
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface PayWalletConvert {
 
     PayWalletConvert INSTANCE = Mappers.getMapper(PayWalletConvert.class);

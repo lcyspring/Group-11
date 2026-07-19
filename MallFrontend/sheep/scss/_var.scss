@@ -1,6 +1,7 @@
 @use 'sass:map';
 
-@import 'mixins';
+@forward 'mixins';
+@use 'mixins' as *;
 
 //颜色 ，渐变背景60%
 $red: #d10019;      // 中国红

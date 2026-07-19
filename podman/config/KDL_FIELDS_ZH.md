@@ -17,9 +17,9 @@
 | `build.exclude_targets` | 同一取值协议；从白名单中排除目标，冲突时本字段优先 |
 | `image.standard` | Server、InitService、Web 和测试使用的公开 Ubuntu 26.04 工具链镜像 |
 | `image.hbuilderx` | Mall H5 使用的公开无图形 HBuilderX Ubuntu 26.04 镜像 |
-| `image.dependency` | Mall 项目依赖在容器运行时下载所用的 Node/pnpm 工具链镜像 |
+| `image.dependency` | Mall 项目依赖在容器运行时下载所用的 Deno 工具链镜像 |
 | `image.rebuild` | 日常固定 `false`；仅工具链维护者发布新镜像时显式开启 |
-| `cache.*` | Maven、pnpm store 和 node_modules 的 Podman 命名卷；依赖不落到 Host |
+| `cache.*` | Maven、Deno cache 和 node_modules 的 Podman 命名卷；依赖不落到 Host |
 | `network.use_host_proxy` | 是否将显式 Host 代理传给依赖下载容器；默认不继承 Host 代理 |
 
 例如 `build.include_targets = "all"` 加 `build.exclude_targets = "mall-h5"` 构建三个标准产物；
@@ -259,7 +259,8 @@
 | 字段 | 作用 |
 |---|---|
 | `image.base/standard/rebuild` | Ubuntu 基础镜像、标准工具链镜像名、是否重建工具链镜像 |
-| `toolchain.pnpm_version` | 容器内 pnpm 版本 |
+| `toolchain.deno_version` | 容器内 Deno 版本，当前固定 `2.9.3` |
+| `toolchain.deno_binary_image` | 官方 Deno binary image，必须与版本一致并固定 sha256 digest |
 | `build.include_targets/exclude_targets` | 四目标白名单与黑名单；标准容器只消费最终选中的前三个目标 |
 | `build.clean` | Maven/Web 是否清理旧产物 |
 | `build.crm_tests/crm_coverage` | 是否执行 CRM 测试和 JaCoCo |
@@ -272,30 +273,32 @@
 | `build.system_test_pattern` | System 模块 Surefire 测试类模式，不接受任意命令 |
 | `build.ci` | 使用 CI 行为和非交互输出 |
 | `build.maven_threads` | Maven reactor 并发线程 |
-| `build.pnpm_frozen_lockfile` | 是否禁止 lockfile 漂移 |
+| `build.deno_frozen_lockfile` | 是否要求 `deno.lock` 与清单完全一致 |
 | `network.use_host_proxy` | 构建是否使用显式代理策略 |
 | `web.baidu_analytics_code` | 管理端百度统计代码；`disabled` 表示不注入 |
 | `web.legacy_media_origins` | 退休媒体源列表，构建时归一化为本地代理/回退 |
 | `web.test_script` | Web 构建前附加测试脚本，可省略 |
-| `cache.*` | Maven、pnpm store、node_modules 缓存卷与容器路径 |
+| `web.coverage_enabled` | 是否为 `web.test_script` 开启 Deno 原生覆盖率；纯 lint/类型检查必须显式为 `false` |
+| `web.coverage_threshold` | Deno 行、分支、函数统一最低覆盖率；0–100，并输出 ignored LCOV |
+| `cache.*` | Maven、Deno cache、node_modules 缓存卷与容器路径 |
 | `runtime.memory/cpus` | 构建容器资源上限 |
 
 ## Mall H5 构建配置
 
 `compile.sh` 同样只接受一个 KDL 路径。项目依赖不在 Host
 执行安装，也不写入工具链 image：先由 `image.dependency` 指定的 Ubuntu 26.04
-工具容器在运行时执行 pnpm，写入 `cache.mall_node_modules_volume` 与
-`cache.mall_pnpm_store_volume`；之后 HBuilderX 容器挂载同一 `node_modules` 卷并以
+工具容器在运行时执行 Deno，写入 `cache.mall_node_modules_volume` 与
+`cache.mall_deno_cache_volume`；之后 HBuilderX 容器挂载同一 `node_modules` 卷并以
 `network.mall_mode: none` 编译。Host 的 `MallFrontend/node_modules` 不参与构建。
 
 | 字段 | 作用 |
 |---|---|
 | `image.hbuilderx` | 无图形 HBuilderX 编译工具链 image；固定使用公开的 `ghcr.io/elel-code/group-11-hbuilderx-ubuntu:26.04-5.05`。 |
-| `image.dependency` | 运行时安装 Mall 项目依赖的 Ubuntu 26.04 Node/pnpm 工具 image；默认优先使用 `ghcr.io/elel-code/group-11-build-ubuntu:26.04`。 |
+| `image.dependency` | 运行时安装 Mall 项目依赖的 Ubuntu 26.04 Deno 工具 image；固定使用 `ghcr.io/elel-code/group-11-build-ubuntu:26.04-deno-2.9.3`。 |
 | `image.rebuild` | 是否由工具链维护者从 `hbuilderx.source_dir` 重建 HBuilderX image；普通成员保持 `false`。 |
-| `dependency.mall_frozen_lockfile` | 为 `true` 时要求 `package.json` 与 `pnpm-lock.yaml` 完全一致。 |
-| `cache.mall_pnpm_store_volume` | Mall 专用 pnpm 包缓存卷，不与 Host pnpm store 混用。 |
-| `cache.mall_pnpm_store_path` | pnpm store 在依赖容器内的绝对路径。 |
+| `dependency.mall_deno_frozen_lockfile` | 为 `true` 时要求 `package.json` 与 `deno.lock` 完全一致。 |
+| `cache.mall_deno_cache_volume` | Mall 专用 Deno 包缓存卷，不与 Host 缓存混用。 |
+| `cache.mall_deno_cache_path` | `DENO_DIR` 在依赖容器内的绝对路径。 |
 | `cache.mall_node_modules_volume` | Mall 专用 `node_modules` 卷，同时挂载给依赖容器和断网编译容器。 |
 | `network.mall_dependency_mode` | 容器运行时下载依赖使用的 rootless Podman 网络模式。 |
 | `network.mall_mode` | 正式 H5 编译网络；必须为 `none`。 |

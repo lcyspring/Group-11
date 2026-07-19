@@ -1,6 +1,7 @@
 @use 'sass:map';
 @use 'sass:list';
 @use 'sass:meta';
+@use 'var' as *;
 
 body {
   color: var(--text-a);

@@ -1,9 +1,9 @@
 # Ubuntu 26.04 容器编译基线
 
-更新日期：2026-07-18。状态：现行。
+更新日期：2026-07-19。状态：现行。
 
 Server、InitService、Web、自动化测试与覆盖率统一在公开工具链镜像
-`ghcr.io/elel-code/group-11-build-ubuntu:26.04` 中执行。普通成员不重建工具链镜像，Host 只需
+`ghcr.io/elel-code/group-11-build-ubuntu:26.04-deno-2.9.3` 中执行。普通成员不重建工具链镜像，Host 只需
 Git 与 rootless Podman。
 
 ## 入口
@@ -15,13 +15,14 @@ bash podman/compile.sh podman/config/build-web-ubuntu-26.04.kdl
 ```
 
 命令行只接受一个 KDL 路径。编译目标、清理、测试、覆盖率、缓存、代理和资源限制均来自 KDL。
-项目 Maven/pnpm 依赖由容器运行时下载到 Podman 命名卷，Host 不安装项目工具链或依赖。
+项目 Maven/Deno 依赖由容器运行时下载到 Podman 命名卷，Host 不安装项目工具链或依赖。
 
 ## 工具链
 
 - Ubuntu 26.04；
 - Java 17、Maven 3.9.12；
-- Node.js 22.22.1、pnpm 11.3.0；
+- Deno 2.9.3；标准镜像不包含 Node、npm、pnpm；
+- Web 使用 Vite 8.1.5，测试使用 Deno Test/Coverage，并按 KDL 输出 LCOV；
 - UTF-8 locale；
 - 固定公开工具链镜像。
 
@@ -30,8 +31,8 @@ bash podman/compile.sh podman/config/build-web-ubuntu-26.04.kdl
 
 ## 已关闭的兼容问题
 
-历史上已处理 Host loopback 代理、非 UTF-8 locale、pnpm 版本偏差、clean 删除覆盖率、无 TTY
-`node_modules` 和 pnpm store 挂载位置问题。正式记录位于
+历史上已处理 Host loopback 代理、非 UTF-8 locale、旧 pnpm 版本偏差、clean 删除覆盖率、无 TTY
+`node_modules` 和旧 store 挂载位置问题。正式记录位于
 `docs/20-CRM-Delivery/bugs/logs/PODMAN-BUILD-BUG-001-*` 至 `PODMAN-BUILD-BUG-006-*`。
 
 该基线不恢复 Host 编译、Docker/Compose、旧 YAML 或不支持软链接目录的暂存复制逻辑。

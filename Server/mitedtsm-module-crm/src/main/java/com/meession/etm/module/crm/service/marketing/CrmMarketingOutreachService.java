@@ -332,10 +332,10 @@ public class CrmMarketingOutreachService {
         LinkedHashMap<String, CrmMarketingBroadcastRecipientDO> result = new LinkedHashMap<>();
         Set<Long> customerIds = new LinkedHashSet<>(Optional.ofNullable(request.getCustomerIds()).orElse(List.of()));
         Set<Long> contactIds = new LinkedHashSet<>(Optional.ofNullable(request.getContactIds()).orElse(List.of()));
-        List<CrmCustomerDO> customers = customerIds.isEmpty() ? List.of() : customerMapper.selectBatchIds(customerIds);
+        List<CrmCustomerDO> customers = customerIds.isEmpty() ? List.of() : customerMapper.selectByIds(customerIds);
         Map<Long, CrmCustomerDO> customerMap = new HashMap<>();
         customers.forEach(customer -> { checkReadable(customer, userId); customerMap.put(customer.getId(), customer); });
-        List<CrmContactDO> contacts = contactIds.isEmpty() ? List.of() : contactMapper.selectBatchIds(contactIds);
+        List<CrmContactDO> contacts = contactIds.isEmpty() ? List.of() : contactMapper.selectByIds(contactIds);
         for (CrmContactDO contact : contacts) {
             CrmCustomerDO customer = customerMap.computeIfAbsent(contact.getCustomerId(), customerMapper::selectById);
             if (customer != null) { checkReadable(customer, userId); addTarget(result, request, broadcastId, customer, contact); }

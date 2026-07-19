@@ -1,4 +1,5 @@
-import { i18n } from '@/plugins/vueI18n'
+import { i18n, localeMessages } from '@/plugins/vueI18n'
+import { resolveLocaleMessage } from '@/plugins/vueI18n/messageResolver'
 
 type I18nGlobalTranslation = {
   (key: string): string
@@ -39,26 +40,21 @@ export const useI18n = (
 ): {
   t: I18nGlobalTranslation
 } => {
-  const normalFn = {
-    t: (key: string) => {
-      return getKey(namespace, key)
-    }
-  }
-
-  if (!i18n) {
-    return normalFn
-  }
-
-  const { t, ...methods } = i18n.global
-
   const tFn: I18nGlobalTranslation = (key: string, ...arg: any[]) => {
     if (!key) return ''
     if (!key.includes('.') && !namespace) return key
+    const resolvedKey = getKey(namespace, key)
+
+    if (!i18n) return resolvedKey
     //@ts-ignore
-    return t(getKey(namespace, key), ...(arg as I18nTranslationRestParameters))
+    const translated = i18n.global.t(resolvedKey, ...(arg as I18nTranslationRestParameters))
+    if (translated !== resolvedKey) return translated
+
+    const locale =
+      typeof i18n.global.locale === 'string' ? i18n.global.locale : i18n.global.locale.value
+    return resolveLocaleMessage(localeMessages, locale, 'zh-CN', resolvedKey, arg) ?? translated
   }
   return {
-    ...methods,
     t: tFn
   }
 }

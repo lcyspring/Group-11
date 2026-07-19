@@ -2,6 +2,7 @@
           栅栏
  ==================== */
 @use 'sass:math';
+@use '../var' as *;
 
 @mixin make_col($screen) {
   @for $i from 1 through 12 {

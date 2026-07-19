@@ -3,13 +3,14 @@ schema_version 1
 
 image {
   base "docker.io/library/ubuntu:26.04"
-  standard "ghcr.io/elel-code/group-11-build-ubuntu:26.04"
+  standard "ghcr.io/elel-code/group-11-build-ubuntu:26.04-deno-2.9.3"
   rebuild #false
 
 }
 
 toolchain {
-  pnpm_version "11.3.0"
+  deno_version "2.9.3"
+  deno_binary_image "docker.io/denoland/deno:bin-2.9.3@sha256:b35d3898bc8b5e2ebcfc7c760578f635f0162cda02e4f8359056c44ea3cb9670"
 
 }
 
@@ -23,7 +24,7 @@ build {
   bpm_coverage #true
   ci #true
   maven_threads 4
-  pnpm_frozen_lockfile #true
+  deno_frozen_lockfile #true
 
 }
 
@@ -36,13 +37,15 @@ web {
   baidu_analytics_code "disabled"
   legacy_media_origins "http://test.yudao.iocoder.cn"
   test_script "verify:oa-leave-foundation"
+  coverage_enabled #true
+  coverage_threshold 90
 
 }
 
 cache {
   maven_volume "mitedtsm-build-maven-cache"
-  pnpm_store_volume "mitedtsm-build-pnpm-store"
-  pnpm_store_path "/pnpm-store"
+  deno_cache_volume "mitedtsm-build-deno-cache"
+  deno_cache_path "/deno-cache"
   web_node_modules_volume "mitedtsm-build-web-node-modules"
 
 }

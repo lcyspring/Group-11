@@ -11,7 +11,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.Mappings;
 import org.mapstruct.factory.Mappers;
 
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface MpAutoReplyConvert {
 
     MpAutoReplyConvert INSTANCE = Mappers.getMapper(MpAutoReplyConvert.class);

@@ -1,7 +1,8 @@
 @use 'sass:color';
+@use '../var' as *;
 
-@import 'light'; //浅蓝主题
-@import 'dark'; //深蓝主题
+@use 'light' as *; //浅蓝主题
+@use 'dark' as *; //深蓝主题
 // 多主题
 .theme-light {
   @include theme-light;

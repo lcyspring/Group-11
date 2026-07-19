@@ -26,7 +26,7 @@ import static com.meession.etm.framework.common.util.collection.CollectionUtils.
  *
  * @author 密讯
  */
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface BargainRecordConvert {
 
     BargainRecordConvert INSTANCE = Mappers.getMapper(BargainRecordConvert.class);

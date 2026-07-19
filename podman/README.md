@@ -61,7 +61,7 @@ bash ./compile.sh ./config/build-ubuntu-26.04.kdl
 ```
 
 The build entry point also accepts exactly one KDL path. Named Podman volumes
-hold Maven, pnpm-store, and Web `node_modules` caches. The repository must be on
+hold Maven, Deno package, and Web `node_modules` caches. The repository must be on
 a filesystem with symbolic-link support; no legacy staging/copy-back path is
 used.
 
@@ -80,11 +80,11 @@ mount the host HBuilderX installation. Only a maintainer configuration with
 `image.rebuild: true` copies HBuilderX's bundled Node, Vue 3/Vite uni-app compiler,
 and Dart Sass runtime from `hbuilderx.source_dir`. Mall project
 dependencies are installed at container runtime into Podman named volumes by
-`ghcr.io/elel-code/group-11-build-ubuntu:26.04`; the offline compiler mounts
+`ghcr.io/elel-code/group-11-build-ubuntu:26.04-deno-2.9.3`; the offline compiler mounts
 that volume instead of host `node_modules`. `MallFrontend/unpackage/` is generated locally
 and ignored by Git; build it before packaging a deployment image.
 
-Host JDK/Node/pnpm build helpers have been removed. Every project member uses
+Host JDK, Node, npm, and pnpm build helpers have been removed. Every project member uses
 the unified Ubuntu 26.04 container entry point above.
 
 Required runtime artifacts are:

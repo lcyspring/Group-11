@@ -1,26 +1,16 @@
 import { resolve } from 'path'
-import { createRequire } from 'node:module'
 import Vue from '@vitejs/plugin-vue'
 import VueJsx from '@vitejs/plugin-vue-jsx'
-import progress from 'vite-plugin-progress'
-import EslintPlugin from 'vite-plugin-eslint'
 import { ViteEjsPlugin } from 'vite-plugin-ejs'
 // @ts-ignore
 import ElementPlus from 'unplugin-element-plus/vite'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
-import viteCompression from 'vite-plugin-compression'
 import topLevelAwait from 'vite-plugin-top-level-await'
 import VueI18nPlugin from '@intlify/unplugin-vue-i18n/vite'
 import { createSvgIconsPlugin } from 'vite-plugin-svg-icons-ng'
 import UnoCSS from 'unocss/vite'
-
-// The ESM bundle of @purge-icons/core@0.10.0 cannot resolve its dynamic local
-// JSON requires. Loading the plugin's documented CommonJS export keeps local
-// collection loading deterministic without changing application imports.
-const nodeRequire = createRequire(import.meta.url)
-const PurgeIcons = nodeRequire('vite-plugin-purge-icons').default as typeof import('vite-plugin-purge-icons').default
 
 export function createVitePlugins() {
   const root = process.cwd()
@@ -34,9 +24,6 @@ export function createVitePlugins() {
     Vue(),
     VueJsx(),
     UnoCSS(),
-    progress(),
-    // 图标集合由锁定的 @iconify/json 依赖提供，生成结果直接写入前端产物。
-    PurgeIcons({ iconSource: 'local' }),
     ElementPlus({}),
     AutoImport({
       include: [
@@ -73,12 +60,11 @@ export function createVitePlugins() {
       resolvers: [ElementPlusResolver()],
       globs: ["src/components/**/**.{vue, md}", '!src/components/DiyEditor/components/mobile/**']
     }),
-    EslintPlugin({
-      cache: false,
-      include: ['src/**/*.vue', 'src/**/*.ts', 'src/**/*.tsx'] // 检查的文件
-    }),
     VueI18nPlugin({
-      runtimeOnly: true,
+      // Locale resources are TypeScript objects containing raw message strings.
+      // They are intentionally excluded from the resource precompiler below,
+      // so the production bundle must retain vue-i18n's message compiler.
+      runtimeOnly: false,
       compositionOnly: true,
       // Locale entry modules are TypeScript aggregators. Treating them as message
       // resources strips their imports and leaves almost-empty locale bundles.
@@ -87,14 +73,6 @@ export function createVitePlugins() {
     createSvgIconsPlugin({
       iconDirs: [pathResolve('src/assets/svgs')],
       symbolId: 'icon-[dir]-[name]',
-    }),
-    viteCompression({
-      verbose: true, // 是否在控制台输出压缩结果
-      disable: false, // 是否禁用
-      threshold: 10240, // 体积大于 threshold 才会被压缩,单位 b
-      algorithm: 'gzip', // 压缩算法,可选 [ 'gzip' , 'brotliCompress' ,'deflate' , 'deflateRaw']
-      ext: '.gz', // 生成的压缩包后缀
-      deleteOriginFile: false //压缩后是否删除源文件
     }),
     ViteEjsPlugin(),
     topLevelAwait({

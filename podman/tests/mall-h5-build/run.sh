@@ -69,7 +69,10 @@ pass 'Mall dependencies install at container runtime and H5 builds offline'
 podman run --rm --pull=never --network=none \
     --volume "$NODE_MODULES_VOLUME:/node_modules:ro" \
     --entrypoint /bin/sh "$DEPENDENCY_IMAGE" -eu -c \
-    'test -d /node_modules/.pnpm && test -f /node_modules/dayjs/package.json'
+    'test -f /node_modules/dayjs/package.json \
+        && test ! -e /node_modules/.pnpm \
+        && test ! -e /node_modules/.pnpm-workspace-state-v1.json \
+        && test ! -e /node_modules/.modules.yaml'
 pass 'runtime dependency volume contains Mall packages independently of the host directory'
 
 podman run --rm --pull=never --network=none \

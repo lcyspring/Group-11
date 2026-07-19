@@ -2,7 +2,7 @@
 # podman build --file podman/Containerfile --target server .
 #
 # This file packages existing application artifacts only. It does not invoke
-# Maven, pnpm, HBuilderX, or package database SQL. MySQL uses its official
+# Maven, Deno, HBuilderX, or package database SQL. MySQL uses its official
 # image and deploy.sh streams repository manifests during deployment.
 
 ARG RUNTIME_BASE_IMAGE=docker.io/library/eclipse-temurin:17.0.19_10-jdk@sha256:7383a9e8e67a003c0e32ccdee3e5352ec24ca9c3848080c3f108bddb0322139e

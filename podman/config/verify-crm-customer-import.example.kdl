@@ -23,7 +23,7 @@ mysql {
 
 image {
   // 仅使用已公开的 Ubuntu 26.04 工具链镜像在容器运行时生成验收 Excel。
-  generator "ghcr.io/elel-code/group-11-build-ubuntu:26.04"
+  generator "ghcr.io/elel-code/group-11-build-ubuntu:26.04-deno-2.9.3"
 
 }
 

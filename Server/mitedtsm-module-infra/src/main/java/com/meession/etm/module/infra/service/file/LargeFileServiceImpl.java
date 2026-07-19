@@ -452,7 +452,7 @@ public class LargeFileServiceImpl implements LargeFileService {
 
         // 批量删除任务记录
         if (!expiredTasks.isEmpty()) {
-            largeFileMapper.deleteBatchIds(expiredTasks.stream()
+            largeFileMapper.deleteByIds(expiredTasks.stream()
                     .map(LargeFileDO::getId)
                     .collect(Collectors.toList()));
         }

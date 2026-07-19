@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Package already compiled artifacts into project runtime images. This stage
-# never invokes Maven, pnpm, HBuilderX, or deploy.sh.
+# never invokes Maven, Deno, HBuilderX, or deploy.sh.
 
 set -Eeuo pipefail
 

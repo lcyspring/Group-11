@@ -24,7 +24,7 @@ import static com.meession.etm.framework.common.util.collection.CollectionUtils.
 import static com.meession.etm.framework.common.util.collection.CollectionUtils.filterList;
 import static com.meession.etm.module.system.dal.dataobject.permission.MenuDO.ID_ROOT;
 
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface AuthConvert {
 
     AuthConvert INSTANCE = Mappers.getMapper(AuthConvert.class);

@@ -12,7 +12,7 @@ import org.mapstruct.factory.Mappers;
  *
  * @author owen
  */
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface TradeConfigConvert {
 
     TradeConfigConvert INSTANCE = Mappers.getMapper(TradeConfigConvert.class);

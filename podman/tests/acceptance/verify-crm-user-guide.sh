@@ -29,7 +29,7 @@ VIEWS_ROOT="${PROJECT_ROOT}/Web/src/views"
 runtime_routes="$(mktemp)"
 trap 'rm -f -- "$runtime_routes"' EXIT
 
-podman exec "$MYSQL_CONTAINER" mysql "-u${MYSQL_USER}" "-p${MYSQL_PASSWORD}" \
+podman exec --env "MYSQL_PWD=${MYSQL_PASSWORD}" "$MYSQL_CONTAINER" mysql "-u${MYSQL_USER}" \
     "--database=${MYSQL_DATABASE}" --default-character-set=utf8mb4 -Nse "
 WITH RECURSIVE tree AS (
   SELECT id,parent_id,path,component,type,CAST(path AS CHAR(500)) full_path

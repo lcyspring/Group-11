@@ -45,7 +45,7 @@ SEED_IDS=''
 mysql_exec() {
     local sql="$1" output='' attempt
     for attempt in 1 2 3 4 5 6 7 8; do
-        if output="$(podman exec "$MYSQL_CONTAINER" mysql "-u${MYSQL_USER}" "-p${MYSQL_PASSWORD}" \
+        if output="$(podman exec --env "MYSQL_PWD=${MYSQL_PASSWORD}" "$MYSQL_CONTAINER" mysql "-u${MYSQL_USER}" \
             "--database=${MYSQL_DATABASE}" --default-character-set=utf8mb4 -Nse "$sql")"; then
             printf '%s' "$output"
             return 0

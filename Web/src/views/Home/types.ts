@@ -1,6 +1,5 @@
 export type WorkplaceTotal = {
-  project: number
-  access: number
+  notice: number
   todo: number
 }
 
@@ -14,6 +13,7 @@ export type Project = {
 }
 
 export type Notice = {
+  id?: number
   title: string
   type: string
   keys: string[]

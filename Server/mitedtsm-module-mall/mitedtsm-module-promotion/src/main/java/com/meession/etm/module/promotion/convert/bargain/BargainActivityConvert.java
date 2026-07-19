@@ -24,7 +24,7 @@ import static com.meession.etm.framework.common.util.collection.MapUtils.findAnd
  *
  * @author HUIHUI
  */
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface BargainActivityConvert {
 
     BargainActivityConvert INSTANCE = Mappers.getMapper(BargainActivityConvert.class);

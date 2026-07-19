@@ -18,7 +18,7 @@ import java.math.RoundingMode;
  *
  * @author wangzhs
  */
-@Mapper
+@Mapper(config = com.meession.etm.framework.common.mapstruct.MitedtsmMapperConfig.class)
 public interface ProductCommentConvert {
 
     ProductCommentConvert INSTANCE = Mappers.getMapper(ProductCommentConvert.class);
