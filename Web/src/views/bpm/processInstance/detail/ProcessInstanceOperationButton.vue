@@ -564,6 +564,7 @@ const returnList = ref([] as any) // 退回节点
 
 // ========== 审批信息 ==========
 const runningTask = ref<any>() // 运行中的任务
+const handledTaskIds = new Set<string>()
 const approveForm = ref<any>({}) // 审批通过时，额外的补充信息
 const approveFormFApi = ref<any>({}) // approveForms 的 fAPi
 const nodeTypeName = ref(t('approval.approval')) // 节点类型名称
@@ -818,6 +819,7 @@ const handleAudit = async (pass: boolean, formRef: FormInstance | undefined) => 
         data.variables = approveForm.value.value
       }
       await TaskApi.approveTask(data)
+      markCurrentTaskHandled()
       popOverVisible.value.approve = false
       nextAssigneesActivityNode.value = []
       // 清理 Timeline 组件中的自定义审批人数据
@@ -832,6 +834,7 @@ const handleAudit = async (pass: boolean, formRef: FormInstance | undefined) => 
         reason: rejectReasonForm.reason
       }
       await TaskApi.rejectTask(data)
+      markCurrentTaskHandled()
       popOverVisible.value.reject = false
       message.success(t('approval.rejectSuccess'))
     }
@@ -1029,6 +1032,13 @@ const reload = () => {
   emit('success')
 }
 
+const markCurrentTaskHandled = () => {
+  if (runningTask.value?.id !== undefined && runningTask.value?.id !== null) {
+    handledTaskIds.add(String(runningTask.value.id))
+  }
+  runningTask.value = undefined
+}
+
 /** 任务是否为处理中状态 */
 const isHandleTaskStatus = () => {
   let canHandle = false
@@ -1088,7 +1098,7 @@ const getButtonDisplayName = (btnType: OperationButtonType) => {
 
 const loadTodoTask = (task: any) => {
   approveForm.value = {}
-  runningTask.value = task
+  runningTask.value = task && !handledTaskIds.has(String(task.id)) ? task : undefined
   approveFormFApi.value = {}
   reasonRequire.value = task?.reasonRequire ?? false
   nodeTypeName.value = task?.nodeType === NodeType.TRANSACTOR_NODE ? t('approval.handle') : t('approval.approval')
