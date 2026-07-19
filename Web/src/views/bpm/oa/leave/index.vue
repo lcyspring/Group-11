@@ -28,8 +28,8 @@
               v-model="queryParams.createTime"
               :default-time="[new Date('1 00:00:00'), new Date('1 23:59:59')]"
               class="!w-240px"
-              :end-placeholder="t('instance.endDate')"
-              :start-placeholder="t('instance.startDate')"
+              :end-placeholder="t('process.instance.endDate')"
+              :start-placeholder="t('process.instance.startDate')"
               type="daterange"
               value-format="YYYY-MM-DD HH:mm:ss"
             />
@@ -251,18 +251,18 @@ const handleDetail = (row: LeaveApi.LeaveVO) => {
 const cancelLeave = async (row) => {
   // 二次确认
   const { value } = await ElMessageBox.prompt(
-    t('instance.cancelReason'),
-    t('instance.cancelTitle'),
+    t('process.instance.cancelReason'),
+    t('process.instance.cancelTitle'),
     {
       confirmButtonText: t('common.ok'),
       cancelButtonText: t('common.cancel'),
       inputPattern: /^[\s\S]*.*\S[\s\S]*$/, // 判断非空，且非空格
-      inputErrorMessage: t('instance.cancelReasonRequired')
+      inputErrorMessage: t('process.instance.cancelReasonRequired')
     }
   )
   // 发起取消
   await ProcessInstanceApi.cancelProcessInstanceByStartUser(row.processInstanceId, value)
-  message.success(t('instance.cancelSuccess'))
+  message.success(t('process.instance.cancelSuccess'))
   // 刷新列表
   await getList()
 }

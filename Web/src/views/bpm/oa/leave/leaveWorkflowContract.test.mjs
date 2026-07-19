@@ -19,3 +19,13 @@ test('leave cancellation sends the Flowable process instance id', () => {
   assert.match(list, /cancelProcessInstanceByStartUser\(row\.processInstanceId, value\)/)
   assert.doesNotMatch(list, /cancelProcessInstanceByStartUser\(row\.id, value\)/)
 })
+
+test('leave list resolves process instance translations through the BPM namespace', () => {
+  assert.match(list, /process\.instance\.startDate/)
+  assert.match(list, /process\.instance\.endDate/)
+  assert.match(list, /process\.instance\.cancelReason/)
+  assert.match(list, /process\.instance\.cancelTitle/)
+  assert.match(list, /process\.instance\.cancelReasonRequired/)
+  assert.match(list, /process\.instance\.cancelSuccess/)
+  assert.doesNotMatch(list, /t\('instance\./)
+})
