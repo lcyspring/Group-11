@@ -86,6 +86,7 @@ import * as ReceivablePlanApi from '@/api/crm/receivable/plan'
 import * as ReceivableApi from '@/api/crm/receivable'
 import ReceivableForm from './../ReceivableForm.vue'
 import { dateFormatter2 } from '@/utils/formatTime'
+import { resolveDialogAction } from '@/utils/dialogAction'
 import { DICT_TYPE } from '@/utils/dict'
 import { erpPriceTableColumnFormatter } from '@/utils'
 
@@ -146,21 +147,15 @@ const openForm = (type: string, id?: number) => {
 
 /** 删除按钮操作 */
 const handleDelete = async (id: number) => {
-  try {
-    // 删除的二次确认
-    await message.delConfirm()
-    // 发起删除
-    await ReceivableApi.deleteReceivable(id)
-    message.success(t('common.delSuccess'))
-    // 刷新列表
-    await getList()
-  } catch {}
+  if (!(await resolveDialogAction(message.delConfirm()))) return
+  await ReceivableApi.deleteReceivable(id)
+  message.success(t('common.delSuccess'))
+  await getList()
 }
 
 /** 从回款计划创建回款 */
-const createReceivable = (planData: any) => {
-  const data = planData as unknown as ReceivablePlanApi.ReceivablePlanVO
-  formRef.value.open('create', undefined, data)
+const createReceivable = (planData: ReceivablePlanApi.ReceivablePlanVO) => {
+  formRef.value.open('create', undefined, planData)
 }
 defineExpose({ createReceivable })
 

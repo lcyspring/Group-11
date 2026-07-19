@@ -122,6 +122,7 @@
 
 <script lang="ts" setup>
 import { dateFormatter } from '@/utils/formatTime'
+import { resolveDialogAction } from '@/utils/dialogAction'
 import { DICT_TYPE } from '@/utils/dict'
 import { FollowUpRecordApi, FollowUpRecordVO } from '@/api/crm/followup'
 import FollowUpRecordForm from './FollowUpRecordForm.vue'
@@ -185,15 +186,10 @@ const openForm = () => {
 
 /** 删除按钮操作 */
 const handleDelete = async (id: number) => {
-  try {
-    // 删除的二次确认
-    await message.delConfirm()
-    // 发起删除
-    await FollowUpRecordApi.deleteFollowUpRecord(id)
-    message.success(t('common.delSuccess'))
-    // 刷新列表
-    await getList()
-  } catch {}
+  if (!(await resolveDialogAction(message.delConfirm()))) return
+  await FollowUpRecordApi.deleteFollowUpRecord(id)
+  message.success(t('common.delSuccess'))
+  await getList()
 }
 
 /** 打开联系人详情 */

@@ -10,18 +10,31 @@ import {
 } from './referenceIntegrity.ts'
 
 test('classifies all receivable customer and contract reference states', () => {
+  assert.equal(hasReferenceIssue(undefined), false)
   assert.equal(hasReferenceIssue(ReceivableReferenceStatus.VALID), false)
+  assert.equal(hasReferenceIssue(ReceivableReferenceStatus.CUSTOMER_MISSING), true)
   assert.equal(hasReferenceIssue(ReceivableReferenceStatus.BOTH_INVALID), true)
 
   assert.equal(isCustomerReferenceMissing(ReceivableReferenceStatus.CUSTOMER_MISSING), true)
+  assert.equal(isCustomerReferenceMissing(ReceivableReferenceStatus.BOTH_INVALID), true)
   assert.equal(isCustomerReferenceMissing(ReceivableReferenceStatus.CONTRACT_INVALID), false)
   assert.equal(isContractReferenceInvalid(ReceivableReferenceStatus.CONTRACT_INVALID), true)
+  assert.equal(isContractReferenceInvalid(ReceivableReferenceStatus.BOTH_INVALID), true)
   assert.equal(isContractReferenceInvalid(ReceivableReferenceStatus.CUSTOMER_MISSING), false)
 
+  assert.equal(
+    referenceStatusLocaleKey(ReceivableReferenceStatus.CUSTOMER_MISSING),
+    'receivable.referenceCustomerMissing'
+  )
+  assert.equal(
+    referenceStatusLocaleKey(ReceivableReferenceStatus.CONTRACT_INVALID),
+    'receivable.referenceContractInvalid'
+  )
   assert.equal(
     referenceStatusLocaleKey(ReceivableReferenceStatus.BOTH_INVALID),
     'receivable.referenceBothInvalid'
   )
+  assert.equal(referenceStatusLocaleKey(undefined), 'receivable.referenceValid')
 })
 
 test('receivable list and detail keep orphan records readable without broken navigation', () => {

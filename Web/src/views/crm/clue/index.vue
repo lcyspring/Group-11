@@ -243,6 +243,7 @@
 import { DICT_TYPE } from '@/utils/dict'
 import { dateFormatter } from '@/utils/formatTime'
 import download from '@/utils/download'
+import { resolveDialogAction } from '@/utils/dialogAction'
 import * as ClueApi from '@/api/crm/clue'
 import ClueForm from './ClueForm.vue'
 import { TabsPaneContext } from 'element-plus'
@@ -311,21 +312,16 @@ const openForm = (type: string, id?: number) => {
 
 /** 删除按钮操作 */
 const handleDelete = async (id: number) => {
-  try {
-    // 删除的二次确认
-    await message.delConfirm()
-    // 发起删除
-    await ClueApi.deleteClue(id)
-    message.success(t('common.delSuccess'))
-    // 刷新列表
-    await getList()
-  } catch {}
+  if (!(await resolveDialogAction(message.delConfirm()))) return
+  await ClueApi.deleteClue(id)
+  message.success(t('common.delSuccess'))
+  await getList()
 }
 
 /** 放入公共线索池 */
 const handlePutPublic = async (row: ClueApi.ClueVO) => {
-  try {
-    const { value } = await ElMessageBox.prompt(
+  const result = await resolveDialogAction(
+    ElMessageBox.prompt(
       t('clue.putPublicReasonPrompt', { name: row.name }),
       t('clue.putPublic'),
       {
@@ -336,22 +332,20 @@ const handlePutPublic = async (row: ClueApi.ClueVO) => {
         }
       }
     )
-    await ClueApi.putCluePublic({ clueId: row.id, reason: value.trim() })
-    message.success(t('clue.putPublicSuccess'))
-    await getList()
-  } catch {}
+  )
+  if (!result) return
+  await ClueApi.putCluePublic({ clueId: row.id, reason: result.value.trim() })
+  message.success(t('clue.putPublicSuccess'))
+  await getList()
 }
 
 /** 导出按钮操作 */
 const handleExport = async () => {
+  if (!(await resolveDialogAction(message.exportConfirm()))) return
+  exportLoading.value = true
   try {
-    // 导出的二次确认
-    await message.exportConfirm()
-    // 发起导出
-    exportLoading.value = true
     const data = await ClueApi.exportClue(queryParams)
     download.excel(data, t('clue.exportFileName') + '.xls')
-  } catch {
   } finally {
     exportLoading.value = false
   }

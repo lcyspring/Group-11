@@ -88,6 +88,7 @@ import CrmActivityPanel from '@/views/crm/activity/components/CrmActivityPanel.v
 import { BizTypeEnum } from '@/api/crm/permission'
 import type { OperateLogVO } from '@/api/system/operatelog'
 import { getOperateLogPage } from '@/api/crm/operateLog'
+import { resolveDialogAction } from '@/utils/dialogAction'
 
 defineOptions({ name: 'CrmClueDetail' })
 
@@ -133,8 +134,8 @@ const handleTransform = () => {
 
 /** 放入公共线索池 */
 const handlePutPublic = async () => {
-  try {
-    const { value } = await ElMessageBox.prompt(
+  const result = await resolveDialogAction(
+    ElMessageBox.prompt(
       t('clue.putPublicReasonPrompt', { name: clue.value.name }),
       t('clue.putPublic'),
       {
@@ -145,20 +146,20 @@ const handlePutPublic = async () => {
         }
       }
     )
-    await ClueApi.putCluePublic({ clueId: clueId.value, reason: value.trim() })
-    message.success(t('clue.putPublicSuccess'))
-    await getClue()
-  } catch {}
+  )
+  if (!result) return
+  await ClueApi.putCluePublic({ clueId: clueId.value, reason: result.value.trim() })
+  message.success(t('clue.putPublicSuccess'))
+  await getClue()
 }
 
 /** 领取当前公共线索 */
 const handleClaim = async () => {
-  try {
-    await message.confirm(t('clue.claimConfirm', { count: 1 }))
-    await ClueApi.claimPublicClues([clueId.value])
-    message.success(t('clue.claimSuccess', { count: 1 }))
-    await getClue()
-  } catch {}
+  const confirmation = message.confirm(t('clue.claimConfirm', { count: 1 }))
+  if (!(await resolveDialogAction(confirmation))) return
+  await ClueApi.claimPublicClues([clueId.value])
+  message.success(t('clue.claimSuccess', { count: 1 }))
+  await getClue()
 }
 
 /** 获取操作日志 */

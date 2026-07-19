@@ -228,6 +228,7 @@
 import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import { dateFormatter } from '@/utils/formatTime'
 import download from '@/utils/download'
+import { resolveDialogAction } from '@/utils/dialogAction'
 import * as CustomerApi from '@/api/crm/customer'
 import { invalidateCustomerGarbageList } from '../garbage/refreshSignal'
 
@@ -265,8 +266,8 @@ const poolReasonLabel = (reason?: string) => {
 }
 
 const handlePutGarbage = async (row: CustomerApi.CustomerVO) => {
-  try {
-    const { value } = await ElMessageBox.prompt(
+  const result = await resolveDialogAction(
+    ElMessageBox.prompt(
       t('putGarbageReasonPrompt', { name: row.name }),
       t('putGarbage'),
       {
@@ -279,11 +280,12 @@ const handlePutGarbage = async (row: CustomerApi.CustomerVO) => {
         }
       }
     )
-    await CustomerApi.putCustomerGarbage({ customerId: row.id, reason: value.trim() })
-    invalidateCustomerGarbageList()
-    message.success(t('putGarbageSuccess'))
-    await getList()
-  } catch {}
+  )
+  if (!result) return
+  await CustomerApi.putCustomerGarbage({ customerId: row.id, reason: result.value.trim() })
+  invalidateCustomerGarbageList()
+  message.success(t('putGarbageSuccess'))
+  await getList()
 }
 
 /** 查询列表 */
@@ -329,14 +331,11 @@ const openDetail = (id: number) => {
 
 /** 导出按钮操作 */
 const handleExport = async () => {
+  if (!(await resolveDialogAction(message.exportConfirm()))) return
+  exportLoading.value = true
   try {
-    // 导出的二次确认
-    await message.exportConfirm()
-    // 发起导出
-    exportLoading.value = true
     const data = await CustomerApi.exportCustomer(queryParams.value)
     download.excel(data, t('poolExportFileName') + '.xls')
-  } catch {
   } finally {
     exportLoading.value = false
   }

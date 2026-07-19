@@ -311,6 +311,7 @@
 <script lang="ts" setup>
 import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import { dateFormatter } from '@/utils/formatTime'
+import { resolveDialogAction } from '@/utils/dialogAction'
 import * as CustomerApi from '@/api/crm/customer'
 import CustomerForm from './CustomerForm.vue'
 import CustomerImportForm from './CustomerImportForm.vue'
@@ -411,15 +412,10 @@ const openForm = (type: string, id?: number) => {
 
 /** 删除按钮操作 */
 const handleDelete = async (id: number) => {
-  try {
-    // 删除的二次确认
-    await message.delConfirm()
-    // 发起删除
-    await CustomerApi.deleteCustomer(id)
-    message.success(t('common.delSuccess'))
-    // 刷新列表
-    await getList()
-  } catch {}
+  if (!(await resolveDialogAction(message.delConfirm()))) return
+  await CustomerApi.deleteCustomer(id)
+  message.success(t('common.delSuccess'))
+  await getList()
 }
 
 /** 导入按钮操作 */
@@ -433,18 +429,15 @@ const openExportTasks = () => exportTaskDialogRef.value?.open()
 
 /** 导出按钮操作 */
 const handleExport = async () => {
+  if (!(await resolveDialogAction(message.exportConfirm()))) return
+  exportLoading.value = true
   try {
-    // 导出的二次确认
-    await message.exportConfirm()
-    // 提交后台任务；服务端冻结当前筛选和对象权限快照
-    exportLoading.value = true
     await CustomerApi.createCustomerExportTask({
       ...queryParams,
       sceneType: queryParams.sceneType ? Number(queryParams.sceneType) : undefined
     })
     message.success(t('exportTaskSubmitted'))
     await exportTaskDialogRef.value?.open()
-  } catch {
   } finally {
     exportLoading.value = false
   }

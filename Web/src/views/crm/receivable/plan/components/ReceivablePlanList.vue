@@ -127,6 +127,7 @@
 import * as ReceivablePlanApi from '@/api/crm/receivable/plan'
 import ReceivablePlanForm from './../ReceivablePlanForm.vue'
 import { dateFormatter2 } from '@/utils/formatTime'
+import { resolveDialogAction } from '@/utils/dialogAction'
 import { erpPriceTableColumnFormatter } from '@/utils'
 
 defineOptions({ name: 'CrmReceivablePlanList' })
@@ -199,15 +200,10 @@ const createReceivable = (row: ReceivablePlanApi.ReceivablePlanVO) => {
 
 /** 删除按钮操作 */
 const handleDelete = async (id: number) => {
-  try {
-    // 删除的二次确认
-    await message.delConfirm()
-    // 发起删除
-    await ReceivablePlanApi.deleteReceivablePlan(id)
-    message.success(t('common.delSuccess'))
-    // 刷新列表
-    await getList()
-  } catch {}
+  if (!(await resolveDialogAction(message.delConfirm()))) return
+  await ReceivablePlanApi.deleteReceivablePlan(id)
+  message.success(t('common.delSuccess'))
+  await getList()
 }
 
 /** 监听打开的 customerId + contractId，从而加载最新的列表 */

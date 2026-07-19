@@ -87,6 +87,7 @@
 </template>
 <script setup lang="ts">
 import { dateFormatter } from '@/utils/formatTime'
+import { resolveDialogAction } from '@/utils/dialogAction'
 import * as CustomerLimitConfigApi from '@/api/crm/customer/limitConfig'
 import CustomerLimitConfigForm from './CustomerLimitConfigForm.vue'
 import { DICT_TYPE } from '@/utils/dict'
@@ -128,15 +129,10 @@ const openForm = (type: string, id?: number) => {
 
 /** 删除按钮操作 */
 const handleDelete = async (id: number) => {
-  try {
-    // 删除的二次确认
-    await message.delConfirm()
-    // 发起删除
-    await CustomerLimitConfigApi.deleteCustomerLimitConfig(id)
-    message.success(t('common.delSuccess'))
-    // 刷新列表
-    await getList()
-  } catch {}
+  if (!(await resolveDialogAction(message.delConfirm()))) return
+  await CustomerLimitConfigApi.deleteCustomerLimitConfig(id)
+  message.success(t('common.delSuccess'))
+  await getList()
 }
 
 /** 搜索按钮操作 */

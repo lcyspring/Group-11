@@ -86,6 +86,7 @@
 <script setup lang="ts">
 import { dateFormatter } from '@/utils/formatTime'
 import download from '@/utils/download'
+import { resolveDialogAction } from '@/utils/dialogAction'
 import * as BusinessStatusApi from '@/api/crm/business/status'
 import BusinessStatusForm from './BusinessStatusForm.vue'
 import { deleteBusinessStatus } from '@/api/crm/business/status'
@@ -136,15 +137,10 @@ const openForm = (type: string, id?: number) => {
 
 /** 删除按钮操作 */
 const handleDelete = async (id: number) => {
-  try {
-    // 删除的二次确认
-    await message.delConfirm()
-    // 发起删除
-    await BusinessStatusApi.deleteBusinessStatus(id)
-    message.success(t('common.delSuccess'))
-    // 刷新列表
-    await getList()
-  } catch {}
+  if (!(await resolveDialogAction(message.delConfirm()))) return
+  await BusinessStatusApi.deleteBusinessStatus(id)
+  message.success(t('common.delSuccess'))
+  await getList()
 }
 
 /** 初始化 **/

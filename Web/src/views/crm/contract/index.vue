@@ -336,6 +336,7 @@
 <script lang="ts" setup>
 import { dateFormatter, dateFormatter2 } from '@/utils/formatTime'
 import download from '@/utils/download'
+import { resolveDialogAction } from '@/utils/dialogAction'
 import * as ContractApi from '@/api/crm/contract'
 import ContractForm from './ContractForm.vue'
 import TableActions from '@/components/TableActions/index.vue'
@@ -416,27 +417,19 @@ const openForm = (type: string, id?: number) => {
 
 /** 删除按钮操作 */
 const handleDelete = async (id: number) => {
-  try {
-    // 删除的二次确认
-    await message.delConfirm()
-    // 发起删除
-    await ContractApi.deleteContract(id)
-    message.success(t('common.delSuccess'))
-    // 刷新列表
-    await getList()
-  } catch {}
+  if (!(await resolveDialogAction(message.delConfirm()))) return
+  await ContractApi.deleteContract(id)
+  message.success(t('common.delSuccess'))
+  await getList()
 }
 
 /** 导出按钮操作 */
 const handleExport = async () => {
+  if (!(await resolveDialogAction(message.exportConfirm()))) return
+  exportLoading.value = true
   try {
-    // 导出的二次确认
-    await message.exportConfirm()
-    // 发起导出
-    exportLoading.value = true
     const data = await ContractApi.exportContract(queryParams)
     download.excel(data, '合同.xls')
-  } catch {
   } finally {
     exportLoading.value = false
   }

@@ -326,6 +326,7 @@
 import { DICT_TYPE } from '@/utils/dict'
 import { dateFormatter, dateFormatter2 } from '@/utils/formatTime'
 import download from '@/utils/download'
+import { resolveDialogAction } from '@/utils/dialogAction'
 import * as ReceivableApi from '@/api/crm/receivable'
 import ReceivableForm from './ReceivableForm.vue'
 import TableActions from '@/components/TableActions/index.vue'
@@ -412,15 +413,10 @@ const openForm = (type: string, id?: number) => {
 
 /** 删除按钮操作 */
 const handleDelete = async (id: number) => {
-  try {
-    // 删除的二次确认
-    await message.delConfirm()
-    // 发起删除
-    await ReceivableApi.deleteReceivable(id)
-    message.success(t('common.delSuccess'))
-    // 刷新列表
-    await getList()
-  } catch {}
+  if (!(await resolveDialogAction(message.delConfirm()))) return
+  await ReceivableApi.deleteReceivable(id)
+  message.success(t('common.delSuccess'))
+  await getList()
 }
 
 /** 提交审核 **/
@@ -466,14 +462,11 @@ const openContractDetail = (id: number) => {
 
 /** 导出按钮操作 */
 const handleExport = async () => {
+  if (!(await resolveDialogAction(message.exportConfirm()))) return
+  exportLoading.value = true
   try {
-    // 导出的二次确认
-    await message.exportConfirm()
-    // 发起导出
-    exportLoading.value = true
     const data = await ReceivableApi.exportReceivable(queryParams)
     download.excel(data, t('receivable.exportFileName') + '.xls')
-  } catch {
   } finally {
     exportLoading.value = false
   }

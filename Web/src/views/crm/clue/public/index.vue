@@ -146,6 +146,7 @@
 <script setup lang="ts">
 import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import { dateFormatter } from '@/utils/formatTime'
+import { resolveDialogAction } from '@/utils/dialogAction'
 import * as ClueApi from '@/api/crm/clue'
 import * as UserApi from '@/api/system/user'
 
@@ -196,12 +197,11 @@ const openDetail = (id: number) => push({ name: 'CrmClueDetail', params: { id } 
 
 const handleClaim = async (rows: ClueApi.ClueVO[]) => {
   if (!rows.length) return
-  try {
-    await message.confirm(t('clue.claimConfirm', { count: rows.length }))
-    await ClueApi.claimPublicClues(rows.map((row) => row.id))
-    message.success(t('clue.claimSuccess', { count: rows.length }))
-    await getList()
-  } catch {}
+  const confirmation = message.confirm(t('clue.claimConfirm', { count: rows.length }))
+  if (!(await resolveDialogAction(confirmation))) return
+  await ClueApi.claimPublicClues(rows.map((row) => row.id))
+  message.success(t('clue.claimSuccess', { count: rows.length }))
+  await getList()
 }
 
 const assignVisible = ref(false)
