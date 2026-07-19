@@ -90,6 +90,41 @@ BEGIN
       AND title LIKE CONCAT(@demo_batch,'-WO-%')) <> __WORK_ORDERS__ THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Demo validation failed: work order count';
   END IF;
+  IF (SELECT COUNT(*) FROM crm_work_order_group WHERE tenant_id=@demo_tenant AND deleted=b'0'
+      AND remark=CONCAT('generated-batch:',@demo_batch)) <> __WORK_ORDER_GROUPS__ OR
+     (SELECT COUNT(*) FROM crm_work_order_group_member m JOIN crm_work_order_group g ON g.id=m.group_id
+       WHERE g.tenant_id=@demo_tenant AND g.deleted=b'0' AND m.deleted=b'0'
+        AND g.remark=CONCAT('generated-batch:',@demo_batch)) <> (__WORK_ORDER_GROUPS__ * 3) OR
+     (SELECT COUNT(*) FROM crm_work_order w JOIN crm_work_order_group g ON g.id=w.group_id
+       WHERE w.tenant_id=@demo_tenant AND w.deleted=b'0'
+        AND w.title LIKE CONCAT(@demo_batch,'-WO-%')
+        AND g.remark=CONCAT('generated-batch:',@demo_batch)) <> __WORK_ORDERS__ THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Demo validation failed: work-order group coverage';
+  END IF;
+  IF (SELECT COUNT(*) FROM crm_competitor WHERE tenant_id=@demo_tenant AND deleted=b'0'
+      AND name LIKE CONCAT(@demo_batch,'-COMPETITOR-%')) <> __COMPETITORS__ OR
+     (SELECT COUNT(DISTINCT owner_user_id) FROM crm_competitor WHERE tenant_id=@demo_tenant AND deleted=b'0'
+      AND name LIKE CONCAT(@demo_batch,'-COMPETITOR-%')) < 4 OR
+     (SELECT COUNT(*) FROM crm_competitor WHERE tenant_id=@demo_tenant AND deleted=b'0'
+      AND name LIKE CONCAT(@demo_batch,'-COMPETITOR-%') AND owner_user_id=__OWNER__) = 0 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Demo validation failed: competitor coverage';
+  END IF;
+  IF (SELECT COUNT(*) FROM crm_erp_customer_mapping WHERE tenant_id=@demo_tenant AND deleted=b'0'
+      AND remark=CONCAT('generated-batch:',@demo_batch)) <> __ERP_CUSTOMER_MAPPINGS__ OR
+     (SELECT COUNT(*) FROM crm_erp_product_mapping WHERE tenant_id=@demo_tenant AND deleted=b'0'
+      AND remark=CONCAT('generated-batch:',@demo_batch)) <> __ERP_PRODUCT_MAPPINGS__ OR
+     (SELECT COUNT(*) FROM crm_erp_customer_mapping m
+       JOIN crm_customer c ON c.id=m.crm_customer_id AND c.deleted=b'0'
+       JOIN erp_customer e ON e.id=m.erp_customer_id AND e.deleted=b'0'
+       WHERE m.tenant_id=@demo_tenant AND m.deleted=b'0'
+        AND m.remark=CONCAT('generated-batch:',@demo_batch)) <> __ERP_CUSTOMER_MAPPINGS__ OR
+     (SELECT COUNT(*) FROM crm_erp_product_mapping m
+       JOIN crm_product p ON p.id=m.crm_product_id AND p.deleted=b'0'
+       JOIN erp_product e ON e.id=m.erp_product_id AND e.deleted=b'0'
+       WHERE m.tenant_id=@demo_tenant AND m.deleted=b'0'
+        AND m.remark=CONCAT('generated-batch:',@demo_batch)) <> __ERP_PRODUCT_MAPPINGS__ THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Demo validation failed: ERP mapping coverage';
+  END IF;
   IF (SELECT COUNT(DISTINCT owner_user_id) FROM crm_customer WHERE tenant_id=@demo_tenant
       AND name LIKE CONCAT(@demo_batch,'-CUS-%')) < 4 OR
      (SELECT COUNT(DISTINCT owner_user_id) FROM crm_contract WHERE tenant_id=@demo_tenant
@@ -99,10 +134,18 @@ BEGIN
      (SELECT COUNT(DISTINCT creator) FROM crm_follow_up_record WHERE tenant_id=@demo_tenant
       AND content LIKE CONCAT('%generated-batch:',@demo_batch,'%')) < 4 OR
      (SELECT COUNT(DISTINCT owner_user_id) FROM crm_reimbursement WHERE tenant_id=@demo_tenant
-      AND no LIKE CONCAT(@demo_batch,'-RMB-%')) < 2 OR
+      AND no LIKE CONCAT(@demo_batch,'-RMB-%')) < 3 OR
+     (SELECT COUNT(DISTINCT owner_user_id) FROM crm_receivable_refund WHERE tenant_id=@demo_tenant
+      AND no LIKE CONCAT(@demo_batch,'-REF-%')) < 3 OR
      (SELECT COUNT(DISTINCT handler_user_id) FROM crm_work_order WHERE tenant_id=@demo_tenant
       AND title LIKE CONCAT(@demo_batch,'-WO-%')) < 2 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Demo validation failed: multi-user ownership distribution';
+  END IF;
+  IF (SELECT COUNT(*) FROM crm_reimbursement WHERE tenant_id=@demo_tenant AND deleted=b'0'
+      AND no LIKE CONCAT(@demo_batch,'-RMB-%') AND owner_user_id=__OWNER__) = 0 OR
+     (SELECT COUNT(*) FROM crm_receivable_refund WHERE tenant_id=@demo_tenant AND deleted=b'0'
+      AND no LIKE CONCAT(@demo_batch,'-REF-%') AND owner_user_id=__OWNER__) = 0 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Demo validation failed: finance responsible samples';
   END IF;
 
   SELECT id INTO status_type_id FROM crm_business_status_type
@@ -206,4 +249,10 @@ SELECT
   (SELECT COUNT(*) FROM crm_business WHERE tenant_id=@demo_tenant AND name LIKE CONCAT(@demo_batch,'-BUS-%')) AS businesses,
   (SELECT COUNT(*) FROM crm_contract WHERE tenant_id=@demo_tenant AND name LIKE CONCAT(@demo_batch,'-CONTRACT-%')) AS contracts,
   (SELECT COUNT(*) FROM crm_receivable_plan WHERE tenant_id=@demo_tenant AND remark LIKE CONCAT('generated-batch:',@demo_batch,'%')) AS plans,
+  (SELECT COUNT(*) FROM crm_reimbursement WHERE tenant_id=@demo_tenant AND no LIKE CONCAT(@demo_batch,'-RMB-%')) AS reimbursements,
+  (SELECT COUNT(*) FROM crm_receivable_refund WHERE tenant_id=@demo_tenant AND no LIKE CONCAT(@demo_batch,'-REF-%')) AS refunds,
+  (SELECT COUNT(*) FROM crm_competitor WHERE tenant_id=@demo_tenant AND name LIKE CONCAT(@demo_batch,'-COMPETITOR-%')) AS competitors,
+  (SELECT COUNT(*) FROM crm_work_order_group WHERE tenant_id=@demo_tenant AND remark=CONCAT('generated-batch:',@demo_batch)) AS work_order_groups,
+  (SELECT COUNT(*) FROM crm_erp_customer_mapping WHERE tenant_id=@demo_tenant AND remark=CONCAT('generated-batch:',@demo_batch)) AS erp_customer_mappings,
+  (SELECT COUNT(*) FROM crm_erp_product_mapping WHERE tenant_id=@demo_tenant AND remark=CONCAT('generated-batch:',@demo_batch)) AS erp_product_mappings,
   (SELECT COUNT(*) FROM crm_work_order WHERE tenant_id=@demo_tenant AND title LIKE CONCAT(@demo_batch,'-WO-%')) AS work_orders;

@@ -330,6 +330,10 @@
 | `dataset_generation.customer_count/contact_count/clue_count/follow_up_count` | 客户、联系人、线索和客户跟进记录规模；联系人可多于客户以覆盖一对多关系 |
 | `dataset_generation.customer_public_pool_count/clue_public_pool_count` | 客户公海和公共线索数量，均必须小于对应总数 |
 | `dataset_generation.business_count/product_count/work_order_count` | 商机、产品和工单规模；商机/合同均生成产品明细 |
+| `dataset_generation.competitor_count` | 竞争对手资料数量；负责人分布包含基准管理员和多名演示销售人员 |
+| `dataset_generation.work_order_group_count` | 客服处理组数量；工单会均匀关联处理组，并生成组长和成员关系 |
+| `dataset_generation.erp_customer_mapping_count` | CRM 客户、ERP 客户主数据及一对一映射数量，不得超过客户数 |
+| `dataset_generation.erp_product_mapping_count` | CRM 产品、ERP 产品主数据及一对一映射数量，不得超过产品数 |
 | `dataset_generation.contract_count/receivable_plan_count/receivable_count` | 合同、计划和回款规模；计划数必须是合同数的整数倍 |
 | `dataset_generation.invoice_count/reimbursement_count/refund_count` | 发票、报销和退款规模，均受上游合同或回款数量约束 |
 | `dataset_generation.marketing_campaign_count/customer_care_record_count` | 营销活动和客户关怀触达规模 |
@@ -337,7 +341,8 @@
 | `dataset_generation.output_dir` | 只能位于 `database/generated/`，生成结果被 Git 忽略 |
 
 生成器没有清理、插入或替换模式，也没有持久数据确认字段；它只产出文件。数据是否应用完全由
-`deploy.sh` 运行 KDL 的 `mysql.dataset_mode` 决定。
+`deploy.sh` 运行 KDL 的 `mysql.dataset_mode` 决定。生成结果中即使包含供 `replace` 使用的 cleanup SQL，
+生成阶段也不会执行它；只有部署阶段显式选择 `replace` 才会应用清理步骤。
 
 ## CRM MySQL 备份恢复配置
 

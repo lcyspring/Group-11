@@ -14,6 +14,9 @@
 首页公告跳转 404 修复记录：
 [CRM-HOME-BUG-002](logs/CRM-HOME-BUG-002-notice-navigation-404.md)。
 
+演示数据财务负责人、客服处理组、竞争对手和 ERP 映射缺失修复记录：
+[DEMO-DATA-BUG-008](logs/DEMO-DATA-BUG-008-finance-service-competitor-erp-coverage.md)。
+
 Deno/Vite 8 工具链迁移缺陷：
 [WEB-BUILD-BUG-003](logs/WEB-BUILD-BUG-003-node-pnpm-toolchain-drift.md)、
 [004](logs/WEB-BUILD-BUG-004-deno-lifecycle-node-assumption.md)、

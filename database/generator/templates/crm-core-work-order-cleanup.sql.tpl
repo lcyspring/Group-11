@@ -35,6 +35,10 @@ DELETE FROM crm_customer_pool_claim_counter WHERE tenant_id=@demo_tenant;
 DELETE FROM crm_customer_visit WHERE tenant_id=@demo_tenant;
 DELETE FROM crm_erp_customer_mapping WHERE tenant_id=@demo_tenant;
 DELETE FROM crm_erp_product_mapping WHERE tenant_id=@demo_tenant;
+DELETE FROM erp_product WHERE tenant_id=@demo_tenant AND remark LIKE 'generated-batch:%';
+DELETE FROM erp_customer WHERE tenant_id=@demo_tenant AND remark LIKE 'generated-batch:%';
+DELETE FROM erp_product_category WHERE tenant_id=@demo_tenant AND code LIKE 'D2ERP-CAT-%';
+DELETE FROM erp_product_unit WHERE tenant_id=@demo_tenant AND name LIKE 'DEMO2-%-ERP-UNIT';
 DELETE FROM crm_export_task WHERE tenant_id=@demo_tenant;
 DELETE FROM crm_follow_up_record WHERE tenant_id=@demo_tenant;
 DELETE FROM crm_invoice_action_record WHERE tenant_id=@demo_tenant;
@@ -81,6 +85,11 @@ DELETE FROM crm_sms_record WHERE tenant_id=@demo_tenant;
 DELETE FROM crm_task WHERE tenant_id=@demo_tenant;
 DELETE FROM crm_work_order WHERE tenant_id=@demo_tenant;
 DELETE FROM crm_work_report WHERE tenant_id=@demo_tenant;
+
+DELETE FROM crm_work_order_group_member WHERE tenant_id=@demo_tenant
+ AND group_id IN (SELECT id FROM crm_work_order_group WHERE tenant_id=@demo_tenant
+                   AND remark LIKE 'generated-batch:%');
+DELETE FROM crm_work_order_group WHERE tenant_id=@demo_tenant AND remark LIKE 'generated-batch:%';
 
 -- Remove every prior generated identity batch, while retaining the configured owner/admin.
 DELETE cc FROM crm_work_order_group_member cc JOIN system_users u ON u.id=cc.user_id

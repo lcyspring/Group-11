@@ -1,4 +1,4 @@
--- Generated from an explicit YAML configuration. Do not edit the rendered file.
+-- Generated from an explicit KDL configuration. Do not edit the rendered file.
 SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
 SET @demo_batch = _utf8mb4'__BATCH__' COLLATE utf8mb4_unicode_ci;
 SET @demo_tenant = __TENANT__;
@@ -16,6 +16,7 @@ BEGIN
   DECLARE contact_id BIGINT;
   DECLARE business_id BIGINT;
   DECLARE work_order_id BIGINT;
+  DECLARE work_order_group_id BIGINT;
   DECLARE status_type_id BIGINT;
   DECLARE status_id BIGINT;
   DECLARE owner_dept_id BIGINT;
@@ -33,6 +34,7 @@ BEGIN
   CREATE TEMPORARY TABLE demo_customer_ids(seq INT PRIMARY KEY, id BIGINT NOT NULL);
   CREATE TEMPORARY TABLE demo_business_stage_ids(seq INT PRIMARY KEY, id BIGINT NOT NULL);
   CREATE TEMPORARY TABLE demo_owner_ids(seq INT PRIMARY KEY, id BIGINT NOT NULL);
+  CREATE TEMPORARY TABLE demo_work_order_group_ids(seq INT PRIMARY KEY, id BIGINT NOT NULL);
   CREATE TEMPORARY TABLE demo_role_ids(seq INT PRIMARY KEY, id BIGINT NOT NULL);
   CREATE TEMPORARY TABLE demo_role_menu_ids(
     role_id BIGINT NOT NULL,menu_id BIGINT NOT NULL,PRIMARY KEY(role_id,menu_id));
@@ -142,6 +144,27 @@ BEGIN
   -- Sequence 0 represents the configured base administrator. Core objects use
   -- owners 0..4 so the same login has both "responsible" and "participating" samples.
   INSERT INTO demo_owner_ids VALUES(0,@demo_owner);
+
+  SET i=1;
+  WHILE i<=__WORK_ORDER_GROUPS__ DO
+    SELECT id INTO record_owner FROM demo_owner_ids
+     WHERE seq=CASE WHEN i=1 THEN 0 ELSE MOD(i-2,2)+7 END;
+    INSERT INTO crm_work_order_group
+      (code,name,manager_user_id,supported_types,status,sort,remark,
+       creator,create_time,updater,update_time,deleted,tenant_id)
+      VALUES(CONCAT(@demo_batch,'-WG-',LPAD(i,2,'0')),
+       CONCAT('演示客服处理组 ',LPAD(i,2,'0')),record_owner,JSON_ARRAY(1,2,3,4),0,i,
+       CONCAT('generated-batch:',@demo_batch),CAST(@demo_owner AS CHAR),NOW(),
+       CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant);
+    SET work_order_group_id=LAST_INSERT_ID();
+    INSERT INTO demo_work_order_group_ids VALUES(i,work_order_group_id);
+    INSERT INTO crm_work_order_group_member
+      (group_id,user_id,sort,creator,create_time,updater,update_time,deleted,tenant_id)
+    SELECT work_order_group_id,id,seq+1,CAST(@demo_owner AS CHAR),NOW(),
+           CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant
+      FROM demo_owner_ids WHERE seq IN (0,7,8);
+    SET i=i+1;
+  END WHILE;
 
   INSERT INTO crm_business_status_type
     (name,dept_ids,creator,create_time,updater,update_time,tenant_id,deleted)
@@ -338,13 +361,15 @@ BEGIN
     SELECT id INTO customer_id FROM demo_customer_ids
      WHERE seq=MOD(i-1,(__CUSTOMERS__-__PUBLIC_CUSTOMERS__))+1;
     SELECT id INTO record_owner FROM demo_owner_ids WHERE seq=MOD(i-1,2)+7;
+    SELECT id INTO work_order_group_id FROM demo_work_order_group_ids
+     WHERE seq=MOD(i-1,__WORK_ORDER_GROUPS__)+1;
     SET event_time=DATE_ADD(@demo_start,INTERVAL MOD(__SEED__+i*53,GREATEST(@demo_span_days-3,1)) DAY);
     INSERT INTO crm_work_order
-      (no,title,type,priority,status,customer_id,source_type,handler_user_id,dispatch_mode,assign_time,
+      (no,title,type,priority,status,customer_id,source_type,group_id,handler_user_id,dispatch_mode,assign_time,
        description,solution,process_time,complete_time,return_reason,creator,create_time,updater,update_time,deleted,tenant_id)
       VALUES(CONCAT('D2-',__SEED__,'-',LPAD(i,8,'0')),CONCAT(@demo_batch,'-WO-',LPAD(i,7,'0')),
        MOD(i,4)+1,MOD(i,3)+1,CASE MOD(i,4) WHEN 0 THEN 10 WHEN 1 THEN 20 WHEN 2 THEN 30 ELSE 40 END,
-       customer_id,0,record_owner,1,event_time,
+       customer_id,0,work_order_group_id,record_owner,1,event_time,
        CONCAT('固定种子工单演示数据，批次 ',@demo_batch),IF(MOD(i,4)=2,'演示工单已完成处理与复核。',NULL),
        IF(MOD(i,4) IN (1,2,3),DATE_ADD(event_time,INTERVAL 1 HOUR),NULL),
        IF(MOD(i,4)=2,DATE_ADD(event_time,INTERVAL 2 DAY),NULL),
@@ -405,6 +430,7 @@ BEGIN
   DROP TEMPORARY TABLE demo_business_stage_ids;
   DROP TEMPORARY TABLE demo_customer_ids;
   DROP TEMPORARY TABLE demo_owner_ids;
+  DROP TEMPORARY TABLE demo_work_order_group_ids;
   DROP TEMPORARY TABLE demo_role_menu_next;
   DROP TEMPORARY TABLE demo_role_menu_frontier;
   DROP TEMPORARY TABLE demo_role_menu_ids;

@@ -26,6 +26,13 @@ BEGIN
   DECLARE category_id BIGINT;
   DECLARE campaign_id BIGINT;
   DECLARE care_plan_id BIGINT;
+  DECLARE erp_customer_id BIGINT;
+  DECLARE erp_product_id BIGINT;
+  DECLARE erp_category_id BIGINT;
+  DECLARE erp_unit_id BIGINT;
+  DECLARE customer_name VARCHAR(255);
+  DECLARE customer_mobile VARCHAR(30);
+  DECLARE customer_email VARCHAR(50);
   DECLARE product_name VARCHAR(100);
   DECLARE product_no VARCHAR(20);
   DECLARE product_unit INT;
@@ -68,6 +75,25 @@ BEGIN
   END WHILE;
   INSERT INTO demo_owner_ids VALUES(0,@demo_owner);
 
+  SET i=1;
+  WHILE i<=__COMPETITORS__ DO
+    SELECT id INTO record_owner FROM demo_owner_ids WHERE seq=MOD(i,5);
+    INSERT INTO crm_competitor
+      (name,website,strengths,weaknesses,strategy,owner_user_id,status,remark,
+       creator,create_time,updater,update_time,deleted,tenant_id)
+      VALUES(CONCAT(@demo_batch,'-COMPETITOR-',LPAD(i,4,'0')),
+       CONCAT('https://competitor-',__SEED__,'-',i,'.example.invalid'),
+       CASE MOD(i,4) WHEN 0 THEN '渠道覆盖广' WHEN 1 THEN '交付周期短'
+            WHEN 2 THEN '行业方案成熟' ELSE '价格策略灵活' END,
+       CASE MOD(i,4) WHEN 0 THEN '定制能力有限' WHEN 1 THEN '售后网络较弱'
+            WHEN 2 THEN '产品集成成本高' ELSE '大型项目经验不足' END,
+       CASE MOD(i,3) WHEN 0 THEN '强化行业交付证据' WHEN 1 THEN '突出全生命周期服务'
+            ELSE '采用价值报价与联合方案' END,
+       record_owner,IF(MOD(i,10)=0,1,0),CONCAT('generated-batch:',@demo_batch),
+       CAST(record_owner AS CHAR),NOW(),CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant);
+    SET i=i+1;
+  END WHILE;
+
   INSERT INTO crm_product_category
     (name,parent_id,creator,create_time,updater,update_time,deleted,tenant_id)
     VALUES(CONCAT(@demo_batch,'-CATEGORY-ROOT'),0,CAST(@demo_owner AS CHAR),NOW(),
@@ -98,6 +124,57 @@ BEGIN
       (biz_type,biz_id,user_id,level,creator,create_time,updater,update_time,deleted,tenant_id)
       VALUES(6,LAST_INSERT_ID(),record_owner,1,CAST(@demo_owner AS CHAR),NOW(),
              CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant);
+    SET i=i+1;
+  END WHILE;
+
+  INSERT INTO erp_product_category
+    (parent_id,name,code,sort,status,creator,create_time,updater,update_time,deleted,tenant_id)
+    VALUES(0,CONCAT(@demo_batch,'-ERP-CATEGORY'),CONCAT('D2ERP-CAT-',__SEED__),1,0,
+     CAST(@demo_owner AS CHAR),NOW(),CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant);
+  SET erp_category_id=LAST_INSERT_ID();
+  INSERT INTO erp_product_unit
+    (name,status,creator,create_time,updater,update_time,deleted,tenant_id)
+    VALUES(CONCAT(@demo_batch,'-ERP-UNIT'),0,CAST(@demo_owner AS CHAR),NOW(),
+     CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant);
+  SET erp_unit_id=LAST_INSERT_ID();
+
+  SET i=1;
+  WHILE i<=__ERP_CUSTOMER_MAPPINGS__ DO
+    SELECT id,name,mobile,email INTO customer_id,customer_name,customer_mobile,customer_email
+      FROM crm_customer WHERE tenant_id=@demo_tenant AND deleted=b'0'
+       AND name=CONCAT(@demo_batch,'-CUS-',LPAD(i,6,'0'));
+    INSERT INTO erp_customer
+      (name,contact,mobile,email,remark,status,sort,tax_no,tax_percent,
+       creator,create_time,updater,update_time,deleted,tenant_id)
+      VALUES(CONCAT(customer_name,' ERP'),CONCAT('演示联系人',LPAD(i,3,'0')),
+       customer_mobile,customer_email,CONCAT('generated-batch:',@demo_batch),0,i,
+       CONCAT('D2ERP-TAX-',__SEED__,'-',LPAD(i,4,'0')),13,
+       CAST(@demo_owner AS CHAR),NOW(),CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant);
+    SET erp_customer_id=LAST_INSERT_ID();
+    INSERT INTO crm_erp_customer_mapping
+      (crm_customer_id,erp_customer_id,remark,creator,create_time,updater,update_time,deleted,tenant_id)
+      VALUES(customer_id,erp_customer_id,CONCAT('generated-batch:',@demo_batch),
+       CAST(@demo_owner AS CHAR),NOW(),CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant);
+    SET i=i+1;
+  END WHILE;
+
+  SET i=1;
+  WHILE i<=__ERP_PRODUCT_MAPPINGS__ DO
+    SELECT id,name,no,price INTO product_id,product_name,product_no,receipt_amount
+      FROM crm_product WHERE tenant_id=@demo_tenant AND deleted=b'0'
+       AND name=CONCAT(@demo_batch,'-PRODUCT-',LPAD(i,4,'0'));
+    INSERT INTO erp_product
+      (name,bar_code,category_id,unit_id,status,standard,remark,purchase_price,sale_price,min_price,
+       creator,create_time,updater,update_time,deleted,tenant_id)
+      VALUES(CONCAT(product_name,' ERP'),CONCAT('D2ERP',__SEED__,LPAD(i,4,'0')),
+       erp_category_id,erp_unit_id,0,product_no,CONCAT('generated-batch:',@demo_batch),
+       ROUND(receipt_amount*0.6,6),receipt_amount,ROUND(receipt_amount*0.5,6),
+       CAST(@demo_owner AS CHAR),NOW(),CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant);
+    SET erp_product_id=LAST_INSERT_ID();
+    INSERT INTO crm_erp_product_mapping
+      (crm_product_id,erp_product_id,remark,creator,create_time,updater,update_time,deleted,tenant_id)
+      VALUES(product_id,erp_product_id,CONCAT('generated-batch:',@demo_batch),
+       CAST(@demo_owner AS CHAR),NOW(),CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant);
     SET i=i+1;
   END WHILE;
 
@@ -229,7 +306,8 @@ BEGIN
 
   SET i=1;
   WHILE i<=__REFUNDS__ DO
-    SELECT id INTO record_owner FROM demo_owner_ids WHERE seq=MOD(i-1,2)+5;
+    SELECT id INTO record_owner FROM demo_owner_ids
+     WHERE seq=CASE WHEN MOD(i,3)=0 THEN 0 ELSE MOD(i-1,2)+5 END;
     SELECT id,contract_id,customer_id,price INTO receivable_id,contract_id,customer_id,receipt_amount
       FROM demo_receivable_ids WHERE seq=i;
     SET finance_status=CASE MOD(i,4) WHEN 0 THEN 0 WHEN 1 THEN 20 WHEN 2 THEN 30 ELSE 40 END;
@@ -322,7 +400,8 @@ BEGIN
   SET category_id=LAST_INSERT_ID();
   SET i=1;
   WHILE i<=__REIMBURSEMENTS__ DO
-    SELECT id INTO record_owner FROM demo_owner_ids WHERE seq=MOD(i-1,2)+5;
+    SELECT id INTO record_owner FROM demo_owner_ids
+     WHERE seq=CASE WHEN MOD(i,3)=0 THEN 0 ELSE MOD(i-1,2)+5 END;
     SET event_time=DATE_ADD(@demo_start,INTERVAL MOD(__SEED__+i*71,@demo_span_days) DAY);
     SET finance_status=CASE MOD(i,4) WHEN 0 THEN 0 WHEN 1 THEN 20 WHEN 2 THEN 30 ELSE 40 END;
     SELECT id,customer_id INTO contract_id,customer_id FROM demo_contract_ids WHERE seq=i;
@@ -472,6 +551,16 @@ BEGIN
   SELECT 9,x.id,@demo_owner,3,CAST(@demo_owner AS CHAR),NOW(),CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant
     FROM crm_invoice x WHERE x.tenant_id=@demo_tenant AND x.deleted=b'0'
      AND x.no LIKE CONCAT(@demo_batch,'-INV-%') AND x.owner_user_id<>@demo_owner;
+  INSERT INTO crm_permission
+    (biz_type,biz_id,user_id,level,creator,create_time,updater,update_time,deleted,tenant_id)
+  SELECT 10,x.id,@demo_owner,3,CAST(@demo_owner AS CHAR),NOW(),CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant
+    FROM crm_receivable_refund x WHERE x.tenant_id=@demo_tenant AND x.deleted=b'0'
+     AND x.no LIKE CONCAT(@demo_batch,'-REF-%') AND x.owner_user_id<>@demo_owner;
+  INSERT INTO crm_permission
+    (biz_type,biz_id,user_id,level,creator,create_time,updater,update_time,deleted,tenant_id)
+  SELECT 11,x.id,@demo_owner,3,CAST(@demo_owner AS CHAR),NOW(),CAST(@demo_owner AS CHAR),NOW(),b'0',@demo_tenant
+    FROM crm_reimbursement x WHERE x.tenant_id=@demo_tenant AND x.deleted=b'0'
+     AND x.no LIKE CONCAT(@demo_batch,'-RMB-%') AND x.owner_user_id<>@demo_owner;
 
   DROP TEMPORARY TABLE demo_receivable_ids;
   DROP TEMPORARY TABLE demo_plan_ids;

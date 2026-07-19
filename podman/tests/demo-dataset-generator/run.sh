@@ -34,6 +34,13 @@ grep -q 'receivable_id IS NULL AND return_time' "${OUTPUT}/04-validate.sql"
 grep -q "username REGEXP '\^\[A-Za-z0-9\]" "${OUTPUT}/04-validate.sql"
 grep -q 'role permission separation' "${OUTPUT}/04-validate.sql"
 grep -q 'demo_role_menu_frontier' "${OUTPUT}/02-insert.sql"
+grep -q 'work-order group coverage' "${OUTPUT}/04-validate.sql"
+grep -q 'competitor coverage' "${OUTPUT}/04-validate.sql"
+grep -q 'ERP mapping coverage' "${OUTPUT}/04-validate.sql"
+grep -q 'finance responsible samples' "${OUTPUT}/04-validate.sql"
+grep -q 'crm_work_order_group_member' "${OUTPUT}/02-insert.sql"
+grep -q 'crm_erp_customer_mapping' "${OUTPUT}/03-associated.sql"
+grep -q 'crm_erp_product_mapping' "${OUTPUT}/03-associated.sql"
 
 kdl_set_file "$CONFIG" dataset_generation.business_count number 72
 if bash "${PODMAN_DIR}/operations/database/generate-demo-dataset.sh" "$CONFIG" >/dev/null 2>&1; then
@@ -42,6 +49,13 @@ if bash "${PODMAN_DIR}/operations/database/generate-demo-dataset.sh" "$CONFIG" >
 fi
 
 kdl_set_file "$CONFIG" dataset_generation.business_count number 180
+kdl_set_file "$CONFIG" dataset_generation.erp_customer_mapping_count number 161
+if bash "${PODMAN_DIR}/operations/database/generate-demo-dataset.sh" "$CONFIG" >/dev/null 2>&1; then
+    printf 'ERP customer mappings exceeding CRM customers were accepted.\n' >&2
+    exit 1
+fi
+
+kdl_set_file "$CONFIG" dataset_generation.erp_customer_mapping_count number 50
 kdl_set_file "$CONFIG" dataset_generation.demo_user_password_source string plaintext
 if bash "${PODMAN_DIR}/operations/database/generate-demo-dataset.sh" "$CONFIG" >/dev/null 2>&1; then
     printf 'Unsupported demo password source was accepted.\n' >&2
