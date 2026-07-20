@@ -1,7 +1,7 @@
 # Group-11
 # Mitedtsm CRM 系统
 
-本仓库在 `develop` 分支持续完善 CRM、财务、营销与流程协作能力。项目统一使用 rootless
+本仓库在 `main` 分支持续完善 CRM、财务、营销与流程协作能力。项目统一使用 rootless
 Podman；JDK、Maven、Deno 与 HBuilderX 均在 Ubuntu 26.04 工具链容器中运行，宿主机
 不安装项目编译工具链，也不在宿主机下载项目依赖。
 
