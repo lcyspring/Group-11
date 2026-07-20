@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # Build a transferable, source-free Podman/Docker Compose deployment directory.
+# Image archives use the OCI image-layout format supported by Podman and the
+# Docker Engine shipped with Ubuntu 26.04.
 
 set -Eeuo pipefail
 
@@ -273,8 +275,8 @@ for ((index = 0; index < ${#images[@]}; index++)); do
     if [[ "$export_image" != "$image" ]]; then
         podman tag "$image" "$export_image"
     fi
-    printf 'Exporting %s as Docker-compatible archive %s\n' "$export_image" "$archive"
-    podman save --format docker-archive --output "${TEMP_DIR}/podman/images/${archive}" "$export_image"
+    printf 'Exporting %s as OCI archive %s\n' "$export_image" "$archive"
+    podman save --format oci-archive --output "${TEMP_DIR}/podman/images/${archive}" "$export_image"
 done
 
 (
@@ -289,6 +291,8 @@ source_commit="$(git -C "$PROJECT_ROOT" rev-parse HEAD 2>/dev/null || printf 'un
     printf 'architecture=x86_64\n'
     printf 'source_commit=%s\n' "$source_commit"
     printf 'container_engines=podman,docker-compose\n'
+    printf 'image_archive_format=oci-archive\n'
+    printf 'docker_baseline=ubuntu-26.04-default\n'
     printf 'default_data_profile=production\n'
     printf 'source_host_infrastructure_credentials=false\n'
     printf 'image_count=%s\n' "${#images[@]}"

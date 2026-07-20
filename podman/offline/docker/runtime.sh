@@ -306,7 +306,7 @@ ensure_images() {
         archive="${archives[index]}"
         [[ -s "$archive" ]] || { printf 'Missing image archive: %s\n' "$archive" >&2; return 1; }
         if ! docker image inspect "$image" >/dev/null 2>&1; then
-            printf 'Loading Docker image archive: %s\n' "$(basename -- "$archive")"
+            printf 'Loading OCI image archive into Docker: %s\n' "$(basename -- "$archive")"
             docker load --input "$archive" >/dev/null
         fi
         docker image inspect "$image" >/dev/null 2>&1 || {

@@ -30,7 +30,7 @@ source "${ROOT_DIR}/container-engine.sh"
 ENGINE="$(resolve_container_engine)"
 printf 'Selected container engine: %s.\n' "$ENGINE"
 
-printf 'Verifying common Podman/Docker image archives.\n'
+printf 'Verifying OCI image archives.\n'
 (
     cd "${ROOT_DIR}/podman/images"
     sha256sum --check SHA256SUMS

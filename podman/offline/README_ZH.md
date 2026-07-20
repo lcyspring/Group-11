@@ -1,6 +1,6 @@
 # Mitedtsm 离线部署包
 
-本目录包含目标机运行所需的 8 个 Docker-compatible 镜像归档、数据库 SQL、BPM 配置以及
+本目录包含目标机运行所需的 8 个 OCI 镜像归档、数据库 SQL、BPM 配置以及
 Podman/Docker Compose 一键脚本。目标机不需要项目源码、JDK、Maven、Deno、Node.js 或 HBuilderX。
 
 ## 容器引擎自动选择
@@ -19,7 +19,7 @@ Podman/Docker Compose 一键脚本。目标机不需要项目源码、JDK、Mave
 ## 目标机要求
 
 - Linux x86-64；
-- rootless Podman，或 Docker Engine + Docker Compose v2；
+- rootless Podman，或 Ubuntu 26.04 默认 Docker Engine + Docker Compose v2；
 - `bash`、`curl`、`jq`、`sha256sum`、`od` 和 `tr`；
 - 8080、8081、8082 未被占用；
 - 解压后的目录支持软链接和可执行文件。
@@ -68,6 +68,8 @@ cd mitedtsm-offline-x86_64
 
 参数是其他浏览器访问该主机时使用的 IP 或 DNS 名。省略时公开 URL 保持 `127.0.0.1`。脚本会依次
 生成/应用目标机配置、检测引擎、校验 8 个归档 SHA-256、执行无状态预检、加载镜像并部署。
+8 个归档使用 OCI image-layout；Podman 与 Ubuntu 26.04 默认 Docker 均可直接加载。更旧的 Docker
+版本不属于本交付包的兼容范围。
 
 访问地址：
 
