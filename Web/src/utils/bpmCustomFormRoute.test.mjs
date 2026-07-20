@@ -70,33 +70,37 @@ test('business form registration resolves one exact module instead of substring 
 
 test('tracked BPM examples distinguish browser create routes from view components', async () => {
   const expectedRoutes = new Map([
-    ['bpm-provision-contract.example.yaml', ['/crm/contract', '/crm/contract/detail/index.vue']],
-    ['bpm-provision-receivable.example.yaml', ['/crm/receivable', '/crm/receivable/detail/index.vue']],
+    ['bpm-provision-contract.example.kdl', ['/crm/contract', '/crm/contract/detail/index.vue']],
+    ['bpm-provision-receivable.example.kdl', ['/crm/receivable', '/crm/receivable/detail/index.vue']],
     [
-      'bpm-provision.example.yaml',
+      'bpm-provision.example.kdl',
       ['/crm/reimbursement', '/crm/reimbursement/ReimbursementApprovalDetail.vue']
     ],
     [
-      'bpm-provision-refund.example.yaml',
+      'bpm-provision-refund.example.kdl',
       ['/crm/receivable-refund', '/crm/refund/RefundApprovalDetail.vue']
     ],
-    ['bpm-provision-leave.example.yaml', ['/bpm/oa/leave/create', '/bpm/oa/leave/detail.vue']],
-    ['bpm-provision-trip.example.yaml', ['/bpm/oa/trip/create', '/bpm/oa/trip/detail.vue']],
-    ['bpm-provision-loan.example.yaml', ['/bpm/oa/loan/create', '/bpm/oa/loan/detail.vue']],
+    ['bpm-provision-leave.example.kdl', ['/bpm/oa/leave/create', '/bpm/oa/leave/detail.vue']],
+    ['bpm-provision-trip.example.kdl', ['/bpm/oa/trip/create', '/bpm/oa/trip/detail.vue']],
+    ['bpm-provision-loan.example.kdl', ['/bpm/oa/loan/create', '/bpm/oa/loan/detail.vue']],
     [
-      'bpm-provision-customer-visit.example.yaml',
+      'bpm-provision-customer-visit.example.kdl',
       ['/crm/customer-visit/create', '/crm/customerVisit/detail.vue']
     ],
     [
-      'bpm-provision-work-request.example.yaml',
+      'bpm-provision-work-request.example.kdl',
       ['/bpm/collaboration/work-request', '/bpm/oa/work-request/detail.vue']
+    ],
+    [
+      'bpm-provision-marketing-outreach.example.kdl',
+      ['/crm/marketing-outreach', '/crm/marketing/outreach/index.vue']
     ]
   ])
 
   for (const [fileName, [createRoute, viewComponent]] of expectedRoutes) {
-    const yaml = await readFile(new URL(`../../../podman/config/${fileName}`, import.meta.url), 'utf8')
-    assert.match(yaml, new RegExp(`form_create_path: ${createRoute.replaceAll('/', '\\/')}(?:\\n|\\r)`))
-    assert.match(yaml, new RegExp(`form_view_path: ${viewComponent.replaceAll('/', '\\/')}(?:\\n|\\r)`))
+    const kdl = await readFile(new URL(`../../../podman/config/${fileName}`, import.meta.url), 'utf8')
+    assert.ok(kdl.includes(`form_create_path "${createRoute}"`))
+    assert.ok(kdl.includes(`form_view_path "${viewComponent}"`))
   }
 })
 

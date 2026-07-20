@@ -24,7 +24,7 @@ model {
   key "crm-marketing-outreach-audit"
   name "CRM 营销群发审批"
   description "营销短信/邮件群发必须审批通过后才能发送；审批通过不代表邮件服务商已接受。"
-  form_create_path "/crm/marketing/outreach"
+  form_create_path "/crm/marketing-outreach"
   form_view_path "/crm/marketing/outreach/index.vue"
   approval_node_name "营销群发审批"
 }
