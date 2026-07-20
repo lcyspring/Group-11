@@ -1,0 +1,108 @@
+services:
+  mysql:
+    image: "${MYSQL_IMAGE}"
+    container_name: "${MYSQL_CONTAINER}"
+    restart: unless-stopped
+    stop_grace_period: "${STOP_TIMEOUT_SECONDS}s"
+    env_file:
+      - "${STATE_DIR}/mysql.env"
+    command:
+      - "--character-set-server=${MYSQL_CHARACTER_SET}"
+      - "--collation-server=${MYSQL_COLLATION}"
+      - "--port=${MYSQL_PORT}"
+      - "--default-authentication-plugin=${MYSQL_AUTHENTICATION_PLUGIN}"
+    ports:
+      # Every other service joins this container's network namespace. Publishing
+      # all three application ports here preserves the Podman Pod's localhost model.
+      - "${HOST_ADDRESS}:${SERVER_HOST_PORT}:${SERVER_CONTAINER_PORT}"
+      - "${HOST_ADDRESS}:${WEB_HOST_PORT}:${WEB_CONTAINER_PORT}"
+      - "${HOST_ADDRESS}:${MALL_HOST_PORT}:${MALL_CONTAINER_PORT}"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  redis:
+    image: "${REDIS_IMAGE}"
+    container_name: "${REDIS_CONTAINER}"
+    restart: unless-stopped
+    stop_grace_period: "${STOP_TIMEOUT_SECONDS}s"
+    network_mode: "service:mysql"
+    depends_on:
+      - mysql
+    env_file:
+      - "${STATE_DIR}/redis.env"
+    command:
+      - sh
+      - -ec
+      - 'exec redis-server --requirepass "$${REDIS_PASSWORD}"'
+    volumes:
+      - redis_data:/data
+
+  rabbitmq:
+    image: "${RABBITMQ_IMAGE}"
+    container_name: "${RABBITMQ_CONTAINER}"
+    restart: unless-stopped
+    stop_grace_period: "${STOP_TIMEOUT_SECONDS}s"
+    network_mode: "service:mysql"
+    depends_on:
+      - mysql
+    env_file:
+      - "${STATE_DIR}/rabbitmq.env"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  tdengine:
+    image: "${TDENGINE_IMAGE}"
+    container_name: "${TDENGINE_CONTAINER}"
+    restart: unless-stopped
+    stop_grace_period: "${STOP_TIMEOUT_SECONDS}s"
+    network_mode: "service:mysql"
+    depends_on:
+      - mysql
+    env_file:
+      - "${STATE_DIR}/tdengine.env"
+    volumes:
+      - tdengine_data:/var/lib/taos
+
+  server:
+    image: "${SERVER_IMAGE}"
+    container_name: "${SERVER_CONTAINER}"
+    restart: unless-stopped
+    stop_grace_period: "${STOP_TIMEOUT_SECONDS}s"
+    network_mode: "service:mysql"
+    depends_on:
+      - mysql
+      - redis
+      - rabbitmq
+      - tdengine
+    env_file:
+      - "${STATE_DIR}/server.env"
+    extra_hosts:
+      - "${HOST_PROXY_NAME}:host-gateway"
+
+  web:
+    image: "${WEB_IMAGE}"
+    container_name: "${WEB_CONTAINER}"
+    restart: unless-stopped
+    stop_grace_period: "${STOP_TIMEOUT_SECONDS}s"
+    network_mode: "service:mysql"
+    depends_on:
+      - server
+
+  mall:
+    image: "${MALL_IMAGE}"
+    container_name: "${MALL_CONTAINER}"
+    restart: unless-stopped
+    stop_grace_period: "${STOP_TIMEOUT_SECONDS}s"
+    network_mode: "service:mysql"
+    depends_on:
+      - server
+
+volumes:
+  mysql_data:
+    name: "${MYSQL_VOLUME}"
+  redis_data:
+    name: "${REDIS_VOLUME}"
+  rabbitmq_data:
+    name: "${RABBITMQ_VOLUME}"
+  tdengine_data:
+    name: "${TDENGINE_VOLUME}"

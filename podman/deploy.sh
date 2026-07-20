@@ -102,6 +102,16 @@ MYSQL_AUTHENTICATION_PLUGIN="$(kdl_require mysql.authentication_plugin)"
 MYSQL_TIMEZONE="$(kdl_require mysql.timezone)"
 RABBITMQ_USERNAME="$(kdl_require rabbitmq.username)"
 RABBITMQ_PASSWORD="$(kdl_require rabbitmq.password)"
+REDIS_PASSWORD="$(kdl_get redis.password)"
+case "${REDIS_PASSWORD,,}" in
+    none|not-configured) REDIS_PASSWORD='' ;;
+esac
+REDIS_RUNTIME_ARGS=()
+REDIS_COMMAND=()
+if [[ -n "$REDIS_PASSWORD" ]]; then
+    REDIS_RUNTIME_ARGS+=(--env "REDIS_PASSWORD=${REDIS_PASSWORD}")
+    REDIS_COMMAND+=(redis-server --requirepass "$REDIS_PASSWORD")
+fi
 TDENGINE_HOST="$(kdl_require tdengine.host)"
 TDENGINE_PORT="$(kdl_port tdengine.port)"
 TDENGINE_FQDN="$(kdl_require tdengine.fqdn)"
@@ -308,36 +318,43 @@ wait_for() {
     return 1
 }
 
+tdengine_command() {
+    local password="$1"
+    shift
+    podman_cmd exec "$TDENGINE_CONTAINER" taos --user "$TDENGINE_USERNAME" \
+        "-p${password}" --commands "$*"
+}
+
+tdengine_probe_any_credentials() {
+    tdengine_command "$TDENGINE_PASSWORD" "$TDENGINE_HEALTH_QUERY" >/dev/null 2>&1 ||
+        tdengine_command taosdata "$TDENGINE_HEALTH_QUERY" >/dev/null 2>&1
+}
+
+configure_tdengine_credentials() {
+    if tdengine_command "$TDENGINE_PASSWORD" "$TDENGINE_HEALTH_QUERY" >/dev/null 2>&1; then
+        return
+    fi
+    tdengine_command taosdata "$TDENGINE_HEALTH_QUERY" >/dev/null 2>&1 || {
+        printf 'TDengine rejects both the configured and factory root credentials. Check tdengine.password.\n' >&2
+        return 1
+    }
+    printf 'Applying the configured TDengine root credential on this new data volume.\n'
+    tdengine_command taosdata "ALTER USER root PASS '${TDENGINE_PASSWORD}';" >/dev/null
+    tdengine_command "$TDENGINE_PASSWORD" "$TDENGINE_HEALTH_QUERY" >/dev/null
+}
+
 initialize_tdengine() {
-    local max_attempts="$TDENGINE_INITIALIZATION_ATTEMPTS"
-    local attempt exit_code
+    printf 'Initializing TDengine database.\n'
+    wait_for 'TDengine database initialization' "$TDENGINE_INITIALIZATION_ATTEMPTS" \
+        tdengine_command "$TDENGINE_PASSWORD" "CREATE DATABASE IF NOT EXISTS ${MYSQL_DATABASE};"
+}
 
-    for ((attempt = 1; attempt <= max_attempts; attempt++)); do
-        if ((attempt == 1)); then
-            printf 'Initializing TDengine database.\n'
-        else
-            printf 'TDengine is reachable but not ready to create a database; retrying (%s/%s).\n' \
-                "$attempt" "$max_attempts" >&2
-            sleep "$HEALTH_INTERVAL"
-        fi
-
-        podman_cmd run -d --replace --name "$INIT_CONTAINER" --pod "$POD_NAME" --pull=never \
-            --env "TDENGINE_HOST=${TDENGINE_HOST}" \
-            --env "TDENGINE_PORT=${TDENGINE_PORT}" \
-            "$INIT_IMAGE" >/dev/null
-        exit_code="$(podman_cmd wait "$INIT_CONTAINER")"
-        if [[ "$exit_code" == "0" ]]; then
-            podman_cmd rm "$INIT_CONTAINER" >/dev/null
-            return 0
-        fi
-
-        if ((attempt < max_attempts)); then
-            podman_cmd logs --tail 20 "$INIT_CONTAINER" >&2 || true
-        fi
-    done
-
-    printf 'TDengine initialization failed after %s attempts.\n' "$max_attempts" >&2
-    return 1
+redis_probe() {
+    if [[ -n "$REDIS_PASSWORD" ]]; then
+        podman_cmd exec --env "REDISCLI_AUTH=${REDIS_PASSWORD}" "$REDIS_CONTAINER" redis-cli ping
+    else
+        podman_cmd exec "$REDIS_CONTAINER" redis-cli ping
+    fi
 }
 
 start_frontends() {
@@ -361,6 +378,7 @@ start_server() {
         --env "SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_PASSWORD=${MYSQL_APPLICATION_PASSWORD}" \
         --env "SPRING_RABBITMQ_USERNAME=${RABBITMQ_USERNAME}" \
         --env "SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}" \
+        --env "SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD}" \
         --env "MITEDTSM_SECURITY_MOCK_ENABLE=${SECURITY_MOCK_LOGIN_ENABLED}" \
         --env "MITEDTSM_SECURITY_MOCK_SECRET=${SECURITY_MOCK_SECRET}" \
         --env "MITEDTSM_SECURITY_PASSWORD_ENCODER_LENGTH=${SECURITY_PASSWORD_ENCODER_LENGTH}" \
@@ -589,6 +607,18 @@ validate_configuration() {
     }
     [[ "$MYSQL_APPLICATION_USERNAME" =~ ^[A-Za-z0-9_]+$ ]] || {
         printf 'mysql.application_username contains unsupported characters.\n' >&2
+        exit 2
+    }
+    if [[ -n "$REDIS_PASSWORD" && ! "$REDIS_PASSWORD" =~ ^[A-Za-z0-9._~-]{8,128}$ ]]; then
+        printf 'redis.password must use 8-128 portable characters: A-Z a-z 0-9 . _ ~ -.\n' >&2
+        exit 2
+    fi
+    [[ "$TDENGINE_USERNAME" == root ]] || {
+        printf 'tdengine.username must remain root for first-volume credential initialization.\n' >&2
+        exit 2
+    }
+    [[ "$TDENGINE_PASSWORD" =~ ^[A-Za-z0-9._~-]{8,128}$ ]] || {
+        printf 'tdengine.password must use 8-128 portable characters: A-Z a-z 0-9 . _ ~ -.\n' >&2
         exit 2
     }
     if [[ "$MYSQL_APPLICATION_USERNAME" == root &&
@@ -881,7 +911,8 @@ podman_cmd run -d --replace --name "$MYSQL_CONTAINER" --pod "$POD_NAME" --pull=n
 
 podman_cmd run -d --replace --name "$REDIS_CONTAINER" --pod "$POD_NAME" --pull=never \
     --volume "${REDIS_VOLUME}:/data" \
-    "$REDIS_BASE_IMAGE"
+    "${REDIS_RUNTIME_ARGS[@]}" \
+    "$REDIS_BASE_IMAGE" "${REDIS_COMMAND[@]}"
 
 podman_cmd run -d --replace --name "$RABBITMQ_CONTAINER" --pod "$POD_NAME" --pull=never \
     --volume "${RABBITMQ_VOLUME}:/var/lib/rabbitmq" \
@@ -898,19 +929,20 @@ wait_for 'MySQL' "$MYSQL_ATTEMPTS" podman_cmd exec --env "MYSQL_PWD=${MYSQL_ROOT
     "$MYSQL_CONTAINER" mysql --user "$MYSQL_ADMIN_USERNAME" --host "127.0.0.1" --port "$MYSQL_PORT" \
     --batch --skip-column-names --execute 'SELECT 1' &
 mysql_ready_pid=$!
-wait_for 'Redis' "$REDIS_ATTEMPTS" podman_cmd exec "$REDIS_CONTAINER" redis-cli ping &
+wait_for 'Redis' "$REDIS_ATTEMPTS" redis_probe &
 redis_ready_pid=$!
 # Run the probe as RabbitMQ's own user. Running this Erlang client as root
 # during the broker's first few seconds creates a root-owned cookie and makes
 # the broker's later privilege drop fail.
 wait_for 'RabbitMQ' "$RABBITMQ_ATTEMPTS" podman_cmd exec --user "$RABBITMQ_OS_USER" "$RABBITMQ_CONTAINER" /opt/rabbitmq/sbin/rabbitmq-diagnostics -q ping &
 rabbitmq_ready_pid=$!
-wait_for 'TDengine' "$TDENGINE_ATTEMPTS" podman_cmd exec "$TDENGINE_CONTAINER" taos -s "$TDENGINE_HEALTH_QUERY" &
+wait_for 'TDengine' "$TDENGINE_ATTEMPTS" tdengine_probe_any_credentials &
 tdengine_ready_pid=$!
 
-# The InitService only talks to TDengine, so run it while MySQL, Redis, and
-# RabbitMQ finish their own health checks instead of serializing those waits.
+# TDengine initialization is independent from MySQL, Redis, and RabbitMQ, so
+# overlap it with the remaining infrastructure health checks.
 wait "$tdengine_ready_pid"
+configure_tdengine_credentials
 initialize_tdengine &
 tdengine_init_pid=$!
 

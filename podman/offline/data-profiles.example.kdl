@@ -1,0 +1,15 @@
+schema_version 1
+
+production {
+  dataset "none"
+  dataset_manifest "../../database/datasets/none.manifest"
+  // 全新库仍执行 none.manifest 清掉上游示例数据；已有库保持业务数据不变
+  dataset_mode "preserve"
+}
+
+demo {
+  // 构建离线包时会用所选本机运行 KDL 的显式演示数据集覆盖这三个值
+  dataset "crm-demo-v2"
+  dataset_manifest "../../database/generated/crm-demo-v2/crm-demo-v2.manifest"
+  dataset_mode "replace"
+}

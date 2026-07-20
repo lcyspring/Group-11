@@ -1,0 +1,21 @@
+schema_version 1
+
+deployment {
+  // 浏览器访问目标机时使用的 IPv4 地址或 DNS 名；不带协议、端口或路径
+  public_host "127.0.0.1"
+  // production 默认清理全新库中的上游示例数据；demo 才导入 CRM 演示数据
+  data_profile "production"
+}
+
+credential {
+  // configure.sh 首次运行会用随机值替换全部 CHANGE_ME；也可复制本文件后手工填写
+  mysql_root_password "CHANGE_ME"
+  mysql_application_username "mitedtsm"
+  mysql_application_password "CHANGE_ME"
+  redis_password "CHANGE_ME"
+  rabbitmq_username "mitedtsm"
+  rabbitmq_password "CHANGE_ME"
+  // 离线初始化目前管理 TDengine 的 root 账号，可配置其密码但不可改用户名
+  tdengine_username "root"
+  tdengine_password "CHANGE_ME"
+}

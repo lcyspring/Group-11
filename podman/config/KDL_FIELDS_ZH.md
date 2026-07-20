@@ -104,6 +104,11 @@
 | `mysql.authentication_plugin` | MySQL 认证插件 |
 | `mysql.timezone` | MySQL 容器时区 |
 | `mysql.compatibility_migration_manifest` | 已有数据卷每次部署前执行的幂等迁移清单 |
+| `redis.password` | Redis 运行密码；缺省或 `not-configured` 仅保留旧开发环境的无密码行为，生产离线配置必须显式生成/设置 |
+| `rabbitmq.username/password` | RabbitMQ 运行账号与密码 |
+| `tdengine.host/port/fqdn` | 应用访问 TDengine 及容器 FQDN 配置 |
+| `tdengine.username/password` | TDengine 数据源账号；首次卷初始化当前要求 `root` 用户，密码可配置 |
+| `tdengine.initialization_attempts` | 直接创建 TDengine 业务库的最大尝试次数 |
 
 ### 已有数据库的数据集替换配置
 
@@ -116,10 +121,6 @@
 | `mysql.database/username/password` | 目标库与执行账号；真实密码只写 ignored KDL |
 | `mysql.dataset` | 要应用的显式数据集 manifest 名称 |
 | `mysql.dataset_mode` | `insert` 禁止 cleanup；`replace` 要求 manifest 第一项为 cleanup，随后才允许插入 |
-| `rabbitmq.username/password` | RabbitMQ 运行账号 |
-| `tdengine.host/port/fqdn` | 应用访问 TDengine 及容器 FQDN 配置 |
-| `tdengine.username/password` | TDengine 数据源账号 |
-| `tdengine.initialization_attempts` | InitService 初始化 TDengine 的最大尝试次数 |
 | `server.spring_profile` | Server 激活的 Spring profile |
 
 ### 安全与集成

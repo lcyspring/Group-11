@@ -1,0 +1,16 @@
+schema_version 1
+
+operation {
+  // check 仅检查依赖；build 创建完整离线交付目录
+  mode "check"
+}
+
+bundle {
+  output_dir "../../offline-deploy-local/mitedtsm-offline-x86_64"
+  overwrite #false
+}
+
+source {
+  // 读取本机镜像、数据集和 BPM 选择；基础设施凭据会从交付模板清除并在目标机生成
+  runtime_config "runtime-local.kdl"
+}

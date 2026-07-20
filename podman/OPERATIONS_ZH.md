@@ -25,6 +25,7 @@ Mall H5：                         ghcr.io/elel-code/group-11-hbuilderx-ubuntu:2
 | 启动/替换容器 | `deploy.sh <kdl>` | 只消费运行镜像，启动或替换 rootless Pod/容器 |
 | 停止 | `stop.sh <kdl>` | 停止 Pod；是否删卷只看 KDL |
 | 离线镜像 | `operations/images/image-archives.sh <kdl>` | 保存/拉取并保存基础镜像 tar |
+| 完整离线交付包 | `operations/images/build-offline-deployment-bundle.sh <kdl>` | 导出 8 个 Podman/Docker 通用镜像，汇总脚本、KDL、BPM 与数据库清单；目标机生成凭据且默认无演示数据 |
 | 编译镜像归档/上传 | `operations/images/build-image-archives.sh <kdl>` | 两个工具链镜像 check/save/load/push |
 | CRM 数据备份 | `operations/database/database-backup.sh <kdl>` | MySQL 一致性压缩备份和 SHA-256 |
 | CRM 恢复演练 | `operations/database/database-restore.sh <kdl>` | 隔离库恢复、核心表检查和可选清理 |

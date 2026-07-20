@@ -18,6 +18,7 @@
 | 单项热替换 | `runtime-local-replace-*.kdl` | ignored，仅消费预先封装镜像并替换 Server/Web/Mall |
 | 数据保护 | `database-backup-check.kdl` | 备份/恢复安全模板 |
 | 编译镜像 | `build-image-archives-check.kdl` | 工具链镜像 check/save/load/push 模板 |
+| 完整离线交付包 | `offline-deployment-bundle.example.kdl` | 复制为 ignored 本机配置后，汇总 8 个 Podman/Docker 通用镜像和生产安全的目标机一键部署目录 |
 | CRM 性能基线 | `verify-crm-performance-baseline.example.kdl` | 只读并发负载与阈值共享模板 |
 | 工单 50 并发专项 | `verify-crm-work-order-performance.example.kdl` | 创建、SLA、流转、统计、完结与退出清理 |
 | 工单安全负向专项 | `verify-crm-work-order-security.example.kdl` | 临时受限角色、越权、跨租户、状态、注入/XSS 和边界 |

@@ -114,6 +114,9 @@ render "${PROJECT_ROOT}/database/generator/templates/crm-associated-domains.sql.
 render "${PROJECT_ROOT}/database/generator/templates/crm-core-work-order-cleanup.sql.tpl" "${OUTPUT}/01-cleanup.sql"
 render "${PROJECT_ROOT}/database/generator/templates/crm-demo-validation.sql.tpl" "${OUTPUT}/04-validate.sql"
 printf '%s\n' './01-cleanup.sql' './02-insert.sql' './03-associated.sql' './04-validate.sql' >"${OUTPUT}/${NAME}.manifest"
-sha256sum "${OUTPUT}/01-cleanup.sql" "${OUTPUT}/02-insert.sql" "${OUTPUT}/03-associated.sql" "${OUTPUT}/04-validate.sql" \
-  "${OUTPUT}/${NAME}.manifest" >"${OUTPUT}/SHA256SUMS"
+(
+  cd "$OUTPUT"
+  sha256sum 01-cleanup.sql 02-insert.sql 03-associated.sql 04-validate.sql \
+    "${NAME}.manifest" > SHA256SUMS
+)
 printf 'Generated deterministic dataset files under %s. No database was changed.\n' "$OUTPUT"

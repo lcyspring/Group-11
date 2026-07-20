@@ -118,6 +118,12 @@ rabbitmq {
 
 }
 
+redis {
+  // 生产离线部署由目标机配置生成；not-configured 保持旧的无密码开发行为
+  password "not-configured"
+
+}
+
 tdengine {
   host "127.0.0.1"
   port 6041

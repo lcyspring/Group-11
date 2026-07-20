@@ -8,6 +8,7 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PODMAN_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+CONTAINER_ENGINE="${CONTAINER_ENGINE:-podman}"
 
 [[ $# -eq 1 ]] || {
     printf 'Usage: bash ./internal/provision-marketing-provider.sh <runtime-config.kdl>\n' >&2
@@ -203,9 +204,20 @@ esac
     exit 0
 }
 
-command -v podman >/dev/null 2>&1 || {
-    printf 'Podman is required for Provider provision.\n' >&2
+case "$CONTAINER_ENGINE" in
+    podman|docker) ;;
+    *)
+        printf 'CONTAINER_ENGINE must be podman or docker; got: %s\n' "$CONTAINER_ENGINE" >&2
+        exit 2
+        ;;
+esac
+command -v "$CONTAINER_ENGINE" >/dev/null 2>&1 || {
+    printf 'Container engine is required for Provider provision: %s\n' "$CONTAINER_ENGINE" >&2
     exit 1
+}
+
+container_cmd() {
+    "$CONTAINER_ENGINE" "$@"
 }
 
 b64() {
@@ -213,7 +225,7 @@ b64() {
 }
 
 mysql_command() {
-    podman exec --env "MYSQL_PWD=${MYSQL_ROOT_PASSWORD}" "$MYSQL_CONTAINER" \
+    container_cmd exec --env "MYSQL_PWD=${MYSQL_ROOT_PASSWORD}" "$MYSQL_CONTAINER" \
         mysql "--default-character-set=${MYSQL_CHARACTER_SET}" \
         "--user=${MYSQL_ADMIN_USERNAME}" "--database=${MYSQL_DATABASE}" "$@"
 }
@@ -257,7 +269,7 @@ mail_ssl=0
 mail_starttls=0
 [[ "$MAIL_STARTTLS_ENABLED" == true ]] && mail_starttls=1
 
-podman exec --env "MYSQL_PWD=${MYSQL_ROOT_PASSWORD}" -i "$MYSQL_CONTAINER" \
+container_cmd exec --env "MYSQL_PWD=${MYSQL_ROOT_PASSWORD}" -i "$MYSQL_CONTAINER" \
     mysql "--default-character-set=${MYSQL_CHARACTER_SET}" \
     "--user=${MYSQL_ADMIN_USERNAME}" "--database=${MYSQL_DATABASE}" <<SQL
 SET @managed=${managed}, @sms_enabled=${sms_enabled}, @mail_enabled=${mail_enabled};

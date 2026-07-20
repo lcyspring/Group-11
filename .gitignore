@@ -66,6 +66,10 @@ docker-images/*.tar
 podman/images/*.tar
 podman/images/*.sha256
 podman/config/build-image-archives-local.kdl
+podman/config/offline-deployment-bundle-local.kdl
+
+# Local, transferable offline deployment bundles may contain large images and credentials.
+/offline-deploy-local/
 
 # Reproducible local CLI tools (build scripts and version pins are tracked).
 podman/tools/bin/

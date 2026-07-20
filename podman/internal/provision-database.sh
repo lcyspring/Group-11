@@ -8,6 +8,7 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PODMAN_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+CONTAINER_ENGINE="${CONTAINER_ENGINE:-podman}"
 
 [[ $# -eq 1 ]] || {
     printf 'Usage: bash ./internal/provision-database.sh <runtime-config.kdl>\n' >&2
@@ -164,13 +165,24 @@ case "$START_MODE" in
         ;;
 esac
 
-command -v podman >/dev/null 2>&1 || {
-    printf 'Podman is required for database provision.\n' >&2
+case "$CONTAINER_ENGINE" in
+    podman|docker) ;;
+    *)
+        printf 'CONTAINER_ENGINE must be podman or docker; got: %s\n' "$CONTAINER_ENGINE" >&2
+        exit 2
+        ;;
+esac
+command -v "$CONTAINER_ENGINE" >/dev/null 2>&1 || {
+    printf 'Container engine is required for database provision: %s\n' "$CONTAINER_ENGINE" >&2
     exit 1
 }
 
+container_cmd() {
+    "$CONTAINER_ENGINE" "$@"
+}
+
 mysql_command() {
-    podman exec --env "MYSQL_PWD=${MYSQL_ROOT_PASSWORD}" "$MYSQL_CONTAINER" \
+    container_cmd exec --env "MYSQL_PWD=${MYSQL_ROOT_PASSWORD}" "$MYSQL_CONTAINER" \
         mysql "--default-character-set=${MYSQL_CHARACTER_SET}" \
         "--user=${MYSQL_ADMIN_USERNAME}" "--database=${MYSQL_DATABASE}" "$@"
 }
@@ -185,7 +197,7 @@ execute_manifest() {
         [[ -n "$entry" && "$entry" != \#* ]] || continue
         sql_file="$(resolve_manifest_entry "$manifest" "$entry")"
         printf 'Applying %s SQL: %s\n' "$label" "${sql_file#${DATABASE_ROOT}/}"
-        podman exec --env "MYSQL_PWD=${MYSQL_ROOT_PASSWORD}" -i "$MYSQL_CONTAINER" \
+        container_cmd exec --env "MYSQL_PWD=${MYSQL_ROOT_PASSWORD}" -i "$MYSQL_CONTAINER" \
             mysql "--default-character-set=${MYSQL_CHARACTER_SET}" \
             "--user=${MYSQL_ADMIN_USERNAME}" "--database=${MYSQL_DATABASE}" < "$sql_file"
     done < "$manifest"
